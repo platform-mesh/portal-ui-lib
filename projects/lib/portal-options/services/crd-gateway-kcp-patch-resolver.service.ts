@@ -1,7 +1,7 @@
-import { kcpRootOrgsPath } from '../models/constants';
-import { PortalLuigiNode } from '../models/luigi-node';
 import { Injectable, inject } from '@angular/core';
 import { EnvConfigService, GatewayService } from '@openmfp/portal-ui-lib';
+import { kcpRootOrgsPath } from '../models/constants';
+import { PortalLuigiNode } from '../models/luigi-node';
 
 @Injectable({ providedIn: 'root' })
 export class CrdGatewayKcpPatchResolver {

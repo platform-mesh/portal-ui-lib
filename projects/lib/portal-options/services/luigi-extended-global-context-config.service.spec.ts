@@ -1,3 +1,4 @@
+import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 import { TestBed } from '@angular/core/testing';
 import {
   AuthService,
@@ -6,9 +7,8 @@ import {
   ResourceService,
 } from '@openmfp/portal-ui-lib';
 import { of, throwError } from 'rxjs';
-import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 
-describe('LuigiExtendedGlobalContextConfigService', () => {
+describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
   let service: LuigiExtendedGlobalContextConfigServiceImpl;
   let mockResourceService: jest.Mocked<ResourceService>;
   let mockEnvConfigService: jest.Mocked<EnvConfigService>;
@@ -17,7 +17,7 @@ describe('LuigiExtendedGlobalContextConfigService', () => {
 
   beforeEach(() => {
     const resourceServiceMock = {
-      read: jest.fn(),
+      readAccountInfo: jest.fn(),
     } as jest.Mocked<Partial<ResourceService>>;
 
     const envConfigServiceMock = {
@@ -44,13 +44,13 @@ describe('LuigiExtendedGlobalContextConfigService', () => {
 
     service = TestBed.inject(LuigiExtendedGlobalContextConfigServiceImpl);
     mockResourceService = TestBed.inject(
-      ResourceService
+      ResourceService,
     ) as jest.Mocked<ResourceService>;
     mockEnvConfigService = TestBed.inject(
-      EnvConfigService
+      EnvConfigService,
     ) as jest.Mocked<EnvConfigService>;
     mockConfigService = TestBed.inject(
-      ConfigService
+      ConfigService,
     ) as jest.Mocked<ConfigService>;
     mockAuthService = TestBed.inject(AuthService) as jest.Mocked<AuthService>;
   });
@@ -76,28 +76,24 @@ describe('LuigiExtendedGlobalContextConfigService', () => {
     mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
     mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
     mockAuthService.getToken.mockReturnValue(mockToken);
-    mockResourceService.read.mockReturnValue(of(mockResource));
+    mockResourceService.readAccountInfo.mockReturnValue(of(mockResource));
 
     const result = await service.createLuigiExtendedGlobalContext();
 
     expect(result).toEqual({
       organizationId: 'cluster-123/test-org',
+      kcpCA: 'dW5kZWZpbmVk',
+      organization: 'test-org',
       entityId: 'cluster-123/test-org',
     });
 
-    expect(mockResourceService.read).toHaveBeenCalledWith(
-      'test-org',
-      'core_platform_mesh_io',
-      'Account',
-      'query ($name: String!) { core_platform_mesh_io { Account(name: $name) { metadata { name annotations } } }}',
-      {
-        portalContext: {
-          crdGatewayApiUrl: 'https://api.example.com/graphql',
-        },
-        token: 'mock-token',
-        accountId: 'test-org',
-      }
-    );
+    expect(mockResourceService.readAccountInfo).toHaveBeenCalledWith({
+      portalContext: {
+        crdGatewayApiUrl: 'https://api.example.com/graphql',
+      },
+      token: 'mock-token',
+      accountId: 'test-org',
+    });
   });
 
   it('should return empty object when cluster annotations not present', async () => {
@@ -117,25 +113,19 @@ describe('LuigiExtendedGlobalContextConfigService', () => {
     mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
     mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
     mockAuthService.getToken.mockReturnValue(mockToken);
-    mockResourceService.read.mockReturnValue(of(mockResource));
+    mockResourceService.readAccountInfo.mockReturnValue(of(mockResource));
 
     const result = await service.createLuigiExtendedGlobalContext();
 
     expect(result).toEqual({});
 
-    expect(mockResourceService.read).toHaveBeenCalledWith(
-      'test-org',
-      'core_platform_mesh_io',
-      'Account',
-      'query ($name: String!) { core_platform_mesh_io { Account(name: $name) { metadata { name annotations } } }}',
-      {
-        portalContext: {
-          crdGatewayApiUrl: 'https://api.example.com/graphql',
-        },
-        token: 'mock-token',
-        accountId: 'test-org',
-      }
-    );
+    expect(mockResourceService.readAccountInfo).toHaveBeenCalledWith({
+      portalContext: {
+        crdGatewayApiUrl: 'https://api.example.com/graphql',
+      },
+      token: 'mock-token',
+      accountId: 'test-org',
+    });
   });
 
   it('should return empty object when resource read fails', async () => {
@@ -153,7 +143,9 @@ describe('LuigiExtendedGlobalContextConfigService', () => {
     mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
     mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
     mockAuthService.getToken.mockReturnValue(mockToken);
-    mockResourceService.read.mockReturnValue(throwError(() => error));
+    mockResourceService.readAccountInfo.mockReturnValue(
+      throwError(() => error),
+    );
 
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
@@ -162,7 +154,7 @@ describe('LuigiExtendedGlobalContextConfigService', () => {
     expect(result).toEqual({});
     expect(consoleSpy).toHaveBeenCalledWith(
       'Failed to read entity test-org from core_platform_mesh_io',
-      error
+      error,
     );
 
     consoleSpy.mockRestore();

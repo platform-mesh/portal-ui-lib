@@ -2,30 +2,34 @@ import { kcpRootOrgsPath } from '../models/constants';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { TestBed } from '@angular/core/testing';
-import { GatewayService, LuigiCoreService } from '@openmfp/portal-ui-lib';
+import {
+  EnvConfigService,
+  GatewayService,
+  LuigiCoreService,
+} from '@openmfp/portal-ui-lib';
 
 describe('CrdGatewayKcpPatchResolver', () => {
   let resolver: CrdGatewayKcpPatchResolver;
+  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
   let gatewayServiceMock: { updateCrdGatewayUrlWithEntityPath: jest.Mock };
-  let luigiCoreServiceMock: { getGlobalContext: jest.Mock };
 
   beforeEach(() => {
     gatewayServiceMock = { updateCrdGatewayUrlWithEntityPath: jest.fn() };
-    luigiCoreServiceMock = {
-      getGlobalContext: jest.fn().mockReturnValue({ organization: 'org1' }),
-    };
+    envConfigServiceMock = {
+      getEnvConfig: jest.fn().mockResolvedValue({ organization: 'org1' }),
+    } as any;
 
     TestBed.configureTestingModule({
       providers: [
         CrdGatewayKcpPatchResolver,
+        { provide: EnvConfigService, useValue: envConfigServiceMock },
         { provide: GatewayService, useValue: gatewayServiceMock },
-        { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
       ],
     });
     resolver = TestBed.inject(CrdGatewayKcpPatchResolver);
   });
 
-  it('should build kcpPath from entity metadata and organization, skipping non-Account types', () => {
+  it('should build kcpPath from entity metadata and organization, skipping non-Account types', async () => {
     const node: PortalLuigiNode = {
       context: {
         entity: { metadata: { name: 'acc3' }, __typename: 'Account' },
@@ -53,30 +57,30 @@ describe('CrdGatewayKcpPatchResolver', () => {
       },
     } as any;
 
-    resolver.resolveCrdGatewayKcpPath(node);
+    await resolver.resolveCrdGatewayKcpPath(node);
 
     expect(
       gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
     ).toHaveBeenCalledWith(`${kcpRootOrgsPath}:org1:acc1:acc2:acc3`);
   });
 
-  it('should use kcpPath from node context if provided', () => {
+  it('should use kcpPath from node context if provided', async () => {
     const node: PortalLuigiNode = {
       context: { kcpPath: 'customPath' },
       parent: undefined,
     } as any;
 
-    resolver.resolveCrdGatewayKcpPath(node);
+    await resolver.resolveCrdGatewayKcpPath(node);
 
     expect(
       gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
     ).toHaveBeenCalledWith('customPath');
   });
 
-  it('should handle node without entity metadata', () => {
+  it('should handle node without entity metadata', async () => {
     const node: PortalLuigiNode = { context: {}, parent: undefined } as any;
 
-    resolver.resolveCrdGatewayKcpPath(node);
+    await resolver.resolveCrdGatewayKcpPath(node);
 
     expect(
       gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,

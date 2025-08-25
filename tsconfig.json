@@ -11,8 +11,9 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "paths": {
+      "@platform-mesh/portal-ui-lib/*": ["./projects/lib/*"],
       "@platform-mesh/portal-ui-lib": [
-        "./projects/lib/src/public-api.ts"
+        "./projects/lib"
       ],
     },
     "noImplicitReturns": true,
