@@ -1,5 +1,14 @@
+const path = require('path');
+
 module.exports = {
-  preset: 'jest-preset-angular',
-  globalSetup: 'jest-preset-angular/global-setup',
-  passWithNoTests: true,
+  displayName: 'lib',
+  coverageDirectory: path.resolve(__dirname, '../../coverage/lib'),
+  coverageThreshold: {
+    global: {
+      branches: 67,
+      functions: 90,
+      lines: 91,
+      statements: -5,
+    },
+  },
 };
