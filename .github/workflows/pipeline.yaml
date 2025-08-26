@@ -16,5 +16,3 @@ jobs:
   pipe:
     uses: platform-mesh/.github/.github/workflows/pipeline-node-module.yml@main
     secrets: inherit
-    with:
-      imageTagName: ghcr.io/platform-mesh/portal-ui-lib
