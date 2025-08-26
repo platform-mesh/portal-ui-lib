@@ -1,0 +1,33 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2022", "dom"],
+    "module": "ES2022",
+    "declaration": true,
+    "outDir": "./dist/out-tsc",
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "paths": {
+      "@platform-mesh/portal-ui-lib/*": ["./projects/lib/*"],
+      "@platform-mesh/portal-ui-lib": [
+        "./projects/lib"
+      ],
+    },
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "useDefineForClassFields": false
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
+}
