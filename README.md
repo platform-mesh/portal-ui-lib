@@ -1,6 +1,6 @@
 # Portal UI Library
 
-This library helps you to setup FE application using `@openmfp/portal-ui-lib` by providing set of implmentation of `PortalOptions`
+This library helps you to setup FE application using `@openmfp/portal-ui-lib` by providing set of required implmentation in scope of the Platform Mesh functionalities.
 <!-- CI trigger -->
 
 ![Build Status](https://github.com/platform-mesh/portal-ui-lib/actions/workflows/pipeline.yaml/badge.svg)
