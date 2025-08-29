@@ -20,7 +20,7 @@
     "@angular/compiler-cli": "^19.2.14",
     "@angular/localize": "^19.0.0 || ^20.0.0",
     "@briebug/jest-schematic": "^6.0.0",
-    "@openmfp/portal-ui-lib": "file:.yalc/@openmfp/portal-ui-lib",
+    "@openmfp/portal-ui-lib": "0.174.2",
     "@types/jest": "^30.0.0",
     "@types/jmespath": "0.15.2",
     "@ui5/webcomponents-ngx": "^0.4.8",
