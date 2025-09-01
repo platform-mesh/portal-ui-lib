@@ -4,13 +4,13 @@ import {
   AuthService,
   FieldDefinition,
   LuigiCoreService,
+  LuigiNode,
   PortalConfig,
   Resource,
   ResourceNodeContext,
   ResourceService,
   generateGraphQLFields,
 } from '@openmfp/portal-ui-lib';
-import { LuigiNode } from '@openmfp/portal-ui-lib/lib/models';
 import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, of } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
