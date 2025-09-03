@@ -1,1 +1,1 @@
-export * from './initializers/organization-initializer';
+export * from './provide-organization-feature';
