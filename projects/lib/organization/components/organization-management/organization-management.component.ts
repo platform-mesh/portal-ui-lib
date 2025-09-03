@@ -50,9 +50,9 @@ export class OrganizationManagementComponent implements OnInit {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
   private envConfigService = inject(EnvConfigService);
-  test = inject(LuigiContextService)
-  context = toSignal(this.test.contextObservable().pipe(map((context) => context.context as ResourceNodeContext | undefined)));
+  private contextService = inject(LuigiContextService);
 
+  context = toSignal(this.contextService.contextObservable().pipe(map((context) => context.context as ResourceNodeContext)));
   texts: any = {};
   organizations = signal<string[]>([]);
   organizationToSwitch: string;

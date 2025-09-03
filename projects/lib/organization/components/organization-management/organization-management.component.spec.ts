@@ -6,6 +6,7 @@ import {
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MutationResult } from '@apollo/client';
+import { LuigiContextService } from '@luigi-project/client-support-angular';
 import {
   ClientEnvironment, EnvConfigService,
   I18nService,
@@ -49,11 +50,12 @@ describe('OrganizationManagementComponent', () => {
         { provide: I18nService, useValue: i18nServiceMock },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
+        LuigiContextService,
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
     })
       .overrideComponent(OrganizationManagementComponent, {
-        set: { template: '' },
+        set: { template: '', imports: [] },
       })
       .compileComponents();
 
