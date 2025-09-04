@@ -1,4 +1,3 @@
-import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 import { TestBed } from '@angular/core/testing';
 import {
   AuthService,
@@ -7,6 +6,7 @@ import {
   ResourceService,
 } from '@openmfp/portal-ui-lib';
 import { of, throwError } from 'rxjs';
+import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 
 describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
   let service: LuigiExtendedGlobalContextConfigServiceImpl;

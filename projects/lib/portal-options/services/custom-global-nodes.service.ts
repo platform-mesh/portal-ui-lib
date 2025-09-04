@@ -1,8 +1,8 @@
+import { inject } from '@angular/core';
+import { CustomGlobalNodesService, I18nService } from '@openmfp/portal-ui-lib';
 import { kcpRootOrgsPath } from '../models/constants';
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
-import { inject } from '@angular/core';
-import { CustomGlobalNodesService, I18nService } from '@openmfp/portal-ui-lib';
 
 export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
   private i18nService = inject(I18nService);
@@ -15,10 +15,7 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
         hideFromNav: true,
         hideSideNav: true,
         order: '1001',
-        viewUrl: '/assets/openmfp-portal-ui-wc.js#organization-management',
-        webcomponent: {
-          selfRegistered: true,
-        },
+        viewUrl: '/organization-management',
         context: {
           translationTable: this.i18nService.translationTable,
           kcpPath: kcpRootOrgsPath,

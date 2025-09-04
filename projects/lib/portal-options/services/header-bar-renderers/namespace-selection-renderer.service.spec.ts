@@ -172,4 +172,50 @@ describe('NamespaceSelectionRendererService', () => {
       value: { pathname: origPathname },
     });
   });
+
+  it('should skip items without name and avoid duplicates', async () => {
+    const origPathname = window.location.pathname;
+    Object.defineProperty(window, 'location', {
+      value: { pathname: '/ns1/workloads' },
+      writable: true,
+    });
+
+    const portalConfig: any = {
+      portalContext: { crdGatewayApiUrl: 'https://api.example.com/graphql' },
+    };
+
+    mockAuthService.getToken.mockReturnValue('token');
+
+    mockResourceService.list.mockReturnValue(
+      of([
+        { metadata: {} } as any,
+        { metadata: { name: 'ns1' } } as any,
+        { metadata: { name: 'ns1' } } as any,
+      ]),
+    );
+
+    const renderer = service.create(portalConfig);
+    const container = document.createElement('div');
+    const nodeItems = [
+      {
+        label: 'Workloads',
+        node: {
+          navigationContext: 'workloads',
+          context: { resourceDefinition: { scope: 'Namespaced' } },
+        },
+      },
+    ] as any;
+
+    renderer(container, nodeItems, () => {});
+
+    const cb = getChildrenByTag(container, 'ui5-combobox')[0];
+    const items = getChildrenByTag(cb, 'ui5-cb-item');
+    const texts = items.map((i) => i.getAttribute('text'));
+
+    expect(texts).toEqual(['-all-', 'ns1']);
+
+    Object.defineProperty(window, 'location', {
+      value: { pathname: origPathname },
+    });
+  });
 });

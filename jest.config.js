@@ -4,4 +4,7 @@ module.exports = {
   collectCoverage: true,
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   coveragePathIgnorePatterns: ['/node_modules/', '/integration-tests/'],
+  moduleNameMapper: {
+    '^@luigi-project/client-support-angular$': '<rootDir>/projects/lib/_mocks_/luigi-client-support-angular.ts',
+  },
 };
