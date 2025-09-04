@@ -195,9 +195,6 @@ export class OrganizationManagementComponent implements OnInit {
 
     const fullSubdomain = `${sanitizedOrg}.${baseDomain}`;
     const port = window.location.port ? `:${window.location.port}` : '';
-
-    console.log(`Switching to organization ${this.organizationToSwitch}`);
-    console.log(`Redirecting to ${protocol}//${fullSubdomain}${port}`);
     window.location.href = `${protocol}//${fullSubdomain}${port}`;
   }
 }

@@ -181,4 +181,43 @@ describe('OrganizationManagementComponent', () => {
 
     expect(window.location.href).toBe('https://newOrg.test.com:8080');
   });
+
+  it('should not switch and show alert for invalid organization name', async () => {
+    const mockEnvConfig: ClientEnvironment = {
+      idpName: 'test',
+      organization: 'test',
+      oauthServerUrl: 'https://test.com',
+      clientId: 'test',
+      baseDomain: 'test.com',
+      isLocal: false,
+      developmentInstance: false,
+      authData: {
+        expires_in: '3600',
+        access_token: 'test-access-token',
+        id_token: 'test-id-token',
+      },
+    };
+    envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+
+    const invalidNames = ['-abc', 'abc-', 'a.b', 'a b', ''];
+
+    for (const name of invalidNames) {
+      component.organizationToSwitch = name as any;
+      Object.defineProperty(window, 'location', {
+        value: { protocol: 'https:', port: '' },
+        writable: true,
+      });
+
+      await component.switchOrganization();
+
+      expect(luigiCoreServiceMock.showAlert).toHaveBeenCalledWith({
+        text:
+          'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
+        type: 'error',
+      });
+
+      expect((window.location as any).href).toBeUndefined();
+      (luigiCoreServiceMock.showAlert as jest.Mock).mockClear();
+    }
+  });
 });
