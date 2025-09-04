@@ -166,12 +166,38 @@ export class OrganizationManagementComponent implements OnInit {
     };
   }
 
+    /**
+   * Allows only valid subdomain values: alphanumeric, hyphens, no periods, cannot start/end with hyphen, min 1 character.
+   * Returns sanitized string or null if invalid.
+   */
+  private sanitizeSubdomainInput(input: string): string | null {
+    // RFC 1034/1123: subdomain labels are 1-63 chars, start/end with alphanum, can contain '-'
+    if (typeof input !== 'string') return null;
+    const sanitized = input.trim();
+    if (/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(sanitized)) {
+      return sanitized;
+    }
+    return null;
+  }
+
   async switchOrganization() {
     const { baseDomain } = await this.envConfigService.getEnvConfig();
     const protocol = window.location.protocol;
-    const fullSubdomain = `${this.organizationToSwitch}.${baseDomain}`;
+    const sanitizedOrg = this.sanitizeSubdomainInput(this.organizationToSwitch);
+
+    if (!sanitizedOrg) {
+      this.luigiCoreService.showAlert({
+        text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
+        type: 'error',
+      });
+      return;
+    }
+
+    const fullSubdomain = `${sanitizedOrg}.${baseDomain}`;
     const port = window.location.port ? `:${window.location.port}` : '';
 
+    console.log(`Switching to organization ${this.organizationToSwitch}`);
+    console.log(`Redirecting to ${protocol}//${fullSubdomain}${port}`);
     window.location.href = `${protocol}//${fullSubdomain}${port}`;
   }
 }
