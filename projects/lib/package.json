@@ -5,7 +5,7 @@
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "@openmfp/portal-ui-lib": "0.174.2",
+    "@openmfp/portal-ui-lib": "^0.174.2",
     "@angular/common": "^19.0.0 || ^20.0.0",
     "@angular/compiler": "^19.0.0 || ^20.0.0",
     "@angular/core": "^19.0.0 || ^20.0.0",
