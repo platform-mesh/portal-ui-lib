@@ -3,5 +3,8 @@
   "dest": "../../dist",
   "lib": {
     "entryFile": "./public-api.ts"
-  }
+  },
+  "allowedNonPeerDependencies": [
+    "@openmfp/portal-ui-lib"
+  ]
 }

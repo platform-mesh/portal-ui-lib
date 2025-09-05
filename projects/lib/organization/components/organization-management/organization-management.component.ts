@@ -5,12 +5,14 @@ import {
   ViewEncapsulation,
   effect,
   inject,
-  signal
+  signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { LuigiContextService } from '@luigi-project/client-support-angular';
 import {
+  AuthConfigService,
+  AuthService,
   EnvConfigService,
   I18nService,
   LuigiCoreService,
@@ -18,7 +20,7 @@ import {
   ResourceDefinition,
   ResourceNodeContext,
   ResourceService,
-  generateGraphQLFields
+  generateGraphQLFields,
 } from '@openmfp/portal-ui-lib';
 import {
   ButtonComponent,
@@ -50,9 +52,15 @@ export class OrganizationManagementComponent implements OnInit {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
   private envConfigService = inject(EnvConfigService);
+  private authService = inject(AuthService);
+  private authConfigService = inject(AuthConfigService);
   private contextService = inject(LuigiContextService);
 
-  context = toSignal(this.contextService.contextObservable().pipe(map((context) => context.context as ResourceNodeContext)));
+  context = toSignal(
+    this.contextService
+      .contextObservable()
+      .pipe(map((context) => context.context as ResourceNodeContext)),
+  );
   texts: any = {};
   organizations = signal<string[]>([]);
   organizationToSwitch: string;
@@ -68,7 +76,7 @@ export class OrganizationManagementComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.readOrganizations();
   }
 
