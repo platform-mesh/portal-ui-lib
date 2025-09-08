@@ -12,4 +12,10 @@ module.exports = {
       statements: -16,
     },
   },
+  moduleNameMapper: {
+    '^@platform-mesh/portal-ui-lib$': '<rootDir>/projects/lib/public-api.ts',
+    '^@platform-mesh/portal-ui-lib/services$': '<rootDir>/projects/lib/services/public-api.ts',
+    '^@platform-mesh/portal-ui-lib/utils$': '<rootDir>/projects/lib/utils/public-api.ts',
+    '^@platform-mesh/portal-ui-lib/(.*)': '<rootDir>/projects/lib/$1',
+  },
 };

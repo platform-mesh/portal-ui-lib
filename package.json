@@ -16,8 +16,7 @@
   },
   "prettier": "@openmfp/config-prettier",
   "dependencies": {
-    "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular-builders/jest": "^20.0.0",
@@ -28,7 +27,7 @@
     "@angular/compiler-cli": "^20.2.1",
     "@angular/localize": "^20.2.1",
     "@briebug/jest-schematic": "^6.0.0",
-    "@openmfp/portal-ui-lib": "file:.yalc/@openmfp/portal-ui-lib",
+    "@openmfp/portal-ui-lib": "^0.176.0",
     "@types/jest": "^30.0.0",
     "@types/jmespath": "0.15.2",
     "@types/jsonpath": "^0.2.4",

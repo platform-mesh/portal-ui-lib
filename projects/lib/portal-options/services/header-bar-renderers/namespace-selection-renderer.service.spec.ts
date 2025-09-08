@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
-import { AuthService, LuigiCoreService, ResourceService } from '@openmfp/portal-ui-lib';
 import { NamespaceSelectionRendererService } from './namespace-selection-renderer.service';
 
 jest.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}), { virtual: true });

@@ -1,7 +1,7 @@
+import { TestBed } from '@angular/core/testing';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeChangeHookConfigServiceImpl } from './node-change-hook-config.service';
-import { TestBed } from '@angular/core/testing';
-import { GatewayService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 
 describe('NodeChangeHookConfigServiceImpl', () => {
   let service: NodeChangeHookConfigServiceImpl;

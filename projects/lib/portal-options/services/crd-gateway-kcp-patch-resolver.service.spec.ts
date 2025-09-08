@@ -1,12 +1,11 @@
+import { TestBed } from '@angular/core/testing';
+import {
+  EnvConfigService
+} from '@openmfp/portal-ui-lib';
+import { GatewayService } from '@platform-mesh/portal-ui-lib/services/resource';
 import { kcpRootOrgsPath } from '../models/constants';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
-import { TestBed } from '@angular/core/testing';
-import {
-  EnvConfigService,
-  GatewayService,
-  LuigiCoreService,
-} from '@openmfp/portal-ui-lib';
 
 describe('CrdGatewayKcpPatchResolver', () => {
   let resolver: CrdGatewayKcpPatchResolver;
