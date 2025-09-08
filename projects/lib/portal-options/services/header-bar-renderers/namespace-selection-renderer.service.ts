@@ -7,10 +7,9 @@ import {
   LuigiNode,
   PortalConfig,
   Resource,
-  ResourceNodeContext,
-  ResourceService,
-  generateGraphQLFields,
 } from '@openmfp/portal-ui-lib';
+import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
 import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, of } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
