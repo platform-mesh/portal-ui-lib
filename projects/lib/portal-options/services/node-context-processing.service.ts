@@ -1,13 +1,13 @@
-import { PortalNodeContext } from '../models/luigi-context';
-import { PortalLuigiNode } from '../models/luigi-node';
-import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import {
   NodeContextProcessingService,
-  ResourceService,
-  replaceDotsAndHyphensWithUnderscores,
 } from '@openmfp/portal-ui-lib';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
+import { PortalNodeContext } from '../models/luigi-context';
+import { PortalLuigiNode } from '../models/luigi-node';
+import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 
 @Injectable({
   providedIn: 'root',

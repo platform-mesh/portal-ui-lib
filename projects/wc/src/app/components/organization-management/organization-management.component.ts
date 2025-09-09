@@ -5,21 +5,19 @@ import {
   ViewEncapsulation,
   effect,
   inject,
-  signal
+  input,
+  signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LuigiContextService } from '@luigi-project/client-support-angular';
+import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   EnvConfigService,
   I18nService,
-  LuigiCoreService,
   Resource,
-  ResourceDefinition,
-  ResourceNodeContext,
-  ResourceService,
-  generateGraphQLFields
+  ResourceDefinition
 } from '@openmfp/portal-ui-lib';
+import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
 import {
   ButtonComponent,
   InputComponent,
@@ -27,7 +25,7 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
-import { map } from 'rxjs';
+
 
 @Component({
   selector: 'organization-management',
@@ -48,11 +46,10 @@ import { map } from 'rxjs';
 export class OrganizationManagementComponent implements OnInit {
   private i18nService = inject(I18nService);
   private resourceService = inject(ResourceService);
-  private luigiCoreService = inject(LuigiCoreService);
   private envConfigService = inject(EnvConfigService);
-  private contextService = inject(LuigiContextService);
+  context = input<ResourceNodeContext>();
+  LuigiClient = input<LuigiClient>();
 
-  context = toSignal(this.contextService.contextObservable().pipe(map((context) => context.context as ResourceNodeContext)));
   texts: any = {};
   organizations = signal<string[]>([]);
   organizationToSwitch: string;
@@ -93,7 +90,7 @@ export class OrganizationManagementComponent implements OnInit {
               .map((o) => o.metadata.name)
               .filter(
                 (o) =>
-                  o !== this.luigiCoreService.getGlobalContext().organization,
+                  o !== this.context()['organization']
               ),
           );
         },
@@ -124,13 +121,13 @@ export class OrganizationManagementComponent implements OnInit {
           ]);
           this.organizationToSwitch = this.newOrganization;
           this.newOrganization = '';
-          this.luigiCoreService.showAlert({
+          this.LuigiClient().uxManager().showAlert({
             text: 'New organization has been created, select it from the list to switch to it.',
             type: 'info',
           });
         },
         error: (error) => {
-          this.luigiCoreService.showAlert({
+          this.LuigiClient().uxManager().showAlert({
             text: `Failure! Could not create organization: ${resource.metadata.name}.`,
             type: 'error',
           });
@@ -186,7 +183,7 @@ export class OrganizationManagementComponent implements OnInit {
     const sanitizedOrg = this.sanitizeSubdomainInput(this.organizationToSwitch);
 
     if (!sanitizedOrg) {
-      this.luigiCoreService.showAlert({
+      this.LuigiClient().uxManager().showAlert({
         text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
         type: 'error',
       });

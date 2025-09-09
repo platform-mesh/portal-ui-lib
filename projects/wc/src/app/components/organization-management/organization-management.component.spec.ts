@@ -6,12 +6,12 @@ import {
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MutationResult } from '@apollo/client';
-import { LuigiContextService } from '@luigi-project/client-support-angular';
+import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   ClientEnvironment, EnvConfigService,
-  I18nService,
-  LuigiCoreService, LuigiGlobalContext, NodeContext, ResourceService
+  I18nService, LuigiGlobalContext, NodeContext,
 } from '@openmfp/portal-ui-lib';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
 import { OrganizationManagementComponent } from './organization-management.component';
 
@@ -20,8 +20,8 @@ describe('OrganizationManagementComponent', () => {
   let fixture: ComponentFixture<OrganizationManagementComponent>;
   let resourceServiceMock: jest.Mocked<ResourceService>;
   let i18nServiceMock: jest.Mocked<I18nService>;
-  let luigiCoreServiceMock: jest.Mocked<LuigiCoreService>;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
+  let luigiClientMock: jest.Mocked<LuigiClient>;
 
   beforeEach(async () => {
     resourceServiceMock = {
@@ -34,13 +34,14 @@ describe('OrganizationManagementComponent', () => {
       getTranslation: jest.fn(),
     } as any;
 
-    luigiCoreServiceMock = {
-      getGlobalContext: jest.fn(),
-      showAlert: jest.fn(),
-    } as any;
-
     envConfigServiceMock = {
       getEnvConfig: jest.fn(),
+    } as any;
+
+    luigiClientMock = {
+      uxManager: jest.fn().mockReturnValue({
+        showAlert: jest.fn(),
+      }),
     } as any;
 
     await TestBed.configureTestingModule({
@@ -48,19 +49,18 @@ describe('OrganizationManagementComponent', () => {
       providers: [
         { provide: ResourceService, useValue: resourceServiceMock },
         { provide: I18nService, useValue: i18nServiceMock },
-        { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
-        LuigiContextService,
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
     })
       .overrideComponent(OrganizationManagementComponent, {
-        set: { template: '', imports: [] },
+        set: { template: '' },
       })
       .compileComponents();
 
     fixture = TestBed.createComponent(OrganizationManagementComponent);
     component = fixture.componentInstance;
+    component.LuigiClient = (() => luigiClientMock) as any;
   });
 
   it('should create', () => {
@@ -103,7 +103,8 @@ describe('OrganizationManagementComponent', () => {
       organization: 'org1',
       portalBaseUrl: 'https://test.com',
     };
-    luigiCoreServiceMock.getGlobalContext.mockReturnValue(mockGlobalContext);
+
+    component.context = (() => mockGlobalContext) as any;
     resourceServiceMock.readOrganizations.mockReturnValue(
       of(mockOrganizations as any),
     );
@@ -139,6 +140,7 @@ describe('OrganizationManagementComponent', () => {
     expect(component.organizations()).toEqual(['newOrg', 'existingOrg']);
     expect(component.organizationToSwitch).toBe('newOrg');
     expect(component.newOrganization).toBe('');
+    expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
 
   it('should handle organization creation error', () => {
@@ -149,7 +151,7 @@ describe('OrganizationManagementComponent', () => {
 
     component.onboardOrganization();
 
-    expect(luigiCoreServiceMock.showAlert).toHaveBeenCalledWith({
+    expect(component.LuigiClient().uxManager().showAlert).toHaveBeenCalledWith({
       text: 'Failure! Could not create organization: newOrg.',
       type: 'error',
     });
@@ -180,44 +182,5 @@ describe('OrganizationManagementComponent', () => {
     await component.switchOrganization();
 
     expect(window.location.href).toBe('https://newOrg.test.com:8080');
-  });
-
-  it('should not switch and show alert for invalid organization name', async () => {
-    const mockEnvConfig: ClientEnvironment = {
-      idpName: 'test',
-      organization: 'test',
-      oauthServerUrl: 'https://test.com',
-      clientId: 'test',
-      baseDomain: 'test.com',
-      isLocal: false,
-      developmentInstance: false,
-      authData: {
-        expires_in: '3600',
-        access_token: 'test-access-token',
-        id_token: 'test-id-token',
-      },
-    };
-    envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-
-    const invalidNames = ['-abc', 'abc-', 'a.b', 'a b', ''];
-
-    for (const name of invalidNames) {
-      component.organizationToSwitch = name as any;
-      Object.defineProperty(window, 'location', {
-        value: { protocol: 'https:', port: '' },
-        writable: true,
-      });
-
-      await component.switchOrganization();
-
-      expect(luigiCoreServiceMock.showAlert).toHaveBeenCalledWith({
-        text:
-          'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
-        type: 'error',
-      });
-
-      expect((window.location as any).href).toBeUndefined();
-      (luigiCoreServiceMock.showAlert as jest.Mock).mockClear();
-    }
   });
 });

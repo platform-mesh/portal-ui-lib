@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { EnvConfigService, GatewayService } from '@openmfp/portal-ui-lib';
+import { EnvConfigService } from '@openmfp/portal-ui-lib';
+import { GatewayService } from '@platform-mesh/portal-ui-lib/services';
 import { kcpRootOrgsPath } from '../models/constants';
 import { PortalLuigiNode } from '../models/luigi-node';
 

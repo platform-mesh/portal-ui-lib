@@ -3,8 +3,8 @@ import {
   AuthService,
   ConfigService,
   EnvConfigService,
-  ResourceService,
 } from '@openmfp/portal-ui-lib';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
 import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 

@@ -4,8 +4,8 @@ import {
   ConfigService,
   EnvConfigService,
   LuigiExtendedGlobalContextConfigService,
-  ResourceService,
 } from '@openmfp/portal-ui-lib';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
