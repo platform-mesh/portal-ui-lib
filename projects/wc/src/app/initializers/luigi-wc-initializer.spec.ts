@@ -1,10 +1,11 @@
-import { ApplicationInitStatus, Injector } from '@angular/core';
+import { ApplicationInitStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { provideLuigiWebComponents } from './luigi-wc-initializer';
-import { ListViewComponent } from '../components/generic-ui/list-view/list-view.component';
 import { DetailViewComponent } from '../components/generic-ui/detail-view/detail-view.component';
+import { ListViewComponent } from '../components/generic-ui/list-view/list-view.component';
+import { provideLuigiWebComponents } from './luigi-wc-initializer';
 
+import { OrganizationManagementComponent } from '../components/organization-management/organization-management.component';
 import * as wc from '../utils/wc';
 
 describe('provideLuigiWebComponents', () => {
@@ -26,6 +27,7 @@ describe('provideLuigiWebComponents', () => {
     const expectedMap = {
       'generic-list-view': ListViewComponent,
       'generic-detail-view': DetailViewComponent,
+      'organization-management': OrganizationManagementComponent,
     } as Record<string, any>;
 
     // Validate first arg equals the components map

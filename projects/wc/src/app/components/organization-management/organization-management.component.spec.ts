@@ -9,8 +9,7 @@ import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   ClientEnvironment, EnvConfigService,
-  I18nService,
-  LuigiCoreService, LuigiGlobalContext, NodeContext,
+  I18nService, LuigiGlobalContext, NodeContext,
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
@@ -21,7 +20,6 @@ describe('OrganizationManagementComponent', () => {
   let fixture: ComponentFixture<OrganizationManagementComponent>;
   let resourceServiceMock: jest.Mocked<ResourceService>;
   let i18nServiceMock: jest.Mocked<I18nService>;
-  let luigiCoreServiceMock: jest.Mocked<LuigiCoreService>;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
   let luigiClientMock: jest.Mocked<LuigiClient>;
 
@@ -34,11 +32,6 @@ describe('OrganizationManagementComponent', () => {
     i18nServiceMock = {
       translationTable: {},
       getTranslation: jest.fn(),
-    } as any;
-
-    luigiCoreServiceMock = {
-      getGlobalContext: jest.fn(),
-      showAlert: jest.fn(),
     } as any;
 
     envConfigServiceMock = {
@@ -56,7 +49,6 @@ describe('OrganizationManagementComponent', () => {
       providers: [
         { provide: ResourceService, useValue: resourceServiceMock },
         { provide: I18nService, useValue: i18nServiceMock },
-        { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
@@ -111,7 +103,8 @@ describe('OrganizationManagementComponent', () => {
       organization: 'org1',
       portalBaseUrl: 'https://test.com',
     };
-    luigiCoreServiceMock.getGlobalContext.mockReturnValue(mockGlobalContext);
+
+    component.context = (() => mockGlobalContext) as any;
     resourceServiceMock.readOrganizations.mockReturnValue(
       of(mockOrganizations as any),
     );
@@ -158,7 +151,7 @@ describe('OrganizationManagementComponent', () => {
 
     component.onboardOrganization();
 
-    expect(luigiCoreServiceMock.showAlert).toHaveBeenCalledWith({
+    expect(component.LuigiClient().uxManager().showAlert).toHaveBeenCalledWith({
       text: 'Failure! Could not create organization: newOrg.',
       type: 'error',
     });

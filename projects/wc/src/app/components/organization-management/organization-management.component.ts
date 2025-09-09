@@ -13,9 +13,8 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   EnvConfigService,
   I18nService,
-  LuigiCoreService,
   Resource,
-  ResourceDefinition,
+  ResourceDefinition
 } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
@@ -47,7 +46,6 @@ import {
 export class OrganizationManagementComponent implements OnInit {
   private i18nService = inject(I18nService);
   private resourceService = inject(ResourceService);
-  private luigiCoreService = inject(LuigiCoreService);
   private envConfigService = inject(EnvConfigService);
   context = input<ResourceNodeContext>();
   LuigiClient = input<LuigiClient>();
@@ -92,7 +90,7 @@ export class OrganizationManagementComponent implements OnInit {
               .map((o) => o.metadata.name)
               .filter(
                 (o) =>
-                  o !== this.luigiCoreService.getGlobalContext().organization,
+                  o !== this.context()['organization']
               ),
           );
         },
@@ -129,7 +127,7 @@ export class OrganizationManagementComponent implements OnInit {
           });
         },
         error: (error) => {
-          this.luigiCoreService.showAlert({
+          this.LuigiClient().uxManager().showAlert({
             text: `Failure! Could not create organization: ${resource.metadata.name}.`,
             type: 'error',
           });
@@ -185,7 +183,7 @@ export class OrganizationManagementComponent implements OnInit {
     const sanitizedOrg = this.sanitizeSubdomainInput(this.organizationToSwitch);
 
     if (!sanitizedOrg) {
-      this.luigiCoreService.showAlert({
+      this.LuigiClient().uxManager().showAlert({
         text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
         type: 'error',
       });
