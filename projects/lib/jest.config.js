@@ -2,8 +2,9 @@ const path = require('path');
 
 module.exports = {
   displayName: 'lib',
+  roots: [__dirname],
+  testMatch: ['**/*.spec.ts'],
   coverageDirectory: path.resolve(__dirname, '../../coverage/lib'),
-  setupFilesAfterEnv: [`${__dirname}/jest.setup.ts`],
   coverageThreshold: {
     global: {
       branches: 67,

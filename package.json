@@ -12,7 +12,9 @@
     "build:wc:dev": "ng build wc --configuration development && npm run build:wc:rename && npm run build:wc:copy",
     "build:watch": "mkdirp dist && nodemon --ignore dist --ignore dist-wc --ext js,yml,yaml,ts,html,css,scss,json,md --exec \"rimraf dist && npm run build:dev && cd dist && yalc publish --push --sig\"",
     "watch": "npm run build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:lib": "ng test lib",
+    "test:wc": "ng test wc"
   },
   "prettier": "@openmfp/config-prettier",
   "dependencies": {
