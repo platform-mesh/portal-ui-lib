@@ -7,16 +7,25 @@ module.exports = {
   coverageDirectory: path.resolve(__dirname, '../../coverage/lib'),
   coverageThreshold: {
     global: {
-      branches: 67,
+      branches: 90,
       functions: 95,
-      lines: 91,
-      statements: -16,
+      lines: 95,
+      statements: -3,
     },
   },
   moduleNameMapper: {
-    '^@platform-mesh/portal-ui-lib$': '<rootDir>/projects/lib/public-api.ts',
-    '^@platform-mesh/portal-ui-lib/services$': '<rootDir>/projects/lib/services/public-api.ts',
-    '^@platform-mesh/portal-ui-lib/utils$': '<rootDir>/projects/lib/utils/public-api.ts',
-    '^@platform-mesh/portal-ui-lib/(.*)': '<rootDir>/projects/lib/$1',
+    '^@platform-mesh/portal-ui-lib$': path.resolve(
+      __dirname,
+      './public-api.ts',
+    ),
+    '^@platform-mesh/portal-ui-lib/services$': path.resolve(
+      __dirname,
+      './services/public-api.ts',
+    ),
+    '^@platform-mesh/portal-ui-lib/utils$': path.resolve(
+      __dirname,
+      './utils/public-api.ts',
+    ),
+    '^@platform-mesh/portal-ui-lib/(.*)': path.resolve(__dirname, './$1'),
   },
 };

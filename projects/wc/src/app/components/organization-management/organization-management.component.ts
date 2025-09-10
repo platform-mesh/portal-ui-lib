@@ -14,9 +14,12 @@ import {
   EnvConfigService,
   I18nService,
   Resource,
-  ResourceDefinition
+  ResourceDefinition,
 } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
 import {
   ButtonComponent,
@@ -25,7 +28,6 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
-
 
 @Component({
   selector: 'organization-management',
@@ -88,10 +90,7 @@ export class OrganizationManagementComponent implements OnInit {
           this.organizations.set(
             result['Accounts']
               .map((o) => o.metadata.name)
-              .filter(
-                (o) =>
-                  o !== this.context()['organization']
-              ),
+              .filter((o) => o !== this.context().organization),
           );
         },
       });
@@ -126,11 +125,13 @@ export class OrganizationManagementComponent implements OnInit {
             type: 'info',
           });
         },
-        error: (error) => {
-          this.LuigiClient().uxManager().showAlert({
-            text: `Failure! Could not create organization: ${resource.metadata.name}.`,
-            type: 'error',
-          });
+        error: (_error) => {
+          this.LuigiClient()
+            .uxManager()
+            .showAlert({
+              text: `Failure! Could not create organization: ${resource.metadata.name}.`,
+              type: 'error',
+            });
         },
       });
   }
@@ -163,7 +164,7 @@ export class OrganizationManagementComponent implements OnInit {
     };
   }
 
-    /**
+  /**
    * Allows only valid subdomain values: alphanumeric, hyphens, no periods, cannot start/end with hyphen, min 1 character.
    * Returns sanitized string or null if invalid.
    */

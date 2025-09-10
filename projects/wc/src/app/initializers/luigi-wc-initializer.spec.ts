@@ -1,18 +1,13 @@
-jest.mock('../components/generic-ui/detail-view/detail-view.component', () => ({
-  DetailViewComponent: class DetailViewComponent {},
-}));
-jest.mock('../components/generic-ui/list-view/list-view.component', () => ({
-  ListViewComponent: class ListViewComponent {},
-}));
-jest.mock('../components/organization-management/organization-management.component', () => ({
-  OrganizationManagementComponent: class OrganizationManagementComponent {},
-}));
-
+import {
+  DetailViewComponent,
+  ListViewComponent,
+  OrganizationManagementComponent,
+  WelcomeComponent,
+} from '../components';
+import * as wc from '../utils/wc';
+import { provideLuigiWebComponents } from './luigi-wc-initializer';
 import { ApplicationInitStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-
-import { provideLuigiWebComponents } from './luigi-wc-initializer';
-import * as wc from '../utils/wc';
 
 describe('provideLuigiWebComponents', () => {
   beforeEach(() => {
@@ -30,11 +25,15 @@ describe('provideLuigiWebComponents', () => {
 
     expect(spy).toHaveBeenCalledTimes(1);
 
-    const componentsMap = spy.mock.calls[0][0] as Record<string, any>;
-    expect(componentsMap).toBeTruthy();
-    expect(Object.keys(componentsMap).sort()).toEqual(
-      ['generic-detail-view', 'generic-list-view', 'organization-management'].sort(),
-    );
+    const expectedMap = {
+      'generic-list-view': ListViewComponent,
+      'generic-detail-view': DetailViewComponent,
+      'organization-management': OrganizationManagementComponent,
+      'welcome-view': WelcomeComponent,
+    } as Record<string, any>;
+
+    // Validate first arg equals the components map
+    expect(spy.mock.calls[0][0]).toEqual(expectedMap);
 
     // Validate second arg looks like an Injector
     const passedInjector = spy.mock.calls[0][1];
