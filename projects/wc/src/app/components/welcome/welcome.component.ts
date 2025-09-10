@@ -1,7 +1,8 @@
 import { OrganizationManagementComponent } from '../organization-management/organization-management.component';
 import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { I18nService, ResourceNodeContext } from '@openmfp/portal-ui-lib';
+import { I18nService } from '@openmfp/portal-ui-lib';
+import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 
 @Component({
   selector: 'app-welcome',
