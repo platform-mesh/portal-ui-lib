@@ -15,7 +15,10 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
         hideFromNav: true,
         hideSideNav: true,
         order: '1001',
-        viewUrl: '/organization-management',
+        viewUrl: '/assets/platform-mesh-portal-ui-wc.js#organization-management',
+        webcomponent: {
+          selfRegistered: true,
+        },
         context: {
           translationTable: this.i18nService.translationTable,
           kcpPath: kcpRootOrgsPath,
