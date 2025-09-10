@@ -1,8 +1,8 @@
+import { kcpRootOrgsPath } from '../models/constants';
+import { PortalLuigiNode } from '../models/luigi-node';
 import { Injectable, inject } from '@angular/core';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { GatewayService } from '@platform-mesh/portal-ui-lib/services';
-import { kcpRootOrgsPath } from '../models/constants';
-import { PortalLuigiNode } from '../models/luigi-node';
 
 @Injectable({ providedIn: 'root' })
 export class CrdGatewayKcpPatchResolver {
@@ -29,7 +29,7 @@ export class CrdGatewayKcpPatchResolver {
       node = node?.parent;
     } while (node);
 
-    const org = (await this.envConfigService.getEnvConfig())['organization'];
+    const org = (await this.envConfigService.getEnvConfig()).idpName;
     const kcpPath =
       nextNode.context?.kcpPath || `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
     this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);
@@ -46,7 +46,7 @@ export class CrdGatewayKcpPatchResolver {
       node = node.parent;
     } while (node);
 
-    const org = (await this.envConfigService.getEnvConfig())['organization'];
+    const org = (await this.envConfigService.getEnvConfig()).idpName;
     const kcpPath =
       nextNode.context?.kcpPath || `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
     this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);

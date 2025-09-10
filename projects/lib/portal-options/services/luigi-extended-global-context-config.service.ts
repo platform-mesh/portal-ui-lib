@@ -19,9 +19,7 @@ export class LuigiExtendedGlobalContextConfigServiceImpl
 
   async createLuigiExtendedGlobalContext(): Promise<Record<string, any>> {
     const portalConfig = await this.configService.getPortalConfig();
-    const entityId = (await this.envConfigService.getEnvConfig())[
-      'organization'
-    ];
+    const entityId = (await this.envConfigService.getEnvConfig()).idpName;
     const operation = 'core_platform_mesh_io';
 
     try {
