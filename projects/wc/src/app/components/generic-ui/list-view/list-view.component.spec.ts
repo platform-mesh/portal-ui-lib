@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { ListViewComponent } from './list-view.component';
 
 describe('ListViewComponent', () => {
@@ -67,23 +67,10 @@ describe('ListViewComponent', () => {
     expect(component.resources().length).toBeGreaterThan(0);
   });
 
-  it('should delete a resource', () => {
-    const resource = { metadata: { name: 'test' } };
-    const event = { stopPropagation: jest.fn() };
-
-    component.delete(event, resource as any);
-    expect(mockResourceService.delete).toHaveBeenCalled();
-  });
-
-  it('should show alert on delete error', () => {
-    mockResourceService.delete.mockReturnValueOnce(
-      throwError(() => new Error()),
-    );
-    const resource = { metadata: { name: 'test' } };
-    const event = { stopPropagation: jest.fn() };
-
-    component.delete(event, resource as any);
-    expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
+  it('should not show alert when delete is called (no backend call)', () => {
+    const resource = { metadata: { name: 'test' } } as any;
+    component.delete(resource);
+    expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
   });
 
   it('should create a resource', () => {
