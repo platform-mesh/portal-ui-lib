@@ -1,12 +1,13 @@
+import {
+  DetailViewComponent,
+  ListViewComponent,
+  OrganizationManagementComponent,
+  WelcomeComponent,
+} from '../components';
+import * as wc from '../utils/wc';
+import { provideLuigiWebComponents } from './luigi-wc-initializer';
 import { ApplicationInitStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-
-import { DetailViewComponent } from '../components/generic-ui/detail-view/detail-view.component';
-import { ListViewComponent } from '../components/generic-ui/list-view/list-view.component';
-import { provideLuigiWebComponents } from './luigi-wc-initializer';
-
-import { OrganizationManagementComponent } from '../components/organization-management/organization-management.component';
-import * as wc from '../utils/wc';
 
 describe('provideLuigiWebComponents', () => {
   beforeEach(() => {
@@ -28,6 +29,7 @@ describe('provideLuigiWebComponents', () => {
       'generic-list-view': ListViewComponent,
       'generic-detail-view': DetailViewComponent,
       'organization-management': OrganizationManagementComponent,
+      'welcome-view': WelcomeComponent,
     } as Record<string, any>;
 
     // Validate first arg equals the components map

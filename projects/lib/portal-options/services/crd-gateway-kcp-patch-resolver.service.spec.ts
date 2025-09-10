@@ -1,11 +1,9 @@
-import { TestBed } from '@angular/core/testing';
-import {
-  EnvConfigService
-} from '@openmfp/portal-ui-lib';
-import { GatewayService } from '@platform-mesh/portal-ui-lib/services/resource';
 import { kcpRootOrgsPath } from '../models/constants';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
+import { TestBed } from '@angular/core/testing';
+import { EnvConfigService } from '@openmfp/portal-ui-lib';
+import { GatewayService } from '@platform-mesh/portal-ui-lib/services/resource';
 
 describe('CrdGatewayKcpPatchResolver', () => {
   let resolver: CrdGatewayKcpPatchResolver;
@@ -15,7 +13,7 @@ describe('CrdGatewayKcpPatchResolver', () => {
   beforeEach(() => {
     gatewayServiceMock = { updateCrdGatewayUrlWithEntityPath: jest.fn() };
     envConfigServiceMock = {
-      getEnvConfig: jest.fn().mockResolvedValue({ organization: 'org1' }),
+      getEnvConfig: jest.fn().mockResolvedValue({ idpName: 'org1' }),
     } as any;
 
     TestBed.configureTestingModule({
@@ -88,7 +86,10 @@ describe('CrdGatewayKcpPatchResolver', () => {
 
   describe('resolveCrdGatewayKcpPathForNextAccountEntity', () => {
     it('should return early if kind is not Account', async () => {
-      const nextNode: PortalLuigiNode = { context: {}, parent: undefined } as any;
+      const nextNode: PortalLuigiNode = {
+        context: {},
+        parent: undefined,
+      } as any;
 
       await resolver.resolveCrdGatewayKcpPathForNextAccountEntity(
         'leafAcc',
@@ -96,12 +97,17 @@ describe('CrdGatewayKcpPatchResolver', () => {
         nextNode,
       );
 
-      expect(gatewayServiceMock.updateCrdGatewayUrlWithEntityPath).not.toHaveBeenCalled();
+      expect(
+        gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
+      ).not.toHaveBeenCalled();
       expect(envConfigServiceMock.getEnvConfig).not.toHaveBeenCalled();
     });
 
     it('should return early if entityId is empty', async () => {
-      const nextNode: PortalLuigiNode = { context: {}, parent: undefined } as any;
+      const nextNode: PortalLuigiNode = {
+        context: {},
+        parent: undefined,
+      } as any;
 
       await resolver.resolveCrdGatewayKcpPathForNextAccountEntity(
         '',
@@ -109,7 +115,9 @@ describe('CrdGatewayKcpPatchResolver', () => {
         nextNode,
       );
 
-      expect(gatewayServiceMock.updateCrdGatewayUrlWithEntityPath).not.toHaveBeenCalled();
+      expect(
+        gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
+      ).not.toHaveBeenCalled();
       expect(envConfigServiceMock.getEnvConfig).not.toHaveBeenCalled();
     });
 
@@ -117,11 +125,17 @@ describe('CrdGatewayKcpPatchResolver', () => {
       const nextNode: PortalLuigiNode = {
         context: {},
         parent: {
-          context: { entity: { metadata: { name: 'acc2' }, __typename: 'Account' } },
+          context: {
+            entity: { metadata: { name: 'acc2' }, __typename: 'Account' },
+          },
           parent: {
-            context: { entity: { metadata: { name: 'team1' }, __typename: 'Team' } },
+            context: {
+              entity: { metadata: { name: 'team1' }, __typename: 'Team' },
+            },
             parent: {
-              context: { entity: { metadata: { name: 'acc1' }, __typename: 'Account' } },
+              context: {
+                entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+              },
               parent: undefined,
             },
           },
@@ -144,7 +158,9 @@ describe('CrdGatewayKcpPatchResolver', () => {
       const nextNode: PortalLuigiNode = {
         context: { kcpPath: 'overridePath' },
         parent: {
-          context: { entity: { metadata: { name: 'accParent' }, __typename: 'Account' } },
+          context: {
+            entity: { metadata: { name: 'accParent' }, __typename: 'Account' },
+          },
           parent: undefined,
         },
       } as any;

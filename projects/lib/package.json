@@ -4,6 +4,7 @@
   "dependencies": {
     "tslib": "^2.3.0"
   },
+  "prettier": "@openmfp/config-prettier",
   "peerDependencies": {
     "@openmfp/portal-ui-lib": ">=0.177.0",
     "@angular/common": "^19.0.0 || ^20.0.0",

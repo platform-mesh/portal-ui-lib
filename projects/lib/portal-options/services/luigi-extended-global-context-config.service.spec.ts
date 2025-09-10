@@ -1,3 +1,4 @@
+import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 import { TestBed } from '@angular/core/testing';
 import {
   AuthService,
@@ -6,7 +7,6 @@ import {
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 
 describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
   let service: LuigiExtendedGlobalContextConfigServiceImpl;
@@ -62,7 +62,7 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
       },
     } as any;
     const mockEnvConfig = {
-      organization: 'test-org',
+      idpName: 'test-org',
     } as any;
     const mockResource = {
       metadata: {
@@ -103,7 +103,7 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
       },
     } as any;
     const mockEnvConfig = {
-      organization: 'test-org',
+      idpName: 'test-org',
     } as any;
     const mockResource = {
       metadata: {},
@@ -135,7 +135,7 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
       },
     } as any;
     const mockEnvConfig = {
-      organization: 'test-org',
+      idpName: 'test-org',
     } as any;
     const mockToken = 'mock-token';
 
