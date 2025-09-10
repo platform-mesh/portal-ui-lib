@@ -1,9 +1,12 @@
 const path = require('path');
 
 module.exports = {
+  preset: 'jest-preset-angular',
+  testRunner: 'jest-jasmine2',
   displayName: 'wc',
   roots: [__dirname],
   testMatch: ['**/*.spec.ts'],
+  testEnvironment: 'jsdom',
   coverageDirectory: path.resolve(__dirname, '../../coverage/wc'),
   collectCoverageFrom: [
     '!<rootDir>/projects/wc/**/*.spec.ts',
