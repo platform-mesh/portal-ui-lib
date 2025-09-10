@@ -4,4 +4,3 @@ export * from './services/luigi-extended-global-context-config.service';
 export * from './services/node-change-hook-config.service';
 export * from './services/node-context-processing.service';
 export * from './services/user-profile-config.service';
-export * from './services/user-profile-config.service'
