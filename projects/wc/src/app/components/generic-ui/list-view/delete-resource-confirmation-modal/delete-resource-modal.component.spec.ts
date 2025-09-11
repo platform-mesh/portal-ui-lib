@@ -182,4 +182,23 @@ describe('DeleteResourceModalComponent', () => {
     fixture.detectChanges();
     expect(mockDialog.open).toBeFalsy();
   });
+
+  it('should reset control state on close (pristine, untouched, revalidated)', () => {
+    component.open(resource);
+    const control = component.form.controls['resource'];
+    control.setValue('wrong');
+    control.markAsTouched();
+    control.markAsDirty();
+    fixture.detectChanges();
+    expect(control.invalid).toBeTruthy();
+
+    component.close();
+    fixture.detectChanges();
+
+    expect(control.value).toBeNull();
+    expect(control.pristine).toBeTruthy();
+    expect(control.touched).toBeFalsy();
+    expect(control.invalid).toBeTruthy();
+    expect(control.hasError('invalidResource')).toBeTruthy();
+  });
 });

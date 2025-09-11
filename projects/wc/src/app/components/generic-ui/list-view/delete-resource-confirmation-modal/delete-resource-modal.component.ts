@@ -16,6 +16,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Resource } from '@openmfp/portal-ui-lib';
+import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import {
   BarComponent,
   DialogComponent,
@@ -26,7 +27,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import {ResourceNodeContext} from '@platform-mesh/portal-ui-lib/services';
 
 @Component({
   selector: 'delete-resource-modal',
@@ -58,13 +58,6 @@ export class DeleteResourceModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
-    this.form.controls.resource.valueChanges.subscribe((value) => {
-      if (!value || this.innerResource()?.metadata?.name !== value) {
-        this.form.controls.resource.setErrors({ invalidResource: true });
-      } else {
-        this.form.controls.resource.setErrors(null);
-      }
-    });
   }
 
   open(resource: Resource): void {
@@ -72,6 +65,7 @@ export class DeleteResourceModalComponent implements OnInit {
     if (dialog) {
       dialog.open = true;
       this.innerResource.set(resource);
+      this.form?.controls?.resource?.updateValueAndValidity();
     }
   }
 
@@ -79,6 +73,9 @@ export class DeleteResourceModalComponent implements OnInit {
     const dialog = this.dialog();
     if (dialog) {
       this.form.controls.resource.setValue(null);
+      this.form.controls.resource.markAsPristine();
+      this.form.controls.resource.markAsUntouched();
+      this.form.controls.resource.updateValueAndValidity();
       dialog.open = false;
     }
   }
@@ -107,8 +104,22 @@ export class DeleteResourceModalComponent implements OnInit {
   }
 
   private createControls() {
+    const resourceNameValidator = () => {
+      return (control: FormControl) => {
+        const expected = this.innerResource()?.metadata?.name?.toLowerCase();
+        const value = (control.value ?? '').toString().toLowerCase();
+        if (!value || !expected || value !== expected) {
+          return { invalidResource: true };
+        }
+        return null;
+      };
+    };
+
     return {
-      resource: new FormControl(null, Validators.required),
+      resource: new FormControl(null, [
+        Validators.required,
+        resourceNameValidator(),
+      ]),
     };
   }
 }
