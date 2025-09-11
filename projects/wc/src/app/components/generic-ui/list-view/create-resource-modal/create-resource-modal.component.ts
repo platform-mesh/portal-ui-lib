@@ -1,5 +1,10 @@
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 import {
+  CreateOnlyResourceFieldNames,
+  DialogHeaderText,
+  DialogMode,
+} from './create-resource-modal.enums';
+import {
   Component,
   OnInit,
   ViewEncapsulation,
@@ -58,7 +63,7 @@ export class CreateResourceModalComponent implements OnInit {
   fb = inject(FormBuilder);
   form: FormGroup;
 
-  private mode = signal<'create' | 'edit'>('create');
+  private mode = signal<DialogMode>(DialogMode.Create);
   private originalResource = signal<Resource | null>(null);
 
   ngOnInit(): void {
@@ -66,17 +71,17 @@ export class CreateResourceModalComponent implements OnInit {
   }
 
   open() {
-    this.mode.set('create');
+    this.mode.set(DialogMode.Create);
     this.originalResource.set(null);
     const dialog = this.dialog();
     if (dialog) {
-      dialog.headerText = 'Create';
+      dialog.headerText = DialogHeaderText.Create;
       dialog.open = true;
     }
   }
 
   openForEdit(resource: Resource) {
-    this.mode.set('edit');
+    this.mode.set(DialogMode.Edit);
     this.originalResource.set(resource);
 
     const flds = this.fields();
@@ -99,7 +104,7 @@ export class CreateResourceModalComponent implements OnInit {
 
     const dialog = this.dialog();
     if (dialog) {
-      dialog.headerText = 'Edit';
+      dialog.headerText = DialogHeaderText.Edit;
       dialog.open = true;
     }
   }
@@ -110,7 +115,7 @@ export class CreateResourceModalComponent implements OnInit {
       dialog.open = false;
       this.form.reset();
       this.setNameNamespaceDisabled(false);
-      this.mode.set('create');
+      this.mode.set(DialogMode.Create);
       this.originalResource.set(null);
     }
   }
@@ -122,7 +127,7 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      if (this.mode() === 'edit') {
+      if (this.mode() === DialogMode.Edit) {
         const orig = this.originalResource();
         if (orig?.metadata) {
           result['metadata'] = { ...orig.metadata, ...result['metadata'] };
@@ -133,18 +138,6 @@ export class CreateResourceModalComponent implements OnInit {
       }
       this.close();
     }
-  }
-
-  private createControls() {
-    return this.fields().reduce(
-      (obj, fieldDefinition) => {
-        const validator = fieldDefinition.required ? Validators.required : null;
-        obj[this.sanitizePropertyName(fieldDefinition.property)] =
-          new FormControl('', validator);
-        return obj;
-      },
-      {} as Record<string, FormControl>,
-    );
   }
 
   setFormControlValue($event: any, formControlName: string) {
@@ -170,14 +163,24 @@ export class CreateResourceModalComponent implements OnInit {
   }
 
   isEditMode() {
-    return this.mode() === 'edit';
+    return this.mode() === DialogMode.Edit;
+  }
+
+  isCreateFieldOnly(field: FieldDefinition): boolean {
+    return (
+      field.property === CreateOnlyResourceFieldNames.MetadataName ||
+      field.property === CreateOnlyResourceFieldNames.MetadataNamespace
+    );
   }
 
   private setNameNamespaceDisabled(disabled: boolean) {
     const fields = this.fields() || [];
     fields.forEach((f) => {
       const prop = Array.isArray(f.property) ? '' : (f.property as string);
-      if (prop === 'metadata.name' || prop === 'metadata.namespace') {
+      if (
+        prop === CreateOnlyResourceFieldNames.MetadataName ||
+        prop === CreateOnlyResourceFieldNames.MetadataNamespace
+      ) {
         const ctrlName = this.sanitizePropertyName(prop);
         const ctrl = this.form.controls[ctrlName];
         if (ctrl) {
@@ -187,5 +190,17 @@ export class CreateResourceModalComponent implements OnInit {
         }
       }
     });
+  }
+
+  private createControls() {
+    return this.fields().reduce(
+      (obj, fieldDefinition) => {
+        const validator = fieldDefinition.required ? Validators.required : null;
+        obj[this.sanitizePropertyName(fieldDefinition.property)] =
+          new FormControl('', validator);
+        return obj;
+      },
+      {} as Record<string, FormControl>,
+    );
   }
 }

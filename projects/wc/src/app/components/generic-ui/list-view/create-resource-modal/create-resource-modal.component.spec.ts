@@ -18,6 +18,7 @@ describe('CreateResourceModalComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, CreateResourceModalComponent],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      teardown: { destroyAfterEach: true },
     }).compileComponents();
 
     fixture = TestBed.createComponent(CreateResourceModalComponent);
@@ -207,5 +208,25 @@ describe('CreateResourceModalComponent', () => {
         'Wrong property type, array not supported',
       );
     });
+  });
+
+  it('should detect name/namespace and not other fields in isCreateFieldOnly function', () => {
+    const nameField: any = { property: 'metadata.name' };
+    const nsField: any = { property: 'metadata.namespace' };
+    const otherField: any = { property: 'spec.description' };
+
+    expect(component.isCreateFieldOnly(nameField)).toBeTruthy();
+    expect(component.isCreateFieldOnly(nsField)).toBeTruthy();
+    expect(component.isCreateFieldOnly(otherField)).toBeFalsy();
+  });
+
+  it('should set header to Create and open dialog using open function', () => {
+    mockDialog.headerText = '';
+    mockDialog.open = false;
+
+    component.open();
+
+    expect(mockDialog.headerText).toBe('Create');
+    expect(mockDialog.open).toBeTruthy();
   });
 });
