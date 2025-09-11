@@ -1,3 +1,6 @@
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,8 +21,15 @@ import {
   Resource,
   ResourceDefinition,
 } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields, getResourceValueByJsonPath, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  getResourceValueByJsonPath,
+  replaceDotsAndHyphensWithUnderscores,
+} from '@platform-mesh/portal-ui-lib/utils';
 import {
   DynamicPageComponent,
   DynamicPageTitleComponent,
@@ -35,9 +45,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import {CreateResourceModalComponent} from './create-resource-modal/create-resource-modal.component';
-import {DeleteResourceModalComponent} from './delete-resource-confirmation-modal/delete-resource-modal.component';
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -153,6 +160,11 @@ export class ListViewComponent implements OnInit {
     this.createModal()?.open();
   }
 
+  openEditResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+    this.createModal()?.openForEdit(resource);
+  }
+
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
     this.deleteModal()?.open(resource);
@@ -160,5 +172,15 @@ export class ListViewComponent implements OnInit {
 
   hasUiCreateViewFields() {
     return !!this.resourceDefinition?.ui?.createView?.fields?.length;
+  }
+
+  update(resource: Resource) {
+    this.resourceService
+      .create(resource, this.resourceDefinition, this.context())
+      .subscribe({
+        next: (result) => {
+          console.debug('Resource created', result);
+        },
+      });
   }
 }

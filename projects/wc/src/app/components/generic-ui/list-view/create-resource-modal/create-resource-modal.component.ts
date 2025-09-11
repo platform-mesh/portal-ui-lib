@@ -1,3 +1,4 @@
+import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 import {
   Component,
   OnInit,
@@ -5,6 +6,7 @@ import {
   inject,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import {
@@ -14,11 +16,9 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  FieldDefinition,
-  Resource,
-} from '@openmfp/portal-ui-lib';
+import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
+import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import {
   DialogComponent,
   InputComponent,
@@ -29,7 +29,6 @@ import {
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
 import { set } from 'lodash';
-import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 
 @Component({
   selector: 'create-resource-modal',
@@ -53,18 +52,54 @@ export class CreateResourceModalComponent implements OnInit {
   fields = input<FieldDefinition[]>([]);
   context = input<ResourceNodeContext>();
   resource = output<Resource>();
+  updateResource = output<Resource>();
   dialog = viewChild<DialogComponent>('dialog');
 
   fb = inject(FormBuilder);
   form: FormGroup;
+
+  private mode = signal<'create' | 'edit'>('create');
+  private originalResource = signal<Resource | null>(null);
 
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
   }
 
   open() {
+    this.mode.set('create');
+    this.originalResource.set(null);
     const dialog = this.dialog();
     if (dialog) {
+      dialog.headerText = 'Create';
+      dialog.open = true;
+    }
+  }
+
+  openForEdit(resource: Resource) {
+    this.mode.set('edit');
+    this.originalResource.set(resource);
+
+    const flds = this.fields();
+    if (flds?.length) {
+      flds.forEach((field) => {
+        const controlName = this.sanitizePropertyName(field.property);
+        const path = Array.isArray(field.property)
+          ? ''
+          : (field.property as string);
+        const value = path ? getValueByPath(resource, path) : null;
+        if (this.form.controls[controlName]) {
+          this.form.controls[controlName].setValue(value ?? '');
+          this.form.controls[controlName].markAsPristine();
+          this.form.controls[controlName].markAsUntouched();
+        }
+      });
+    }
+
+    this.setNameNamespaceDisabled(true);
+
+    const dialog = this.dialog();
+    if (dialog) {
+      dialog.headerText = 'Edit';
       dialog.open = true;
     }
   }
@@ -74,6 +109,9 @@ export class CreateResourceModalComponent implements OnInit {
     if (dialog) {
       dialog.open = false;
       this.form.reset();
+      this.setNameNamespaceDisabled(false);
+      this.mode.set('create');
+      this.originalResource.set(null);
     }
   }
 
@@ -84,18 +122,29 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      this.resource.emit(result);
+      if (this.mode() === 'edit') {
+        const orig = this.originalResource();
+        if (orig?.metadata) {
+          result['metadata'] = { ...orig.metadata, ...result['metadata'] };
+        }
+        this.updateResource.emit(result);
+      } else {
+        this.resource.emit(result);
+      }
       this.close();
     }
   }
 
   private createControls() {
-    return this.fields().reduce((obj, fieldDefinition) => {
-      const validator = fieldDefinition.required ? Validators.required : null;
-      obj[this.sanitizePropertyName(fieldDefinition.property)] =
-        new FormControl('', validator);
-      return obj;
-    }, {});
+    return this.fields().reduce(
+      (obj, fieldDefinition) => {
+        const validator = fieldDefinition.required ? Validators.required : null;
+        obj[this.sanitizePropertyName(fieldDefinition.property)] =
+          new FormControl('', validator);
+        return obj;
+      },
+      {} as Record<string, FormControl>,
+    );
   }
 
   setFormControlValue($event: any, formControlName: string) {
@@ -118,5 +167,25 @@ export class CreateResourceModalComponent implements OnInit {
       throw new Error('Wrong property type, array not supported');
     }
     return (property as string).replaceAll('.', '_');
+  }
+
+  isEditMode() {
+    return this.mode() === 'edit';
+  }
+
+  private setNameNamespaceDisabled(disabled: boolean) {
+    const fields = this.fields() || [];
+    fields.forEach((f) => {
+      const prop = Array.isArray(f.property) ? '' : (f.property as string);
+      if (prop === 'metadata.name' || prop === 'metadata.namespace') {
+        const ctrlName = this.sanitizePropertyName(prop);
+        const ctrl = this.form.controls[ctrlName];
+        if (ctrl) {
+          disabled
+            ? ctrl.disable({ emitEvent: false })
+            : ctrl.enable({ emitEvent: false });
+        }
+      }
+    });
   }
 }

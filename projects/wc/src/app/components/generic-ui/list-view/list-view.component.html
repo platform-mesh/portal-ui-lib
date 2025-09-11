@@ -56,6 +56,12 @@
           </ui5-table-cell>
         }
         <ui5-table-cell
+          class="actions-column edit-item"
+          (click)="openEditResourceModal($event, item)"
+        >
+          <ui5-icon name="edit"></ui5-icon>
+        </ui5-table-cell>
+        <ui5-table-cell
           class="actions-column delete-item"
           (click)="openDeleteResourceModal($event, item)"
         >
@@ -71,6 +77,7 @@
     #createModal
     [fields]="resourceDefinition.ui?.createView?.fields"
     (resource)="create($event)"
+    (updateResource)="update($event)"
     [context]="context()"
   />
 }

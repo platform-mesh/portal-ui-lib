@@ -15,6 +15,7 @@
             (blur)="onFieldBlur(fieldProperty)"
             [required]="field.required"
             [valueState]="getValueState(fieldProperty)"
+            [disabled]="isEditMode() && (field.property === 'metadata.name' || field.property === 'metadata.namespace')"
           >
             @for (value of [''].concat(field.values); track value) {
               <ui5-option
@@ -43,6 +44,7 @@
             (input)="setFormControlValue($event, fieldProperty)"
             [required]="field.required"
             [valueState]="getValueState(fieldProperty)"
+            [disabled]="isEditMode() && (field.property === 'metadata.name' || field.property === 'metadata.namespace')"
           ></ui5-input>
         }
       </div>

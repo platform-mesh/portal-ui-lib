@@ -90,6 +90,14 @@ describe('ListViewComponent', () => {
     expect(mockResourceService.create).toHaveBeenCalled();
   });
 
+  it('should handle update from modal (currently just logs)', () => {
+    const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
+    const updated = { metadata: { name: 'x' }, spec: { a: 1 } } as any;
+    component.update(updated);
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
   it('should navigate to resource', () => {
     const resource = { metadata: { name: 'res1' } };
     const navSpy = jest.fn();
@@ -120,6 +128,18 @@ describe('ListViewComponent', () => {
 
     expect(event.stopPropagation).toHaveBeenCalled();
     expect(openSpy).toHaveBeenCalledWith(resource);
+  });
+
+  it('should open edit resource modal and stop propagation', () => {
+    const event = { stopPropagation: jest.fn() } as any;
+    const resource = { metadata: { name: 'to-edit' } } as any;
+    const openForEditSpy = jest.fn();
+    (component as any).createModal = () => ({ openForEdit: openForEditSpy });
+
+    component.openEditResourceModal(event, resource);
+
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(openForEditSpy).toHaveBeenCalledWith(resource);
   });
 
   it('should check create view fields existence', () => {

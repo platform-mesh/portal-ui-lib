@@ -18,11 +18,7 @@ describe('CreateResourceModalComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, CreateResourceModalComponent],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    })
-      .overrideComponent(CreateResourceModalComponent, {
-        set: { template: '' },
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(CreateResourceModalComponent);
     component = fixture.componentInstance;
@@ -59,6 +55,50 @@ describe('CreateResourceModalComponent', () => {
   it('should open dialog when open method is called', () => {
     component.open();
     expect(mockDialog.open).toBeTruthy();
+  });
+
+  it('should prefill and disable name/namespace in edit mode, emit updateResource, then re-enable on close', () => {
+    (component as any).fields = () =>
+      [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        { property: 'metadata.namespace', required: false, label: 'Namespace' },
+        { property: 'spec.description', required: false, label: 'Description' },
+      ] as any;
+
+    component.form = (component as any).fb.group(
+      (component as any).createControls(),
+    );
+
+    mockDialog.headerText = '';
+
+    const resource: any = {
+      metadata: { name: 'res1', namespace: 'ns1' },
+      spec: { description: 'hello' },
+    };
+
+    const updateSpy = spyOn(component.updateResource, 'emit');
+
+    (component as any).openForEdit(resource);
+    expect(mockDialog.open).toBeTruthy();
+    expect(mockDialog.headerText).toBe('Edit');
+
+    expect(component.form.controls['metadata_name'].value).toBe('res1');
+    expect(component.form.controls['metadata_namespace'].value).toBe('ns1');
+    expect(component.form.controls['spec_description'].value).toBe('hello');
+
+    expect(component.form.controls['metadata_name'].disabled).toBeTruthy();
+    expect(component.form.controls['metadata_namespace'].disabled).toBeTruthy();
+
+    component.form.controls['spec_description'].setValue('updated');
+    component.create();
+
+    expect(updateSpy).toHaveBeenCalledWith({
+      metadata: { name: 'res1', namespace: 'ns1' },
+      spec: { description: 'updated' },
+    });
+
+    expect(component.form.controls['metadata_name'].disabled).toBeFalsy();
+    expect(component.form.controls['metadata_namespace'].disabled).toBeFalsy();
   });
 
   it('should close dialog and reset form when close method is called', () => {
