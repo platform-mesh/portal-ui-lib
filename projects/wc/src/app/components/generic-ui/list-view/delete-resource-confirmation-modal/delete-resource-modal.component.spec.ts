@@ -4,7 +4,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 
-jest.mock('@ui5/webcomponents-ngx', () => ({}), { virtual: true });
+// jest.mock('@ui5/webcomponents-ngx', () => ({}), { virtual: true });
 
 describe('DeleteResourceModalComponent', () => {
   let component: DeleteResourceModalComponent;

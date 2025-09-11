@@ -19,8 +19,11 @@ module.exports = {
     '<rootDir>/projects/wc/src/app/app.config.ts',
     '<rootDir>/projects/wc/jest.config.js',
   ],
-  setupFilesAfterEnv: [`${__dirname}/jest.setup.ts`],
-  modulePathIgnorePatterns: ['<rootDir>/projects/wc/_mocks_/'],
+  // Ensure mocks are applied before modules are loaded
+  setupFiles: [`${__dirname}/jest.setup.ts`],
+  setupFilesAfterEnv: [],
+  // Do not ignore mocks; they are loaded via setupFiles
+  modulePathIgnorePatterns: [],
   coverageThreshold: {
     global: {
       branches: 85,
