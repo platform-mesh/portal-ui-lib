@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ListViewComponent } from './list-view.component';
 
 describe('ListViewComponent', () => {
@@ -73,6 +73,16 @@ describe('ListViewComponent', () => {
     expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
   });
 
+  it('should show alert when delete errors', () => {
+    const resource = { metadata: { name: 'bad' } } as any;
+    mockResourceService.delete.mockReturnValueOnce(throwError(() => new Error('boom')));
+    component.delete(resource);
+    expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
+    const callArg = mockLuigiCoreService.showAlert.mock.calls[0][0];
+    expect(callArg.text).toContain('bad');
+    expect(callArg.type).toBe('error');
+  });
+
   it('should create a resource', () => {
     const resource = { metadata: { name: 'test' } };
 
@@ -91,6 +101,25 @@ describe('ListViewComponent', () => {
 
     component.navigateToResource(resource as any);
     expect(navSpy).toHaveBeenCalledWith('res1');
+  });
+
+  it('should open create resource modal', () => {
+    const openSpy = jest.fn();
+    (component as any).createModal = () => ({ open: openSpy });
+    component.openCreateResourceModal();
+    expect(openSpy).toHaveBeenCalled();
+  });
+
+  it('should open delete resource modal and stop event propagation', () => {
+    const event = { stopPropagation: jest.fn() } as any;
+    const resource = { metadata: { name: 'to-delete' } } as any;
+    const openSpy = jest.fn();
+    (component as any).deleteModal = () => ({ open: openSpy });
+
+    component.openDeleteResourceModal(event, resource);
+
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith(resource);
   });
 
   it('should check create view fields existence', () => {
