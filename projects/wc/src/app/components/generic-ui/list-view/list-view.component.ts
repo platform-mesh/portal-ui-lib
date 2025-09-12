@@ -36,7 +36,8 @@ import {
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
+import {CreateResourceModalComponent} from './create-resource-modal/create-resource-modal.component';
+import {DeleteResourceModalComponent} from './delete-resource-confirmation-modal/delete-resource-modal.component';
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -59,6 +60,7 @@ const defaultColumns: FieldDefinition[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CreateResourceModalComponent,
+    DeleteResourceModalComponent,
     DynamicPageComponent,
     DynamicPageTitleComponent,
     IconComponent,
@@ -82,6 +84,7 @@ export class ListViewComponent implements OnInit {
   LuigiClient = input<LuigiClient>();
   context = input<ResourceNodeContext>();
   private createModal = viewChild<CreateResourceModalComponent>('createModal');
+  private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
   resources = signal<Resource[]>([]);
   columns: FieldDefinition[];
@@ -116,9 +119,7 @@ export class ListViewComponent implements OnInit {
       });
   }
 
-  delete(event: any, resource: Resource) {
-    event.stopPropagation();
-
+  delete(resource: Resource) {
     this.resourceService
       .delete(resource, this.resourceDefinition, this.context())
       .subscribe({
@@ -150,6 +151,11 @@ export class ListViewComponent implements OnInit {
 
   openCreateResourceModal() {
     this.createModal()?.open();
+  }
+
+  openDeleteResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+    this.deleteModal()?.open(resource);
   }
 
   hasUiCreateViewFields() {
