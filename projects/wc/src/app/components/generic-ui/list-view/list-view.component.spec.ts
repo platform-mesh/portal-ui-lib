@@ -67,23 +67,20 @@ describe('ListViewComponent', () => {
     expect(component.resources().length).toBeGreaterThan(0);
   });
 
-  it('should delete a resource', () => {
-    const resource = { metadata: { name: 'test' } };
-    const event = { stopPropagation: jest.fn() };
-
-    component.delete(event, resource as any);
-    expect(mockResourceService.delete).toHaveBeenCalled();
+  it('should not show alert when delete is called (no backend call)', () => {
+    const resource = { metadata: { name: 'test' } } as any;
+    component.delete(resource);
+    expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
   });
 
-  it('should show alert on delete error', () => {
-    mockResourceService.delete.mockReturnValueOnce(
-      throwError(() => new Error()),
-    );
-    const resource = { metadata: { name: 'test' } };
-    const event = { stopPropagation: jest.fn() };
-
-    component.delete(event, resource as any);
+  it('should show alert when delete errors', () => {
+    const resource = { metadata: { name: 'bad' } } as any;
+    mockResourceService.delete.mockReturnValueOnce(throwError(() => new Error('boom')));
+    component.delete(resource);
     expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
+    const callArg = mockLuigiCoreService.showAlert.mock.calls[0][0];
+    expect(callArg.text).toContain('bad');
+    expect(callArg.type).toBe('error');
   });
 
   it('should create a resource', () => {
@@ -104,6 +101,25 @@ describe('ListViewComponent', () => {
 
     component.navigateToResource(resource as any);
     expect(navSpy).toHaveBeenCalledWith('res1');
+  });
+
+  it('should open create resource modal', () => {
+    const openSpy = jest.fn();
+    (component as any).createModal = () => ({ open: openSpy });
+    component.openCreateResourceModal();
+    expect(openSpy).toHaveBeenCalled();
+  });
+
+  it('should open delete resource modal and stop event propagation', () => {
+    const event = { stopPropagation: jest.fn() } as any;
+    const resource = { metadata: { name: 'to-delete' } } as any;
+    const openSpy = jest.fn();
+    (component as any).deleteModal = () => ({ open: openSpy });
+
+    component.openDeleteResourceModal(event, resource);
+
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith(resource);
   });
 
   it('should check create view fields existence', () => {

@@ -1,9 +1,16 @@
 const path = require('path');
 
 module.exports = {
+  preset: 'jest-preset-angular',
+  testRunner: 'jest-jasmine2',
   displayName: 'wc',
   roots: [__dirname],
   testMatch: ['**/*.spec.ts'],
+  module: 'NodeNext',
+  moduleResolution: 'NodeNext',
+  target: 'ES2022',
+  types: ['jest', 'node'],
+  testEnvironment: 'jsdom',
   coverageDirectory: path.resolve(__dirname, '../../coverage/wc'),
   collectCoverageFrom: ['!<rootDir>/projects/wc/**/*.spec.ts'],
   coveragePathIgnorePatterns: [
@@ -12,8 +19,11 @@ module.exports = {
     '<rootDir>/projects/wc/src/app/app.config.ts',
     '<rootDir>/projects/wc/jest.config.js',
   ],
-  setupFilesAfterEnv: [`${__dirname}/jest.setup.ts`],
-  modulePathIgnorePatterns: ['<rootDir>/projects/wc/_mocks_/'],
+  // Ensure mocks are applied before modules are loaded
+  setupFiles: [`${__dirname}/jest.setup.ts`],
+  setupFilesAfterEnv: [],
+  // Do not ignore mocks; they are loaded via setupFiles
+  modulePathIgnorePatterns: [],
   coverageThreshold: {
     global: {
       branches: 85,
