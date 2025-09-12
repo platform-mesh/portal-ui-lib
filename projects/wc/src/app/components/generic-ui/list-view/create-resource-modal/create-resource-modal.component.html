@@ -1,4 +1,13 @@
-<ui5-dialog #dialog header-text="Create">
+<ui5-dialog #dialog>
+  <ui5-bar slot="header" design="Header">
+    <ui5-title slot="startContent">
+      @if (isEditMode()) {
+        Edit
+      } @else {
+        Create
+      }
+    </ui5-title>
+  </ui5-bar>
   <section class="form" [formGroup]="form">
     @for (field of fields(); track field.property) {
       @let fieldProperty = sanitizePropertyName(field.property);

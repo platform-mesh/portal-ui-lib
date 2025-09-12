@@ -3,6 +3,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FieldDefinition } from '@openmfp/portal-ui-lib';
+import { DialogMode } from './create-resource-modal.enums';
 
 describe('CreateResourceModalComponent', () => {
   let component: CreateResourceModalComponent;
@@ -54,7 +55,7 @@ describe('CreateResourceModalComponent', () => {
   });
 
   it('should open dialog when open method is called', () => {
-    component.open();
+    component.open(DialogMode.Create);
     expect(mockDialog.open).toBeTruthy();
   });
 
@@ -79,7 +80,7 @@ describe('CreateResourceModalComponent', () => {
 
     const updateSpy = spyOn(component.updateResource, 'emit');
 
-    (component as any).openForEdit(resource);
+    component.open(DialogMode.Edit, resource);
     expect(mockDialog.open).toBeTruthy();
     expect(mockDialog.headerText).toBe('Edit');
 
@@ -224,7 +225,7 @@ describe('CreateResourceModalComponent', () => {
     mockDialog.headerText = '';
     mockDialog.open = false;
 
-    component.open();
+    component.open(DialogMode.Create);
 
     expect(mockDialog.headerText).toBe('Create');
     expect(mockDialog.open).toBeTruthy();

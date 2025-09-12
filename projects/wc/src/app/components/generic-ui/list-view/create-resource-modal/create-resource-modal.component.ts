@@ -25,11 +25,13 @@ import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import {
+  BarComponent,
   DialogComponent,
   InputComponent,
   LabelComponent,
   OptionComponent,
   SelectComponent,
+  TitleComponent,
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
@@ -48,6 +50,8 @@ import { set } from 'lodash';
     ToolbarButtonComponent,
     ToolbarComponent,
     DynamicSelectComponent,
+    BarComponent,
+    TitleComponent,
   ],
   templateUrl: './create-resource-modal.component.html',
   styleUrl: './create-resource-modal.component.scss',
@@ -70,23 +74,13 @@ export class CreateResourceModalComponent implements OnInit {
     this.form = this.fb.group(this.createControls());
   }
 
-  open() {
-    this.mode.set(DialogMode.Create);
-    this.originalResource.set(null);
-    const dialog = this.dialog();
-    if (dialog) {
-      dialog.headerText = DialogHeaderText.Create;
-      dialog.open = true;
-    }
-  }
+  open(dialogType: DialogMode, resource?: Resource) {
+    if (dialogType === DialogMode.Edit && resource) {
+      this.mode.set(DialogMode.Edit);
+      this.originalResource.set(resource);
 
-  openForEdit(resource: Resource) {
-    this.mode.set(DialogMode.Edit);
-    this.originalResource.set(resource);
-
-    const flds = this.fields();
-    if (flds?.length) {
-      flds.forEach((field) => {
+      const fields = this.fields();
+      fields?.forEach((field) => {
         const controlName = this.sanitizePropertyName(field.property);
         const path = Array.isArray(field.property)
           ? ''
@@ -98,13 +92,20 @@ export class CreateResourceModalComponent implements OnInit {
           this.form.controls[controlName].markAsUntouched();
         }
       });
+      this.setNameNamespaceDisabled(true);
+    } else {
+      this.mode.set(DialogMode.Create);
+      this.originalResource.set(null);
+      this.form.reset();
+      this.setNameNamespaceDisabled(false);
     }
-
-    this.setNameNamespaceDisabled(true);
 
     const dialog = this.dialog();
     if (dialog) {
-      dialog.headerText = DialogHeaderText.Edit;
+      dialog.headerText =
+        dialogType === DialogMode.Edit
+          ? DialogHeaderText.Edit
+          : DialogHeaderText.Create;
       dialog.open = true;
     }
   }
@@ -173,6 +174,18 @@ export class CreateResourceModalComponent implements OnInit {
     );
   }
 
+  private createControls() {
+    return this.fields().reduce(
+      (obj, fieldDefinition) => {
+        const validator = fieldDefinition.required ? Validators.required : null;
+        obj[this.sanitizePropertyName(fieldDefinition.property)] =
+          new FormControl('', validator);
+        return obj;
+      },
+      {} as Record<string, FormControl>,
+    );
+  }
+
   private setNameNamespaceDisabled(disabled: boolean) {
     const fields = this.fields() || [];
     fields.forEach((f) => {
@@ -190,17 +203,5 @@ export class CreateResourceModalComponent implements OnInit {
         }
       }
     });
-  }
-
-  private createControls() {
-    return this.fields().reduce(
-      (obj, fieldDefinition) => {
-        const validator = fieldDefinition.required ? Validators.required : null;
-        obj[this.sanitizePropertyName(fieldDefinition.property)] =
-          new FormControl('', validator);
-        return obj;
-      },
-      {} as Record<string, FormControl>,
-    );
   }
 }
