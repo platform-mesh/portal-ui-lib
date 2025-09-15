@@ -564,6 +564,83 @@ describe('ResourceService', () => {
     });
   });
 
+  describe('update', () => {
+    it('should update resource', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+      service
+        .update(resource, resourceDefinition, namespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
+    });
+
+    it('should update namespaced resource', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(resource, resourceDefinition, namespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            fetchPolicy: 'no-cache',
+            variables: {
+              name: resource.metadata.name,
+              object: resource,
+              namespace: namespacedNodeContext.namespaceId,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should update cluster resource', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(resource, resourceDefinition, clusterScopeNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            fetchPolicy: 'no-cache',
+            variables: {
+              name: resource.metadata.name,
+              object: resource,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should handle update error', (done) => {
+      const error = new Error('fail');
+      mockApollo.mutate.mockReturnValue(throwError(() => error));
+      console.error = jest.fn();
+
+      service
+        .update(resource, resourceDefinition, clusterScopeNodeContext)
+        .subscribe({
+          error: () => {
+            expect(console.error).toHaveBeenCalledWith(
+              'Error executing GraphQL query.',
+              error,
+            );
+            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+              text: 'fail',
+              type: 'error',
+            });
+            done();
+          },
+        });
+    });
+  });
+
   describe('readAccountInfo', () => {
     it('should read account info', (done) => {
       const ca = 'cert-data';

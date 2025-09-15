@@ -1,16 +1,21 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import {
-  AccountInfo, LuigiCoreService, Resource,
+  AccountInfo,
+  LuigiCoreService,
+  Resource,
   ResourceDefinition,
 } from '@openmfp/portal-ui-lib';
-import { getValueByPath, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  getValueByPath,
+  replaceDotsAndHyphensWithUnderscores,
+} from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceNodeContext } from './resource-node-context';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -255,6 +260,53 @@ export class ResourceService {
             ...(isNamespacedResource && {
               namespace: { type: 'String', value: namespace },
             }),
+            object: { type: `${kind}Input!`, value: resource },
+          },
+          fields: ['__typename'],
+        },
+      ],
+    });
+
+    return this.apolloFactory
+      .apollo(nodeContext)
+      .mutate({
+        mutation: gql`
+          ${mutation.query}
+        `,
+        fetchPolicy: 'no-cache',
+        variables: mutation.variables,
+      })
+      .pipe(
+        catchError((error) => {
+          this.alertErrors(error);
+          console.error('Error executing GraphQL query.', error);
+          return error;
+        }),
+      );
+  }
+
+  update(
+    resource: Resource,
+    resourceDefinition: ResourceDefinition,
+    nodeContext: ResourceNodeContext,
+  ) {
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const group = replaceDotsAndHyphensWithUnderscores(
+      resourceDefinition.group,
+    );
+    const kind = resourceDefinition.kind;
+    const namespace = nodeContext.namespaceId;
+
+    const mutation = gqlBuilder.mutation({
+      operation: group,
+      fields: [
+        {
+          operation: `update${kind}`,
+          variables: {
+            ...(isNamespacedResource && {
+              namespace: { type: 'String', value: namespace },
+            }),
+            name: { type: 'String!', value: resource.metadata.name },
             object: { type: `${kind}Input!`, value: resource },
           },
           fields: ['__typename'],

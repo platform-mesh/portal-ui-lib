@@ -1,8 +1,8 @@
+import { ListViewComponent } from './list-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-import { ListViewComponent } from './list-view.component';
 
 describe('ListViewComponent', () => {
   let component: ListViewComponent;
@@ -15,6 +15,7 @@ describe('ListViewComponent', () => {
       list: jest.fn().mockReturnValue(of([{ metadata: { name: 'test' } }])),
       delete: jest.fn().mockReturnValue(of({})),
       create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
+      update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
     };
 
     mockLuigiCoreService = {
@@ -67,7 +68,7 @@ describe('ListViewComponent', () => {
     expect(component.resources().length).toBeGreaterThan(0);
   });
 
-  it('should not show alert when delete is called (no backend call)', () => {
+  it('should not show alert when delete is called', () => {
     const resource = { metadata: { name: 'test' } } as any;
     component.delete(resource);
     expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
@@ -75,7 +76,9 @@ describe('ListViewComponent', () => {
 
   it('should show alert when delete errors', () => {
     const resource = { metadata: { name: 'bad' } } as any;
-    mockResourceService.delete.mockReturnValueOnce(throwError(() => new Error('boom')));
+    mockResourceService.delete.mockReturnValueOnce(
+      throwError(() => new Error('boom')),
+    );
     component.delete(resource);
     expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
     const callArg = mockLuigiCoreService.showAlert.mock.calls[0][0];
@@ -90,8 +93,10 @@ describe('ListViewComponent', () => {
     expect(mockResourceService.create).toHaveBeenCalled();
   });
 
-  it('should handle update from modal (currently just logs)', () => {
-    const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
+  it('should handle update from modal', () => {
+    const consoleSpy = jest
+      .spyOn(console, 'debug')
+      .mockImplementation(() => {});
     const updated = { metadata: { name: 'x' }, spec: { a: 1 } } as any;
     component.update(updated);
     expect(consoleSpy).toHaveBeenCalled();

@@ -177,10 +177,10 @@ export class ListViewComponent implements OnInit {
 
   update(resource: Resource) {
     this.resourceService
-      .create(resource, this.resourceDefinition, this.context())
+      .update(resource, this.resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
-          console.debug('Resource created', result);
+          console.debug('Resource updated', result);
         },
       });
   }
