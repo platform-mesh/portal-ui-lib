@@ -297,6 +297,8 @@ export class ResourceService {
     const kind = resourceDefinition.kind;
     const namespace = nodeContext.namespaceId;
 
+    const cleanResource = this.stripTypename(resource);
+
     const mutation = gqlBuilder.mutation({
       operation: group,
       fields: [
@@ -307,7 +309,10 @@ export class ResourceService {
               namespace: { type: 'String', value: namespace },
             }),
             name: { type: 'String!', value: resource.metadata.name },
-            object: { type: `${kind}Input!`, value: resource },
+            object: {
+              type: `${kind}Input!`,
+              value: cleanResource,
+            },
           },
           fields: ['__typename'],
         },
@@ -368,5 +373,19 @@ export class ResourceService {
 
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
     return nodeContext?.resourceDefinition?.scope === 'Namespaced';
+  }
+
+  private stripTypename<T>(value: T): T {
+    if (Array.isArray(value)) {
+      return value.map(this.stripTypename) as unknown as T;
+    }
+    if (value && typeof value === 'object') {
+      const { __typename, ...rest } = value as Record<string, unknown>;
+      for (const k of Object.keys(rest)) {
+        rest[k] = this.stripTypename(rest[k]);
+      }
+      return rest as T;
+    }
+    return value;
   }
 }
