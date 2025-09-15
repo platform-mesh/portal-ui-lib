@@ -92,12 +92,12 @@ export class CreateResourceModalComponent implements OnInit {
           this.form.controls[controlName].markAsUntouched();
         }
       });
-      this.setNameNamespaceDisabled(true);
+      this.setEditFieldsDisabled(true);
     } else {
       this.mode.set(DialogMode.Create);
       this.originalResource.set(null);
       this.form.reset();
-      this.setNameNamespaceDisabled(false);
+      this.setEditFieldsDisabled(false);
     }
 
     const dialog = this.dialog();
@@ -115,7 +115,7 @@ export class CreateResourceModalComponent implements OnInit {
     if (dialog) {
       dialog.open = false;
       this.form.reset();
-      this.setNameNamespaceDisabled(false);
+      this.setEditFieldsDisabled(false);
       this.mode.set(DialogMode.Create);
       this.originalResource.set(null);
     }
@@ -187,12 +187,13 @@ export class CreateResourceModalComponent implements OnInit {
     );
   }
 
-  private setNameNamespaceDisabled(disabled: boolean) {
+  private setEditFieldsDisabled(disabled: boolean) {
     const fields = this.fields() || [];
     fields.forEach((f) => {
       const prop = Array.isArray(f.property) ? '' : (f.property as string);
       if (
         prop === CreateOnlyResourceFieldNames.MetadataName ||
+        prop === CreateOnlyResourceFieldNames.SpecType ||
         prop === CreateOnlyResourceFieldNames.MetadataNamespace
       ) {
         const ctrlName = this.sanitizePropertyName(prop);
