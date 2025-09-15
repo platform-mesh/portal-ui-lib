@@ -170,6 +170,7 @@ export class CreateResourceModalComponent implements OnInit {
   isCreateFieldOnly(field: FieldDefinition): boolean {
     return (
       field.property === CreateOnlyResourceFieldNames.MetadataName ||
+      field.property === CreateOnlyResourceFieldNames.SpecType ||
       field.property === CreateOnlyResourceFieldNames.MetadataNamespace
     );
   }
