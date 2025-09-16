@@ -1,3 +1,6 @@
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,8 +21,15 @@ import {
   Resource,
   ResourceDefinition,
 } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields, getResourceValueByJsonPath, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  getResourceValueByJsonPath,
+  replaceDotsAndHyphensWithUnderscores,
+} from '@platform-mesh/portal-ui-lib/utils';
 import {
   DynamicPageComponent,
   DynamicPageTitleComponent,
@@ -35,9 +45,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import {CreateResourceModalComponent} from './create-resource-modal/create-resource-modal.component';
-import {DeleteResourceModalComponent} from './delete-resource-confirmation-modal/delete-resource-modal.component';
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -160,5 +167,46 @@ export class ListViewComponent implements OnInit {
 
   hasUiCreateViewFields() {
     return !!this.resourceDefinition?.ui?.createView?.fields?.length;
+  }
+
+  private processFields(
+    fields: FieldDefinition[],
+  ): (FieldDefinition & { group?: { values?: string[] } })[] {
+    const sortedFields = fields.reduce(
+      (
+        acc,
+        field,
+        i,
+      ): Record<string, { fields: FieldDefinition[]; index: number }> => {
+        if (!field.group) {
+          acc.default.fields.push(field);
+          return acc;
+        }
+
+        if (acc[field.group.name]) {
+          acc[field.group.name].fields.push(field);
+        } else {
+          acc[field.group.name] = { fields: [field], index: i };
+        }
+
+        return acc;
+      },
+      { default: { fields: [], index: 0 } },
+    );
+
+    const result = sortedFields.default.fields;
+    for (const groupName in sortedFields) {
+      if (groupName === 'default') {
+        continue;
+      }
+
+      result.splice(
+        sortedFields[groupName].index,
+        0,
+        ...sortedFields[groupName].fields,
+      );
+    }
+
+    return result;
   }
 }
