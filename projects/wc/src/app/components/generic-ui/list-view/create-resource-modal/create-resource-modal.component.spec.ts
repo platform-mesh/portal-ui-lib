@@ -1,9 +1,9 @@
 import { CreateResourceModalComponent } from './create-resource-modal.component';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { DialogMode } from './create-resource-modal.enums';
+import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FieldDefinition } from '@openmfp/portal-ui-lib';
-import { DialogMode } from './create-resource-modal.enums';
 
 describe('CreateResourceModalComponent', () => {
   let component: CreateResourceModalComponent;
@@ -18,9 +18,13 @@ describe('CreateResourceModalComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, CreateResourceModalComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
       teardown: { destroyAfterEach: true },
-    }).compileComponents();
+    })
+      .overrideComponent(CreateResourceModalComponent, {
+        set: { template: '' },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(CreateResourceModalComponent);
     component = fixture.componentInstance;
