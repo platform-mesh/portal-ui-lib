@@ -565,6 +565,44 @@ describe('ResourceService', () => {
   });
 
   describe('update', () => {
+    it('should strip __typename recursively from update payload', (done) => {
+      const dirtyResource: any = {
+        metadata: { name: 'test-name', __typename: 'Meta' },
+        spec: {
+          __typename: 'Spec',
+          items: [
+            { key: 'a', __typename: 'Item' },
+            { key: 'b', nested: { foo: 'bar', __typename: 'Nested' } },
+          ],
+          map: {
+            one: { val: 1, __typename: 'Val' },
+            two: [{ x: 1, __typename: 'X' }, { y: 2 }],
+          },
+        },
+      };
+
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(dirtyResource, resourceDefinition, namespacedNodeContext)
+        .subscribe(() => {
+          const mutateCall = mockApollo.mutate.mock.calls[0][0];
+          const passedObject = mutateCall.variables.object;
+          expect(passedObject).toEqual({
+            metadata: { name: 'test-name' },
+            spec: {
+              items: [{ key: 'a' }, { key: 'b', nested: { foo: 'bar' } }],
+              map: {
+                one: { val: 1 },
+                two: [{ x: 1 }, { y: 2 }],
+              },
+            },
+          });
+          done();
+        });
+    });
     it('should update resource', (done) => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
@@ -638,6 +676,33 @@ describe('ResourceService', () => {
             done();
           },
         });
+    });
+  });
+
+  describe('stripTypename (private)', () => {
+    it('should return primitives as-is', () => {
+      // @ts-ignore accessing private method for test
+      expect((service as any).stripTypename(42)).toBe(42);
+      // @ts-ignore
+      expect((service as any).stripTypename('x')).toBe('x');
+      // @ts-ignore
+      expect((service as any).stripTypename(null)).toBe(null);
+      // @ts-ignore
+      expect((service as any).stripTypename(undefined)).toBe(undefined);
+    });
+
+    it('should clean nested objects and arrays', () => {
+      const input = {
+        __typename: 'Root',
+        a: { __typename: 'A', b: 1 },
+        arr: [
+          { __typename: 'X', v: 1 },
+          [{ __typename: 'Y', z: 2 }, 3],
+        ],
+      } as any;
+      // @ts-ignore
+      const output = (service as any).stripTypename(input);
+      expect(output).toEqual({ a: { b: 1 }, arr: [{ v: 1 }, [{ z: 2 }, 3]] });
     });
   });
 
