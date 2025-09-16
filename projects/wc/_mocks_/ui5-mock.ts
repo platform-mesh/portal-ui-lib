@@ -29,5 +29,6 @@ jest.mock('@ui5/webcomponents-ngx', () => {
     ToolbarButtonComponent: MockComponent,
     ToolbarComponent: MockComponent,
     BarComponent: MockComponent,
+    LinkComponent: MockComponent,
   };
 });
