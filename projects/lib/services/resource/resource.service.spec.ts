@@ -1,9 +1,9 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceService } from './resource.service';
 
 describe('ResourceService', () => {
   let service: ResourceService;
@@ -695,10 +695,7 @@ describe('ResourceService', () => {
       const input = {
         __typename: 'Root',
         a: { __typename: 'A', b: 1 },
-        arr: [
-          { __typename: 'X', v: 1 },
-          [{ __typename: 'Y', z: 2 }, 3],
-        ],
+        arr: [{ __typename: 'X', v: 1 }, [{ __typename: 'Y', z: 2 }, 3]],
       } as any;
       // @ts-ignore
       const output = (service as any).stripTypename(input);
