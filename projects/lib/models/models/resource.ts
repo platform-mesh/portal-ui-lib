@@ -9,7 +9,7 @@ export interface FieldDefinition {
   group?: {
     name: string;
     label?: string;
-    deliminator?: string; // default ', '
+    delimiter?: string; // default ', '
   };
   dynamicValuesDefinition?: {
     operation: string;
