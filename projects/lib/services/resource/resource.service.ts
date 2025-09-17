@@ -1,13 +1,9 @@
+import { AccountInfo, Resource, ResourceDefinition } from '../models';
 import { ApolloFactory } from './apollo-factory';
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  AccountInfo,
-  Resource,
-  ResourceDefinition,
-} from '@platform-mesh/portal-ui-lib/portal-options/models';
 import {
   getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
