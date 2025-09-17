@@ -70,6 +70,11 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
           'kcp.io/cluster': 'cluster-123',
         },
       },
+      spec: {
+        organization: {
+          originClusterId: 'originClusterId',
+        },
+      },
     } as any;
     const mockToken = 'mock-token';
 
@@ -81,10 +86,10 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
     const result = await service.createLuigiExtendedGlobalContext();
 
     expect(result).toEqual({
-      organizationId: 'cluster-123/test-org',
+      organizationId: 'originClusterId/test-org',
       kcpCA: 'dW5kZWZpbmVk',
       organization: 'test-org',
-      entityId: 'cluster-123/test-org',
+      entityId: 'originClusterId/test-org',
     });
 
     expect(mockResourceService.readAccountInfo).toHaveBeenCalledWith({

@@ -33,20 +33,18 @@ export class LuigiExtendedGlobalContextConfigServiceImpl
         }),
       );
 
-      const resourceKcpIoClusterAnnotation =
-        accountInfo?.metadata?.annotations?.['kcp.io/cluster'];
-      if (!resourceKcpIoClusterAnnotation) {
-        console.warn(
-          `Cluster annotation (kcp.io/cluster) missing for resource: ${entityId}`,
-        );
+      const organizationOriginClusterId =
+        accountInfo?.spec?.organization?.originClusterId;
+      if (!organizationOriginClusterId) {
+        console.error(`AccountInfo organization id missing for: ${entityId}`);
         return {};
       }
 
       return {
         organization: entityId,
-        organizationId: `${resourceKcpIoClusterAnnotation}/${entityId}`,
+        organizationId: `${organizationOriginClusterId}/${entityId}`,
         kcpCA: btoa(accountInfo?.spec?.clusterInfo?.ca),
-        entityId: `${resourceKcpIoClusterAnnotation}/${entityId}`, // if no entity selected the entityId is the same as the organizationId
+        entityId: `${organizationOriginClusterId}/${entityId}`, // if no entity selected the entityId is the same as the organizationId
       };
     } catch (e) {
       console.error(`Failed to read entity ${entityId} from ${operation}`, e);
