@@ -1,47 +1,26 @@
-import {
-  ICON_DESIGN_NEGATIVE,
-  ICON_DESIGN_POSITIVE,
-  ICON_NAME_NEGATIVE,
-  ICON_NAME_POSITIVE,
-} from './value-cell.constants';
+import { BooleanValueComponent } from './boolean-value/boolean-value.component';
+import { LinkValueComponent } from './link-value/link-value.component';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   input,
 } from '@angular/core';
-import { IconComponent } from '@ui5/webcomponents-ngx';
-
-export type IconDesignType =
-  | typeof ICON_DESIGN_POSITIVE
-  | typeof ICON_DESIGN_NEGATIVE;
 
 @Component({
   selector: 'value-cell',
   standalone: true,
-  imports: [IconComponent],
+  imports: [BooleanValueComponent, LinkValueComponent],
   templateUrl: './value-cell.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ValueCellComponent {
   value = input<unknown>();
   isBoolLike = computed(() => this.boolValue() !== undefined);
-  iconDesign = computed<IconDesignType | undefined>(() => {
-    return this.boolValue() === undefined
-      ? undefined
-      : this.boolValue()
-        ? ICON_DESIGN_POSITIVE
-        : ICON_DESIGN_NEGATIVE;
-  });
-  iconName = computed<string | undefined>(() => {
-    return this.boolValue() === undefined
-      ? undefined
-      : this.boolValue()
-        ? ICON_NAME_POSITIVE
-        : ICON_NAME_NEGATIVE;
-  });
+  isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
 
-  private boolValue = computed(() => this.normalizeBoolean(this.value()));
+  boolValue = computed(() => this.normalizeBoolean(this.value()));
+  stringValue = computed(() => this.normalizeString(this.value()));
 
   private normalizeBoolean(value: unknown): boolean | undefined {
     const normalizedValue = value?.toString()?.toLowerCase();
@@ -52,5 +31,26 @@ export class ValueCellComponent {
       return false;
     }
     return undefined;
+  }
+
+  private normalizeString(value: unknown): string | undefined {
+    if (typeof value !== 'string' || !value.trim()) {
+      return undefined;
+    }
+
+    return value;
+  }
+
+  private checkValidUrl(value: string | undefined): boolean {
+    if (!value) {
+      return false;
+    }
+
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

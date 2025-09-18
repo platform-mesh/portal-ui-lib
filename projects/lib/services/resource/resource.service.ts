@@ -1,13 +1,9 @@
+import { AccountInfo, Resource, ResourceDefinition } from '../models';
 import { ApolloFactory } from './apollo-factory';
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
-import {
-  AccountInfo,
-  LuigiCoreService,
-  Resource,
-  ResourceDefinition,
-} from '@openmfp/portal-ui-lib';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
@@ -19,13 +15,6 @@ import { catchError, map } from 'rxjs/operators';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
-}
-
-interface ResourceResponse extends Record<string, any> {
-  data: {
-    [key: string]: any;
-  };
-  errors: { message: string }[];
 }
 
 @Injectable({
@@ -352,6 +341,9 @@ export class ResourceService {
                 spec {
                   clusterInfo {
                     ca
+                  }
+                  organization {
+                    originClusterId
                   }
                 }
               }
