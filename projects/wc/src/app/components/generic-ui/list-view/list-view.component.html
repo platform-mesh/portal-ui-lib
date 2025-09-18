@@ -2,11 +2,11 @@
   <ui5-dynamic-page-title slot="titleArea">
     <ui5-title slot="heading">
       <div class="title-logo">
-        <div>{{ heading }}</div>
-        @if (resourceDefinition.ui?.logoUrl) {
+        <div>{{ heading() }}</div>
+        @if (resourceDefinition().ui?.logoUrl) {
           <img
             class="logo"
-            src="{{ resourceDefinition.ui.logoUrl }}"
+            src="{{ resourceDefinition().ui.logoUrl }}"
             alt="Logo"
           />
         }
@@ -14,7 +14,7 @@
     </ui5-title>
     <ui5-text class="title-subheading" slot="subheading">
       This page displays the created
-      {{ resourceDefinition.plural }} in your environment
+      {{ resourceDefinition().plural }} in your environment
     </ui5-text>
 
     <ui5-toolbar
@@ -35,8 +35,12 @@
 
   <ui5-table>
     <ui5-table-header-row slot="headerRow">
-      @for (column of columns; track column.property) {
-        <ui5-table-header-cell>{{ column.label }}</ui5-table-header-cell>
+      @for (column of viewColomns(); track column.property) {
+        @if (column.group) {
+          <ui5-table-header-cell>{{ column.group.label ?? column.group.name }}</ui5-table-header-cell>
+        } @else {
+          <ui5-table-header-cell>{{ column.label }}</ui5-table-header-cell>
+        }
       }
       <ui5-table-header-cell class="actions-column"
         >Actions</ui5-table-header-cell
@@ -50,10 +54,24 @@
 
     @for (item of resources(); track item.metadata.name) {
       <ui5-table-row interactive (click)="navigateToResource(item)">
-        @for (column of columns; track column.label) {
-          <ui5-table-cell>
-            <value-cell [value]="getResourceValueByJsonPath(item, column)"></value-cell>
-          </ui5-table-cell>
+        @for (column of viewColomns(); track column.label) {
+          @if (column.group) {
+            <ui5-table-cell [class.multiline]="column.group.multiline ?? true">
+              @for (value of column.group.values; let last = $last; track value.label) {
+                <div>
+                  <span>{{ value.label }}: </span>
+                  <value-cell  [value]="getResourceValueByJsonPath(item, { property: value.property })"></value-cell>
+                </div>
+                @if (!last && column.group.delimiter) {
+                  <span>{{ column.group.delimiter }}</span>
+                }
+              }
+            </ui5-table-cell>
+          } @else {
+            <ui5-table-cell>
+              <value-cell [value]="getResourceValueByJsonPath(item, column)"></value-cell>
+            </ui5-table-cell>
+          }
         }
         <ui5-table-cell
           class="actions-column delete-item"
@@ -69,7 +87,7 @@
 @if (hasUiCreateViewFields()) {
   <create-resource-modal
     #createModal
-    [fields]="resourceDefinition.ui?.createView?.fields"
+    [fields]="resourceDefinition().ui?.createView?.fields"
     (resource)="create($event)"
     [context]="context()"
   />

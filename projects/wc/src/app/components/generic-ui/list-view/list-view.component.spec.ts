@@ -123,7 +123,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should check create view fields existence', () => {
-    component.resourceDefinition.ui.createView = {
+    component.resourceDefinition().ui.createView = {
       fields: [{ property: 'any' }],
     };
     expect(component.hasUiCreateViewFields()).toBe(true);
