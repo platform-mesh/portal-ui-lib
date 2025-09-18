@@ -1,7 +1,10 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { GatewayService, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of } from 'rxjs';
 import { DetailViewComponent } from './detail-view.component';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  GatewayService,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import { of, throwError } from 'rxjs';
 
 describe('DetailViewComponent', () => {
   let component: DetailViewComponent;
@@ -62,6 +65,13 @@ describe('DetailViewComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    // Очищаем все моки после каждого теста
+    jest.restoreAllMocks();
+    // Удаляем глобальные моки
+    delete global.URL.createObjectURL;
+  });
+
   it('should create the component', () => {
     expect(component).toBeTruthy();
   });
@@ -76,9 +86,6 @@ describe('DetailViewComponent', () => {
   });
 
   it('should have namespaceId in context when provided', () => {
-    fixture = TestBed.createComponent(DetailViewComponent);
-    component = fixture.componentInstance;
-
     const testNamespace = 'test-namespace';
     component.context = (() => ({
       resourceId: 'cluster-1',
@@ -105,15 +112,149 @@ describe('DetailViewComponent', () => {
   it('should download kubeconfig', async () => {
     const mockAnchorElement = document.createElement('a');
     jest.spyOn(mockAnchorElement, 'click');
-    jest.spyOn(document, 'createElement').mockReturnValue(mockAnchorElement);
-
-    global.URL.createObjectURL = jest.fn().mockReturnValue('blob-url');
+    const createElementSpy = jest
+      .spyOn(document, 'createElement')
+      .mockReturnValue(mockAnchorElement);
+    const createObjectURLSpy = jest.fn().mockReturnValue('blob-url');
+    global.URL.createObjectURL = createObjectURLSpy;
 
     await component.downloadKubeConfig();
 
-    expect(document.createElement).toHaveBeenCalledWith('a');
+    expect(createElementSpy).toHaveBeenCalledWith('a');
     expect(mockAnchorElement.href).toEqual('http://localhost/blob-url');
     expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
     expect(mockAnchorElement.click).toHaveBeenCalled();
+  });
+
+  it('should return default fields when ui.detailView.fields is undefined', () => {
+    // Reset mocks and create new component instance
+    jest.clearAllMocks();
+    const newFixture = TestBed.createComponent(DetailViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      resourceDefinition: {
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            // fields is undefined
+          },
+        },
+      },
+      entity: {
+        metadata: { name: 'test-resource' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    const defaultFields = [
+      {
+        label: 'Workspace Status',
+        jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
+        property: ['status.conditions.status', 'status.conditions.type'],
+      },
+    ];
+
+    expect(newComponent.resourceFields()).toEqual(defaultFields);
+  });
+
+  it('should call resource service with correct parameters for account kind', () => {
+    jest.clearAllMocks();
+    const newFixture = TestBed.createComponent(DetailViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      resourceDefinition: {
+        kind: 'Account',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+      entity: {
+        metadata: { name: 'test-account' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(mockResourceService.read).toHaveBeenCalledWith(
+      'test-account',
+      'core_k8s_io',
+      'Account',
+      [],
+      expect.any(Object),
+      true,
+    );
+  });
+
+  it('should handle resource service read error', () => {
+    jest.clearAllMocks();
+    mockResourceService.read.mockReturnValueOnce(
+      throwError(() => new Error('Read failed')),
+    );
+
+    const newFixture = TestBed.createComponent(DetailViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      resourceDefinition: {
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+      entity: {
+        metadata: { name: 'test-resource' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    // Component should still be created even if read fails
+    expect(newComponent).toBeTruthy();
   });
 });

@@ -1,8 +1,8 @@
+import { ListViewComponent } from './list-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-import { ListViewComponent } from './list-view.component';
 
 describe('ListViewComponent', () => {
   let component: ListViewComponent;
@@ -75,7 +75,9 @@ describe('ListViewComponent', () => {
 
   it('should show alert when delete errors', () => {
     const resource = { metadata: { name: 'bad' } } as any;
-    mockResourceService.delete.mockReturnValueOnce(throwError(() => new Error('boom')));
+    mockResourceService.delete.mockReturnValueOnce(
+      throwError(() => new Error('boom')),
+    );
     component.delete(resource);
     expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
     const callArg = mockLuigiCoreService.showAlert.mock.calls[0][0];
@@ -127,5 +129,138 @@ describe('ListViewComponent', () => {
       fields: [{ property: 'any' }],
     };
     expect(component.hasUiCreateViewFields()).toBe(true);
+  });
+
+  it('should use default columns when no listView fields are defined', () => {
+    // Create a new component instance with different context
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          // No listView fields defined
+        },
+      },
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.columns().length).toBeGreaterThan(0);
+    expect(newComponent.columns()[0].label).toBe('Name');
+  });
+
+  it('should compute heading correctly with capitalized plural', () => {
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          listView: {
+            fields: [],
+          },
+        },
+      },
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.heading()).toBe('Clusters');
+  });
+
+  it('should handle empty plural in heading', () => {
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: '',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          listView: {
+            fields: [],
+          },
+        },
+      },
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.heading()).toBe('');
+  });
+
+  it('should handle single character plural in heading', () => {
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'a',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          listView: {
+            fields: [],
+          },
+        },
+      },
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.heading()).toBe('A');
+  });
+
+  it('should handle resource service list error', () => {
+    mockResourceService.list.mockReturnValueOnce(
+      throwError(() => new Error('List failed')),
+    );
+
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          listView: {
+            fields: [],
+          },
+        },
+      },
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    // Component should still be created even if list fails
+    expect(newComponent).toBeTruthy();
   });
 });
