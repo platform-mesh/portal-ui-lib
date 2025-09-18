@@ -1,7 +1,6 @@
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 import {
   CreateOnlyResourceFieldNames,
-  DialogHeaderText,
   DialogMode,
 } from './create-resource-modal.enums';
 import {
@@ -75,36 +74,16 @@ export class CreateResourceModalComponent implements OnInit {
     this.form = this.fb.group(this.createControls());
   }
 
-  open(dialogType: DialogMode, resource?: Resource) {
-    if (dialogType === DialogMode.Edit && resource) {
-      this.mode.set(DialogMode.Edit);
-      this.originalResource.set(resource);
+  open(dialogMode: DialogMode, resource?: Resource) {
+    this.mode.set(dialogMode);
 
-      const fields = this.fields();
-      fields?.forEach((field) => {
-        const controlName = this.sanitizePropertyName(field.property);
-        const path = typeof field.property === 'string' ? field.property : '';
-        const value = path ? getValueByPath(resource, path) : '';
-        if (this.form.controls[controlName]) {
-          this.form.controls[controlName].setValue(value);
-          this.form.controls[controlName].markAsPristine();
-          this.form.controls[controlName].markAsUntouched();
-        }
-      });
-      this.setEditFieldsDisabled(true);
+    if (dialogMode === DialogMode.Edit && resource) {
+      this.prepareForEdit(resource);
     } else {
-      this.mode.set(DialogMode.Create);
-      this.originalResource.set(null);
-      this.form.reset();
-      this.setEditFieldsDisabled(false);
+      this.prepareForCreate();
     }
-
     const dialog = this.dialog();
     if (dialog) {
-      dialog.headerText =
-        dialogType === DialogMode.Edit
-          ? DialogHeaderText.Edit
-          : DialogHeaderText.Create;
       dialog.open = true;
     }
   }
@@ -115,7 +94,7 @@ export class CreateResourceModalComponent implements OnInit {
       dialog.open = false;
       this.form.reset();
       this.setEditFieldsDisabled(false);
-      this.mode.set(DialogMode.Create);
+      this.mode.set(null);
       this.originalResource.set(null);
     }
   }
@@ -170,6 +149,32 @@ export class CreateResourceModalComponent implements OnInit {
       field.property === CreateOnlyResourceFieldNames.SpecType ||
       field.property === CreateOnlyResourceFieldNames.MetadataNamespace
     );
+  }
+
+  private prepareForEdit(resource: Resource) {
+    this.originalResource.set(resource);
+    this.populateFormFromResource(resource);
+    this.setEditFieldsDisabled(true);
+  }
+
+  private prepareForCreate() {
+    this.originalResource.set(null);
+    this.form.reset();
+    this.setEditFieldsDisabled(false);
+  }
+
+  private populateFormFromResource(resource: Resource) {
+    const fields = this.fields();
+    fields?.forEach((field) => {
+      const controlName = this.sanitizePropertyName(field.property);
+      const path = typeof field.property === 'string' ? field.property : '';
+      const value = path ? getValueByPath(resource, path) : '';
+      if (this.form.controls[controlName]) {
+        this.form.controls[controlName].setValue(value);
+        this.form.controls[controlName].markAsPristine();
+        this.form.controls[controlName].markAsUntouched();
+      }
+    });
   }
 
   private createControls() {

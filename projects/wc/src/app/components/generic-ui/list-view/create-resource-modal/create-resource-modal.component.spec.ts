@@ -75,8 +75,6 @@ describe('CreateResourceModalComponent', () => {
       (component as any).createControls(),
     );
 
-    mockDialog.headerText = '';
-
     const resource: any = {
       metadata: { name: 'res1', namespace: 'ns1' },
       spec: { description: 'hello' },
@@ -86,7 +84,6 @@ describe('CreateResourceModalComponent', () => {
 
     component.open(DialogMode.Edit, resource);
     expect(mockDialog.open).toBeTruthy();
-    expect(mockDialog.headerText).toBe('Edit');
 
     expect(component.form.controls['metadata_name'].value).toBe('res1');
     expect(component.form.controls['metadata_namespace'].value).toBe('ns1');
@@ -226,12 +223,10 @@ describe('CreateResourceModalComponent', () => {
   });
 
   it('should set header to Create and open dialog using open function', () => {
-    mockDialog.headerText = '';
     mockDialog.open = false;
 
     component.open(DialogMode.Create);
 
-    expect(mockDialog.headerText).toBe('Create');
     expect(mockDialog.open).toBeTruthy();
   });
 });
