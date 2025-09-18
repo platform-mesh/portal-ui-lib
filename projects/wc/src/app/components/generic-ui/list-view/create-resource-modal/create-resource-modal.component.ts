@@ -8,6 +8,7 @@ import {
   Component,
   OnInit,
   ViewEncapsulation,
+  computed,
   inject,
   input,
   output,
@@ -82,12 +83,10 @@ export class CreateResourceModalComponent implements OnInit {
       const fields = this.fields();
       fields?.forEach((field) => {
         const controlName = this.sanitizePropertyName(field.property);
-        const path = Array.isArray(field.property)
-          ? ''
-          : (field.property as string);
-        const value = path ? getValueByPath(resource, path) : null;
+        const path = typeof field.property === 'string' ? field.property : '';
+        const value = path ? getValueByPath(resource, path) : '';
         if (this.form.controls[controlName]) {
-          this.form.controls[controlName].setValue(value ?? '');
+          this.form.controls[controlName].setValue(value);
           this.form.controls[controlName].markAsPristine();
           this.form.controls[controlName].markAsUntouched();
         }
@@ -128,7 +127,7 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      if (this.mode() === DialogMode.Edit) {
+      if (this.isEditMode()) {
         const orig = this.originalResource();
         if (orig?.metadata) {
           result['metadata'] = { ...orig.metadata, ...result['metadata'] };
@@ -163,9 +162,7 @@ export class CreateResourceModalComponent implements OnInit {
     return (property as string).replaceAll('.', '_');
   }
 
-  isEditMode() {
-    return this.mode() === DialogMode.Edit;
-  }
+  isEditMode = computed(() => this.mode() === DialogMode.Edit);
 
   isCreateFieldOnly(field: FieldDefinition): boolean {
     return (
@@ -190,12 +187,8 @@ export class CreateResourceModalComponent implements OnInit {
   private setEditFieldsDisabled(disabled: boolean) {
     const fields = this.fields() || [];
     fields.forEach((f) => {
-      const prop = Array.isArray(f.property) ? '' : (f.property as string);
-      if (
-        prop === CreateOnlyResourceFieldNames.MetadataName ||
-        prop === CreateOnlyResourceFieldNames.SpecType ||
-        prop === CreateOnlyResourceFieldNames.MetadataNamespace
-      ) {
+      const prop = typeof f.property === 'string' ? f.property : '';
+      if (this.isCreateFieldOnly(f)) {
         const ctrlName = this.sanitizePropertyName(prop);
         const ctrl = this.form.controls[ctrlName];
         if (ctrl) {

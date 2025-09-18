@@ -377,7 +377,7 @@ export class ResourceService {
 
   private stripTypename<T>(value: T): T {
     if (Array.isArray(value)) {
-      return (value as unknown as any[]).map((v) => this.stripTypename(v)) as unknown as T;
+      return (value as any[]).map((v) => this.stripTypename(v)) as T;
     }
     if (value && typeof value === 'object') {
       const { __typename, ...rest } = value as Record<string, unknown>;
