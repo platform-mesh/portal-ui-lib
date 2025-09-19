@@ -1,9 +1,14 @@
+import { processFields } from '../../../utils/proccess-fields';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   OnInit,
   ViewEncapsulation,
+  computed,
   effect,
   inject,
   input,
@@ -12,14 +17,17 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
-  FieldDefinition,
-  LuigiCoreService,
-  Resource,
-  ResourceDefinition,
-} from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields, getResourceValueByJsonPath, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  getResourceValueByJsonPath,
+  replaceDotsAndHyphensWithUnderscores,
+} from '@platform-mesh/portal-ui-lib/utils';
 import {
   DynamicPageComponent,
   DynamicPageTitleComponent,
@@ -35,9 +43,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import {CreateResourceModalComponent} from './create-resource-modal/create-resource-modal.component';
-import {DeleteResourceModalComponent} from './delete-resource-confirmation-modal/delete-resource-modal.component';
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -87,18 +92,23 @@ export class ListViewComponent implements OnInit {
   private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
   resources = signal<Resource[]>([]);
-  columns: FieldDefinition[];
-  heading: string;
-  resourceDefinition: ResourceDefinition;
+  heading = computed(
+    () =>
+      `${this.resourceDefinition().plural.charAt(0).toUpperCase()}${this.resourceDefinition().plural.slice(1)}`,
+  );
+  resourceDefinition = computed(() => this.context().resourceDefinition);
+  columns = computed(
+    () => this.resourceDefinition().ui?.listView?.fields || defaultColumns,
+  );
+  viewColomns = computed(() => processFields(this.columns()));
+  hasUiCreateViewFields = computed(
+    () => !!this.resourceDefinition().ui?.createView?.fields?.length,
+  );
+
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
     effect(() => {
-      this.resourceDefinition = this.context().resourceDefinition;
-      this.columns =
-        this.context().resourceDefinition.ui?.listView?.fields ||
-        defaultColumns;
-      this.heading = `${this.context().resourceDefinition.plural.charAt(0).toUpperCase()}${this.context().resourceDefinition.plural.slice(1)}`;
       this.list();
     });
   }
@@ -106,8 +116,8 @@ export class ListViewComponent implements OnInit {
   ngOnInit(): void {}
 
   list() {
-    const fields = generateGraphQLFields(this.columns);
-    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(this.resourceDefinition.group)}_${this.resourceDefinition.plural}`;
+    const fields = generateGraphQLFields(this.columns());
+    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(this.resourceDefinition().group)}_${this.resourceDefinition().plural}`;
 
     this.resourceService
       .list(queryOperation, fields, this.context())
@@ -121,7 +131,7 @@ export class ListViewComponent implements OnInit {
 
   delete(resource: Resource) {
     this.resourceService
-      .delete(resource, this.resourceDefinition, this.context())
+      .delete(resource, this.resourceDefinition(), this.context())
       .subscribe({
         next: (result) => {
           console.debug('Resource deleted.');
@@ -137,7 +147,7 @@ export class ListViewComponent implements OnInit {
 
   create(resource: Resource) {
     this.resourceService
-      .create(resource, this.resourceDefinition, this.context())
+      .create(resource, this.resourceDefinition(), this.context())
       .subscribe({
         next: (result) => {
           console.debug('Resource created', result);
@@ -156,9 +166,5 @@ export class ListViewComponent implements OnInit {
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
     this.deleteModal()?.open(resource);
-  }
-
-  hasUiCreateViewFields() {
-    return !!this.resourceDefinition?.ui?.createView?.fields?.length;
   }
 }

@@ -1,19 +1,22 @@
+import { OrganizationManagementComponent } from './organization-management.component';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   NO_ERRORS_SCHEMA,
-  signal
+  signal,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
-  ClientEnvironment, EnvConfigService,
-  I18nService, LuigiGlobalContext, NodeContext,
+  ClientEnvironment,
+  EnvConfigService,
+  I18nService,
+  LuigiGlobalContext,
+  NodeContext,
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-import { OrganizationManagementComponent } from './organization-management.component';
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
@@ -182,5 +185,58 @@ describe('OrganizationManagementComponent', () => {
     await component.switchOrganization();
 
     expect(window.location.href).toBe('https://newOrg.test.com:8080');
+  });
+
+  it('should handle invalid organization name in switchOrganization', async () => {
+    const mockEnvConfig: ClientEnvironment = {
+      idpName: 'test',
+      organization: 'test',
+      oauthServerUrl: 'https://test.com',
+      clientId: 'test',
+      baseDomain: 'test.com',
+      isLocal: false,
+      developmentInstance: false,
+      authData: {
+        expires_in: '3600',
+        access_token: 'test-access-token',
+        id_token: 'test-id-token',
+      },
+    };
+    envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+    component.organizationToSwitch = 'invalid-org-name-'; // Invalid: ends with hyphen
+
+    await component.switchOrganization();
+
+    expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalledWith({
+      text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
+      type: 'error',
+    });
+  });
+
+  it('should handle switch organization without port', async () => {
+    const mockEnvConfig: ClientEnvironment = {
+      idpName: 'test',
+      organization: 'test',
+      oauthServerUrl: 'https://test.com',
+      clientId: 'test',
+      baseDomain: 'test.com',
+      isLocal: false,
+      developmentInstance: false,
+      authData: {
+        expires_in: '3600',
+        access_token: 'test-access-token',
+        id_token: 'test-id-token',
+      },
+    };
+    envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+    component.organizationToSwitch = 'validorg';
+    Object.defineProperty(window, 'location', {
+      value: { protocol: 'https:', port: '' },
+      writable: true,
+    });
+
+    await component.switchOrganization();
+
+    expect(window.location.href).toBe('https://validorg.test.com');
   });
 });

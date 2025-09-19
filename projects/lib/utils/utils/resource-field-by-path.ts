@@ -1,9 +1,9 @@
-import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import jsonpath from 'jsonpath';
 
 export const getResourceValueByJsonPath = (
   resource: Resource,
-  field: FieldDefinition,
+  field: { jsonPathExpression?: string; property?: string | string[] },
 ) => {
   const property = field?.jsonPathExpression || field?.property;
   if (!property) {
