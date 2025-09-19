@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -54,7 +55,7 @@ export class OrganizationManagementComponent implements OnInit {
 
   texts: any = {};
   organizations = signal<string[]>([]);
-  organizationToSwitch: string;
+  organizationToSwitch = linkedSignal(() => this.organizations()[0] ?? '');
   newOrganization: string;
 
   constructor() {
@@ -72,7 +73,7 @@ export class OrganizationManagementComponent implements OnInit {
   }
 
   setOrganizationToSwitch($event: any) {
-    this.organizationToSwitch = $event.target.value;
+    this.organizationToSwitch.set($event.target.value);
   }
 
   readOrganizations() {
@@ -118,7 +119,7 @@ export class OrganizationManagementComponent implements OnInit {
             this.newOrganization,
             ...this.organizations(),
           ]);
-          this.organizationToSwitch = this.newOrganization;
+          this.organizationToSwitch.set(this.newOrganization);
           this.newOrganization = '';
           this.LuigiClient().uxManager().showAlert({
             text: 'New organization has been created, select it from the list to switch to it.',
@@ -181,7 +182,9 @@ export class OrganizationManagementComponent implements OnInit {
   async switchOrganization() {
     const { baseDomain } = await this.envConfigService.getEnvConfig();
     const protocol = window.location.protocol;
-    const sanitizedOrg = this.sanitizeSubdomainInput(this.organizationToSwitch);
+    const sanitizedOrg = this.sanitizeSubdomainInput(
+      this.organizationToSwitch(),
+    );
 
     if (!sanitizedOrg) {
       this.LuigiClient().uxManager().showAlert({

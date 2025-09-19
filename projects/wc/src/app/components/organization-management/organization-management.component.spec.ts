@@ -121,7 +121,7 @@ describe('OrganizationManagementComponent', () => {
   it('should set organization to switch', () => {
     const event = { target: { value: 'testOrg' } };
     component.setOrganizationToSwitch(event);
-    expect(component.organizationToSwitch).toBe('testOrg');
+    expect(component.organizationToSwitch()).toBe('testOrg');
   });
 
   it('should onboard new organization successfully', () => {
@@ -141,7 +141,7 @@ describe('OrganizationManagementComponent', () => {
 
     expect(resourceServiceMock.create).toHaveBeenCalled();
     expect(component.organizations()).toEqual(['newOrg', 'existingOrg']);
-    expect(component.organizationToSwitch).toBe('newOrg');
+    expect(component.organizationToSwitch()).toBe('newOrg');
     expect(component.newOrganization).toBe('');
     expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
@@ -176,7 +176,7 @@ describe('OrganizationManagementComponent', () => {
       },
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch = 'newOrg';
+    component.organizationToSwitch.set('newOrg');
     Object.defineProperty(window, 'location', {
       value: { protocol: 'https:', port: '8080' },
       writable: true,
@@ -203,7 +203,7 @@ describe('OrganizationManagementComponent', () => {
       },
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch = 'invalid-org-name-'; // Invalid: ends with hyphen
+    component.organizationToSwitch.set('invalid-org-name-'); // Invalid: ends with hyphen
 
     await component.switchOrganization();
 
@@ -229,7 +229,7 @@ describe('OrganizationManagementComponent', () => {
       },
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch = 'validorg';
+    component.organizationToSwitch.set('validorg');
     Object.defineProperty(window, 'location', {
       value: { protocol: 'https:', port: '' },
       writable: true,
