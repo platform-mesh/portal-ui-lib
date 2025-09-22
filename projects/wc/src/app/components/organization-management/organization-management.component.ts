@@ -1,8 +1,26 @@
-import { ChangeDetectionStrategy, Component, OnInit, ViewEncapsulation, effect, inject, input, linkedSignal, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  ViewEncapsulation,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { EnvConfigService, I18nService, Resource, ResourceDefinition } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  EnvConfigService,
+  I18nService,
+  Resource,
+  ResourceDefinition,
+} from '@openmfp/portal-ui-lib';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
   isLocalSetup,
@@ -126,10 +144,10 @@ export class OrganizationManagementComponent implements OnInit {
 
   private getMessageForOrganizationCreation(orgName: string) {
     if (isLocalSetup()) {
-      return `A new organization has just been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local`;
+      return `A new organization has been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local`;
     }
 
-    return 'New organization has been created, select it from the list to switch to it.';
+    return 'A new organization has been created. Select it from the list to switch.';
   }
 
   private readTranslations() {
