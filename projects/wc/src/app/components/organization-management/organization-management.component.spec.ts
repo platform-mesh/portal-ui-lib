@@ -115,7 +115,7 @@ describe('OrganizationManagementComponent', () => {
     component.ngOnInit();
 
     expect(resourceServiceMock.readOrganizations).toHaveBeenCalled();
-    expect(component.organizations()).toEqual(['org2']);
+    expect(component.organizations()).toEqual(['org1', 'org2']);
   });
 
   it('should set organization to switch', () => {
