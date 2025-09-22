@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +21,10 @@ import {
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  generateGraphQLFields,
+  isLocalSetup,
+} from '@platform-mesh/portal-ui-lib/utils';
 import {
   ButtonComponent,
   InputComponent,
@@ -54,7 +58,7 @@ export class OrganizationManagementComponent implements OnInit {
 
   texts: any = {};
   organizations = signal<string[]>([]);
-  organizationToSwitch: string;
+  organizationToSwitch = linkedSignal(() => this.organizations()[0] ?? '');
   newOrganization: string;
 
   constructor() {
@@ -72,7 +76,7 @@ export class OrganizationManagementComponent implements OnInit {
   }
 
   setOrganizationToSwitch($event: any) {
-    this.organizationToSwitch = $event.target.value;
+    this.organizationToSwitch.set($event.target.value);
   }
 
   readOrganizations() {
@@ -88,9 +92,7 @@ export class OrganizationManagementComponent implements OnInit {
       .subscribe({
         next: (result) => {
           this.organizations.set(
-            result['Accounts']
-              .map((o) => o.metadata.name)
-              .filter((o) => o !== this.context().organization),
+            result['Accounts'].map((o) => o.metadata.name),
           );
         },
       });
@@ -118,12 +120,16 @@ export class OrganizationManagementComponent implements OnInit {
             this.newOrganization,
             ...this.organizations(),
           ]);
-          this.organizationToSwitch = this.newOrganization;
+          this.organizationToSwitch.set(this.newOrganization);
           this.newOrganization = '';
-          this.LuigiClient().uxManager().showAlert({
-            text: 'New organization has been created, select it from the list to switch to it.',
-            type: 'info',
-          });
+          this.LuigiClient()
+            .uxManager()
+            .showAlert({
+              text: this.getMessageForOrganizationCreation(
+                this.organizationToSwitch(),
+              ),
+              type: 'info',
+            });
         },
         error: (_error) => {
           this.LuigiClient()
@@ -134,6 +140,14 @@ export class OrganizationManagementComponent implements OnInit {
             });
         },
       });
+  }
+
+  private getMessageForOrganizationCreation(orgName: string) {
+    if (isLocalSetup()) {
+      return `A new organization has been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local`;
+    }
+
+    return 'A new organization has been created. Select it from the list to switch.';
   }
 
   private readTranslations() {
@@ -181,7 +195,9 @@ export class OrganizationManagementComponent implements OnInit {
   async switchOrganization() {
     const { baseDomain } = await this.envConfigService.getEnvConfig();
     const protocol = window.location.protocol;
-    const sanitizedOrg = this.sanitizeSubdomainInput(this.organizationToSwitch);
+    const sanitizedOrg = this.sanitizeSubdomainInput(
+      this.organizationToSwitch(),
+    );
 
     if (!sanitizedOrg) {
       this.LuigiClient().uxManager().showAlert({

@@ -1,19 +1,22 @@
+import { OrganizationManagementComponent } from './organization-management.component';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   NO_ERRORS_SCHEMA,
-  signal
+  signal,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
-  ClientEnvironment, EnvConfigService,
-  I18nService, LuigiGlobalContext, NodeContext,
+  ClientEnvironment,
+  EnvConfigService,
+  I18nService,
+  LuigiGlobalContext,
+  NodeContext,
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-import { OrganizationManagementComponent } from './organization-management.component';
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
@@ -112,13 +115,13 @@ describe('OrganizationManagementComponent', () => {
     component.ngOnInit();
 
     expect(resourceServiceMock.readOrganizations).toHaveBeenCalled();
-    expect(component.organizations()).toEqual(['org2']);
+    expect(component.organizations()).toEqual(['org1', 'org2']);
   });
 
   it('should set organization to switch', () => {
     const event = { target: { value: 'testOrg' } };
     component.setOrganizationToSwitch(event);
-    expect(component.organizationToSwitch).toBe('testOrg');
+    expect(component.organizationToSwitch()).toBe('testOrg');
   });
 
   it('should onboard new organization successfully', () => {
@@ -138,7 +141,7 @@ describe('OrganizationManagementComponent', () => {
 
     expect(resourceServiceMock.create).toHaveBeenCalled();
     expect(component.organizations()).toEqual(['newOrg', 'existingOrg']);
-    expect(component.organizationToSwitch).toBe('newOrg');
+    expect(component.organizationToSwitch()).toBe('newOrg');
     expect(component.newOrganization).toBe('');
     expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
@@ -173,7 +176,7 @@ describe('OrganizationManagementComponent', () => {
       },
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch = 'newOrg';
+    component.organizationToSwitch.set('newOrg');
     Object.defineProperty(window, 'location', {
       value: { protocol: 'https:', port: '8080' },
       writable: true,
@@ -182,5 +185,58 @@ describe('OrganizationManagementComponent', () => {
     await component.switchOrganization();
 
     expect(window.location.href).toBe('https://newOrg.test.com:8080');
+  });
+
+  it('should handle invalid organization name in switchOrganization', async () => {
+    const mockEnvConfig: ClientEnvironment = {
+      idpName: 'test',
+      organization: 'test',
+      oauthServerUrl: 'https://test.com',
+      clientId: 'test',
+      baseDomain: 'test.com',
+      isLocal: false,
+      developmentInstance: false,
+      authData: {
+        expires_in: '3600',
+        access_token: 'test-access-token',
+        id_token: 'test-id-token',
+      },
+    };
+    envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+    component.organizationToSwitch.set('invalid-org-name-'); // Invalid: ends with hyphen
+
+    await component.switchOrganization();
+
+    expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalledWith({
+      text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
+      type: 'error',
+    });
+  });
+
+  it('should handle switch organization without port', async () => {
+    const mockEnvConfig: ClientEnvironment = {
+      idpName: 'test',
+      organization: 'test',
+      oauthServerUrl: 'https://test.com',
+      clientId: 'test',
+      baseDomain: 'test.com',
+      isLocal: false,
+      developmentInstance: false,
+      authData: {
+        expires_in: '3600',
+        access_token: 'test-access-token',
+        id_token: 'test-id-token',
+      },
+    };
+    envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+    component.organizationToSwitch.set('validorg');
+    Object.defineProperty(window, 'location', {
+      value: { protocol: 'https:', port: '' },
+      writable: true,
+    });
+
+    await component.switchOrganization();
+
+    expect(window.location.href).toBe('https://validorg.test.com');
   });
 });

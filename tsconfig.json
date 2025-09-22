@@ -12,11 +12,16 @@
     "noPropertyAccessFromIndexSignature": false,
     "paths": {
       "@platform-mesh/portal-ui-lib/*": ["./projects/lib/*"],
-      "@platform-mesh/portal-ui-lib": [
-        "./projects/lib"
+      "@platform-mesh/portal-ui-lib": ["./projects/lib"],
+      "@platform-mesh/portal-ui-lib/services": [
+        "./projects/lib/services/public-api.ts"
       ],
-      "@platform-mesh/portal-ui-lib/services": ["./projects/lib/services/public-api.ts"],
-      "@platform-mesh/portal-ui-lib/utils": ["./projects/lib/utils/public-api.ts"],
+      "@platform-mesh/portal-ui-lib/utils": [
+        "./projects/lib/utils/public-api.ts"
+      ],
+      "@platform-mesh/portal-ui-lib/models": [
+        "./projects/lib/models/public-api.ts"
+      ]
     },
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
