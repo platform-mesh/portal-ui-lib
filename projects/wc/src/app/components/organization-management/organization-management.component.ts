@@ -91,7 +91,6 @@ export class OrganizationManagementComponent implements OnInit {
           this.organizations.set(
             result['Accounts']
               .map((o) => o.metadata.name)
-              .filter((o) => o !== this.context().organization),
           );
         },
       });
@@ -122,7 +121,7 @@ export class OrganizationManagementComponent implements OnInit {
           this.organizationToSwitch.set(this.newOrganization);
           this.newOrganization = '';
           this.LuigiClient().uxManager().showAlert({
-            text: 'New organization has been created, select it from the list to switch to it.',
+            text: this.getMessageForOrganizationCreation(this.organizationToSwitch()),
             type: 'info',
           });
         },
@@ -135,6 +134,18 @@ export class OrganizationManagementComponent implements OnInit {
             });
         },
       });
+  }
+
+  private getMessageForOrganizationCreation(orgName: string) {
+    if(this.isLocalSetup()) {
+      return `A new organization has just been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local`
+    }
+
+    return 'New organization has been created, select it from the list to switch to it.';
+  }
+
+  private isLocalSetup() {
+    return window.location.hostname.includes('localhost') || window.location.hostname.includes('portal.dev.local');
   }
 
   private readTranslations() {
