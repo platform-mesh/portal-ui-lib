@@ -679,29 +679,6 @@ describe('ResourceService', () => {
     });
   });
 
-  describe('stripTypename (private)', () => {
-    it('should return primitives as-is', () => {
-      // @ts-ignore accessing private method for test
-      expect((service as any).stripTypename(42)).toBe(42);
-      // @ts-ignore
-      expect((service as any).stripTypename('x')).toBe('x');
-      // @ts-ignore
-      expect((service as any).stripTypename(null)).toBe(null);
-      // @ts-ignore
-      expect((service as any).stripTypename(undefined)).toBe(undefined);
-    });
-
-    it('should clean nested objects and arrays', () => {
-      const input = {
-        __typename: 'Root',
-        a: { __typename: 'A', b: 1 },
-        arr: [{ __typename: 'X', v: 1 }, [{ __typename: 'Y', z: 2 }, 3]],
-      } as any;
-      // @ts-ignore
-      const output = (service as any).stripTypename(input);
-      expect(output).toEqual({ a: { b: 1 }, arr: [{ v: 1 }, [{ z: 2 }, 3]] });
-    });
-  });
 
   describe('readAccountInfo', () => {
     it('should read account info', (done) => {

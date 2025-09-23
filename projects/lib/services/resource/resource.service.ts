@@ -7,6 +7,7 @@ import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
+  stripTypename,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
@@ -286,7 +287,7 @@ export class ResourceService {
     const kind = resourceDefinition.kind;
     const namespace = nodeContext.namespaceId;
 
-    const cleanResource = this.stripTypename(resource);
+    const cleanResource = stripTypename(resource);
 
     const mutation = gqlBuilder.mutation({
       operation: group,
@@ -367,17 +368,4 @@ export class ResourceService {
     return nodeContext?.resourceDefinition?.scope === 'Namespaced';
   }
 
-  private stripTypename<T>(value: T): T {
-    if (Array.isArray(value)) {
-      return (value as any[]).map((v) => this.stripTypename(v)) as T;
-    }
-    if (value && typeof value === 'object') {
-      const { __typename, ...rest } = value as Record<string, unknown>;
-      for (const k of Object.keys(rest)) {
-        rest[k] = this.stripTypename(rest[k]);
-      }
-      return rest as T;
-    }
-    return value;
-  }
 }
