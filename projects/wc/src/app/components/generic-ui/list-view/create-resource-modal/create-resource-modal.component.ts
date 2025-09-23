@@ -70,11 +70,8 @@ export class CreateResourceModalComponent implements OnInit {
   }
 
   open(resource?: Resource) {
-    if (resource) {
-      this.prepareForEdit(resource);
-    } else {
-      this.prepareForCreate();
-    }
+    this.originalResource.set(resource);
+    this.form = this.fb.group(this.createControls(resource));
     const dialog = this.dialog();
     if (dialog) {
       dialog.open = true;
@@ -86,7 +83,6 @@ export class CreateResourceModalComponent implements OnInit {
     if (dialog) {
       dialog.open = false;
       this.form.reset();
-      this.setEditFieldsDisabled(false);
       this.originalResource.set(null);
     }
   }
@@ -98,11 +94,8 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      const orig = this.originalResource();
-      if (orig) {
-        if (orig.metadata) {
-          result['metadata'] = { ...orig.metadata, ...result['metadata'] };
-        }
+      console.log('result: ', result);
+      if (this.isEditMode()) {
         this.updateResource.emit(result);
       } else {
         this.resource.emit(result);
@@ -145,57 +138,25 @@ export class CreateResourceModalComponent implements OnInit {
     );
   }
 
-  private prepareForEdit(resource: Resource) {
-    this.originalResource.set(resource);
-    this.populateFormFromResource(resource);
-    this.setEditFieldsDisabled(true);
-  }
-
-  private prepareForCreate() {
-    this.originalResource.set(null);
-    this.form.reset();
-    this.setEditFieldsDisabled(false);
-  }
-
-  private populateFormFromResource(resource: Resource) {
-    const fields = this.fields();
-    fields?.forEach((field) => {
-      const controlName = this.sanitizePropertyName(field.property);
-      const path = typeof field.property === 'string' ? field.property : '';
-      const value = path ? getValueByPath(resource, path) : '';
-      if (this.form.controls[controlName]) {
-        this.form.controls[controlName].setValue(value);
-        this.form.controls[controlName].markAsPristine();
-        this.form.controls[controlName].markAsUntouched();
-      }
-    });
-  }
-
-  private createControls() {
+  private createControls(resource?: Resource) {
     return this.fields().reduce(
       (obj, fieldDefinition) => {
         const validator = fieldDefinition.required ? Validators.required : null;
-        obj[this.sanitizePropertyName(fieldDefinition.property)] =
-          new FormControl('', validator);
+        const fieldName = this.sanitizePropertyName(fieldDefinition.property);
+        const fieldValue =
+          resource && typeof fieldDefinition.property === 'string'
+            ? getValueByPath(resource, fieldDefinition.property)
+            : '';
+        obj[fieldName] = new FormControl(fieldValue, validator);
+        const isDisabled =
+          !!resource && this.isCreateFieldOnly(fieldDefinition);
+        if (isDisabled) {
+          obj[fieldName].disable({ onlySelf: true });
+        }
+
         return obj;
       },
       {} as Record<string, FormControl>,
     );
-  }
-
-  private setEditFieldsDisabled(disabled: boolean) {
-    const fields = this.fields() || [];
-    fields.forEach((f) => {
-      const prop = typeof f.property === 'string' ? f.property : '';
-      if (this.isCreateFieldOnly(f)) {
-        const ctrlName = this.sanitizePropertyName(prop);
-        const ctrl = this.form.controls[ctrlName];
-        if (ctrl) {
-          disabled
-            ? ctrl.disable({ emitEvent: false })
-            : ctrl.enable({ emitEvent: false });
-        }
-      }
-    });
   }
 }
