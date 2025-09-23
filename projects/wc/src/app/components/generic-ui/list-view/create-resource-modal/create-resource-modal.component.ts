@@ -1,13 +1,9 @@
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
-import {
-  CreateOnlyResourceFieldNames,
-  DialogMode,
-} from './create-resource-modal.enums';
+import { CreateOnlyResourceFieldNames } from './create-resource-modal.enums';
 import {
   Component,
   OnInit,
   ViewEncapsulation,
-  computed,
   inject,
   input,
   output,
@@ -67,17 +63,14 @@ export class CreateResourceModalComponent implements OnInit {
   fb = inject(FormBuilder);
   form: FormGroup;
 
-  private mode = signal<DialogMode>(DialogMode.Create);
   private originalResource = signal<Resource | null>(null);
 
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
   }
 
-  open(dialogMode: DialogMode, resource?: Resource) {
-    this.mode.set(dialogMode);
-
-    if (dialogMode === DialogMode.Edit && resource) {
+  open(resource?: Resource) {
+    if (resource) {
       this.prepareForEdit(resource);
     } else {
       this.prepareForCreate();
@@ -94,7 +87,6 @@ export class CreateResourceModalComponent implements OnInit {
       dialog.open = false;
       this.form.reset();
       this.setEditFieldsDisabled(false);
-      this.mode.set(null);
       this.originalResource.set(null);
     }
   }
@@ -106,9 +98,9 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      if (this.isEditMode()) {
-        const orig = this.originalResource();
-        if (orig?.metadata) {
+      const orig = this.originalResource();
+      if (orig) {
+        if (orig.metadata) {
           result['metadata'] = { ...orig.metadata, ...result['metadata'] };
         }
         this.updateResource.emit(result);
@@ -141,7 +133,9 @@ export class CreateResourceModalComponent implements OnInit {
     return (property as string).replaceAll('.', '_');
   }
 
-  isEditMode = computed(() => this.mode() === DialogMode.Edit);
+  isEditMode() {
+    return !!this.originalResource();
+  }
 
   isCreateFieldOnly(field: FieldDefinition): boolean {
     return (

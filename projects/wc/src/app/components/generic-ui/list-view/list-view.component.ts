@@ -1,6 +1,5 @@
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
-import { DialogMode } from './create-resource-modal/create-resource-modal.enums';
 import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
@@ -158,12 +157,12 @@ export class ListViewComponent implements OnInit {
   }
 
   openCreateResourceModal() {
-    this.createModal()?.open(DialogMode.Create);
+    this.createModal()?.open();
   }
 
   openEditResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
-    this.createModal()?.open(DialogMode.Edit, resource);
+    this.createModal()?.open(resource);
   }
 
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {

@@ -1,5 +1,4 @@
 import { CreateResourceModalComponent } from './create-resource-modal.component';
-import { DialogMode } from './create-resource-modal.enums';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -59,7 +58,7 @@ describe('CreateResourceModalComponent', () => {
   });
 
   it('should open dialog when open method is called', () => {
-    component.open(DialogMode.Create);
+    component.open();
     expect(mockDialog.open).toBeTruthy();
   });
 
@@ -82,7 +81,7 @@ describe('CreateResourceModalComponent', () => {
 
     const updateSpy = spyOn(component.updateResource, 'emit');
 
-    component.open(DialogMode.Edit, resource);
+    component.open(resource);
     expect(mockDialog.open).toBeTruthy();
 
     expect(component.form.controls['metadata_name'].value).toBe('res1');
@@ -222,10 +221,10 @@ describe('CreateResourceModalComponent', () => {
     expect(component.isCreateFieldOnly(otherField)).toBeFalsy();
   });
 
-  it('should set header to Create and open dialog using open function', () => {
+  it('should open dialog using open function', () => {
     mockDialog.open = false;
 
-    component.open(DialogMode.Create);
+    component.open();
 
     expect(mockDialog.open).toBeTruthy();
   });

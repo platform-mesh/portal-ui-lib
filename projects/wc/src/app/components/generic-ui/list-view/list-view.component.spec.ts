@@ -120,7 +120,7 @@ describe('ListViewComponent', () => {
     const openSpy = jest.fn();
     (component as any).createModal = () => ({ open: openSpy });
     component.openCreateResourceModal();
-    expect(openSpy).toHaveBeenCalledWith('create');
+    expect(openSpy).toHaveBeenCalledWith();
   });
 
   it('should open delete resource modal and stop event propagation', () => {
@@ -144,7 +144,7 @@ describe('ListViewComponent', () => {
     component.openEditResourceModal(event, resource);
 
     expect(event.stopPropagation).toHaveBeenCalled();
-    expect(openSpy).toHaveBeenCalledWith('edit', resource);
+    expect(openSpy).toHaveBeenCalledWith(resource);
   });
 
   it('should check create view fields existence', () => {
