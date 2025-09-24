@@ -1,5 +1,6 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
+
 export interface FieldDefinition {
   label?: string;
   property: string | string[];
@@ -9,7 +10,8 @@ export interface FieldDefinition {
   group?: {
     name: string;
     label?: string;
-    deliminator?: string; // default ', '
+    delimiter?: string;
+    multiline?: boolean;
   };
   dynamicValuesDefinition?: {
     operation: string;

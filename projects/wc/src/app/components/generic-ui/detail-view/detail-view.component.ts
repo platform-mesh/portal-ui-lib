@@ -1,20 +1,28 @@
+import { processFields } from '../../../utils/proccess-fields';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { kubeConfigTemplate } from './kubeconfig-template';
 import {
   ChangeDetectionStrategy,
   Component,
   ViewEncapsulation,
+  computed,
   effect,
   inject,
   input,
   signal,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
-  FieldDefinition,
-  Resource,
-  ResourceDefinition,
-} from '@openmfp/portal-ui-lib';
-import { GatewayService, ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields, getResourceValueByJsonPath, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+  GatewayService,
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  getResourceValueByJsonPath,
+  replaceDotsAndHyphensWithUnderscores,
+} from '@platform-mesh/portal-ui-lib/utils';
 import {
   DynamicPageComponent,
   DynamicPageHeaderComponent,
@@ -25,8 +33,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { kubeConfigTemplate } from './kubeconfig-template';
 
 const defaultFields: FieldDefinition[] = [
   {
@@ -64,34 +70,32 @@ export class DetailViewComponent {
   context = input<ResourceNodeContext>();
   resource = signal<Resource | null>(null);
 
-  resourceDefinition: ResourceDefinition;
-  workspacePath: string;
-  resourceFields: FieldDefinition[];
-  kcpCA: string = '';
-  resourceId: string;
+  resourceDefinition = computed(() => this.context().resourceDefinition);
+  resourceFields = computed(
+    () => this.resourceDefinition().ui?.detailView?.fields || defaultFields,
+  );
+  resourceId = computed(() => this.context().entity.metadata.name);
+  workspacePath = computed(() =>
+    this.gatewayService.resolveKcpPath(this.context()),
+  );
+  viewFields = computed(() => processFields(this.resourceFields()));
 
   constructor() {
     effect(() => {
-      this.workspacePath = this.gatewayService.resolveKcpPath(this.context());
-      this.resourceFields =
-        this.context().resourceDefinition.ui?.detailView?.fields ||
-        defaultFields;
-      this.resourceDefinition = this.context().resourceDefinition;
-      this.resourceId = this.context().entity.metadata.name;
       this.readResource();
     });
   }
 
   private readResource(): void {
-    const fields = generateGraphQLFields(this.resourceFields);
+    const fields = generateGraphQLFields(this.resourceFields());
     const queryOperation = replaceDotsAndHyphensWithUnderscores(
-      this.resourceDefinition.group,
+      this.resourceDefinition().group,
     );
-    const kind = this.resourceDefinition.kind;
+    const kind = this.resourceDefinition().kind;
 
     this.resourceService
       .read(
-        this.resourceId,
+        this.resourceId(),
         queryOperation,
         kind,
         fields,

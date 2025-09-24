@@ -30,11 +30,31 @@ In order to use the generic list view, you need to adjust the node’s   `conten
       corresponding views
 
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
-          the column name, whereas `"property"` is a json path of the property of a resource to be read.
-        - `"detailView"`: similarly describes the fields which are to show up on the detailed view.
+          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column.
+        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
           there is a possibility to provide a list of values to select from. Also, it's possible to specify a GraphQL query to retrieve a dynamic list of values to select from using the `"dynamicValuesDefinition"`. You need to provide `"gqlQuery"` and `"operation"`, as well as `"key"` - a JSON path to the property that will be used as the displayed value, and `"value"` — a JSON path to the actual value.
+
+#### Field Definition Properties
+
+Each field definition supports the following properties:
+
+- `"label"`: Display name for the field
+- `"property"`: JSON path to the resource property (string or array of strings for fallback values)
+- `"jsonPathExpression"`: Alternative JSONPath expression for complex data access (takes precedence over `property`)
+- `"required"`: Boolean flag indicating if the field is mandatory (for create views)
+- `"values"`: Array of predefined values for selection
+- `"group"`: Object for grouping related fields together:
+  - `"name"`: Unique identifier for the group
+  - `"label"`: Display name for the group
+  - `"delimiter"`: String used to separate grouped values
+  - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
+- `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
+  - `"operation"`: GraphQL operation name
+  - `"gqlQuery"`: GraphQL query string
+  - `"value"`: JSON path to the actual value in the response
+  - `"key"`: JSON path to the display value in the response
 
 #### Example Content Configuration for an Accounts Node
 Below is an example content-configuration for an accounts node using the generic list view.
@@ -81,6 +101,24 @@ Below is an example content-configuration for an accounts node using the generic
                     {
                       "label": "Type",
                       "property": "spec.type"
+                    },
+                    {
+                      "label": "Contact Info",
+                      "property": "spec.email",
+                      "group": {
+                        "name": "contact",
+                        "label": "Contact Information",
+                        "delimiter": " | "
+                      }
+                    },
+                    {
+                      "label": "Phone",
+                      "property": "spec.phone",
+                      "group": {
+                        "name": "contact",
+                        "label": "Contact Information",
+                        "delimiter": " | "
+                      }
                     }
                   ]
                 },
@@ -93,6 +131,24 @@ Below is an example content-configuration for an accounts node using the generic
                     {
                       "label": "Display Name",
                       "property": "spec.displayName"
+                    },
+                    {
+                      "label": "Contact Info",
+                      "property": "spec.email",
+                      "group": {
+                        "name": "contact",
+                        "label": "Contact Information",
+                        "delimiter": " | "
+                      }
+                    },
+                    {
+                      "label": "Phone",
+                      "property": "spec.phone",
+                      "group": {
+                        "name": "contact",
+                        "label": "Contact Information",
+                        "delimiter": " | "
+                      }
                     }
                   ]
                 },

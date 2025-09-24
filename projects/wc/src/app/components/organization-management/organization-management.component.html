@@ -11,17 +11,17 @@
     <div class="organization-management-input">
       <ui5-select
         id="select-switch"
-        [value]="organizationToSwitch"
+        [value]="organizationToSwitch()"
         (input)="setOrganizationToSwitch($event)"
         (change)="setOrganizationToSwitch($event)"
       >
         @for (org of organizations(); track org) {
-          <ui5-option [value]="org" [selected]="org === organizationToSwitch">{{
+          <ui5-option [value]="org" [selected]="org === organizationToSwitch()">{{
             org
           }}</ui5-option>
         }
       </ui5-select>
-      <ui5-button design="Emphasized" (ui5Click)="switchOrganization()">{{
+      <ui5-button [disabled]="!organizationToSwitch()" design="Emphasized" (ui5Click)="switchOrganization()">{{
         texts.switchOrganization.button
       }}</ui5-button>
     </div>
