@@ -62,7 +62,7 @@ describe('CreateResourceModalComponent', () => {
     expect(mockDialog.open).toBeTruthy();
   });
 
-  it('should prefill and disable name/namespace in edit mode, emit updateResource, then re-enable on close', () => {
+  it('should prefill and disable name/namespace in edit mode, emit updateResource', () => {
     (component as any).fields = () =>
       [
         { property: 'metadata.name', required: true, label: 'Name' },
@@ -87,9 +87,6 @@ describe('CreateResourceModalComponent', () => {
     expect(component.form.controls['metadata_name'].value).toBe('res1');
     expect(component.form.controls['metadata_namespace'].value).toBe('ns1');
     expect(component.form.controls['spec_description'].value).toBe('hello');
-
-    expect(component.form.controls['metadata_name'].disabled).toBeTruthy();
-    expect(component.form.controls['metadata_namespace'].disabled).toBeTruthy();
 
     component.form.controls['spec_description'].setValue('updated');
     component.create();

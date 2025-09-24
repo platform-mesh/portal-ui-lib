@@ -16,6 +16,7 @@ describe('ListViewComponent', () => {
       delete: jest.fn().mockReturnValue(of({})),
       create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
       update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
+      read: jest.fn().mockReturnValue(of({})),
     };
 
     mockLuigiCoreService = {
@@ -140,6 +141,8 @@ describe('ListViewComponent', () => {
     const resource = { metadata: { name: 'to-edit' } } as any;
     const openSpy = jest.fn();
     (component as any).createModal = () => ({ open: openSpy });
+
+    mockResourceService.read.mockReturnValueOnce(of(resource));
 
     component.openEditResourceModal(event, resource);
 

@@ -162,7 +162,26 @@ export class ListViewComponent implements OnInit {
 
   openEditResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
-    this.createModal()?.open(resource);
+
+    const groupOperation = replaceDotsAndHyphensWithUnderscores(
+      this.resourceDefinition.group,
+    );
+    const kind = this.resourceDefinition.kind;
+    const fields = generateGraphQLFields(
+      this.resourceDefinition.ui?.createView?.fields || [],
+    );
+
+    this.resourceService
+      .read(
+        resource.metadata.name,
+        groupOperation,
+        kind,
+        fields,
+        this.context(),
+      )
+      .subscribe({
+        next: (result) => this.createModal()?.open(result),
+      });
   }
 
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {
