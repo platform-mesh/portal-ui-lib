@@ -29,7 +29,9 @@ const collectGroupFields = (
       acc[key] = [];
     }
 
-    acc[key].push(f);
+    // Strip group information from the field when adding to the fields array
+    const { group, ...fieldWithoutGroup } = f;
+    acc[key].push(fieldWithoutGroup);
     return acc;
   }, {});
 };
