@@ -1,9 +1,9 @@
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
+
 type GroupBase = NonNullable<FieldDefinition['group']>;
-type ProcessedValue = { property: string | string[]; label: string };
 type ProcessedGroup = GroupBase & {
-  values?: ProcessedValue[];
+  fields?: FieldDefinition[];
 };
 
 export type ProcessedFieldDefinition = Omit<FieldDefinition, 'group'> & {
@@ -16,10 +16,10 @@ export const processFields = (
   return combineGroupFields(fields);
 };
 
-const collectGroupProperties = (
+const collectGroupFields = (
   fields: FieldDefinition[],
-): Record<string, ProcessedValue[]> => {
-  return fields.reduce((acc, f): Record<string, ProcessedValue[]> => {
+): Record<string, FieldDefinition[]> => {
+  return fields.reduce((acc, f): Record<string, FieldDefinition[]> => {
     if (!f.group?.name) {
       return acc;
     }
@@ -29,10 +29,7 @@ const collectGroupProperties = (
       acc[key] = [];
     }
 
-    acc[key].push({
-      property: f.jsonPathExpression ?? f.property,
-      label: f.label,
-    });
+    acc[key].push(f);
     return acc;
   }, {});
 };
@@ -41,7 +38,7 @@ const combineGroupFields = (
   fields: FieldDefinition[],
 ): ProcessedFieldDefinition[] => {
   const seenGroup = new Set<string>();
-  const groupProps = collectGroupProperties(fields);
+  const groupFields = collectGroupFields(fields);
   const result: ProcessedFieldDefinition[] = [];
 
   fields.forEach((f) => {
@@ -61,7 +58,7 @@ const combineGroupFields = (
       ...f,
       group: {
         ...f.group,
-        values: groupProps[key],
+        fields: groupFields[key],
       },
     };
 

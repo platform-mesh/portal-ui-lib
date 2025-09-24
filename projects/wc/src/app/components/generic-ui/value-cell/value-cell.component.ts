@@ -6,16 +6,21 @@ import {
   computed,
   input,
 } from '@angular/core';
+import { LabelDisplay } from '@platform-mesh/portal-ui-lib/models/models';
+import { LabelValue } from "./label-value/label-value.component";
 
 @Component({
   selector: 'value-cell',
   standalone: true,
-  imports: [BooleanValueComponent, LinkValueComponent],
+  imports: [BooleanValueComponent, LinkValueComponent, LabelValue],
   templateUrl: './value-cell.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ValueCellComponent {
   value = input<unknown>();
+  labelDisplay = input<LabelDisplay>();
+
+  isLabelValue = computed(() => this.labelDisplay() !== undefined);
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
 

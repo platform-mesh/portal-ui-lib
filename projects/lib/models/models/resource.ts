@@ -1,6 +1,15 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
 
+export interface LabelDisplay {
+  backgroundColor?: string;
+  color?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textTransform?: string;
+}
+
 export interface FieldDefinition {
   label?: string;
   property: string | string[];
@@ -13,6 +22,7 @@ export interface FieldDefinition {
     delimiter?: string;
     multiline?: boolean;
   };
+  labelDisplay?: LabelDisplay;
   dynamicValuesDefinition?: {
     operation: string;
     gqlQuery: string;

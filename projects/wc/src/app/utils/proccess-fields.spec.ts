@@ -237,7 +237,7 @@ describe('proccess-fields', () => {
       const result = processFields(fields);
 
       expect(result).toHaveLength(1);
-      expect(result[0].group?.values).toEqual([
+      expect(result[0].group?.fields).toEqual([
         { property: 'user.personal.firstName', label: 'First Name' },
         { property: 'user.personal.lastName', label: 'Last Name' },
         { property: 'email', label: 'Email' },
@@ -267,7 +267,7 @@ describe('proccess-fields', () => {
       const result = processFields(fields);
 
       expect(result).toHaveLength(1);
-      expect(result[0].group?.values).toEqual([
+      expect(result[0].group?.fields).toEqual([
         { property: ['firstName', 'first_name'], label: 'First Name' },
         { property: ['lastName', 'last_name'], label: 'Last Name' },
       ]);
@@ -474,11 +474,11 @@ describe('proccess-fields', () => {
       expect(idField?.property).toBe('id');
       expect(statusField?.property).toBe('status');
 
-      expect(personalInfoField?.group?.values).toEqual([
+      expect(personalInfoField?.group?.fields).toEqual([
         { property: 'firstName', label: 'First Name' },
         { property: 'lastName', label: 'Last Name' },
       ]);
-      expect(addressField?.group?.values).toEqual([
+      expect(addressField?.group?.fields).toEqual([
         { property: 'street', label: 'Street' },
         { property: 'city', label: 'City' },
         { property: 'country', label: 'Country' },
