@@ -178,6 +178,7 @@ export class ListViewComponent implements OnInit {
         kind,
         fields,
         this.context(),
+        false,
       )
       .subscribe({
         next: (result) => this.createModal()?.open(result),
