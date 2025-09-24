@@ -94,7 +94,6 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      console.log('result: ', result);
       if (this.isEditMode()) {
         this.updateResource.emit(result);
       } else {
@@ -148,11 +147,6 @@ export class CreateResourceModalComponent implements OnInit {
             ? getValueByPath(resource, fieldDefinition.property)
             : '';
         obj[fieldName] = new FormControl(fieldValue, validator);
-        const isDisabled =
-          !!resource && this.isCreateFieldOnly(fieldDefinition);
-        if (isDisabled) {
-          obj[fieldName].disable({ onlySelf: true });
-        }
 
         return obj;
       },

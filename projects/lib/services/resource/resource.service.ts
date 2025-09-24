@@ -367,5 +367,4 @@ export class ResourceService {
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
     return nodeContext?.resourceDefinition?.scope === 'Namespaced';
   }
-
 }
