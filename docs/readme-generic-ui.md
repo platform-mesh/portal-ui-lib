@@ -51,7 +51,7 @@ Each field definition supports the following properties:
   - `"label"`: Display name for the group
   - `"delimiter"`: String used to separate grouped values
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
-- `"labelDisplay"`: Object for customizing the visual appearance of field values:
+- `"labelDisplay"`: Boolean value for using the defaults or an object for customizing the visual appearance of field values:
   - `"backgroundColor"`: Background color for the value (CSS color value)
   - `"color"`: Text color for the value (CSS color value)
   - `"fontWeight"`: Font weight for the value (CSS font-weight value)
