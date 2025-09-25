@@ -1,4 +1,5 @@
 import { BooleanValueComponent } from './boolean-value/boolean-value.component';
+import { LabelValue } from './label-value/label-value.component';
 import { LinkValueComponent } from './link-value/link-value.component';
 import {
   ChangeDetectionStrategy,
@@ -7,7 +8,6 @@ import {
   input,
 } from '@angular/core';
 import { LabelDisplay } from '@platform-mesh/portal-ui-lib/models/models';
-import { LabelValue } from "./label-value/label-value.component";
 
 @Component({
   selector: 'value-cell',
@@ -18,14 +18,17 @@ import { LabelValue } from "./label-value/label-value.component";
 })
 export class ValueCellComponent {
   value = input<unknown>();
-  labelDisplay = input<LabelDisplay>();
+  labelDisplay = input<LabelDisplay | boolean>();
 
-  isLabelValue = computed(() => this.labelDisplay() !== undefined);
+  isLabelValue = computed(() => this.labelDisplayValue() !== undefined);
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
 
   boolValue = computed(() => this.normalizeBoolean(this.value()));
   stringValue = computed(() => this.normalizeString(this.value()));
+  labelDisplayValue = computed(() =>
+    this.normalizeLabelDisplay(this.labelDisplay()),
+  );
 
   private normalizeBoolean(value: unknown): boolean | undefined {
     const normalizedValue = value?.toString()?.toLowerCase();
@@ -57,5 +60,17 @@ export class ValueCellComponent {
     } catch {
       return false;
     }
+  }
+
+  private normalizeLabelDisplay(value: unknown): LabelDisplay | undefined {
+    if (typeof value === 'object' && value !== null) {
+      return value;
+    }
+
+    if (value) {
+      return {};
+    }
+
+    return undefined;
   }
 }
