@@ -2,6 +2,9 @@
     <wc-boolean-value [boolValue]="boolValue()"></wc-boolean-value>
   } @else if (isUrlValue()) {
     <wc-link-value [urlValue]="stringValue()"></wc-link-value>
-  } @else {
+  } @else if (isLabelValue()) {
+    <wc-label-value [labelDisplay]="labelDisplayValue()" [value]="value()"></wc-label-value>
+  }
+  @else {
     {{ value() }}
   }
