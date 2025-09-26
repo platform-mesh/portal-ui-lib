@@ -155,12 +155,47 @@ export class ListViewComponent implements OnInit {
       });
   }
 
+  update(resource: Resource) {
+    this.resourceService
+      .update(resource, this.resourceDefinition(), this.context())
+      .subscribe({
+        next: (result) => {
+          console.debug('Resource updated', result);
+        },
+      });
+  }
+
   navigateToResource(resource: Resource) {
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
   openCreateResourceModal() {
     this.createModal()?.open();
+  }
+
+  openEditResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+
+    const groupOperation = replaceDotsAndHyphensWithUnderscores(
+      this.resourceDefinition().group,
+    );
+    const kind = this.resourceDefinition().kind;
+    const fields = generateGraphQLFields(
+      this.resourceDefinition().ui?.createView?.fields || [],
+    );
+
+    this.resourceService
+      .read(
+        resource.metadata.name,
+        groupOperation,
+        kind,
+        fields,
+        this.context(),
+        false,
+      )
+      .subscribe({
+        next: (result) => this.createModal()?.open(result),
+      });
   }
 
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {

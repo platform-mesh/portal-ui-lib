@@ -1,5 +1,5 @@
 import { CreateResourceModalComponent } from './create-resource-modal.component';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FieldDefinition } from '@openmfp/portal-ui-lib';
@@ -17,7 +17,8 @@ describe('CreateResourceModalComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule, CreateResourceModalComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
+      teardown: { destroyAfterEach: true },
     })
       .overrideComponent(CreateResourceModalComponent, {
         set: { template: '' },
@@ -59,6 +60,44 @@ describe('CreateResourceModalComponent', () => {
   it('should open dialog when open method is called', () => {
     component.open();
     expect(mockDialog.open).toBeTruthy();
+  });
+
+  it('should prefill and disable name/namespace in edit mode, emit updateResource', () => {
+    (component as any).fields = () =>
+      [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        { property: 'metadata.namespace', required: false, label: 'Namespace' },
+        { property: 'spec.description', required: false, label: 'Description' },
+      ] as any;
+
+    component.form = (component as any).fb.group(
+      (component as any).createControls(),
+    );
+
+    const resource: any = {
+      metadata: { name: 'res1', namespace: 'ns1' },
+      spec: { description: 'hello' },
+    };
+
+    const updateSpy = spyOn(component.updateResource, 'emit');
+
+    component.open(resource);
+    expect(mockDialog.open).toBeTruthy();
+
+    expect(component.form.controls['metadata_name'].value).toBe('res1');
+    expect(component.form.controls['metadata_namespace'].value).toBe('ns1');
+    expect(component.form.controls['spec_description'].value).toBe('hello');
+
+    component.form.controls['spec_description'].setValue('updated');
+    component.create();
+
+    expect(updateSpy).toHaveBeenCalledWith({
+      metadata: { name: 'res1', namespace: 'ns1' },
+      spec: { description: 'updated' },
+    });
+
+    expect(component.form.controls['metadata_name'].disabled).toBeFalsy();
+    expect(component.form.controls['metadata_namespace'].disabled).toBeFalsy();
   });
 
   it('should close dialog and reset form when close method is called', () => {
@@ -167,5 +206,23 @@ describe('CreateResourceModalComponent', () => {
         'Wrong property type, array not supported',
       );
     });
+  });
+
+  it('should detect name/namespace and not other fields in isCreateFieldOnly function', () => {
+    const nameField: any = { property: 'metadata.name' };
+    const nsField: any = { property: 'metadata.namespace' };
+    const otherField: any = { property: 'spec.description' };
+
+    expect(component.isCreateFieldOnly(nameField)).toBeTruthy();
+    expect(component.isCreateFieldOnly(nsField)).toBeTruthy();
+    expect(component.isCreateFieldOnly(otherField)).toBeFalsy();
+  });
+
+  it('should open dialog using open function', () => {
+    mockDialog.open = false;
+
+    component.open();
+
+    expect(mockDialog.open).toBeTruthy();
   });
 });

@@ -15,6 +15,8 @@ describe('ListViewComponent', () => {
       list: jest.fn().mockReturnValue(of([{ metadata: { name: 'test' } }])),
       delete: jest.fn().mockReturnValue(of({})),
       create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
+      update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
+      read: jest.fn().mockReturnValue(of({})),
     };
 
     mockLuigiCoreService = {
@@ -67,7 +69,7 @@ describe('ListViewComponent', () => {
     expect(component.resources().length).toBeGreaterThan(0);
   });
 
-  it('should not show alert when delete is called (no backend call)', () => {
+  it('should not show alert when delete is called', () => {
     const resource = { metadata: { name: 'test' } } as any;
     component.delete(resource);
     expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
@@ -92,6 +94,16 @@ describe('ListViewComponent', () => {
     expect(mockResourceService.create).toHaveBeenCalled();
   });
 
+  it('should handle update from modal', () => {
+    const consoleSpy = jest
+      .spyOn(console, 'debug')
+      .mockImplementation(() => {});
+    const updated = { metadata: { name: 'x' }, spec: { a: 1 } } as any;
+    component.update(updated);
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
   it('should navigate to resource', () => {
     const resource = { metadata: { name: 'res1' } };
     const navSpy = jest.fn();
@@ -109,7 +121,7 @@ describe('ListViewComponent', () => {
     const openSpy = jest.fn();
     (component as any).createModal = () => ({ open: openSpy });
     component.openCreateResourceModal();
-    expect(openSpy).toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith();
   });
 
   it('should open delete resource modal and stop event propagation', () => {
@@ -119,6 +131,20 @@ describe('ListViewComponent', () => {
     (component as any).deleteModal = () => ({ open: openSpy });
 
     component.openDeleteResourceModal(event, resource);
+
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith(resource);
+  });
+
+  it('should open edit resource modal and stop propagation', () => {
+    const event = { stopPropagation: jest.fn() } as any;
+    const resource = { metadata: { name: 'to-edit' } } as any;
+    const openSpy = jest.fn();
+    (component as any).createModal = () => ({ open: openSpy });
+
+    mockResourceService.read.mockReturnValueOnce(of(resource));
+
+    component.openEditResourceModal(event, resource);
 
     expect(event.stopPropagation).toHaveBeenCalled();
     expect(openSpy).toHaveBeenCalledWith(resource);

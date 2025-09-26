@@ -1,3 +1,5 @@
+import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
+import { CreateOnlyResourceFieldNames } from './create-resource-modal.enums';
 import {
   Component,
   OnInit,
@@ -5,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import {
@@ -14,22 +17,21 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  FieldDefinition,
-  Resource,
-} from '@openmfp/portal-ui-lib';
+import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
+import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import {
+  BarComponent,
   DialogComponent,
   InputComponent,
   LabelComponent,
   OptionComponent,
   SelectComponent,
+  TitleComponent,
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
 import { set } from 'lodash';
-import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 
 @Component({
   selector: 'create-resource-modal',
@@ -44,6 +46,8 @@ import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.c
     ToolbarButtonComponent,
     ToolbarComponent,
     DynamicSelectComponent,
+    BarComponent,
+    TitleComponent,
   ],
   templateUrl: './create-resource-modal.component.html',
   styleUrl: './create-resource-modal.component.scss',
@@ -53,16 +57,21 @@ export class CreateResourceModalComponent implements OnInit {
   fields = input<FieldDefinition[]>([]);
   context = input<ResourceNodeContext>();
   resource = output<Resource>();
+  updateResource = output<Resource>();
   dialog = viewChild<DialogComponent>('dialog');
 
   fb = inject(FormBuilder);
   form: FormGroup;
 
+  private originalResource = signal<Resource | null>(null);
+
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
   }
 
-  open() {
+  open(resource?: Resource) {
+    this.originalResource.set(resource);
+    this.form = this.fb.group(this.createControls(resource));
     const dialog = this.dialog();
     if (dialog) {
       dialog.open = true;
@@ -74,6 +83,7 @@ export class CreateResourceModalComponent implements OnInit {
     if (dialog) {
       dialog.open = false;
       this.form.reset();
+      this.originalResource.set(null);
     }
   }
 
@@ -84,18 +94,13 @@ export class CreateResourceModalComponent implements OnInit {
         set(result, key.replaceAll('_', '.'), this.form.value[key]);
       }
 
-      this.resource.emit(result);
+      if (this.isEditMode()) {
+        this.updateResource.emit(result);
+      } else {
+        this.resource.emit(result);
+      }
       this.close();
     }
-  }
-
-  private createControls() {
-    return this.fields().reduce((obj, fieldDefinition) => {
-      const validator = fieldDefinition.required ? Validators.required : null;
-      obj[this.sanitizePropertyName(fieldDefinition.property)] =
-        new FormControl('', validator);
-      return obj;
-    }, {});
   }
 
   setFormControlValue($event: any, formControlName: string) {
@@ -118,5 +123,34 @@ export class CreateResourceModalComponent implements OnInit {
       throw new Error('Wrong property type, array not supported');
     }
     return (property as string).replaceAll('.', '_');
+  }
+
+  isEditMode() {
+    return !!this.originalResource();
+  }
+
+  isCreateFieldOnly(field: FieldDefinition): boolean {
+    return (
+      field.property === CreateOnlyResourceFieldNames.MetadataName ||
+      field.property === CreateOnlyResourceFieldNames.SpecType ||
+      field.property === CreateOnlyResourceFieldNames.MetadataNamespace
+    );
+  }
+
+  private createControls(resource?: Resource) {
+    return this.fields().reduce(
+      (obj, fieldDefinition) => {
+        const validator = fieldDefinition.required ? Validators.required : null;
+        const fieldName = this.sanitizePropertyName(fieldDefinition.property);
+        const fieldValue =
+          resource && typeof fieldDefinition.property === 'string'
+            ? getValueByPath(resource, fieldDefinition.property)
+            : '';
+        obj[fieldName] = new FormControl(fieldValue, validator);
+
+        return obj;
+      },
+      {} as Record<string, FormControl>,
+    );
   }
 }

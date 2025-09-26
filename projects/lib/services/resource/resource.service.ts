@@ -11,6 +11,7 @@ import {
 import {
   getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
+  stripTypename,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
@@ -254,6 +255,58 @@ export class ResourceService {
               namespace: { type: 'String', value: namespace },
             }),
             object: { type: `${kind}Input!`, value: resource },
+          },
+          fields: ['__typename'],
+        },
+      ],
+    });
+
+    return this.apolloFactory
+      .apollo(nodeContext)
+      .mutate({
+        mutation: gql`
+          ${mutation.query}
+        `,
+        fetchPolicy: 'no-cache',
+        variables: mutation.variables,
+      })
+      .pipe(
+        catchError((error) => {
+          this.alertErrors(error);
+          console.error('Error executing GraphQL query.', error);
+          return error;
+        }),
+      );
+  }
+
+  update(
+    resource: Resource,
+    resourceDefinition: ResourceDefinition,
+    nodeContext: ResourceNodeContext,
+  ) {
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const group = replaceDotsAndHyphensWithUnderscores(
+      resourceDefinition.group,
+    );
+    const kind = resourceDefinition.kind;
+    const namespace = nodeContext.namespaceId;
+
+    const cleanResource = stripTypename(resource);
+
+    const mutation = gqlBuilder.mutation({
+      operation: group,
+      fields: [
+        {
+          operation: `update${kind}`,
+          variables: {
+            ...(isNamespacedResource && {
+              namespace: { type: 'String', value: namespace },
+            }),
+            name: { type: 'String!', value: resource.metadata.name },
+            object: {
+              type: `${kind}Input!`,
+              value: cleanResource,
+            },
           },
           fields: ['__typename'],
         },
