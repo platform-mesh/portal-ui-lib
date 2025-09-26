@@ -58,10 +58,10 @@
         @for (column of viewColomns(); track column.label) {
           @if (column.group) {
             <ui5-table-cell [class.multiline]="column.group.multiline ?? true">
-              @for (value of column.group.values; let last = $last; track value.label) {
+              @for (field of column.group.fields; let last = $last; track field.label) {
                 <div>
-                  <span>{{ value.label }}: </span>
-                  <value-cell  [value]="getResourceValueByJsonPath(item, { property: value.property })"></value-cell>
+                  <span>{{ field.label }}: </span>
+                  <value-cell [labelDisplay]="field.labelDisplay" [value]="getResourceValueByJsonPath(item, field)"></value-cell>
                 </div>
                 @if (!last && column.group.delimiter) {
                   <span>{{ column.group.delimiter }}</span>
@@ -70,7 +70,7 @@
             </ui5-table-cell>
           } @else {
             <ui5-table-cell>
-              <value-cell [value]="getResourceValueByJsonPath(item, column)"></value-cell>
+              <value-cell [labelDisplay]="column.labelDisplay" [value]="getResourceValueByJsonPath(item, column)"></value-cell>
             </ui5-table-cell>
           }
         }

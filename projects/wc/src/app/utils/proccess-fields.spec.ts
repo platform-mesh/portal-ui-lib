@@ -61,7 +61,7 @@ describe('proccess-fields', () => {
         group: {
           name: 'personalInfo',
           label: 'Personal Information',
-          values: [
+          fields: [
             { property: 'firstName', label: 'First Name' },
             { property: 'lastName', label: 'Last Name' },
             { property: 'email', label: 'Email' },
@@ -121,7 +121,7 @@ describe('proccess-fields', () => {
         group: {
           name: 'personalInfo',
           label: 'Personal Information',
-          values: [
+          fields: [
             { property: 'firstName', label: 'First Name' },
             { property: 'lastName', label: 'Last Name' },
           ],
@@ -134,7 +134,7 @@ describe('proccess-fields', () => {
         group: {
           name: 'address',
           label: 'Address',
-          values: [
+          fields: [
             { property: 'street', label: 'Street' },
             { property: 'city', label: 'City' },
           ],
@@ -196,7 +196,7 @@ describe('proccess-fields', () => {
         group: {
           name: 'personalInfo',
           label: 'Personal Information',
-          values: [
+          fields: [
             { property: 'firstName', label: 'First Name' },
             { property: 'lastName', label: 'Last Name' },
           ],
@@ -237,9 +237,17 @@ describe('proccess-fields', () => {
       const result = processFields(fields);
 
       expect(result).toHaveLength(1);
-      expect(result[0].group?.values).toEqual([
-        { property: 'user.personal.firstName', label: 'First Name' },
-        { property: 'user.personal.lastName', label: 'Last Name' },
+      expect(result[0].group?.fields).toEqual([
+        {
+          property: 'firstName',
+          label: 'First Name',
+          jsonPathExpression: 'user.personal.firstName',
+        },
+        {
+          property: 'lastName',
+          label: 'Last Name',
+          jsonPathExpression: 'user.personal.lastName',
+        },
         { property: 'email', label: 'Email' },
       ]);
     });
@@ -267,7 +275,7 @@ describe('proccess-fields', () => {
       const result = processFields(fields);
 
       expect(result).toHaveLength(1);
-      expect(result[0].group?.values).toEqual([
+      expect(result[0].group?.fields).toEqual([
         { property: ['firstName', 'first_name'], label: 'First Name' },
         { property: ['lastName', 'last_name'], label: 'Last Name' },
       ]);
@@ -310,7 +318,7 @@ describe('proccess-fields', () => {
         group: {
           name: 'personalInfo',
           label: 'Personal Information',
-          values: [{ property: 'lastName', label: 'Last Name' }],
+          fields: [{ property: 'lastName', label: 'Last Name' }],
         },
       });
     });
@@ -346,7 +354,7 @@ describe('proccess-fields', () => {
         group: {
           name: 'personalInfo',
           label: 'Personal Information',
-          values: [{ property: 'lastName', label: 'Last Name' }],
+          fields: [{ property: 'lastName', label: 'Last Name' }],
         },
       });
     });
@@ -394,9 +402,24 @@ describe('proccess-fields', () => {
           name: 'personalInfo',
           label: 'Personal Information',
           delimiter: ' | ',
-          values: [
-            { property: 'firstName', label: 'First Name' },
-            { property: 'lastName', label: 'Last Name' },
+          fields: [
+            {
+              property: 'firstName',
+              label: 'First Name',
+              required: true,
+              values: ['John', 'Jane'],
+              dynamicValuesDefinition: {
+                operation: 'query',
+                gqlQuery: 'query { users { name } }',
+                value: 'name',
+                key: 'id',
+              },
+            },
+            {
+              property: 'lastName',
+              label: 'Last Name',
+              required: false,
+            },
           ],
         },
         dynamicValuesDefinition: {
@@ -474,11 +497,11 @@ describe('proccess-fields', () => {
       expect(idField?.property).toBe('id');
       expect(statusField?.property).toBe('status');
 
-      expect(personalInfoField?.group?.values).toEqual([
+      expect(personalInfoField?.group?.fields).toEqual([
         { property: 'firstName', label: 'First Name' },
         { property: 'lastName', label: 'Last Name' },
       ]);
-      expect(addressField?.group?.values).toEqual([
+      expect(addressField?.group?.fields).toEqual([
         { property: 'street', label: 'Street' },
         { property: 'city', label: 'City' },
         { property: 'country', label: 'Country' },

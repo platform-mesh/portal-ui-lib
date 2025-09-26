@@ -31,6 +31,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
           the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column.
+        `"labelDisplay"` this property allows you to customize the visual appearance of field values in both list and detail views.
         - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
@@ -50,6 +51,13 @@ Each field definition supports the following properties:
   - `"label"`: Display name for the group
   - `"delimiter"`: String used to separate grouped values
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
+- `"labelDisplay"`: Boolean value for using the defaults or an object for customizing the visual appearance of field values:
+  - `"backgroundColor"`: Background color for the value (CSS color value)
+  - `"color"`: Text color for the value (CSS color value)
+  - `"fontWeight"`: Font weight for the value (CSS font-weight value)
+  - `"fontStyle"`: Font style for the value (CSS font-style value)
+  - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
+  - `"textTransform"`: Text transformation for the value (CSS text-transform value)
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
@@ -100,7 +108,13 @@ Below is an example content-configuration for an accounts node using the generic
                     },
                     {
                       "label": "Type",
-                      "property": "spec.type"
+                      "property": "spec.type",
+                      "labelDisplay": {
+                        "backgroundColor": "#e3f2fd",
+                        "color": "#1976d2",
+                        "fontWeight": "bold",
+                        "textTransform": "uppercase"
+                      }
                     },
                     {
                       "label": "Contact Info",
@@ -130,7 +144,11 @@ Below is an example content-configuration for an accounts node using the generic
                     },
                     {
                       "label": "Display Name",
-                      "property": "spec.displayName"
+                      "property": "spec.displayName",
+                      "labelDisplay": {
+                        "color": "#2e7d32",
+                        "fontWeight": "600"
+                      }
                     },
                     {
                       "label": "Contact Info",
