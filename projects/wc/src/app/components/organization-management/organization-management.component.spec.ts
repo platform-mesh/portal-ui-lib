@@ -134,7 +134,7 @@ describe('OrganizationManagementComponent', () => {
       reset: jest.fn(),
     };
     resourceServiceMock.create.mockReturnValue(of(mockResponse));
-    component.newOrganization = 'newOrg';
+    component.newOrganization.setValue('newOrg');
     component.organizations.set(['existingOrg']);
 
     component.onboardOrganization();
@@ -142,7 +142,7 @@ describe('OrganizationManagementComponent', () => {
     expect(resourceServiceMock.create).toHaveBeenCalled();
     expect(component.organizations()).toEqual(['newOrg', 'existingOrg']);
     expect(component.organizationToSwitch()).toBe('newOrg');
-    expect(component.newOrganization).toBe('');
+    expect(component.newOrganization.value).toBe('');
     expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
 
@@ -150,7 +150,7 @@ describe('OrganizationManagementComponent', () => {
     resourceServiceMock.create.mockReturnValue(
       throwError(() => new Error('Creation failed')),
     );
-    component.newOrganization = 'newOrg';
+    component.newOrganization.setValue('newOrg');
 
     component.onboardOrganization();
 

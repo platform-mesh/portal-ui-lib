@@ -1,3 +1,4 @@
+import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +10,12 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import {
+  FormControl,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   EnvConfigService,
@@ -43,6 +49,7 @@ import {
     OptionComponent,
     SelectComponent,
     FormsModule,
+    ReactiveFormsModule,
   ],
   templateUrl: './organization-management.component.html',
   styleUrl: './organization-management.component.scss',
@@ -59,7 +66,10 @@ export class OrganizationManagementComponent implements OnInit {
   texts: any = {};
   organizations = signal<string[]>([]);
   organizationToSwitch = linkedSignal(() => this.organizations()[0] ?? '');
-  newOrganization: string;
+  newOrganization = new FormControl('', {
+    validators: [Validators.required, k8sNameValidator],
+    nonNullable: true,
+  });
 
   constructor() {
     effect(() => {
@@ -101,7 +111,7 @@ export class OrganizationManagementComponent implements OnInit {
   onboardOrganization() {
     const resource: Resource = {
       spec: { type: 'org' },
-      metadata: { name: this.newOrganization },
+      metadata: { name: this.newOrganization.value },
     };
     const resourceDefinition: ResourceDefinition = {
       group: 'core.platform-mesh.io',
@@ -117,11 +127,11 @@ export class OrganizationManagementComponent implements OnInit {
         next: (result) => {
           console.debug('Resource created', result);
           this.organizations.set([
-            this.newOrganization,
+            this.newOrganization.value,
             ...this.organizations(),
           ]);
-          this.organizationToSwitch.set(this.newOrganization);
-          this.newOrganization = '';
+          this.organizationToSwitch.set(this.newOrganization.value);
+          this.newOrganization.reset();
           this.LuigiClient()
             .uxManager()
             .showAlert({
@@ -210,5 +220,10 @@ export class OrganizationManagementComponent implements OnInit {
     const fullSubdomain = `${sanitizedOrg}.${baseDomain}`;
     const port = window.location.port ? `:${window.location.port}` : '';
     window.location.href = `${protocol}//${fullSubdomain}${port}`;
+  }
+
+  getValueState(formControl: FormControl) {
+    const control = formControl;
+    return control.invalid && control.touched ? 'Negative' : 'None';
   }
 }

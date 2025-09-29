@@ -33,12 +33,17 @@
     }}</ui5-label
     ><br />
     <div class="organization-management-input">
-      <ui5-input
-        id="input-onboard"
-        placeholder="{{ texts.onboardOrganization.placeholder }}"
-        [(ngModel)]="newOrganization"
-      ></ui5-input>
-      <ui5-button design="Emphasized" (ui5Click)="onboardOrganization()">{{
+        <ui5-input
+          id="input-onboard"
+          placeholder="{{ texts.onboardOrganization.placeholder }}"
+          [formControl]="newOrganization"
+          [valueState]="getValueState(newOrganization)"
+        >
+          <div slot="valueStateMessage">
+            Invalid organization name <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names" target="_blank">RFC 1035</a>
+          </div>
+      </ui5-input>
+      <ui5-button [disabled]="newOrganization.invalid" design="Emphasized" (ui5Click)="onboardOrganization()">{{
         texts.onboardOrganization.button
       }}</ui5-button>
     </div>

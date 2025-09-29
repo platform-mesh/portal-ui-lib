@@ -54,7 +54,13 @@
             [required]="field.required"
             [valueState]="getValueState(fieldProperty)"
             [disabled]="isEditMode() && isCreateFieldOnly(field)"
-          ></ui5-input>
+          >
+            @if (form.controls[fieldProperty].errors?.k8sNameInvalid) {
+              <div slot="valueStateMessage">
+                Invalid resource name <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names" target="_blank">RFC 1035</a>
+              </div>
+            }
+          </ui5-input>
         }
       </div>
     }

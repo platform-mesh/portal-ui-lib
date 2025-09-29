@@ -1,3 +1,4 @@
+import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 import { CreateOnlyResourceFieldNames } from './create-resource-modal.enums';
 import {
@@ -140,17 +141,30 @@ export class CreateResourceModalComponent implements OnInit {
   private createControls(resource?: Resource) {
     return this.fields().reduce(
       (obj, fieldDefinition) => {
-        const validator = fieldDefinition.required ? Validators.required : null;
+        const validators = this.getValidator(fieldDefinition);
         const fieldName = this.sanitizePropertyName(fieldDefinition.property);
         const fieldValue =
           resource && typeof fieldDefinition.property === 'string'
             ? getValueByPath(resource, fieldDefinition.property)
             : '';
-        obj[fieldName] = new FormControl(fieldValue, validator);
+        obj[fieldName] = new FormControl(fieldValue, validators);
 
         return obj;
       },
       {} as Record<string, FormControl>,
     );
+  }
+
+  private getValidator(fieldDefinition: FieldDefinition) {
+    const validators = [];
+    if (fieldDefinition.required) {
+      validators.push(Validators.required);
+    }
+
+    if (fieldDefinition.property === 'metadata.name') {
+      validators.push(k8sNameValidator);
+    }
+
+    return validators;
   }
 }
