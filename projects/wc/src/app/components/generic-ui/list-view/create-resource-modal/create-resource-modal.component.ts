@@ -161,7 +161,9 @@ export class CreateResourceModalComponent implements OnInit {
       validators.push(Validators.required);
     }
 
-    if (fieldDefinition.property === 'metadata.name') {
+    if (
+      fieldDefinition.property === CreateOnlyResourceFieldNames.MetadataName
+    ) {
       validators.push(k8sNameValidator);
     }
 
