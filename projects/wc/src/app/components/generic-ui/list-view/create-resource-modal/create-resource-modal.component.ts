@@ -1,6 +1,7 @@
+import { k8sMessages } from '../../../../consts/k8s-messages';
 import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
-import { CreateOnlyResourceFieldNames } from './create-resource-modal.enums';
+import { ResourceFieldNames } from './create-resource-modal.enums';
 import {
   Component,
   OnInit,
@@ -65,6 +66,8 @@ export class CreateResourceModalComponent implements OnInit {
   form: FormGroup;
 
   private originalResource = signal<Resource | null>(null);
+
+  protected readonly k8sMessages = k8sMessages;
 
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
@@ -132,9 +135,9 @@ export class CreateResourceModalComponent implements OnInit {
 
   isCreateFieldOnly(field: FieldDefinition): boolean {
     return (
-      field.property === CreateOnlyResourceFieldNames.MetadataName ||
-      field.property === CreateOnlyResourceFieldNames.SpecType ||
-      field.property === CreateOnlyResourceFieldNames.MetadataNamespace
+      field.property === ResourceFieldNames.MetadataName ||
+      field.property === ResourceFieldNames.SpecType ||
+      field.property === ResourceFieldNames.MetadataNamespace
     );
   }
 
@@ -161,9 +164,7 @@ export class CreateResourceModalComponent implements OnInit {
       validators.push(Validators.required);
     }
 
-    if (
-      fieldDefinition.property === CreateOnlyResourceFieldNames.MetadataName
-    ) {
+    if (fieldDefinition.property === ResourceFieldNames.MetadataName) {
       validators.push(k8sNameValidator);
     }
 

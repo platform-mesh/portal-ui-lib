@@ -57,7 +57,7 @@
           >
             @if (form.controls[fieldProperty].errors?.k8sNameInvalid) {
               <div slot="valueStateMessage">
-                Invalid resource name <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names" target="_blank">RFC 1035</a>
+                <a href="{{ k8sMessages.RFC_1035.href }}" target="_blank">{{ k8sMessages.RFC_1035.message }}</a>
               </div>
             }
           </ui5-input>

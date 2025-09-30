@@ -40,7 +40,7 @@
           [valueState]="getValueState(newOrganization)"
         >
           <div slot="valueStateMessage">
-            Invalid organization name <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names" target="_blank">RFC 1035</a>
+            <a href="{{ k8sMessages.RFC_1035.href }}" target="_blank">{{ k8sMessages.RFC_1035.message }}</a>
           </div>
       </ui5-input>
       <ui5-button [disabled]="newOrganization.invalid" design="Emphasized" (ui5Click)="onboardOrganization()">{{

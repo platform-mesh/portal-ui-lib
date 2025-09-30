@@ -1,3 +1,4 @@
+import { k8sMessages } from '../../consts/k8s-messages';
 import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
@@ -60,6 +61,7 @@ export class OrganizationManagementComponent implements OnInit {
   private i18nService = inject(I18nService);
   private resourceService = inject(ResourceService);
   private envConfigService = inject(EnvConfigService);
+
   context = input<ResourceNodeContext>();
   LuigiClient = input<LuigiClient>();
 
@@ -70,6 +72,8 @@ export class OrganizationManagementComponent implements OnInit {
     validators: [Validators.required, k8sNameValidator],
     nonNullable: true,
   });
+
+  protected readonly k8sMessages = k8sMessages;
 
   constructor() {
     effect(() => {
@@ -211,8 +215,8 @@ export class OrganizationManagementComponent implements OnInit {
 
     if (!sanitizedOrg) {
       this.LuigiClient().uxManager().showAlert({
-        text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
-        type: 'error',
+        text: k8sMessages.RFC_1034_1123.message,
+        type: k8sMessages.RFC_1034_1123.type,
       });
       return;
     }
