@@ -54,7 +54,13 @@
             [required]="field.required"
             [valueState]="getValueState(fieldProperty)"
             [disabled]="isEditMode() && isCreateFieldOnly(field)"
-          ></ui5-input>
+          >
+            @if (form.controls[fieldProperty].errors?.k8sNameInvalid) {
+              <div slot="valueStateMessage">
+                <a href="{{ k8sMessages.RFC_1035.href }}" target="_blank">{{ k8sMessages.RFC_1035.message }}</a>
+              </div>
+            }
+          </ui5-input>
         }
       </div>
     }

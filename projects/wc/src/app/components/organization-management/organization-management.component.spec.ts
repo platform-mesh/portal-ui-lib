@@ -134,7 +134,7 @@ describe('OrganizationManagementComponent', () => {
       reset: jest.fn(),
     };
     resourceServiceMock.create.mockReturnValue(of(mockResponse));
-    component.newOrganization = 'newOrg';
+    component.newOrganization.setValue('newOrg');
     component.organizations.set(['existingOrg']);
 
     component.onboardOrganization();
@@ -142,7 +142,7 @@ describe('OrganizationManagementComponent', () => {
     expect(resourceServiceMock.create).toHaveBeenCalled();
     expect(component.organizations()).toEqual(['newOrg', 'existingOrg']);
     expect(component.organizationToSwitch()).toBe('newOrg');
-    expect(component.newOrganization).toBe('');
+    expect(component.newOrganization.value).toBe('');
     expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
 
@@ -150,7 +150,7 @@ describe('OrganizationManagementComponent', () => {
     resourceServiceMock.create.mockReturnValue(
       throwError(() => new Error('Creation failed')),
     );
-    component.newOrganization = 'newOrg';
+    component.newOrganization.setValue('newOrg');
 
     component.onboardOrganization();
 
@@ -238,5 +238,45 @@ describe('OrganizationManagementComponent', () => {
     await component.switchOrganization();
 
     expect(window.location.href).toBe('https://validorg.test.com');
+  });
+
+  it('should return non-local message for organization creation when not in local setup', () => {
+    // Mock window.location.hostname to simulate non-local setup
+    const originalHostname = window.location.hostname;
+    Object.defineProperty(window.location, 'hostname', {
+      value: 'production.example.com',
+      writable: true,
+    });
+
+    const message = component['getMessageForOrganizationCreation']('testOrg');
+    expect(message).toBe(
+      'A new organization has been created. Select it from the list to switch.',
+    );
+
+    // Restore original hostname
+    Object.defineProperty(window.location, 'hostname', {
+      value: originalHostname,
+      writable: true,
+    });
+  });
+
+  it('should return Negative state for invalid and touched form control', () => {
+    const formControl = {
+      invalid: true,
+      touched: true,
+    } as any;
+
+    const result = component.getValueState(formControl);
+    expect(result).toBe('Negative');
+  });
+
+  it('should return None state for valid form control', () => {
+    const formControl = {
+      invalid: false,
+      touched: true,
+    } as any;
+
+    const result = component.getValueState(formControl);
+    expect(result).toBe('None');
   });
 });

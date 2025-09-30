@@ -33,12 +33,17 @@
     }}</ui5-label
     ><br />
     <div class="organization-management-input">
-      <ui5-input
-        id="input-onboard"
-        placeholder="{{ texts.onboardOrganization.placeholder }}"
-        [(ngModel)]="newOrganization"
-      ></ui5-input>
-      <ui5-button design="Emphasized" (ui5Click)="onboardOrganization()">{{
+        <ui5-input
+          id="input-onboard"
+          placeholder="{{ texts.onboardOrganization.placeholder }}"
+          [formControl]="newOrganization"
+          [valueState]="getValueState(newOrganization)"
+        >
+          <div slot="valueStateMessage">
+            <a href="{{ k8sMessages.RFC_1035.href }}" target="_blank">{{ k8sMessages.RFC_1035.message }}</a>
+          </div>
+      </ui5-input>
+      <ui5-button [disabled]="newOrganization.invalid" design="Emphasized" (ui5Click)="onboardOrganization()">{{
         texts.onboardOrganization.button
       }}</ui5-button>
     </div>
