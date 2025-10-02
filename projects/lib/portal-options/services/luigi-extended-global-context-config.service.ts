@@ -22,6 +22,10 @@ export class LuigiExtendedGlobalContextConfigServiceImpl
     const entityId = (await this.envConfigService.getEnvConfig()).idpName;
     const operation = 'core_platform_mesh_io';
 
+    if (entityId === 'welcome') {
+      return {};
+    }
+
     try {
       const accountInfo = await firstValueFrom(
         this.resourceService.readAccountInfo({

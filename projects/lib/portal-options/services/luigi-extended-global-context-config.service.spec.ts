@@ -133,6 +133,31 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
     });
   });
 
+  it('should return empty object for welcome idp provider', async () => {
+    const mockPortalConfig = {
+      portalContext: {
+        crdGatewayApiUrl: 'https://api.example.com/graphql',
+      },
+    } as any;
+    const mockEnvConfig = {
+      idpName: 'welcome',
+    } as any;
+    const mockResource = {
+      metadata: {},
+    } as any;
+    const mockToken = 'mock-token';
+
+    mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
+    mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
+    mockAuthService.getToken.mockReturnValue(mockToken);
+    mockResourceService.readAccountInfo.mockReturnValue(of(mockResource));
+
+    const result = await service.createLuigiExtendedGlobalContext();
+
+    expect(result).toEqual({});
+    expect(mockResourceService.readAccountInfo).not.toHaveBeenCalled();
+  });
+
   it('should return empty object when resource read fails', async () => {
     const mockPortalConfig = {
       portalContext: {
