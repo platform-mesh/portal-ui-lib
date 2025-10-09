@@ -6,7 +6,7 @@
   },
   "prettier": "@openmfp/config-prettier",
   "peerDependencies": {
-    "@openmfp/portal-ui-lib": ">=0.179.9",
+    "@openmfp/portal-ui-lib": ">=0.180.0",
     "@angular/common": "^19.0.0 || ^20.0.0",
     "@angular/compiler": "^19.0.0 || ^20.0.0",
     "@angular/core": "^19.0.0 || ^20.0.0",
