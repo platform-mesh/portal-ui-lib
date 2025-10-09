@@ -174,6 +174,7 @@ describe('OrganizationManagementComponent', () => {
         access_token: 'test-access-token',
         id_token: 'test-id-token',
       },
+      uiOptions: [],
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
     component.organizationToSwitch.set('newOrg');
@@ -201,6 +202,7 @@ describe('OrganizationManagementComponent', () => {
         access_token: 'test-access-token',
         id_token: 'test-id-token',
       },
+      uiOptions: [],
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
     component.organizationToSwitch.set('invalid-org-name-'); // Invalid: ends with hyphen
@@ -227,6 +229,7 @@ describe('OrganizationManagementComponent', () => {
         access_token: 'test-access-token',
         id_token: 'test-id-token',
       },
+      uiOptions: [],
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
     component.organizationToSwitch.set('validorg');
