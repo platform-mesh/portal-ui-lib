@@ -5,7 +5,7 @@ export const kubeConfigTemplate = `
     - name: <cluster-name>
       cluster:
         certificate-authority-data: <ca-data>
-        server: "https://kcp.api.portal.cc-one.showroom.apeirora.eu/clusters/<server-url>"
+        server: <server-url>
     contexts:
     - name: <cluster-name>
       context:
@@ -20,8 +20,8 @@ export const kubeConfigTemplate = `
           args:
           - oidc-login
           - get-token
-          - --oidc-issuer-url=https://portal.cc-one.showroom.apeirora.eu/keycloak/realms/openmfp
-          - --oidc-client-id=openmfp-public
+          - --oidc-issuer-url=<oidc-issuer-url>
+          - --oidc-client-id=<org-name>
           - --oidc-extra-scope=email
           - --oidc-extra-scope=groups
           command: kubectl

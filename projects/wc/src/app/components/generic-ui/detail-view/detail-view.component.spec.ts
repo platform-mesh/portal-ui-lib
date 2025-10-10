@@ -1,9 +1,11 @@
 import { DetailViewComponent } from './detail-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import {
   GatewayService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
+import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
 
 describe('DetailViewComponent', () => {
@@ -11,9 +13,11 @@ describe('DetailViewComponent', () => {
   let fixture: ComponentFixture<DetailViewComponent>;
   let mockResourceService: any;
   let mockGatewayService: any;
+  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
   let luigiClientLinkManagerNavigate = jest.fn();
 
   beforeEach(() => {
+    envConfigServiceMock = mock();
     mockResourceService = {
       read: jest.fn().mockReturnValue(of({ name: 'test-resource' })),
       readAccountInfo: jest.fn().mockReturnValue(of('mock-ca-data')),
@@ -27,6 +31,7 @@ describe('DetailViewComponent', () => {
       providers: [
         { provide: ResourceService, useValue: mockResourceService },
         { provide: GatewayService, useValue: mockGatewayService },
+        { provide: EnvConfigService, useValue: envConfigServiceMock },
       ],
     }).overrideComponent(DetailViewComponent, {
       set: { template: '<div></div>' },
@@ -47,6 +52,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
       entity: {
         metadata: { name: 'test-resource' },
       },
@@ -66,9 +72,7 @@ describe('DetailViewComponent', () => {
   });
 
   afterEach(() => {
-    // Очищаем все моки после каждого теста
     jest.restoreAllMocks();
-    // Удаляем глобальные моки
     delete global.URL.createObjectURL;
   });
 
@@ -115,9 +119,11 @@ describe('DetailViewComponent', () => {
     const createElementSpy = jest
       .spyOn(document, 'createElement')
       .mockReturnValue(mockAnchorElement);
-    const createObjectURLSpy = jest.fn().mockReturnValue('blob-url');
-    global.URL.createObjectURL = createObjectURLSpy;
+    global.URL.createObjectURL = jest.fn().mockReturnValue('blob-url');
 
+    envConfigServiceMock.getEnvConfig.mockResolvedValue({
+      oidcIssuerUrl: 'oidcIssuerUrl',
+    } as any);
     await component.downloadKubeConfig();
 
     expect(createElementSpy).toHaveBeenCalledWith('a');

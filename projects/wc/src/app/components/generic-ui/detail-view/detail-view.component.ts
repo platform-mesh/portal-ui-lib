@@ -12,6 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   GatewayService,
@@ -44,7 +45,6 @@ const defaultFields: FieldDefinition[] = [
 
 @Component({
   selector: 'detail-view',
-  encapsulation: ViewEncapsulation.ShadowDom,
   standalone: true,
   imports: [
     DynamicPageComponent,
@@ -59,11 +59,13 @@ const defaultFields: FieldDefinition[] = [
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
+  encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DetailViewComponent {
   private resourceService = inject(ResourceService);
   private gatewayService = inject(GatewayService);
+  private envConfigService = inject(EnvConfigService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   LuigiClient = input<LuigiClient>();
@@ -115,9 +117,16 @@ export class DetailViewComponent {
   }
 
   async downloadKubeConfig() {
+    const { oidcIssuerUrl } = await this.envConfigService.getEnvConfig();
+
     const kubeConfig = kubeConfigTemplate
       .replaceAll('<cluster-name>', this.context().accountId)
-      .replaceAll('<server-url>', this.workspacePath)
+      .replaceAll('<org-name>', this.context().organization)
+      .replaceAll(
+        '<server-url>',
+        `${this.context().portalContext.kcpWorkspaceUrl}:${this.context().accountId}`,
+      )
+      .replaceAll('<oidc-issuer-url>', oidcIssuerUrl)
       .replaceAll('<ca-data>', this.context().kcpCA)
       .replaceAll('<token>', this.context().token);
 
