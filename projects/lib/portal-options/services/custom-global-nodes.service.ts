@@ -46,7 +46,6 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
             children: [
               {
                 pathSegment: 'overview',
-                entityType: 'user',
                 hideSideNav: true,
                 hideFromNav: true,
                 defineEntity: {
