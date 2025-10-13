@@ -4,7 +4,6 @@ import { PortalLuigiNode } from '../models/luigi-node';
 import { inject } from '@angular/core';
 import { CustomGlobalNodesService, I18nService } from '@openmfp/portal-ui-lib';
 
-
 export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
   private i18nService = inject(I18nService);
 
@@ -27,7 +26,6 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
         } as PortalNodeContext,
       },
       {
-        label: 'Users',
         pathSegment: 'users',
         showBreadcrumbs: false,
         hideSideNav: true,
@@ -42,16 +40,12 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
             defineEntity: {
               id: 'user',
               contextKey: 'profileUserId',
-              label: 'User',
-              pluralLabel: 'Users',
             },
-            label: 'User',
             pathSegment: ':profileUserId',
             hideSideNav: true,
             hideFromNav: true,
             children: [
               {
-                label: 'Overview',
                 pathSegment: 'overview',
                 entityType: 'user',
                 hideSideNav: true,
@@ -59,7 +53,6 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
                 defineEntity: {
                   id: 'overview',
                 },
-                children: [],
                 compound: {
                   children: [],
                 },
