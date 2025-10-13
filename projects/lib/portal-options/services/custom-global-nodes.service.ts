@@ -31,7 +31,6 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
         hideSideNav: true,
         hideFromNav: true,
         entityType: 'global',
-        context: {} as PortalNodeContext,
         children: [
           {
             context: {
