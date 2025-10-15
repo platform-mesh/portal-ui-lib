@@ -21,9 +21,8 @@ export const kubeConfigTemplate = `
           - oidc-login
           - get-token
           - --oidc-issuer-url=<oidc-issuer-url>
-          - --oidc-client-id=<org-name>
+          - --oidc-client-id=kubectl
           - --oidc-extra-scope=email
-          - --oidc-extra-scope=groups
           command: kubectl
           env: null
           interactiveMode: IfAvailable
