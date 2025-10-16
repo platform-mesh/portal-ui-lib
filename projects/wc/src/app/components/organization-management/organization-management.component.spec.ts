@@ -296,4 +296,51 @@ describe('OrganizationManagementComponent', () => {
     const result = component.getValueState(formControl);
     expect(result).toBe('None');
   });
+
+  it('should handle error when reading organizations', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const mockError = new Error('Failed to fetch organizations');
+
+    resourceServiceMock.list.mockReturnValue(throwError(() => mockError));
+
+    component.readOrganizations();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error reading organizations',
+      mockError,
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('should update existing organizationToSwitch when reading organizations', () => {
+    const mockOrganizations = [
+      {
+        metadata: { name: 'org1' },
+        status: { conditions: [{ type: 'Ready', status: 'True' }] },
+      },
+      {
+        metadata: { name: 'org2' },
+        status: { conditions: [{ type: 'Ready', status: 'True' }] },
+      },
+    ];
+
+    // Set an existing organization to switch
+    component.organizationToSwitch.set({ name: 'org2', ready: false });
+
+    resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
+
+    component.readOrganizations();
+
+    expect(resourceServiceMock.list).toHaveBeenCalled();
+    expect(component.organizations()).toEqual([
+      { name: 'org1', ready: true },
+      { name: 'org2', ready: true },
+    ]);
+    // Should find and update the existing organizationToSwitch
+    expect(component.organizationToSwitch()).toEqual({
+      name: 'org2',
+      ready: true,
+    });
+  });
 });
