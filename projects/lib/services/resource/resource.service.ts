@@ -161,34 +161,6 @@ export class ResourceService {
     });
   }
 
-  readOrganizations(
-    operation: string,
-    fields: any[],
-    nodeContext: ResourceNodeContext,
-  ): Observable<any[]> {
-    const query = gqlBuilder.query({
-      operation: operation,
-      fields,
-      variables: {},
-    });
-
-    return this.apolloFactory
-      .apollo(nodeContext)
-      .query({
-        query: gql`
-          ${query.query}
-        `,
-      })
-      .pipe(
-        map((res: any) => res.data?.[operation]),
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          return error;
-        }),
-      );
-  }
-
   delete(
     resource: Resource,
     resourceDefinition: ResourceDefinition,
