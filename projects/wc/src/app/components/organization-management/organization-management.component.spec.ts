@@ -1,4 +1,3 @@
-import { OrganizationManagementComponent } from './organization-management.component';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   NO_ERRORS_SCHEMA,
@@ -17,6 +16,7 @@ import {
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
+import { OrganizationManagementComponent } from './organization-management.component';
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
@@ -28,7 +28,7 @@ describe('OrganizationManagementComponent', () => {
 
   beforeEach(async () => {
     resourceServiceMock = {
-      readOrganizations: jest.fn(),
+      list: jest.fn(),
       create: jest.fn(),
     } as any;
 
@@ -75,7 +75,7 @@ describe('OrganizationManagementComponent', () => {
       translationTable: { hello: 'world' },
     } as any as NodeContext;
 
-    resourceServiceMock.readOrganizations.mockReturnValue(of({} as any));
+    resourceServiceMock.list.mockReturnValue(of([] as any));
 
     const contextSignal = signal<NodeContext | null>(mockContext);
     component.context = contextSignal as any;
@@ -92,12 +92,16 @@ describe('OrganizationManagementComponent', () => {
   });
 
   it('should read organizations on init', () => {
-    const mockOrganizations = {
-      Accounts: [
-        { metadata: { name: 'org1' } },
-        { metadata: { name: 'org2' } },
-      ],
-    };
+    const mockOrganizations = [
+      {
+        metadata: { name: 'org1' },
+        status: { conditions: [{ type: 'Ready', status: 'True' }] },
+      },
+      {
+        metadata: { name: 'org2' },
+        status: { conditions: [{ type: 'Ready', status: 'False' }] },
+      },
+    ];
     const mockGlobalContext: LuigiGlobalContext = {
       portalContext: {},
       userId: 'user1',
@@ -108,20 +112,25 @@ describe('OrganizationManagementComponent', () => {
     };
 
     component.context = (() => mockGlobalContext) as any;
-    resourceServiceMock.readOrganizations.mockReturnValue(
-      of(mockOrganizations as any),
-    );
+    resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
 
     component.ngOnInit();
 
-    expect(resourceServiceMock.readOrganizations).toHaveBeenCalled();
-    expect(component.organizations()).toEqual(['org1', 'org2']);
+    expect(resourceServiceMock.list).toHaveBeenCalled();
+    expect(component.organizations()).toEqual([
+      { name: 'org1', ready: true },
+      { name: 'org2', ready: false },
+    ]);
   });
 
   it('should set organization to switch', () => {
-    const event = { target: { value: 'testOrg' } };
+    component.organizations.set([{ name: 'testOrg', ready: false }]);
+    const event = { selectedOption: { _state: { value: 'testOrg' } } };
     component.setOrganizationToSwitch(event);
-    expect(component.organizationToSwitch()).toBe('testOrg');
+    expect(component.organizationToSwitch()).toEqual({
+      name: 'testOrg',
+      ready: false,
+    });
   });
 
   it('should onboard new organization successfully', () => {
@@ -134,15 +143,17 @@ describe('OrganizationManagementComponent', () => {
       reset: jest.fn(),
     };
     resourceServiceMock.create.mockReturnValue(of(mockResponse));
-    component.newOrganization.setValue('newOrg');
-    component.organizations.set(['existingOrg']);
+    component.newOrganizationControl.setValue('newOrg');
+    component.organizations.set([{ name: 'existingOrg', ready: false }]);
 
     component.onboardOrganization();
 
     expect(resourceServiceMock.create).toHaveBeenCalled();
-    expect(component.organizations()).toEqual(['newOrg', 'existingOrg']);
-    expect(component.organizationToSwitch()).toBe('newOrg');
-    expect(component.newOrganization.value).toBe('');
+    expect(component.organizationToSwitch()).toEqual({
+      name: 'newOrg',
+      ready: false,
+    });
+    expect(component.newOrganizationControl.value).toBe('');
     expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
 
@@ -150,7 +161,7 @@ describe('OrganizationManagementComponent', () => {
     resourceServiceMock.create.mockReturnValue(
       throwError(() => new Error('Creation failed')),
     );
-    component.newOrganization.setValue('newOrg');
+    component.newOrganizationControl.setValue('newOrg');
 
     component.onboardOrganization();
 
@@ -177,7 +188,7 @@ describe('OrganizationManagementComponent', () => {
       uiOptions: [],
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch.set('newOrg');
+    component.organizationToSwitch.set({ name: 'newOrg', ready: false });
     Object.defineProperty(window, 'location', {
       value: { protocol: 'https:', port: '8080' },
       writable: true,
@@ -205,7 +216,10 @@ describe('OrganizationManagementComponent', () => {
       uiOptions: [],
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch.set('invalid-org-name-'); // Invalid: ends with hyphen
+    component.organizationToSwitch.set({
+      name: 'invalid-org-name-',
+      ready: false,
+    }); // Invalid: ends with hyphen
 
     await component.switchOrganization();
 
@@ -232,7 +246,7 @@ describe('OrganizationManagementComponent', () => {
       uiOptions: [],
     };
     envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    component.organizationToSwitch.set('validorg');
+    component.organizationToSwitch.set({ name: 'validorg', ready: false });
     Object.defineProperty(window, 'location', {
       value: { protocol: 'https:', port: '' },
       writable: true,
@@ -281,5 +295,52 @@ describe('OrganizationManagementComponent', () => {
 
     const result = component.getValueState(formControl);
     expect(result).toBe('None');
+  });
+
+  it('should handle error when reading organizations', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const mockError = new Error('Failed to fetch organizations');
+
+    resourceServiceMock.list.mockReturnValue(throwError(() => mockError));
+
+    component.readOrganizations();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error reading organizations',
+      mockError,
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('should update existing organizationToSwitch when reading organizations', () => {
+    const mockOrganizations = [
+      {
+        metadata: { name: 'org1' },
+        status: { conditions: [{ type: 'Ready', status: 'True' }] },
+      },
+      {
+        metadata: { name: 'org2' },
+        status: { conditions: [{ type: 'Ready', status: 'True' }] },
+      },
+    ];
+
+    // Set an existing organization to switch
+    component.organizationToSwitch.set({ name: 'org2', ready: false });
+
+    resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
+
+    component.readOrganizations();
+
+    expect(resourceServiceMock.list).toHaveBeenCalled();
+    expect(component.organizations()).toEqual([
+      { name: 'org1', ready: true },
+      { name: 'org2', ready: true },
+    ]);
+    // Should find and update the existing organizationToSwitch
+    expect(component.organizationToSwitch()).toEqual({
+      name: 'org2',
+      ready: true,
+    });
   });
 });

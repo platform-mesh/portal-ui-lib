@@ -1,16 +1,15 @@
-import { k8sMessages } from '../../consts/k8s-messages';
-import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   ViewEncapsulation,
   effect,
   inject,
   input,
-  linkedSignal,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormsModule,
@@ -34,11 +33,14 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import {
   ButtonComponent,
+  IconComponent,
   InputComponent,
   LabelComponent,
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
+import { k8sMessages } from '../../consts/k8s-messages';
+import { k8sNameValidator } from '../../validators/k8s-name-validator';
 
 @Component({
   selector: 'organization-management',
@@ -51,6 +53,7 @@ import {
     SelectComponent,
     FormsModule,
     ReactiveFormsModule,
+    IconComponent,
   ],
   templateUrl: './organization-management.component.html',
   styleUrl: './organization-management.component.scss',
@@ -61,14 +64,15 @@ export class OrganizationManagementComponent implements OnInit {
   private i18nService = inject(I18nService);
   private resourceService = inject(ResourceService);
   private envConfigService = inject(EnvConfigService);
+  private destroyRef = inject(DestroyRef);
 
   context = input<ResourceNodeContext>();
   LuigiClient = input<LuigiClient>();
 
   texts: any = {};
-  organizations = signal<string[]>([]);
-  organizationToSwitch = linkedSignal(() => this.organizations()[0] ?? '');
-  newOrganization = new FormControl('', {
+  organizations = signal<{ name: string; ready: boolean }[]>([]);
+  organizationToSwitch = signal<{ name: string; ready: boolean } | null>(null);
+  newOrganizationControl = new FormControl('', {
     validators: [Validators.required, k8sNameValidator],
     nonNullable: true,
   });
@@ -90,24 +94,52 @@ export class OrganizationManagementComponent implements OnInit {
   }
 
   setOrganizationToSwitch($event: any) {
-    this.organizationToSwitch.set($event.target.value);
+    this.organizationToSwitch.set(
+      this.organizations().find(
+        (o) => o.name === $event.selectedOption._state.value,
+      ) ?? null,
+    );
   }
 
   readOrganizations() {
     const fields = generateGraphQLFields([
       {
-        property: 'Accounts.metadata.name',
+        property: [
+          'metadata.name',
+          'status.conditions.status',
+          'status.conditions.type',
+        ],
       },
     ]);
-    const queryOperation = 'core_platform_mesh_io';
-
+    const queryOperation = 'core_platform_mesh_io_accounts';
     this.resourceService
-      .readOrganizations(queryOperation, fields, this.context())
+      .list(queryOperation, fields, this.context())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
           this.organizations.set(
-            result['Accounts'].map((o) => o.metadata.name),
+            result.map((o) => ({
+              name: o.metadata.name,
+              ready:
+                o.status.conditions.find((c) => c.type === 'Ready')?.status ===
+                'True',
+            })),
           );
+
+          const organizationToSwitch = this.organizationToSwitch();
+
+          if (!organizationToSwitch) {
+            this.organizationToSwitch.set(this.organizations()[0]);
+          } else {
+            this.organizationToSwitch.set(
+              this.organizations().find(
+                (o) => o.name === organizationToSwitch.name,
+              ) ?? null,
+            );
+          }
+        },
+        error: (error) => {
+          console.error('Error reading organizations', error);
         },
       });
   }
@@ -115,7 +147,7 @@ export class OrganizationManagementComponent implements OnInit {
   onboardOrganization() {
     const resource: Resource = {
       spec: { type: 'org' },
-      metadata: { name: this.newOrganization.value },
+      metadata: { name: this.newOrganizationControl.value },
     };
     const resourceDefinition: ResourceDefinition = {
       group: 'core.platform-mesh.io',
@@ -130,17 +162,16 @@ export class OrganizationManagementComponent implements OnInit {
       .subscribe({
         next: (result) => {
           console.debug('Resource created', result);
-          this.organizations.set([
-            this.newOrganization.value,
-            ...this.organizations(),
-          ]);
-          this.organizationToSwitch.set(this.newOrganization.value);
-          this.newOrganization.reset();
+          this.organizationToSwitch.set({
+            name: this.newOrganizationControl.value,
+            ready: false,
+          });
+          this.newOrganizationControl.reset();
           this.LuigiClient()
             .uxManager()
             .showAlert({
               text: this.getMessageForOrganizationCreation(
-                this.organizationToSwitch(),
+                this.organizationToSwitch().name,
               ),
               type: 'info',
             });
@@ -176,6 +207,9 @@ export class OrganizationManagementComponent implements OnInit {
         button: this.i18nService.getTranslation(
           'ORGANIZATION_MANAGEMENT_SWITCH_BUTTON',
         ),
+        tooltip: this.i18nService.getTranslation(
+          'ORGANIZATION_MANAGEMENT_NOT_READY_TOOLTIP',
+        ),
       },
 
       onboardOrganization: {
@@ -210,7 +244,7 @@ export class OrganizationManagementComponent implements OnInit {
     const { baseDomain } = await this.envConfigService.getEnvConfig();
     const protocol = window.location.protocol;
     const sanitizedOrg = this.sanitizeSubdomainInput(
-      this.organizationToSwitch(),
+      this.organizationToSwitch().name,
     );
 
     if (!sanitizedOrg) {

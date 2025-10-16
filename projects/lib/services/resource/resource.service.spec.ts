@@ -392,36 +392,6 @@ describe('ResourceService', () => {
     });
   });
 
-  describe('readOrganizations', () => {
-    it('should read organizations', (done) => {
-      mockApollo.query.mockReturnValue(of({ data: { orgList: [{ id: 1 }] } }));
-      service
-        .readOrganizations('orgList', ['id'], namespacedNodeContext)
-        .subscribe((res) => {
-          expect(res).toEqual([{ id: 1 }]);
-          done();
-        });
-    });
-
-    it('should handle read organizations error', (done) => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-
-      service
-        .readOrganizations('orgList', ['id'], namespacedNodeContext)
-        .subscribe({
-          error: (err) => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            done();
-          },
-        });
-    });
-  });
-
   describe('delete', () => {
     it('should delete resource', (done) => {
       mockApollo.mutate.mockReturnValue(of({}));
