@@ -72,7 +72,7 @@ export class OrganizationManagementComponent implements OnInit {
   texts: any = {};
   organizations = signal<{ name: string; ready: boolean }[]>([]);
   organizationToSwitch = signal<{ name: string; ready: boolean } | null>(null);
-  newOrganization = new FormControl('', {
+  newOrganizationControl = new FormControl('', {
     validators: [Validators.required, k8sNameValidator],
     nonNullable: true,
   });
@@ -147,7 +147,7 @@ export class OrganizationManagementComponent implements OnInit {
   onboardOrganization() {
     const resource: Resource = {
       spec: { type: 'org' },
-      metadata: { name: this.newOrganization.value },
+      metadata: { name: this.newOrganizationControl.value },
     };
     const resourceDefinition: ResourceDefinition = {
       group: 'core.platform-mesh.io',
@@ -163,10 +163,10 @@ export class OrganizationManagementComponent implements OnInit {
         next: (result) => {
           console.debug('Resource created', result);
           this.organizationToSwitch.set({
-            name: this.newOrganization.value,
+            name: this.newOrganizationControl.value,
             ready: false,
           });
-          this.newOrganization.reset();
+          this.newOrganizationControl.reset();
           this.LuigiClient()
             .uxManager()
             .showAlert({

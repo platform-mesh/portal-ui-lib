@@ -1,4 +1,3 @@
-import { OrganizationManagementComponent } from './organization-management.component';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   NO_ERRORS_SCHEMA,
@@ -17,6 +16,7 @@ import {
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
+import { OrganizationManagementComponent } from './organization-management.component';
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
@@ -143,7 +143,7 @@ describe('OrganizationManagementComponent', () => {
       reset: jest.fn(),
     };
     resourceServiceMock.create.mockReturnValue(of(mockResponse));
-    component.newOrganization.setValue('newOrg');
+    component.newOrganizationControl.setValue('newOrg');
     component.organizations.set([{ name: 'existingOrg', ready: false }]);
 
     component.onboardOrganization();
@@ -153,7 +153,7 @@ describe('OrganizationManagementComponent', () => {
       name: 'newOrg',
       ready: false,
     });
-    expect(component.newOrganization.value).toBe('');
+    expect(component.newOrganizationControl.value).toBe('');
     expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalled();
   });
 
@@ -161,7 +161,7 @@ describe('OrganizationManagementComponent', () => {
     resourceServiceMock.create.mockReturnValue(
       throwError(() => new Error('Creation failed')),
     );
-    component.newOrganization.setValue('newOrg');
+    component.newOrganizationControl.setValue('newOrg');
 
     component.onboardOrganization();
 
