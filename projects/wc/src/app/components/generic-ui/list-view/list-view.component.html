@@ -55,7 +55,7 @@
     </ui5-illustrated-message>
 
     @for (item of resources(); track item.metadata.name) {
-      <ui5-table-row [class.disabled]="!item.ready" (click)="navigateToResource(item)">
+      <ui5-table-row [interactive]="item.ready" [class.disabled]="!item.ready" (click)="navigateToResource(item)">
         <ui5-table-cell>
           @if (!item.ready) {
             <ui5-icon class="not-ready-indicator" (click)="$event.stopPropagation()" [showTooltip]="true" accessibleName="Resource is not ready" name="alert" design="Critical"></ui5-icon>
