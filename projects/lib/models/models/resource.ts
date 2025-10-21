@@ -54,6 +54,7 @@ export interface Resource extends Record<string, any> {
   spec?: ResourceSpec;
   status?: ResourceStatus;
   __typename?: string;
+  ready?: boolean;
 }
 
 export interface ResourceDefinition {

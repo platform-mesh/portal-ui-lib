@@ -1,4 +1,5 @@
 import { ListViewComponent } from './list-view.component';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
@@ -12,7 +13,16 @@ describe('ListViewComponent', () => {
 
   beforeEach(() => {
     mockResourceService = {
-      list: jest.fn().mockReturnValue(of([{ metadata: { name: 'test' } }])),
+      list: jest.fn().mockReturnValue(
+        of([
+          {
+            metadata: { name: 'test' },
+            status: {
+              conditions: [{ type: 'Ready', status: 'True' }],
+            },
+          },
+        ]),
+      ),
       delete: jest.fn().mockReturnValue(of({})),
       create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
       update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
@@ -28,6 +38,7 @@ describe('ListViewComponent', () => {
         { provide: ResourceService, useValue: mockResourceService },
         { provide: LuigiCoreService, useValue: mockLuigiCoreService },
       ],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
     }).overrideComponent(ListViewComponent, {
       set: { template: '' },
     });
@@ -288,5 +299,254 @@ describe('ListViewComponent', () => {
 
     // Component should still be created even if list fails
     expect(newComponent).toBeTruthy();
+  });
+
+  describe('Ready Status Functionality', () => {
+    it('should mark resource as ready when Ready condition status is True', () => {
+      const readyResource = {
+        metadata: { name: 'ready-resource' },
+        status: {
+          conditions: [{ type: 'Ready', status: 'True' }],
+        },
+      };
+
+      mockResourceService.list.mockReturnValueOnce(of([readyResource]));
+
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            listView: {
+              fields: [],
+            },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resources = newComponent.resources();
+      expect(resources).toHaveLength(1);
+      expect(resources[0].ready).toBe(true);
+      expect(resources[0].metadata.name).toBe('ready-resource');
+    });
+
+    it('should mark resource as not ready when Ready condition status is False', () => {
+      const notReadyResource = {
+        metadata: { name: 'not-ready-resource' },
+        status: {
+          conditions: [{ type: 'Ready', status: 'False' }],
+        },
+      };
+
+      mockResourceService.list.mockReturnValueOnce(of([notReadyResource]));
+
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            listView: {
+              fields: [],
+            },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resources = newComponent.resources();
+      expect(resources).toHaveLength(1);
+      expect(resources[0].ready).toBe(false);
+      expect(resources[0].metadata.name).toBe('not-ready-resource');
+    });
+
+    it('should mark resource as not ready when Ready condition is missing', () => {
+      const resourceWithoutReadyCondition = {
+        metadata: { name: 'no-ready-condition' },
+        status: {
+          conditions: [{ type: 'Other', status: 'True' }],
+        },
+      };
+
+      mockResourceService.list.mockReturnValueOnce(
+        of([resourceWithoutReadyCondition]),
+      );
+
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            listView: {
+              fields: [],
+            },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resources = newComponent.resources();
+      expect(resources).toHaveLength(1);
+      expect(resources[0].ready).toBe(false);
+      expect(resources[0].metadata.name).toBe('no-ready-condition');
+    });
+
+    it('should mark resource as not ready when status.conditions is missing', async () => {
+      const resourceWithoutConditions = {
+        metadata: { name: 'no-conditions' },
+        status: {
+          conditions: [],
+        },
+      };
+
+      mockResourceService.list.mockReturnValueOnce(
+        of([resourceWithoutConditions]),
+      );
+
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            listView: {
+              fields: [],
+            },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+      await newFixture.whenStable();
+
+      const resources = newComponent.resources();
+      expect(resources).toHaveLength(1);
+      expect(resources[0].ready).toBe(false);
+      expect(resources[0].metadata.name).toBe('no-conditions');
+    });
+
+    it('should handle mixed ready statuses in resource list', () => {
+      const mixedResources = [
+        {
+          metadata: { name: 'ready-1' },
+          status: {
+            conditions: [{ type: 'Ready', status: 'True' }],
+          },
+        },
+        {
+          metadata: { name: 'not-ready-1' },
+          status: {
+            conditions: [{ type: 'Ready', status: 'False' }],
+          },
+        },
+        {
+          metadata: { name: 'ready-2' },
+          status: {
+            conditions: [{ type: 'Ready', status: 'True' }],
+          },
+        },
+      ];
+
+      mockResourceService.list.mockReturnValueOnce(of(mixedResources));
+
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            listView: {
+              fields: [],
+            },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resources = newComponent.resources();
+      expect(resources).toHaveLength(3);
+      expect(resources[0].ready).toBe(true);
+      expect(resources[1].ready).toBe(false);
+      expect(resources[2].ready).toBe(true);
+    });
+
+    it('should call generateGqlFieldsWithStatusProperties when listing resources', () => {
+      const generateGqlFieldsSpy = jest.spyOn(
+        component as any,
+        'generateGqlFieldsWithStatusProperties',
+      );
+
+      component.list();
+
+      expect(generateGqlFieldsSpy).toHaveBeenCalled();
+      generateGqlFieldsSpy.mockRestore();
+    });
   });
 });

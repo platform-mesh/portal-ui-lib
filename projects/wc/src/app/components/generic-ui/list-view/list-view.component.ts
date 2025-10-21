@@ -116,15 +116,25 @@ export class ListViewComponent implements OnInit {
   ngOnInit(): void {}
 
   list() {
-    const fields = generateGraphQLFields(this.columns());
+    const fields = this.generateGqlFieldsWithStatusProperties();
     const queryOperation = `${replaceDotsAndHyphensWithUnderscores(this.resourceDefinition().group)}_${this.resourceDefinition().plural}`;
 
     this.resourceService
       .list(queryOperation, fields, this.context())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (result) => {
-          this.resources.set(result);
+        next: (result: any[]) => {
+          this.resources.set(
+            result.map((resource) => {
+              return {
+                ...resource,
+                ready:
+                  resource.status?.conditions?.find(
+                    (condition: any) => condition.type === 'Ready',
+                  )?.status === 'True',
+              };
+            }),
+          );
         },
       });
   }
@@ -201,5 +211,13 @@ export class ListViewComponent implements OnInit {
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
     this.deleteModal()?.open(resource);
+  }
+
+  private generateGqlFieldsWithStatusProperties() {
+    return generateGraphQLFields(
+      this.columns().concat({
+        property: ['status.conditions.status', 'status.conditions.type'],
+      }),
+    );
   }
 }

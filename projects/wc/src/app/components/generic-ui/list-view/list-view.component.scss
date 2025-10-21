@@ -32,6 +32,7 @@
 
 .actions-column ui5-icon {
   min-width: 1rem;
+  cursor: pointer;
 }
 
 .edit-item {
@@ -40,4 +41,21 @@
 
 .delete-item {
   padding: 0 0.5rem;
+}
+
+.disabled {
+  filter: brightness(0.92);
+  pointer-events: none;
+
+  ui5-table-cell:not(:first-child) {
+    color: var(--sapContent_DisabledTextColor, #6a6d70);
+
+    ui5-icon {
+      color: var(--sapContent_DisabledTextColor, #6a6d70);
+    }
+  }
+}
+
+.not-ready-indicator {
+  pointer-events: auto;
 }
