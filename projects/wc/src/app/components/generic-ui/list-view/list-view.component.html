@@ -33,8 +33,9 @@
     </ui5-toolbar>
   </ui5-dynamic-page-title>
 
-  <ui5-table>
+  <ui5-table class="table">
     <ui5-table-header-row slot="headerRow">
+      <ui5-table-header-cell width="32px" class="not-ready-indicator"></ui5-table-header-cell>
       @for (column of viewColomns(); track column.property) {
         @if (column.group) {
           <ui5-table-header-cell>{{ column.group.label ?? column.group.name }}</ui5-table-header-cell>
@@ -54,8 +55,13 @@
     </ui5-illustrated-message>
 
     @for (item of resources(); track item.metadata.name) {
-      <ui5-table-row interactive (click)="navigateToResource(item)">
-        @for (column of viewColomns(); track column.label) {
+      <ui5-table-row [class.disabled]="!item.ready" (click)="navigateToResource(item)">
+        <ui5-table-cell>
+          @if (!item.ready) {
+            <ui5-icon class="not-ready-indicator" (click)="$event.stopPropagation()" [showTooltip]="true" accessibleName="Resource is not ready" name="alert" design="Critical"></ui5-icon>
+          }
+        </ui5-table-cell>
+        @for (column of viewColomns(); let first = $first;  track column.label) {
           @if (column.group) {
             <ui5-table-cell [class.multiline]="column.group.multiline ?? true">
               @for (field of column.group.fields; let last = $last; track field.label) {
