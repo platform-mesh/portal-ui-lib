@@ -1,4 +1,5 @@
 import { ListViewComponent } from './list-view.component';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
@@ -12,7 +13,16 @@ describe('ListViewComponent', () => {
 
   beforeEach(() => {
     mockResourceService = {
-      list: jest.fn().mockReturnValue(of([{ metadata: { name: 'test' } }])),
+      list: jest.fn().mockReturnValue(
+        of([
+          {
+            metadata: { name: 'test' },
+            status: {
+              conditions: [{ type: 'Ready', status: 'True' }],
+            },
+          },
+        ]),
+      ),
       delete: jest.fn().mockReturnValue(of({})),
       create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
       update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
@@ -28,6 +38,7 @@ describe('ListViewComponent', () => {
         { provide: ResourceService, useValue: mockResourceService },
         { provide: LuigiCoreService, useValue: mockLuigiCoreService },
       ],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
     }).overrideComponent(ListViewComponent, {
       set: { template: '' },
     });

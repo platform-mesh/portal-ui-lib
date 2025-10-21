@@ -1,4 +1,5 @@
 import { ValueCellComponent } from './value-cell.component';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 describe('ValueCellComponent', () => {
@@ -34,6 +35,7 @@ describe('ValueCellComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ValueCellComponent],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
     });
   });
 
