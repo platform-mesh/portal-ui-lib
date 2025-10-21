@@ -91,7 +91,7 @@ export class ListViewComponent implements OnInit {
   private createModal = viewChild<CreateResourceModalComponent>('createModal');
   private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
-  resources = signal<(Resource & { ready: boolean })[]>([]);
+  resources = signal<Resource[]>([]);
   heading = computed(
     () =>
       `${this.resourceDefinition().plural.charAt(0).toUpperCase()}${this.resourceDefinition().plural.slice(1)}`,
@@ -129,7 +129,7 @@ export class ListViewComponent implements OnInit {
               return {
                 ...resource,
                 ready:
-                  resource.status.conditions.find(
+                  resource.status?.conditions?.find(
                     (condition: any) => condition.type === 'Ready',
                   )?.status === 'True',
               };
