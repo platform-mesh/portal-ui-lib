@@ -1,4 +1,4 @@
-function validateKubeconfigProps(props: any): asserts props is {
+export function validateKubeconfigProps(props: any): asserts props is {
   accountId: string;
   organization: string;
   kcpCA: string;

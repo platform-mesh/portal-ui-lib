@@ -34,6 +34,7 @@ import {
 import { processFields } from '../../../utils/proccess-fields';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { kubeConfigTemplate } from './kubeconfig-template';
+import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
 
 const defaultFields: FieldDefinition[] = [
   {
