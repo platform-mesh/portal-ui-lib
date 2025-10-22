@@ -37,7 +37,7 @@
         } @else if (field.dynamicValuesDefinition) {
           <dynamic-select
             [context]="context()"
-            [field]="field"
+            [dynamicValuesDefinition]="field.dynamicValuesDefinition"
             [value]="form.controls[fieldProperty].value"
             (input)="setFormControlValue($event, fieldProperty)"
             (change)="setFormControlValue($event, fieldProperty)"

@@ -1,20 +1,12 @@
-import {
-  Component,
-  DestroyRef,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  FieldDefinition,
-} from '@openmfp/portal-ui-lib';
+import { FieldDefinition } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
+import { RequireSome } from '@platform-mesh/portal-ui-lib/utils/utils/type-helpers';
 import { OptionComponent, SelectComponent } from '@ui5/webcomponents-ngx';
 import { Observable, map } from 'rxjs';
+
 
 @Component({
   selector: 'dynamic-select',
@@ -23,10 +15,10 @@ import { Observable, map } from 'rxjs';
   styleUrl: './dynamic-select.component.scss',
 })
 export class DynamicSelectComponent {
-  field = input.required<FieldDefinition>();
+  dynamicValuesDefinition = input.required<NonNullable<FieldDefinition['dynamicValuesDefinition']>>();
   context = input.required<ResourceNodeContext>();
 
-  value = input<string>();
+  value = input<string>('');
   required = input<boolean>(false);
   valueState = input<
     'None' | 'Positive' | 'Critical' | 'Negative' | 'Information'
@@ -43,7 +35,7 @@ export class DynamicSelectComponent {
 
   constructor() {
     effect(() => {
-      this.getDynamicValues(this.field(), this.context())
+      this.getDynamicValues(this.dynamicValuesDefinition(), this.context())
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe((result) => {
           this.dynamicValues$.set(result);
@@ -52,26 +44,22 @@ export class DynamicSelectComponent {
   }
 
   private getDynamicValues(
-    fieldDefinition: FieldDefinition,
+    dynamicValuesDefinition: NonNullable<
+      FieldDefinition['dynamicValuesDefinition']
+    >,
     context: ResourceNodeContext,
   ): Observable<{ value: string; key: string }[]> {
     return this.resourceService
       .list(
-        fieldDefinition.dynamicValuesDefinition.operation,
-        fieldDefinition.dynamicValuesDefinition.gqlQuery,
+        dynamicValuesDefinition.operation,
+        dynamicValuesDefinition.gqlQuery,
         context,
       )
       .pipe(
         map((result) =>
           result.map((resource) => ({
-            value: getValueByPath(
-              resource,
-              fieldDefinition.dynamicValuesDefinition.value,
-            ),
-            key: getValueByPath(
-              resource,
-              fieldDefinition.dynamicValuesDefinition.key,
-            ),
+            value: getValueByPath(resource, dynamicValuesDefinition.value),
+            key: getValueByPath(resource, dynamicValuesDefinition.key),
           })),
         ),
       );

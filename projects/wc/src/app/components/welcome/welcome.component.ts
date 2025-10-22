@@ -16,9 +16,9 @@ interface Header {
     <div class="center-container">
       <img src="{{ header()?.logo }}" width="100" alt="" />
       <div class="message-box">Welcome to the {{ header()?.title }}!</div>
-      @if (enhancedContext()) {
+      @if (enhancedContext(); as enhancedContext) {
         <organization-management
-          [context]="enhancedContext()"
+          [context]="enhancedContext"
           [LuigiClient]="LuigiClient()"
         />
       }
@@ -50,15 +50,15 @@ export class WelcomeComponent implements OnInit {
   private i18nService = inject(I18nService);
   private luigiCoreService = inject(LuigiCoreService);
 
-  context = input<ResourceNodeContext>();
-  LuigiClient = input<LuigiClient>();
-  enhancedContext = signal<ResourceNodeContext>(null);
+  context = input.required<ResourceNodeContext>();
+  LuigiClient = input.required<LuigiClient>();
+  enhancedContext = signal<ResourceNodeContext | undefined>(undefined);
 
-  header = signal<Header>({});
+  header = signal<Header | undefined>(undefined);
 
   async ngOnInit() {
     await this.i18nService.fetchTranslationFile('en');
-    const header = this.luigiCoreService.config.settings.header;
+    const header = this.luigiCoreService.config.settings?.header;
     this.header.set(header);
     this.enhancedContext.set({
       ...this.context(),

@@ -1,8 +1,9 @@
+import { DynamicSelectComponent } from './dynamic-select.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
-import { DynamicSelectComponent } from './dynamic-select.component';
+
 
 const mockResourceService = {
   list: jest.fn(),
@@ -39,7 +40,7 @@ describe('DynamicSelectComponent', () => {
 
     const context: any = { id: 'ctx' };
 
-    component.field = (() => fieldDefinition) as any;
+    component.dynamicValuesDefinition = (() => fieldDefinition) as any;
     component.context = (() => context) as any;
   });
 
