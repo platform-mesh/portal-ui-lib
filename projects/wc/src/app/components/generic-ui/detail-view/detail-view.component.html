@@ -39,29 +39,30 @@
         <ui5-label>Workspace Path</ui5-label>
         <p>{{ workspacePath() }}</p>
       </div>
-
-      @for (viewField of viewFields(); track viewField.property) {
-        <div class="resource-info-cell">
-          @if(viewField.group) {
-            <ui5-label>{{ viewField.group.label ?? viewField.group.name }}</ui5-label>
-            <p>
-              @for (field of viewField.group.fields; let last = $last; track field.label) {
-                <span [class.multiline]="viewField.group.multiline ?? true">
-                  <span>{{ field.label }}: </span>
-                  <value-cell  [labelDisplay]="field.labelDisplay" [value]="getResourceValueByJsonPath(resource(), field)"></value-cell>
-                </span>
-                @if (!last && viewField.group.delimiter) {
-                  <span>{{ viewField.group.delimiter }}</span>
+      @if (resource(); as resource) {
+        @for (viewField of viewFields(); track viewField.property) {
+          <div class="resource-info-cell">
+            @if(viewField.group) {
+              <ui5-label>{{ viewField.group.label ?? viewField.group.name }}</ui5-label>
+              <p>
+                @for (field of viewField.group.fields; let last = $last; track field.label) {
+                  <span [class.multiline]="viewField.group.multiline ?? true">
+                    <span>{{ field.label }}: </span>
+                    <value-cell  [labelDisplay]="field.labelDisplay" [value]="getResourceValueByJsonPath(resource, field)"></value-cell>
+                  </span>
+                  @if (!last && viewField.group.delimiter) {
+                    <span>{{ viewField.group.delimiter }}</span>
+                  }
                 }
-              }
-            </p>
-          } @else {
-            <ui5-label>{{ viewField.label }}</ui5-label>
-            <p>
-              <value-cell [labelDisplay]="viewField.labelDisplay" [value]="getResourceValueByJsonPath(resource(), viewField)"></value-cell>
-            </p>
-          }
-        </div>
+              </p>
+            } @else {
+              <ui5-label>{{ viewField.label }}</ui5-label>
+              <p>
+                <value-cell [labelDisplay]="viewField.labelDisplay" [value]="getResourceValueByJsonPath(resource, viewField)"></value-cell>
+              </p>
+            }
+          </div>
+        }
       }
     </div>
   </ui5-dynamic-page-header>

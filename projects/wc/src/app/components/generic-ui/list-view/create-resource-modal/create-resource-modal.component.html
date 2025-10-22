@@ -42,7 +42,7 @@
             (input)="setFormControlValue($event, fieldProperty)"
             (change)="setFormControlValue($event, fieldProperty)"
             (blur)="onFieldBlur(fieldProperty)"
-            [required]="field.required ?? false"
+            [required]="!!field.required"
             [valueState]="getValueState(fieldProperty)" />
         } @else {
           <ui5-input
