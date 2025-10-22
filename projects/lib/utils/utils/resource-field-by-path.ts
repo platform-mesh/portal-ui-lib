@@ -2,7 +2,7 @@ import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import jsonpath from 'jsonpath';
 
 export const getResourceValueByJsonPath = (
-  resource: Resource,
+  resource: Resource | null,
   field: { jsonPathExpression?: string; property?: string | string[] },
 ) => {
   const property = field?.jsonPathExpression || field?.property;
@@ -17,6 +17,6 @@ export const getResourceValueByJsonPath = (
     return undefined;
   }
 
-  const value = jsonpath.query(resource || {}, `$.${property}`);
+  const value = jsonpath.query(resource ?? {}, `$.${property}`);
   return value.length ? value[0] : undefined;
 };

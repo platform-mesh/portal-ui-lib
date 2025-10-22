@@ -73,7 +73,7 @@ describe('DetailViewComponent', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    delete global.URL.createObjectURL;
+    delete (global as any).URL.createObjectURL;
   });
 
   it('should create the component', () => {

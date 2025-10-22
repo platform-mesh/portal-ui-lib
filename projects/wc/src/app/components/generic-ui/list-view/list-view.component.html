@@ -3,10 +3,10 @@
     <ui5-title slot="heading">
       <div class="title-logo">
         <div>{{ heading() }}</div>
-        @if (resourceDefinition().ui?.logoUrl) {
+        @if (resourceDefinition()?.ui?.logoUrl) {
           <img
             class="logo"
-            src="{{ resourceDefinition().ui.logoUrl }}"
+            src="{{ resourceDefinition()?.ui?.logoUrl }}"
             alt="Logo"
           />
         }
@@ -14,7 +14,7 @@
     </ui5-title>
     <ui5-text class="title-subheading" slot="subheading">
       This page displays the created
-      {{ resourceDefinition().plural }} in your environment
+      {{ resourceDefinition()?.plural }} in your environment
     </ui5-text>
 
     <ui5-toolbar
@@ -92,7 +92,7 @@
 @if (hasUiCreateViewFields()) {
   <create-resource-modal
     #createModal
-    [fields]="resourceDefinition().ui?.createView?.fields"
+    [fields]="resourceDefinition()?.ui?.createView?.fields ?? []"
     (resource)="create($event)"
     (updateResource)="update($event)"
     [context]="context()"

@@ -86,23 +86,23 @@ export class ListViewComponent implements OnInit {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
   private destroyRef = inject(DestroyRef);
-  LuigiClient = input<LuigiClient>();
-  context = input<ResourceNodeContext>();
+  LuigiClient = input.required<LuigiClient>();
+  context = input.required<ResourceNodeContext>();
   private createModal = viewChild<CreateResourceModalComponent>('createModal');
   private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
   resources = signal<Resource[]>([]);
   heading = computed(
     () =>
-      `${this.resourceDefinition().plural.charAt(0).toUpperCase()}${this.resourceDefinition().plural.slice(1)}`,
+      `${this.resourceDefinition()?.plural.charAt(0).toUpperCase()}${this.resourceDefinition()?.plural.slice(1)}`,
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(
-    () => this.resourceDefinition().ui?.listView?.fields || defaultColumns,
+    () => this.resourceDefinition()?.ui?.listView?.fields || defaultColumns,
   );
   viewColomns = computed(() => processFields(this.columns()));
   hasUiCreateViewFields = computed(
-    () => !!this.resourceDefinition().ui?.createView?.fields?.length,
+    () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
 
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
@@ -116,8 +116,9 @@ export class ListViewComponent implements OnInit {
   ngOnInit(): void {}
 
   list() {
+    const resourceDefinition = this.getResourceDefinition();
     const fields = this.generateGqlFieldsWithStatusProperties();
-    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(this.resourceDefinition().group)}_${this.resourceDefinition().plural}`;
+    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.plural}`;
 
     this.resourceService
       .list(queryOperation, fields, this.context())
@@ -140,8 +141,10 @@ export class ListViewComponent implements OnInit {
   }
 
   delete(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+
     this.resourceService
-      .delete(resource, this.resourceDefinition(), this.context())
+      .delete(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
           console.debug('Resource deleted.');
@@ -156,8 +159,10 @@ export class ListViewComponent implements OnInit {
   }
 
   create(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+
     this.resourceService
-      .create(resource, this.resourceDefinition(), this.context())
+      .create(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
           console.debug('Resource created', result);
@@ -166,8 +171,10 @@ export class ListViewComponent implements OnInit {
   }
 
   update(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+
     this.resourceService
-      .update(resource, this.resourceDefinition(), this.context())
+      .update(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
           console.debug('Resource updated', result);
@@ -176,6 +183,15 @@ export class ListViewComponent implements OnInit {
   }
 
   navigateToResource(resource: Resource) {
+    if (!resource.metadata.name) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource name is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Resource name is not defined');
+    }
+
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
@@ -185,18 +201,19 @@ export class ListViewComponent implements OnInit {
 
   openEditResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
+    const resourceDefinition = this.getResourceDefinition();
 
     const groupOperation = replaceDotsAndHyphensWithUnderscores(
-      this.resourceDefinition().group,
+      resourceDefinition.group,
     );
-    const kind = this.resourceDefinition().kind;
+    const kind = resourceDefinition.kind;
     const fields = generateGraphQLFields(
-      this.resourceDefinition().ui?.createView?.fields || [],
+      resourceDefinition.ui?.createView?.fields ?? [],
     );
 
     this.resourceService
       .read(
-        resource.metadata.name,
+        resource.metadata.name ?? '',
         groupOperation,
         kind,
         fields,
@@ -219,5 +236,19 @@ export class ListViewComponent implements OnInit {
         property: ['status.conditions.status', 'status.conditions.type'],
       }),
     );
+  }
+
+  private getResourceDefinition() {
+    const resourceDefinition = this.resourceDefinition();
+    if (!resourceDefinition) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Resource definition is not defined');
+    }
+
+    return resourceDefinition;
   }
 }

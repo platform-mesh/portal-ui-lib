@@ -7,7 +7,7 @@
       </div>
     </ui5-title>
     <ui5-text class="resource-title-subheading" slot="subheading">
-      The {{ resourceDefinition().singular }} for
+      The {{ resourceDefinition()?.singular }} for
       {{ resource()?.spec?.displayName || resourceId() }}
     </ui5-text>
 
@@ -28,10 +28,10 @@
 
   <ui5-dynamic-page-header slot="headerArea">
     <div class="resource-info">
-      @if (resourceDefinition().ui?.logoUrl) {
+      @if (resourceDefinition()?.ui?.logoUrl) {
         <img
           class="resource-logo"
-          src="{{ resourceDefinition().ui.logoUrl }}"
+          src="{{ resourceDefinition()?.ui?.logoUrl }}"
           alt="Logo"
         />
       }
@@ -40,25 +40,25 @@
         <p>{{ workspacePath() }}</p>
       </div>
 
-      @for (field of viewFields(); track field.property) {
+      @for (viewField of viewFields(); track viewField.property) {
         <div class="resource-info-cell">
-          @if(field.group) {
-            <ui5-label>{{ field.group.label ?? field.group.name }}</ui5-label>
+          @if(viewField.group) {
+            <ui5-label>{{ viewField.group.label ?? viewField.group.name }}</ui5-label>
             <p>
-              @for (field of field.group.fields; let last = $last; track field.label) {
-                <span [class.multiline]="field.group.multiline ?? true">
+              @for (field of viewField.group.fields; let last = $last; track field.label) {
+                <span [class.multiline]="viewField.group.multiline ?? true">
                   <span>{{ field.label }}: </span>
                   <value-cell  [labelDisplay]="field.labelDisplay" [value]="getResourceValueByJsonPath(resource(), field)"></value-cell>
                 </span>
-                @if (!last && field.group.delimiter) {
-                  <span>{{ field.group.delimiter }}</span>
+                @if (!last && viewField.group.delimiter) {
+                  <span>{{ viewField.group.delimiter }}</span>
                 }
               }
             </p>
           } @else {
-            <ui5-label>{{ field.label }}</ui5-label>
+            <ui5-label>{{ viewField.label }}</ui5-label>
             <p>
-              <value-cell [labelDisplay]="field.labelDisplay" [value]="getResourceValueByJsonPath(resource(), field)"></value-cell>
+              <value-cell [labelDisplay]="viewField.labelDisplay" [value]="getResourceValueByJsonPath(resource(), viewField)"></value-cell>
             </p>
           }
         </div>

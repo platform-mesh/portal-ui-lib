@@ -26,7 +26,7 @@
             [valueState]="getValueState(fieldProperty)"
             [disabled]="isEditMode() && isCreateFieldOnly(field)"
           >
-            @for (value of [''].concat(field.values); track value) {
+            @for (value of [''].concat(field.values ?? []); track value) {
               <ui5-option
                 [value]="value"
                 [selected]="value === form.controls[fieldProperty].value"
@@ -42,7 +42,7 @@
             (input)="setFormControlValue($event, fieldProperty)"
             (change)="setFormControlValue($event, fieldProperty)"
             (blur)="onFieldBlur(fieldProperty)"
-            [required]="field.required"
+            [required]="field.required ?? false"
             [valueState]="getValueState(fieldProperty)" />
         } @else {
           <ui5-input

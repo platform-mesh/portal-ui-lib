@@ -162,9 +162,17 @@ describe('ListViewComponent', () => {
   });
 
   it('should check create view fields existence', () => {
-    component.resourceDefinition().ui.createView = {
-      fields: [{ property: 'any' }],
-    };
+    fixture.componentRef.setInput('context', {
+      resourceDefinition: {
+        ui: {
+          createView: {
+            fields: [{ property: 'any' }],
+          },
+        },
+      },
+    });
+    fixture.detectChanges();
+
     expect(component.hasUiCreateViewFields()).toBe(true);
   });
 
