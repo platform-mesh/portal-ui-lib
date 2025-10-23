@@ -162,18 +162,39 @@ describe('ListViewComponent', () => {
   });
 
   it('should check create view fields existence', () => {
-    fixture.componentRef.setInput('context', {
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    const mockContext = {
       resourceDefinition: {
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        plural: 'clusters',
         ui: {
           createView: {
             fields: [{ property: 'any' }],
           },
+          listView: { fields: [] },
         },
       },
-    });
-    fixture.detectChanges();
+    } as any;
 
-    expect(component.hasUiCreateViewFields()).toBe(true);
+    newComponent.context = (() => mockContext) as any;
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.resourceDefinition()).toEqual(
+      mockContext.resourceDefinition,
+    );
+    expect(newComponent.hasUiCreateViewFields()).toBe(true);
   });
 
   it('should use default columns when no listView fields are defined', () => {

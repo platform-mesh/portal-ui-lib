@@ -4,7 +4,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
 
-
 const mockResourceService = {
   list: jest.fn(),
 };
@@ -28,37 +27,40 @@ describe('DynamicSelectComponent', () => {
 
     fixture = TestBed.createComponent(DynamicSelectComponent);
     component = fixture.componentInstance;
-
-    const fieldDefinition: any = {
-      dynamicValuesDefinition: {
-        opeartion: 'getData',
-        gqlQuery: '{ someQuery }',
-        key: 'name',
-        value: 'id',
-      },
-    };
-
-    const context: any = { id: 'ctx' };
-
-    component.dynamicValuesDefinition = (() => fieldDefinition) as any;
-    component.context = (() => context) as any;
   });
 
   it('should create component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should load dynamicValues via ResourceService', () => {
+  it('should load dynamicValues via ResourceService', async () => {
     const mockResponse = [
       { id: '1', name: 'First' },
       { id: '2', name: 'Second' },
     ];
 
+    const fieldDefinition = {
+      operation: 'getData',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    // Set the input signals
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
     mockResourceService.list.mockReturnValue(of(mockResponse));
 
     fixture.detectChanges();
 
+    // Wait for the async operation to complete
+    await fixture.whenStable();
+
     const values = component.dynamicValues$();
+
     expect(values).toEqual([
       { value: '1', key: 'First' },
       { value: '2', key: 'Second' },

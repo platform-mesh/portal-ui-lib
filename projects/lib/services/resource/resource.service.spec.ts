@@ -65,7 +65,7 @@ describe('ResourceService', () => {
   });
 
   describe('read', () => {
-    it('should catch gql parsing error and return null observable', (done) => {
+    it('should catch gql parsing error and complete the observable', (done) => {
       const invalidQuery =
         `query { core_k8s_io { TestKind(name: "test-name") {` as unknown as any;
 
@@ -80,13 +80,14 @@ describe('ResourceService', () => {
           invalidQuery,
           namespacedNodeContext,
         )
-        .subscribe((res) => {
-          expect(res).toBeNull();
-          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-            text: expect.any(String),
-            type: 'error',
-          });
-          done();
+        .subscribe({
+          complete: () => {
+            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+              text: expect.any(String),
+              type: 'error',
+            });
+            done();
+          },
         });
     });
 
@@ -648,7 +649,6 @@ describe('ResourceService', () => {
         });
     });
   });
-
 
   describe('readAccountInfo', () => {
     it('should read account info', (done) => {

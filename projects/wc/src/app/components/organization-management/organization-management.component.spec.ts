@@ -1,22 +1,13 @@
-import {
-  CUSTOM_ELEMENTS_SCHEMA,
-  NO_ERRORS_SCHEMA,
-  signal,
-} from '@angular/core';
+import { OrganizationManagementComponent } from './organization-management.component';
+import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import {
-  ClientEnvironment,
-  EnvConfigService,
-  I18nService,
-  LuigiGlobalContext,
-  NodeContext,
-} from '@openmfp/portal-ui-lib';
+import { ClientEnvironment, EnvConfigService, I18nService, LuigiGlobalContext, NodeContext } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-import { OrganizationManagementComponent } from './organization-management.component';
+
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
@@ -146,6 +137,11 @@ describe('OrganizationManagementComponent', () => {
     component.newOrganizationControl.setValue('newOrg');
     component.organizations.set([{ name: 'existingOrg', ready: false }]);
 
+    const mockContext = {
+      translationTable: { hello: 'world' },
+    } as any;
+    component.context = (() => mockContext) as any;
+
     component.onboardOrganization();
 
     expect(resourceServiceMock.create).toHaveBeenCalled();
@@ -162,6 +158,11 @@ describe('OrganizationManagementComponent', () => {
       throwError(() => new Error('Creation failed')),
     );
     component.newOrganizationControl.setValue('newOrg');
+
+    const mockContext = {
+      translationTable: { hello: 'world' },
+    } as any;
+    component.context = (() => mockContext) as any;
 
     component.onboardOrganization();
 
@@ -303,6 +304,11 @@ describe('OrganizationManagementComponent', () => {
 
     resourceServiceMock.list.mockReturnValue(throwError(() => mockError));
 
+    const mockContext = {
+      translationTable: { hello: 'world' },
+    } as any;
+    component.context = (() => mockContext) as any;
+
     component.readOrganizations();
 
     expect(consoleSpy).toHaveBeenCalledWith(
@@ -327,6 +333,11 @@ describe('OrganizationManagementComponent', () => {
 
     // Set an existing organization to switch
     component.organizationToSwitch.set({ name: 'org2', ready: false });
+
+    const mockContext = {
+      translationTable: { hello: 'world' },
+    } as any;
+    component.context = (() => mockContext) as any;
 
     resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
 

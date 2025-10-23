@@ -43,6 +43,9 @@ describe('DetailViewComponent', () => {
     component.context = (() => ({
       resourceId: 'cluster-1',
       token: 'abc123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
       resourceDefinition: {
         kind: 'Cluster',
         group: 'core.k8s.io',
@@ -64,6 +67,9 @@ describe('DetailViewComponent', () => {
         fromContext: jest.fn().mockReturnThis(),
         navigate: luigiClientLinkManagerNavigate,
         withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
       }),
       getNodeParams: jest.fn(),
     })) as any;
@@ -162,6 +168,9 @@ describe('DetailViewComponent', () => {
         navigate: jest.fn(),
         withParams: jest.fn().mockReturnThis(),
       }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
       getNodeParams: jest.fn(),
     })) as any;
 
@@ -206,6 +215,9 @@ describe('DetailViewComponent', () => {
         fromContext: jest.fn().mockReturnThis(),
         navigate: jest.fn(),
         withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
       }),
       getNodeParams: jest.fn(),
     })) as any;
@@ -254,6 +266,9 @@ describe('DetailViewComponent', () => {
         fromContext: jest.fn().mockReturnThis(),
         navigate: jest.fn(),
         withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
       }),
       getNodeParams: jest.fn(),
     })) as any;
