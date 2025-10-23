@@ -5,7 +5,7 @@ export const getResourceValueByJsonPath = (
   resource: Resource,
   field: { jsonPathExpression?: string; property?: string | string[] },
 ) => {
-  const property = field?.jsonPathExpression || field?.property;
+  const property = field.jsonPathExpression || field.property;
   if (!property) {
     return undefined;
   }
