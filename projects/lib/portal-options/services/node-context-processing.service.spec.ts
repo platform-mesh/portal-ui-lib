@@ -324,8 +324,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(ctx.entity).toBe(mockEntity);
       expect(ctx.entityId).toBe('cluster1/test-entity');
-      expect(entityNode.context.entity).toBe(mockEntity);
-      expect(entityNode.context.entityId).toBe('cluster1/test-entity');
+      expect(entityNode.context!.entity).toBe(mockEntity);
+      expect(entityNode.context!.entityId).toBe('cluster1/test-entity');
     });
 
     it('should handle entity without kcp.io/cluster annotation', async () => {
@@ -356,8 +356,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(ctx.entity).toBe(mockEntity);
       expect(ctx.entityId).toBe('undefined/test-entity');
-      expect(entityNode.context.entity).toBe(mockEntity);
-      expect(entityNode.context.entityId).toBe('undefined/test-entity');
+      expect(entityNode.context!.entity).toBe(mockEntity);
+      expect(entityNode.context!.entityId).toBe('undefined/test-entity');
     });
 
     it('should log error and not update context when read fails', async () => {
@@ -388,7 +388,7 @@ describe('NodeContextProcessingServiceImpl', () => {
         'Not able to read entity test-entity from test_group',
       );
       expect(ctx.entity).toBeUndefined();
-      expect(entityNode.context.entity).toBeUndefined();
+      expect(entityNode.context!.entity).toBeUndefined();
 
       consoleErrorSpy.mockRestore();
     });
