@@ -1,5 +1,3 @@
-import { ApolloFactory } from './apollo-factory';
-import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -15,8 +13,11 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
+import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { ApolloFactory } from './apollo-factory';
+import { ResourceNodeContext } from './resource-node-context';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -129,7 +130,7 @@ export class ResourceService {
       });
     } else {
       query = {
-        variables: variables,
+        variables: this.normalizeGqlBuilderVariables(variables),
         query: fieldsOrRawQuery,
       };
     }
@@ -342,5 +343,13 @@ export class ResourceService {
 
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
     return nodeContext?.resourceDefinition?.scope === 'Namespaced';
+  }
+
+  private normalizeGqlBuilderVariables(
+    variables: VariableOptions,
+  ): Record<string, any> {
+    return Object.fromEntries(
+      Object.entries(variables).map(([key, value]) => [key, value.value]),
+    );
   }
 }
