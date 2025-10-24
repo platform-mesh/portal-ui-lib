@@ -19,6 +19,7 @@ import { LabelDisplay } from '@platform-mesh/portal-ui-lib/models/models';
 export class ValueCellComponent {
   value = input<unknown>();
   labelDisplay = input<LabelDisplay | boolean>();
+  displayAsPlainText = input<boolean>(false);
 
   isLabelValue = computed(() => this.labelDisplayValue() !== undefined);
   isBoolLike = computed(() => this.boolValue() !== undefined);
