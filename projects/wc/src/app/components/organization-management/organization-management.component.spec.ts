@@ -1,13 +1,22 @@
 import { OrganizationManagementComponent } from './organization-management.component';
-import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, signal } from '@angular/core';
+import {
+  CUSTOM_ELEMENTS_SCHEMA,
+  NO_ERRORS_SCHEMA,
+  signal,
+} from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { ClientEnvironment, EnvConfigService, I18nService, LuigiGlobalContext, NodeContext } from '@openmfp/portal-ui-lib';
+import {
+  ClientEnvironment,
+  EnvConfigService,
+  I18nService,
+  LuigiGlobalContext,
+  NodeContext,
+} from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
-
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
@@ -352,6 +361,170 @@ describe('OrganizationManagementComponent', () => {
     expect(component.organizationToSwitch()).toEqual({
       name: 'org2',
       ready: true,
+    });
+  });
+
+  describe('undefined organization handling', () => {
+    it('should handle null organizationToSwitch in readOrganizations', () => {
+      const mockOrganizations = [
+        {
+          metadata: { name: 'org1' },
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+      ];
+
+      // Set organizationToSwitch to null
+      component.organizationToSwitch.set(null);
+
+      const mockContext = {
+        translationTable: { hello: 'world' },
+      } as any;
+      component.context = (() => mockContext) as any;
+
+      resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
+
+      component.readOrganizations();
+
+      // Should set first organization when organizationToSwitch is null
+      expect(component.organizationToSwitch()).toEqual({
+        name: 'org1',
+        ready: true,
+      });
+    });
+
+    it('should handle undefined organization name in setOrganizationToSwitch', () => {
+      component.organizations.set([{ name: 'testOrg', ready: false }]);
+      const event = { selectedOption: { _state: { value: undefined } } };
+
+      component.setOrganizationToSwitch(event);
+
+      // Should set to null when organization is not found
+      expect(component.organizationToSwitch()).toBeNull();
+    });
+  });
+
+  describe('sanitizeSubdomainInput undefined handling', () => {
+    it('should return null for undefined input', () => {
+      const result = component['sanitizeSubdomainInput'](undefined);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for null input', () => {
+      const result = component['sanitizeSubdomainInput'](null as any);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for non-string input', () => {
+      const result = component['sanitizeSubdomainInput'](123 as any);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for empty string input', () => {
+      const result = component['sanitizeSubdomainInput']('');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for whitespace-only input', () => {
+      const result = component['sanitizeSubdomainInput']('   ');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for input starting with hyphen', () => {
+      const result = component['sanitizeSubdomainInput']('-invalid');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for input ending with hyphen', () => {
+      const result = component['sanitizeSubdomainInput']('invalid-');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for input with periods', () => {
+      const result = component['sanitizeSubdomainInput']('invalid.name');
+      expect(result).toBeNull();
+    });
+
+    it('should return null for input with special characters', () => {
+      const result = component['sanitizeSubdomainInput']('invalid@name');
+      expect(result).toBeNull();
+    });
+
+    it('should return sanitized string for valid input', () => {
+      const result = component['sanitizeSubdomainInput']('valid-name');
+      expect(result).toBe('valid-name');
+    });
+
+    it('should return sanitized string for valid single character input', () => {
+      const result = component['sanitizeSubdomainInput']('a');
+      expect(result).toBe('a');
+    });
+
+    it('should return sanitized string for valid input with numbers', () => {
+      const result = component['sanitizeSubdomainInput']('valid-name123');
+      expect(result).toBe('valid-name123');
+    });
+  });
+
+  describe('switchOrganization undefined handling', () => {
+    it('should handle undefined organizationToSwitch in switchOrganization', async () => {
+      const mockEnvConfig: ClientEnvironment = {
+        idpName: 'test',
+        organization: 'test',
+        oauthServerUrl: 'https://test.com',
+        clientId: 'test',
+        baseDomain: 'test.com',
+        isLocal: false,
+        developmentInstance: false,
+        authData: {
+          expires_in: '3600',
+          access_token: 'test-access-token',
+          id_token: 'test-id-token',
+        },
+        uiOptions: [],
+      };
+      envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+
+      // Set organizationToSwitch to undefined
+      component.organizationToSwitch.set(undefined as any);
+
+      await component.switchOrganization();
+
+      expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalledWith({
+        text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
+        type: 'error',
+      });
+    });
+
+    it('should handle organizationToSwitch with undefined name in switchOrganization', async () => {
+      const mockEnvConfig: ClientEnvironment = {
+        idpName: 'test',
+        organization: 'test',
+        oauthServerUrl: 'https://test.com',
+        clientId: 'test',
+        baseDomain: 'test.com',
+        isLocal: false,
+        developmentInstance: false,
+        authData: {
+          expires_in: '3600',
+          access_token: 'test-access-token',
+          id_token: 'test-id-token',
+        },
+        uiOptions: [],
+      };
+      envConfigServiceMock.getEnvConfig.mockResolvedValue(mockEnvConfig);
+
+      // Set organizationToSwitch with undefined name
+      component.organizationToSwitch.set({
+        name: undefined as any,
+        ready: false,
+      });
+
+      await component.switchOrganization();
+
+      expect(luigiClientMock.uxManager().showAlert).toHaveBeenCalledWith({
+        text: 'Organization name is not valid for subdomain usage, accrording to RFC 1034/1123.',
+        type: 'error',
+      });
     });
   });
 });

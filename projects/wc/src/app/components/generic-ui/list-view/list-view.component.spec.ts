@@ -578,4 +578,182 @@ describe('ListViewComponent', () => {
       generateGqlFieldsSpy.mockRestore();
     });
   });
+
+  describe('Undefined checks', () => {
+    it('should show alert and throw error when resourceDefinition is undefined in list method', () => {
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      // Set context to return undefined resourceDefinition
+      newComponent.context = (() => ({
+        resourceDefinition: undefined,
+      })) as any;
+
+      const showAlertSpy = jest.fn();
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      // Test that list() method throws error when resourceDefinition is undefined
+      expect(() => newComponent.list()).toThrow(
+        'Resource definition is not defined',
+      );
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should show alert and throw error when resourceDefinition is undefined in delete method', () => {
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      // Set context to return undefined resourceDefinition
+      newComponent.context = (() => ({
+        resourceDefinition: undefined,
+      })) as any;
+
+      const showAlertSpy = jest.fn();
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      const resource = { metadata: { name: 'test' } } as any;
+
+      // Test that delete() method throws error when resourceDefinition is undefined
+      expect(() => newComponent.delete(resource)).toThrow(
+        'Resource definition is not defined',
+      );
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should show alert and throw error when resourceDefinition is undefined in create method', () => {
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      // Set context to return undefined resourceDefinition
+      newComponent.context = (() => ({
+        resourceDefinition: undefined,
+      })) as any;
+
+      const showAlertSpy = jest.fn();
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      const resource = { metadata: { name: 'test' } } as any;
+
+      // Test that create() method throws error when resourceDefinition is undefined
+      expect(() => newComponent.create(resource)).toThrow(
+        'Resource definition is not defined',
+      );
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should show alert and throw error when resourceDefinition is undefined in update method', () => {
+      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      // Set context to return undefined resourceDefinition
+      newComponent.context = (() => ({
+        resourceDefinition: undefined,
+      })) as any;
+
+      const showAlertSpy = jest.fn();
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      const resource = { metadata: { name: 'test' } } as any;
+      // Test that update() method throws error when resourceDefinition is undefined
+      expect(() => newComponent.update(resource)).toThrow(
+        'Resource definition is not defined',
+      );
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should handle edit resource modal with undefined resource name', () => {
+      const event = { stopPropagation: jest.fn() } as any;
+      const resource = { metadata: {} } as any; // metadata.name is undefined
+      const openSpy = jest.fn();
+      (component as any).createModal = () => ({ open: openSpy });
+
+      mockResourceService.read.mockReturnValueOnce(of(resource));
+
+      component.openEditResourceModal(event, resource);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockResourceService.read).toHaveBeenCalledWith(
+        '', // Should use empty string when name is undefined
+        expect.any(String),
+        expect.any(String),
+        expect.any(Array),
+        expect.any(Object),
+        false,
+      );
+      expect(openSpy).toHaveBeenCalledWith(resource);
+    });
+
+    it('should show alert and throw error when navigating to resource with undefined name', () => {
+      const resource = { metadata: {} } as any;
+      const showAlertSpy = jest.fn();
+      component.LuigiClient = (() => ({
+        linkManager: () => ({
+          navigate: jest.fn(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+      })) as any;
+
+      expect(() => component.navigateToResource(resource)).toThrow(
+        'Resource name is not defined',
+      );
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Resource name is not defined',
+        type: 'error',
+      });
+    });
+  })
 });
