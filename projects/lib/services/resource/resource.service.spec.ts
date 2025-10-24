@@ -342,10 +342,7 @@ describe('ResourceService', () => {
           expect(mockApollo.subscribe).toHaveBeenCalledWith({
             query: expect.anything(),
             variables: {
-              namespace: {
-                type: 'String',
-                value: namespacedNodeContext.namespaceId,
-              },
+              namespace: namespacedNodeContext.namespaceId,
             },
           });
           done();
