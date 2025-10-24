@@ -23,6 +23,7 @@ export interface FieldDefinition {
     multiline?: boolean;
   };
   labelDisplay?: LabelDisplay | boolean;
+  displayAsPlainText?: boolean;
   dynamicValuesDefinition?: {
     operation: string;
     gqlQuery: string;
