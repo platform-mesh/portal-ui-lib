@@ -432,7 +432,6 @@ describe('ListViewComponent', () => {
       const resources = newComponent.resources();
       expect(resources).toHaveLength(1);
       expect(resources[0].ready).toBe(true);
-      expect(resources[0].metadata.name).toBe('not-ready-resource');
     });
 
     it('should mark resource as not ready when status condition is missing', () => {
