@@ -188,7 +188,7 @@ export class OrganizationManagementComponent implements OnInit {
 
   private getMessageForOrganizationCreation(orgName: string) {
     if (isLocalSetup()) {
-      return `A new organization has been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local`;
+      return `A new organization has been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local. When onboarding a new organization, the system sends an email. Please check delivered emails in mailpit (https://portal.dev.local:8443/mailpit).`;
     }
 
     return 'A new organization has been created. Select it from the list to switch.';
