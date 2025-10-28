@@ -97,7 +97,9 @@ export class ListViewComponent implements OnInit {
       `${this.resourceDefinition().plural.charAt(0).toUpperCase()}${this.resourceDefinition().plural.slice(1)}`,
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
-  columns = computed(() => defaultColumns);
+  columns = computed(
+    () => this.resourceDefinition().ui?.listView?.fields || defaultColumns,
+  );
   viewColomns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition().readyCondition);
   hasUiCreateViewFields = computed(
