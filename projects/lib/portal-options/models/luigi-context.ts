@@ -1,4 +1,5 @@
-import { NodeContext, Resource } from '@openmfp/portal-ui-lib';
+import { NodeContext } from '@openmfp/portal-ui-lib';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 
 export interface PortalContext extends Record<string, any> {
   crdGatewayApiUrl: string;

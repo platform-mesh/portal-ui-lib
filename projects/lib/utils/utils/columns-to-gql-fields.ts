@@ -1,4 +1,4 @@
-import { FieldDefinition } from '@openmfp/portal-ui-lib';
+import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 export const generateGraphQLFields = (uiFields: FieldDefinition[]): any[] => {
   const graphQLFields = [];

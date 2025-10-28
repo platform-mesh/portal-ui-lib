@@ -1,3 +1,5 @@
+import { k8sMessages } from '../../consts/k8s-messages';
+import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,12 +19,11 @@ import {
   Validators,
 } from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
-  EnvConfigService,
-  I18nService,
   Resource,
   ResourceDefinition,
-} from '@openmfp/portal-ui-lib';
+} from '@platform-mesh/portal-ui-lib/models/models';
 import {
   ResourceNodeContext,
   ResourceService,
@@ -39,8 +40,6 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
-import { k8sMessages } from '../../consts/k8s-messages';
-import { k8sNameValidator } from '../../validators/k8s-name-validator';
 
 @Component({
   selector: 'organization-management',

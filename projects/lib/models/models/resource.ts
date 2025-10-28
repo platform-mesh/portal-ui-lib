@@ -65,6 +65,7 @@ export interface ResourceDefinition {
   kind: string;
   scope?: KubernetesScope;
   namespace?: string;
+  readyCondition?: string;
   ui?: UIDefinition;
 }
 

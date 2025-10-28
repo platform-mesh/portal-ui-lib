@@ -101,6 +101,7 @@ export class ListViewComponent implements OnInit {
     () => this.resourceDefinition().ui?.listView?.fields || defaultColumns,
   );
   viewColomns = computed(() => processFields(this.columns()));
+  readyCondition = computed(() => this.resourceDefinition().readyCondition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition().ui?.createView?.fields?.length,
   );

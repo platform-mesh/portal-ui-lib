@@ -2,17 +2,20 @@ import { DestroyRef, Injectable, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AuthService,
-  FieldDefinition,
   LuigiCoreService,
   LuigiNode,
   PortalConfig,
-  Resource,
 } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
 import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, of } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
+
 
 const defaultColumns: FieldDefinition[] = [
   {
