@@ -48,7 +48,10 @@
                 @for (field of viewField.group.fields; let last = $last; track field.label) {
                   <span [class.multiline]="viewField.group.multiline ?? true">
                     <span>{{ field.label }}: </span>
-                    <value-cell  [labelDisplay]="field.labelDisplay" [value]="getResourceValueByJsonPath(resource, field)"></value-cell>
+                    <value-cell
+                    [labelDisplay]="field.labelDisplay"
+                    [value]="getResourceValueByJsonPath(resource, field)"
+                    [displayAsPlainText]="!!field.displayAsPlainText" />
                   </span>
                   @if (!last && viewField.group.delimiter) {
                     <span>{{ viewField.group.delimiter }}</span>
@@ -58,7 +61,10 @@
             } @else {
               <ui5-label>{{ viewField.label }}</ui5-label>
               <p>
-                <value-cell [labelDisplay]="viewField.labelDisplay" [value]="getResourceValueByJsonPath(resource, viewField)"></value-cell>
+                <value-cell
+                [labelDisplay]="viewField.labelDisplay"
+                [value]="getResourceValueByJsonPath(resource, viewField)"
+                [displayAsPlainText]="!!viewField.displayAsPlainText" />
               </p>
             }
           </div>

@@ -129,10 +129,11 @@ export class ListViewComponent implements OnInit {
             result.map((resource) => {
               return {
                 ...resource,
-                ready:
-                  resource.status?.conditions?.find(
-                    (condition: any) => condition.type === 'Ready',
-                  )?.status === 'True',
+                // ready:
+                //   resource.status?.conditions?.find(
+                //     (condition: any) => condition.type === 'Ready',
+                //   )?.status === 'True',
+                ready: true,
               };
             }),
           );

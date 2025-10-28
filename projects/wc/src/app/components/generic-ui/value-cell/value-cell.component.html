@@ -1,3 +1,6 @@
+@if (displayAsPlainText()) {
+  {{ value() }}
+} @else {
   @if (isBoolLike()) {
     <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
   } @else if (isUrlValue()) {
@@ -8,3 +11,4 @@
   @else {
     {{ value() }}
   }
+}

@@ -58,6 +58,7 @@ Each field definition supports the following properties:
   - `"fontStyle"`: Font style for the value (CSS font-style value)
   - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
   - `"textTransform"`: Text transformation for the value (CSS text-transform value)
+- `"displayAsPlainText"`: Boolean valu that give you ability to render value as it is, without any built-in transformation.
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
