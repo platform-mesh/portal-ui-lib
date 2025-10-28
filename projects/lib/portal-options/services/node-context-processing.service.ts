@@ -1,13 +1,12 @@
-import { Injectable, inject } from '@angular/core';
-import {
-  NodeContextProcessingService,
-} from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
-import { firstValueFrom } from 'rxjs';
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
+import { Injectable, inject } from '@angular/core';
+import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+import { firstValueFrom } from 'rxjs';
+
 
 @Injectable({
   providedIn: 'root',
@@ -70,8 +69,10 @@ export class NodeContextProcessingServiceImpl
       ctx.entity = entity;
       ctx.entityId = `${entity.metadata?.annotations?.['kcp.io/cluster']}/${entityId}`;
       // update the node context of sa node to contain the entity for future context calculations
-      entityNode.context.entity = entity;
-      entityNode.context.entityId = ctx.entityId;
+      if (entityNode.context) {
+        entityNode.context.entity = entity;
+        entityNode.context.entityId = ctx.entityId;
+      }
     } catch (e) {
       console.error(`Not able to read entity ${entityId} from ${operation}`);
     }

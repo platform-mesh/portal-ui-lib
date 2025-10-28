@@ -1,6 +1,7 @@
+import { GatewayService } from './gateway.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { GatewayService } from './gateway.service';
+
 
 describe('GatewayService', () => {
   let service: GatewayService;
@@ -13,6 +14,7 @@ describe('GatewayService', () => {
           crdGatewayApiUrl: 'https://example.com/:org1:acc1/graphql',
         },
       }),
+      showAlert: jest.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -99,6 +101,92 @@ describe('GatewayService', () => {
       };
       const result = service.resolveKcpPath(nodeContext);
       expect(result).toBe(':org1:acc1');
+    });
+  });
+
+  describe('getCurrentKcpPath (via resolveKcpPath)', () => {
+    it('should extract kcp path from valid gateway URL', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/:org1:acc1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+      const result = service.resolveKcpPath(nodeContext);
+      expect(result).toBe(':org1:acc1');
+    });
+
+    it('should extract kcp path with single segment', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/org1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+      const result = service.resolveKcpPath(nodeContext);
+      expect(result).toBe('org1');
+    });
+
+    it('should show error alert and return empty string for invalid URL', () => {
+      const showAlertSpy = jest.spyOn(mockLuigiCoreService, 'showAlert');
+
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/invalid-url',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.resolveKcpPath(nodeContext);
+
+      expect(result).toBe('');
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Could not get current KCP path from gateway URL',
+        type: 'error',
+      });
+    });
+
+    it('should show error alert and return empty string for URL without /graphql suffix', () => {
+      const showAlertSpy = jest.spyOn(mockLuigiCoreService, 'showAlert');
+
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/:org1:acc1/api',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.resolveKcpPath(nodeContext);
+
+      expect(result).toBe('');
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Could not get current KCP path from gateway URL',
+        type: 'error',
+      });
+    });
+
+    it('should show error alert and return empty string for empty URL', () => {
+      const showAlertSpy = jest.spyOn(mockLuigiCoreService, 'showAlert');
+
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: '',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.resolveKcpPath(nodeContext);
+
+      expect(result).toBe('');
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Could not get current KCP path from gateway URL',
+        type: 'error',
+      });
     });
   });
 });

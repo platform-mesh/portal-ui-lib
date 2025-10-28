@@ -13,8 +13,8 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
+import { EMPTY, Observable } from 'rxjs';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
-import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApolloFactory } from './apollo-factory';
 import { ResourceNodeContext } from './resource-node-context';
@@ -43,7 +43,7 @@ export class ResourceService {
       fieldsOrRawQuery,
       kind,
       resourceId,
-      isNamespacedResource ? nodeContext.namespaceId : null,
+      isNamespacedResource ? nodeContext.namespaceId : undefined,
       operation,
     );
 
@@ -56,7 +56,7 @@ export class ResourceService {
         text: `Could not read a resource: ${resourceId}. Wrong read query: <br/><br/> ${query}`,
         type: 'error',
       });
-      return of(null);
+      return EMPTY;
     }
 
     return this.apolloFactory
@@ -84,7 +84,7 @@ export class ResourceService {
     fieldsOrRawQuery: any[] | string,
     kind: string,
     resourceId: string,
-    namespace: string,
+    namespace: string | undefined,
     operation: string,
   ) {
     if (fieldsOrRawQuery instanceof Array) {
@@ -144,8 +144,9 @@ export class ResourceService {
         variables: query.variables,
       })
       .pipe(
-        map((res: any): Resource[] =>
-          getValueByPath<any, Resource[]>(res.data, operation),
+        map(
+          (res: any): Resource[] =>
+            getValueByPath<any, Resource[]>(res.data, operation) ?? [],
         ),
         catchError((error) => {
           this.alertErrors(error);

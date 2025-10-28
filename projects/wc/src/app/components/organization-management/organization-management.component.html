@@ -12,7 +12,7 @@
       @let newOrganization = organizationToSwitch();
       <ui5-select
         id="select-switch"
-        [value]="newOrganization?.name"
+        [value]="newOrganization?.name ?? ''"
         (ui5Change)="setOrganizationToSwitch($event)"
       >
         @for (org of organizations(); track org.name) {

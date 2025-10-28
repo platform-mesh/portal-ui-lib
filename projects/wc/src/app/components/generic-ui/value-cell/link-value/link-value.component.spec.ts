@@ -1,5 +1,5 @@
 import { LinkValueComponent } from './link-value.component';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 describe('LinkValueComponent', () => {
@@ -20,11 +20,7 @@ describe('LinkValueComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [LinkValueComponent],
-    }).overrideComponent(LinkValueComponent, {
-      set: {
-        imports: [],
-        schemas: [CUSTOM_ELEMENTS_SCHEMA],
-      },
+      schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
     });
   });
 
