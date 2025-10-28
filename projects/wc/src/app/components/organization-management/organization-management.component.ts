@@ -65,8 +65,8 @@ export class OrganizationManagementComponent implements OnInit {
   private envConfigService = inject(EnvConfigService);
   private destroyRef = inject(DestroyRef);
 
-  context = input<ResourceNodeContext>();
-  LuigiClient = input<LuigiClient>();
+  context = input.required<ResourceNodeContext>();
+  LuigiClient = input.required<LuigiClient>();
 
   texts: any = {};
   organizations = signal<{ name: string; ready: boolean }[]>([]);
@@ -170,7 +170,7 @@ export class OrganizationManagementComponent implements OnInit {
             .uxManager()
             .showAlert({
               text: this.getMessageForOrganizationCreation(
-                this.organizationToSwitch().name,
+                this.newOrganizationControl.value,
               ),
               type: 'info',
             });
@@ -229,7 +229,7 @@ export class OrganizationManagementComponent implements OnInit {
    * Allows only valid subdomain values: alphanumeric, hyphens, no periods, cannot start/end with hyphen, min 1 character.
    * Returns sanitized string or null if invalid.
    */
-  private sanitizeSubdomainInput(input: string): string | null {
+  private sanitizeSubdomainInput(input?: string): string | null {
     // RFC 1034/1123: subdomain labels are 1-63 chars, start/end with alphanum, can contain '-'
     if (typeof input !== 'string') return null;
     const sanitized = input.trim();
@@ -243,7 +243,7 @@ export class OrganizationManagementComponent implements OnInit {
     const { baseDomain } = await this.envConfigService.getEnvConfig();
     const protocol = window.location.protocol;
     const sanitizedOrg = this.sanitizeSubdomainInput(
-      this.organizationToSwitch().name,
+      this.organizationToSwitch()?.name,
     );
 
     if (!sanitizedOrg) {

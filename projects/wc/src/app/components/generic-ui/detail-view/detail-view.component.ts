@@ -1,6 +1,3 @@
-import { processFields } from '../../../utils/proccess-fields';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { kubeConfigTemplate } from './kubeconfig-template';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -34,6 +31,10 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+import { processFields } from '../../../utils/proccess-fields';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { kubeConfigTemplate } from './kubeconfig-template';
+import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
 
 const defaultFields: FieldDefinition[] = [
   {
@@ -68,15 +69,15 @@ export class DetailViewComponent {
   private envConfigService = inject(EnvConfigService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
-  LuigiClient = input<LuigiClient>();
-  context = input<ResourceNodeContext>();
-  resource = signal<Resource | null>(null);
+  LuigiClient = input.required<LuigiClient>();
+  context = input.required<ResourceNodeContext>();
+  resource = signal<Resource | undefined>(undefined);
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   resourceFields = computed(
-    () => this.resourceDefinition().ui?.detailView?.fields || defaultFields,
+    () => this.resourceDefinition()?.ui?.detailView?.fields || defaultFields,
   );
-  resourceId = computed(() => this.context().entity.metadata.name);
+  resourceId = computed(() => this.context().entity?.metadata.name);
   workspacePath = computed(() =>
     this.gatewayService.resolveKcpPath(this.context()),
   );
@@ -89,15 +90,26 @@ export class DetailViewComponent {
   }
 
   private readResource(): void {
+    const resourceDefinition = this.getResourceDefinition();
     const fields = generateGraphQLFields(this.resourceFields());
     const queryOperation = replaceDotsAndHyphensWithUnderscores(
-      this.resourceDefinition().group,
+      resourceDefinition.group,
     );
-    const kind = this.resourceDefinition().kind;
+    const kind = resourceDefinition.kind;
+
+    const resourceId = this.resourceId();
+    if (!resourceId) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource ID is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Resource ID is not defined');
+    }
 
     this.resourceService
       .read(
-        this.resourceId(),
+        resourceId,
         queryOperation,
         kind,
         fields,
@@ -110,25 +122,54 @@ export class DetailViewComponent {
   }
 
   navigateToParent() {
+    const parentNavigationContext =
+      this.context().parentNavigationContexts?.at(-1);
+    if (!parentNavigationContext) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Parent navigation context is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Parent navigation context is not defined');
+    }
+
     this.LuigiClient()
       .linkManager()
-      .fromContext(this.context().parentNavigationContexts.at(-1))
+      .fromContext(parentNavigationContext)
       .navigate('/');
   }
 
   async downloadKubeConfig() {
     const { oidcIssuerUrl } = await this.envConfigService.getEnvConfig();
+    const kubeconfigProps = {
+      accountId: this.context().accountId,
+      organization: this.context().organization,
+      kcpCA: this.context().kcpCA,
+      token: this.context().token,
+      kcpWorkspaceUrl: this.context().portalContext.kcpWorkspaceUrl,
+    };
+
+    try {
+      validateKubeconfigProps(kubeconfigProps);
+    } catch (error) {
+      this.LuigiClient().uxManager().showAlert({
+        text: error.message,
+        type: 'error',
+      });
+
+      throw error;
+    }
 
     const kubeConfig = kubeConfigTemplate
-      .replaceAll('<cluster-name>', this.context().accountId)
-      .replaceAll('<org-name>', this.context().organization)
+      .replaceAll('<cluster-name>', kubeconfigProps.accountId)
+      .replaceAll('<org-name>', kubeconfigProps.organization)
       .replaceAll(
         '<server-url>',
-        `${this.context().portalContext.kcpWorkspaceUrl}:${this.context().accountId}`,
+        `${kubeconfigProps.kcpWorkspaceUrl}:${kubeconfigProps.accountId}`,
       )
       .replaceAll('<oidc-issuer-url>', oidcIssuerUrl)
-      .replaceAll('<ca-data>', this.context().kcpCA)
-      .replaceAll('<token>', this.context().token);
+      .replaceAll('<ca-data>', kubeconfigProps.kcpCA)
+      .replaceAll('<token>', kubeconfigProps.token);
 
     const blob = new Blob([kubeConfig], { type: 'application/plain' });
     const url = URL.createObjectURL(blob);
@@ -137,5 +178,19 @@ export class DetailViewComponent {
     a.href = url;
     a.download = 'kubeconfig.yaml';
     a.click();
+  }
+
+  private getResourceDefinition() {
+    const resourceDefinition = this.resourceDefinition();
+    if (!resourceDefinition) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Resource definition is not defined');
+    }
+
+    return resourceDefinition;
   }
 }

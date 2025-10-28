@@ -17,6 +17,7 @@ import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
@@ -57,7 +58,7 @@ import { set } from 'lodash';
 })
 export class CreateResourceModalComponent implements OnInit {
   fields = input<FieldDefinition[]>([]);
-  context = input<ResourceNodeContext>();
+  context = input.required<ResourceNodeContext>();
   resource = output<Resource>();
   updateResource = output<Resource>();
   dialog = viewChild<DialogComponent>('dialog');
@@ -74,7 +75,7 @@ export class CreateResourceModalComponent implements OnInit {
   }
 
   open(resource?: Resource) {
-    this.originalResource.set(resource);
+    this.originalResource.set(resource ?? null);
     this.form = this.fb.group(this.createControls(resource));
     const dialog = this.dialog();
     if (dialog) {
@@ -159,7 +160,8 @@ export class CreateResourceModalComponent implements OnInit {
   }
 
   private getValidator(fieldDefinition: FieldDefinition) {
-    const validators = [];
+    const validators: ValidatorFn[] = [];
+
     if (fieldDefinition.required) {
       validators.push(Validators.required);
     }

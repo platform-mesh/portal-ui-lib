@@ -43,6 +43,9 @@ describe('DetailViewComponent', () => {
     component.context = (() => ({
       resourceId: 'cluster-1',
       token: 'abc123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
       resourceDefinition: {
         kind: 'Cluster',
         group: 'core.k8s.io',
@@ -65,6 +68,9 @@ describe('DetailViewComponent', () => {
         navigate: luigiClientLinkManagerNavigate,
         withParams: jest.fn().mockReturnThis(),
       }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
       getNodeParams: jest.fn(),
     })) as any;
 
@@ -73,7 +79,7 @@ describe('DetailViewComponent', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    delete global.URL.createObjectURL;
+    delete (global as any).URL.createObjectURL;
   });
 
   it('should create the component', () => {
@@ -162,6 +168,9 @@ describe('DetailViewComponent', () => {
         navigate: jest.fn(),
         withParams: jest.fn().mockReturnThis(),
       }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
       getNodeParams: jest.fn(),
     })) as any;
 
@@ -206,6 +215,9 @@ describe('DetailViewComponent', () => {
         fromContext: jest.fn().mockReturnThis(),
         navigate: jest.fn(),
         withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
       }),
       getNodeParams: jest.fn(),
     })) as any;
@@ -255,6 +267,9 @@ describe('DetailViewComponent', () => {
         navigate: jest.fn(),
         withParams: jest.fn().mockReturnThis(),
       }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
       getNodeParams: jest.fn(),
     })) as any;
 
@@ -262,5 +277,285 @@ describe('DetailViewComponent', () => {
 
     // Component should still be created even if read fails
     expect(newComponent).toBeTruthy();
+  });
+
+  describe('Null and undefined checks', () => {
+    let mockUxManager: any;
+
+    beforeEach(() => {
+      mockUxManager = {
+        showAlert: jest.fn(),
+      };
+    });
+
+    it('should handle undefined resourceId in readResource method', () => {
+      jest.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entity: {
+          metadata: { name: undefined }, // undefined name should make resourceId() return undefined
+        },
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => mockUxManager,
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      expect(() => {
+        newFixture.detectChanges();
+      }).toThrow('Resource ID is not defined');
+
+      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
+        text: 'Resource ID is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should handle undefined parentNavigationContext in navigateToParent method', () => {
+      jest.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entity: {
+          metadata: { name: 'test-resource' },
+        },
+        parentNavigationContexts: undefined, // undefined parentNavigationContexts
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => mockUxManager,
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(() => {
+        newComponent.navigateToParent();
+      }).toThrow('Parent navigation context is not defined');
+
+      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
+        text: 'Parent navigation context is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should handle empty parentNavigationContexts array in navigateToParent method', () => {
+      jest.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entity: {
+          metadata: { name: 'test-resource' },
+        },
+        parentNavigationContexts: [], // empty array
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => mockUxManager,
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(() => {
+        newComponent.navigateToParent();
+      }).toThrow('Parent navigation context is not defined');
+
+      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
+        text: 'Parent navigation context is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should handle undefined resourceDefinition in getResourceDefinition method', () => {
+      jest.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: undefined, // undefined resourceDefinition
+        entity: {
+          metadata: { name: 'test-resource' },
+        },
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => mockUxManager,
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      expect(() => {
+        newFixture.detectChanges();
+      }).toThrow('Resource definition is not defined');
+
+      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
+        text: 'Resource definition is not defined',
+        type: 'error',
+      });
+    });
+
+    it('should handle kubeconfig validation error in downloadKubeConfig method', async () => {
+      jest.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        accountId: null, // null accountId should cause validation error
+        organization: 'org-123',
+        kcpCA: 'kcp-ca-data',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+        entity: {
+          metadata: { name: 'test-resource' },
+        },
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => mockUxManager,
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      envConfigServiceMock.getEnvConfig.mockResolvedValue({
+        oidcIssuerUrl: 'oidcIssuerUrl',
+      } as any);
+
+      newFixture.detectChanges();
+
+      await expect(newComponent.downloadKubeConfig()).rejects.toThrow();
+
+      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
+        text: expect.any(String),
+        type: 'error',
+      });
+    });
+
+    it('should handle missing kubeconfig properties in downloadKubeConfig method', async () => {
+      jest.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        accountId: 'account-123',
+        organization: undefined, // undefined organization should cause validation error
+        kcpCA: 'kcp-ca-data',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+        entity: {
+          metadata: { name: 'test-resource' },
+        },
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: jest.fn().mockReturnThis(),
+          navigate: jest.fn(),
+          withParams: jest.fn().mockReturnThis(),
+        }),
+        uxManager: () => mockUxManager,
+        getNodeParams: jest.fn(),
+      })) as any;
+
+      envConfigServiceMock.getEnvConfig.mockResolvedValue({
+        oidcIssuerUrl: 'oidcIssuerUrl',
+      } as any);
+
+      newFixture.detectChanges();
+
+      await expect(newComponent.downloadKubeConfig()).rejects.toThrow();
+
+      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
+        text: expect.any(String),
+        type: 'error',
+      });
+    });
   });
 });
