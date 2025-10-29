@@ -1,5 +1,5 @@
-import { FieldDefinition } from '@openmfp/portal-ui-lib';
 import { generateGraphQLFields } from './columns-to-gql-fields';
+import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 describe('columns-to-gql-fields', () => {
   describe('generateGraphQLFields', () => {

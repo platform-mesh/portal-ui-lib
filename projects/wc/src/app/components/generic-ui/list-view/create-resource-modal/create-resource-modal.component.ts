@@ -20,7 +20,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import {

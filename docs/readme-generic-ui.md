@@ -24,8 +24,17 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
 - context resource definition `"context"`
 
-    - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing
-      properties of the resource.
+  - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing properties of the resource.
+  - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
+    It's an object that contains two fields:
+      - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
+      - `property`: JSON path(s) used to generate GraphQL fields to fetch the necessary data for readiness evaluation
+    ```json
+    "readyCondition": {
+      "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
+      "property": ["status.conditions.status", "status.conditions.type"],
+    },
+    ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify `"logoUrl"` for the resource as well as the definitions of the
       corresponding views
 
@@ -95,6 +104,10 @@ Below is an example content-configuration for an accounts node using the generic
               "kind": "Account",
               "scope": "Cluster",
               "namespace": null,
+              "readyCondition": {
+                "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
+                "property": ["status.conditions.status", "status.conditions.type"],
+              },
               "ui": {
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
                 "listView": {
