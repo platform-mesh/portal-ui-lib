@@ -66,7 +66,7 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(
         mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
-      ).toHaveBeenCalledWith(entityId, 'TestKind', entityNode);
+      ).toHaveBeenCalledWith(entityNode, entityId, 'TestKind');
       expect(mockResourceService.read).toHaveBeenCalled();
     });
   });
