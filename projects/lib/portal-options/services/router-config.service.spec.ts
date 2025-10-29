@@ -138,7 +138,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
     it('should redirect to error/404 when envConfig.baseDomain is undefined', async () => {
       service['envConfig'] = {
         ...mockClientEnvironment,
-        baseDomain: undefined,
+        baseDomain: undefined as any,
       };
 
       Object.defineProperty(window, 'location', {

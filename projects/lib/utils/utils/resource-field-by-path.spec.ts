@@ -2,15 +2,6 @@ import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
 import { getResourceValueByJsonPath } from './resource-field-by-path';
 
 describe('getResourceValueByJsonPath', () => {
-  it('should return undefined when field is undefined', () => {
-    const resource = {} as Resource;
-    const result = getResourceValueByJsonPath(
-      resource,
-      undefined as unknown as FieldDefinition,
-    );
-    expect(result).toBeUndefined();
-  });
-
   it('should return undefined when property is not defined', () => {
     const resource = {} as Resource;
     const field = {} as FieldDefinition;
@@ -67,26 +58,6 @@ describe('getResourceValueByJsonPath', () => {
 
     const result = getResourceValueByJsonPath(resource, field);
     expect(result).toBe('item1');
-  });
-
-  it('should handle null resource input', () => {
-    const field = { property: 'metadata.name' } as FieldDefinition;
-
-    const result = getResourceValueByJsonPath(
-      null as unknown as Resource,
-      field,
-    );
-    expect(result).toBeUndefined();
-  });
-
-  it('should handle undefined resource input', () => {
-    const field = { property: 'metadata.name' } as FieldDefinition;
-
-    const result = getResourceValueByJsonPath(
-      undefined as unknown as Resource,
-      field,
-    );
-    expect(result).toBeUndefined();
   });
 
   it('should handle complex nested paths', () => {

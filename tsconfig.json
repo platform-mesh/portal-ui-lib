@@ -30,7 +30,8 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "strictNullChecks": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
