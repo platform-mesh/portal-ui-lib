@@ -349,6 +349,11 @@ describe('ListViewComponent', () => {
           plural: 'clusters',
           kind: 'Cluster',
           group: 'core.k8s.io',
+          readyCondition: {
+            jsonPathExpression:
+              'status.conditions[?(@.type=="Ready" && @.status=="True")]',
+            property: ['status.conditions.status', 'status.conditions.type'],
+          },
           ui: {
             listView: {
               fields: [],
@@ -393,7 +398,8 @@ describe('ListViewComponent', () => {
           kind: 'Cluster',
           group: 'core.k8s.io',
           readyCondition: {
-            jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
+            jsonPathExpression:
+              'status.conditions[?(@.type=="Ready" && @.status=="True")]',
             property: ['status.conditions.status', 'status.conditions.type'],
           },
           ui: {
@@ -484,7 +490,8 @@ describe('ListViewComponent', () => {
           kind: 'Cluster',
           group: 'core.k8s.io',
           readyCondition: {
-            jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
+            jsonPathExpression:
+              'status.conditions[?(@.type=="Ready" && @.status=="True")]',
             property: ['status.conditions.status', 'status.conditions.type'],
           },
           ui: {
@@ -533,7 +540,8 @@ describe('ListViewComponent', () => {
           kind: 'Cluster',
           group: 'core.k8s.io',
           readyCondition: {
-            jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
+            jsonPathExpression:
+              'status.conditions[?(@.type=="Ready" && @.status=="True")]',
             property: ['status.conditions.status', 'status.conditions.type'],
           },
           ui: {
@@ -595,7 +603,8 @@ describe('ListViewComponent', () => {
           kind: 'Cluster',
           group: 'core.k8s.io',
           readyCondition: {
-            jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
+            jsonPathExpression:
+              'status.conditions[?(@.type=="Ready" && @.status=="True")]',
             property: ['status.conditions.status', 'status.conditions.type'],
           },
           ui: {
@@ -801,5 +810,5 @@ describe('ListViewComponent', () => {
         type: 'error',
       });
     });
-  })
+  });
 });

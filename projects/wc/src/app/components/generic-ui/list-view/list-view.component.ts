@@ -244,7 +244,8 @@ export class ListViewComponent implements OnInit {
     }
 
     const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
-    return readyStatus === 'True';
+    console.log('readyStatus', readyStatus);
+    return !!readyStatus;
   }
 
   private getResourceDefinition() {

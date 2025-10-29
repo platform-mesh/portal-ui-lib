@@ -26,10 +26,10 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
     - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing properties of the resource.
     - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
-    It's an object that contain two fields. `jsonPathExpression` that contain JSONPath expression for complex data access and `property` JSON path to the resource property that contain info about resource ready state
+    It's an object that contain two fields. `jsonPathExpression` that contain JSONPath expression for complex data access and ready status matching and `property` JSON path to the resource property that contain info about resource ready state
     ```json
     "readyCondition": {
-      "jsonPathExpression": "status.conditions[?(@.type=='Ready')].status",
+      "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
       "property": ["status.conditions.status", "status.conditions.type"],
     },
     ```
@@ -103,7 +103,7 @@ Below is an example content-configuration for an accounts node using the generic
               "scope": "Cluster",
               "namespace": null,
               "readyCondition": {
-                "jsonPathExpression": "status.conditions[?(@.type=='Ready')].status",
+                "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
                 "property": ["status.conditions.status", "status.conditions.type"],
               },
               "ui": {
