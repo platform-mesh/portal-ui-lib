@@ -14,6 +14,13 @@ export class CrdGatewayKcpPatchResolver {
     entityId?: string,
     kind?: string,
   ) {
+    if (nextNode.context.kcpPath) {
+      this.gatewayService.updateCrdGatewayUrlWithEntityPath(
+        nextNode.context.kcpPath,
+      );
+      return;
+    }
+
     let entityKcpPath = kind !== 'Account' || !entityId ? '' : `:${entityId}`;
     let node: PortalLuigiNode | undefined = nextNode;
     do {

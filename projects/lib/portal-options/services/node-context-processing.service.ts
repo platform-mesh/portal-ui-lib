@@ -30,7 +30,7 @@ export class NodeContextProcessingServiceImpl
     }
 
     await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
-      entityNode.parent || ({} as PortalLuigiNode),
+      entityNode,
       entityId,
       kind,
     );
