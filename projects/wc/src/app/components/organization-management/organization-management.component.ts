@@ -1,15 +1,45 @@
 import { k8sMessages } from '../../consts/k8s-messages';
 import { k8sNameValidator } from '../../validators/k8s-name-validator';
-import {k8sMessages } from '../../consts/k8s-messages';
-import { k8sNameValidator } from '../../validators/k8s-name-validator';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ViewEncapsulation, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  ViewEncapsulation,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { EnvConfigService, I18nService, Resource, ResourceDefinition } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields, isLocalSetup } from '@platform-mesh/portal-ui-lib/utils';
-import { ButtonComponent, IconComponent, InputComponent, LabelComponent, OptionComponent, SelectComponent
+import {
+  EnvConfigService,
+  I18nService,
+  Resource,
+  ResourceDefinition,
+} from '@openmfp/portal-ui-lib';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  isLocalSetup,
+} from '@platform-mesh/portal-ui-lib/utils';
+import {
+  ButtonComponent,
+  IconComponent,
+  InputComponent,
+  LabelComponent,
+  OptionComponent,
+  SelectComponent,
 } from '@ui5/webcomponents-ngx';
 
 @Component({

@@ -11,8 +11,7 @@ export class GatewayService {
     readFromParentKcpPath = false,
   ) {
     const gatewayUrl = nodeContext.portalContext.crdGatewayApiUrl;
-    const kcpPathRegexp = /\/([^\/]+)\/graphql$/;
-    const currentKcpPath = gatewayUrl?.match(kcpPathRegexp)[1];
+    const currentKcpPath = gatewayUrl.match(/\/([^\/]+)\/graphql$/)?.[1] || '';
     return gatewayUrl?.replace(
       currentKcpPath,
       this.resolveKcpPath(nodeContext, readFromParentKcpPath),
@@ -30,10 +29,10 @@ export class GatewayService {
   public resolveKcpPath(
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath = false,
-  ) {
+  ): string {
     const gatewayUrl = nodeContext.portalContext.crdGatewayApiUrl;
 
-    let kcpPath = gatewayUrl?.match(/\/([^\/]+)\/graphql$/)[1];
+    let kcpPath = gatewayUrl.match(/\/([^\/]+)\/graphql$/)?.[1] || '';
     if (nodeContext.kcpPath) {
       kcpPath = nodeContext.kcpPath;
     }
