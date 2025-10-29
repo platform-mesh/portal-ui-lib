@@ -24,9 +24,11 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
 - context resource definition `"context"`
 
-    - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing properties of the resource.
-    - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
-    It's an object that contain two fields. `jsonPathExpression` that contain JSONPath expression for complex data access and ready status matching and `property` JSON path to the resource property that contain info about resource ready state
+  - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing properties of the resource.
+  - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
+    It's an object that contains two fields:
+      - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
+      - `property`: JSON path(s) used to generate GraphQL fields to fetch the necessary data for readiness evaluation
     ```json
     "readyCondition": {
       "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
