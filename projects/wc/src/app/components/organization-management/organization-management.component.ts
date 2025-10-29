@@ -1,3 +1,5 @@
+import { k8sMessages } from '../../consts/k8s-messages';
+import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,8 +41,6 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
-import { k8sMessages } from '../../consts/k8s-messages';
-import { k8sNameValidator } from '../../validators/k8s-name-validator';
 
 @Component({
   selector: 'organization-management',
@@ -121,8 +121,8 @@ export class OrganizationManagementComponent implements OnInit {
             result.map((o) => ({
               name: o.metadata.name,
               ready:
-                o.status.conditions.find((c) => c.type === 'Ready')?.status ===
-                'True',
+                o.status?.conditions?.find((c) => c.type === 'Ready')
+                  ?.status === 'True',
             })),
           );
 

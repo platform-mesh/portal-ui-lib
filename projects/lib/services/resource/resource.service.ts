@@ -1,3 +1,5 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -16,8 +18,6 @@ import * as gqlBuilder from 'gql-query-builder';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceNodeContext } from './resource-node-context';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -112,6 +112,7 @@ export class ResourceService {
     operation: string,
     fieldsOrRawQuery: any[] | string,
     nodeContext: ResourceNodeContext,
+    readFromParentKcpPath: boolean = false,
   ): Observable<Resource[] | any> {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const variables = {
@@ -136,7 +137,7 @@ export class ResourceService {
     }
 
     return this.apolloFactory
-      .apollo(nodeContext)
+      .apollo(nodeContext, readFromParentKcpPath)
       .subscribe({
         query: gql`
           ${query.query}

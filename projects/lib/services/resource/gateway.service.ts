@@ -1,6 +1,6 @@
+import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext } from './resource-node-context';
 
 @Injectable({ providedIn: 'root' })
 export class GatewayService {
@@ -32,15 +32,16 @@ export class GatewayService {
     readFromParentKcpPath = false,
   ) {
     const gatewayUrl = nodeContext.portalContext.crdGatewayApiUrl;
-    const currentKcpPath = gatewayUrl?.match(/\/([^\/]+)\/graphql$/)[1];
 
-    let kcpPath = currentKcpPath;
+    let kcpPath = gatewayUrl?.match(/\/([^\/]+)\/graphql$/)[1];
     if (nodeContext.kcpPath) {
       kcpPath = nodeContext.kcpPath;
-    } else if (readFromParentKcpPath) {
-      const lastIndex = currentKcpPath.lastIndexOf(':');
+    }
+
+    if (readFromParentKcpPath) {
+      const lastIndex = kcpPath.lastIndexOf(':');
       if (lastIndex !== -1) {
-        kcpPath = currentKcpPath.slice(0, lastIndex);
+        kcpPath = kcpPath.slice(0, lastIndex);
       }
     }
 

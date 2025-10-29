@@ -65,10 +65,6 @@ export class NodeContextProcessingServiceImpl
       );
 
       // update the current already calculated by Luigi context for a node
-      ctx.accountPath =
-        ctx.resourceDefinition?.kind === 'Account'
-          ? `${ctx.accountPath}:${entityId}`
-          : ctx.accountPath;
       ctx.entity = entity;
       ctx.entityName = entityId;
       ctx.entityId = `${entity.metadata?.annotations?.['kcp.io/cluster']}/${entityId}`;
@@ -76,7 +72,6 @@ export class NodeContextProcessingServiceImpl
       entityNode.context.entity = entity;
       entityNode.context.entityName = ctx.entityName;
       entityNode.context.entityId = ctx.entityId;
-      entityNode.context.accountPath = ctx.accountPath;
     } catch (e) {
       console.error(`Not able to read entity ${entityId} from ${operation}`);
     }

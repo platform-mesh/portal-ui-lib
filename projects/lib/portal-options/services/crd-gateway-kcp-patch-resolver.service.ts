@@ -30,8 +30,7 @@ export class CrdGatewayKcpPatchResolver {
     } while (node);
 
     const org = (await this.envConfigService.getEnvConfig()).idpName;
-    const kcpPath =
-      nextNode.context?.kcpPath || `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
+    const kcpPath = `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
     this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);
   }
 
@@ -47,8 +46,11 @@ export class CrdGatewayKcpPatchResolver {
     } while (node);
 
     const org = (await this.envConfigService.getEnvConfig()).idpName;
-    const kcpPath =
-      nextNode.context?.kcpPath || `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
+    const kcpPath = `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
+
+    if (!nextNode.context.kcpPath) {
+      nextNode.context.kcpPath = kcpPath;
+    }
     this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);
   }
 }
