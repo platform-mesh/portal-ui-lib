@@ -101,6 +101,7 @@ export class ListViewComponent implements OnInit {
     () => this.resourceDefinition()?.ui?.listView?.fields || defaultColumns,
   );
   viewColomns = computed(() => processFields(this.columns()));
+  readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
@@ -116,8 +117,8 @@ export class ListViewComponent implements OnInit {
   ngOnInit(): void {}
 
   list() {
+    const fields = this.generateGqlFieldsWithReadyConditions();
     const resourceDefinition = this.getResourceDefinition();
-    const fields = this.generateGqlFieldsWithStatusProperties();
     const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.plural}`;
 
     this.resourceService
@@ -129,11 +130,7 @@ export class ListViewComponent implements OnInit {
             result.map((resource) => {
               return {
                 ...resource,
-                // ready:
-                //   resource.status?.conditions?.find(
-                //     (condition: any) => condition.type === 'Ready',
-                //   )?.status === 'True',
-                ready: true,
+                ready: this.getResourceReadyStatus(resource),
               };
             }),
           );
@@ -231,12 +228,24 @@ export class ListViewComponent implements OnInit {
     this.deleteModal()?.open(resource);
   }
 
-  private generateGqlFieldsWithStatusProperties() {
-    return generateGraphQLFields(
-      this.columns().concat({
-        property: ['status.conditions.status', 'status.conditions.type'],
-      }),
-    );
+  private generateGqlFieldsWithReadyConditions() {
+    const readyCondition = this.readyCondition();
+    if (!readyCondition) {
+      return generateGraphQLFields(this.columns());
+    }
+
+    return generateGraphQLFields(this.columns().concat(readyCondition));
+  }
+
+  private getResourceReadyStatus(resource: Resource) {
+    const readyCondition = this.readyCondition();
+    if (!readyCondition) {
+      return true;
+    }
+
+    const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
+    console.log('readyStatus', readyStatus);
+    return !!readyStatus;
   }
 
   private getResourceDefinition() {

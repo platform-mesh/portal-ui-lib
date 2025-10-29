@@ -1,5 +1,5 @@
-import { FieldDefinition, Resource } from '@openmfp/portal-ui-lib';
 import { getResourceValueByJsonPath } from './resource-field-by-path';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 
 describe('getResourceValueByJsonPath', () => {
   it('should return undefined when property is not defined', () => {

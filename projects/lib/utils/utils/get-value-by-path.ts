@@ -1,5 +1,5 @@
-import { Resource } from '@openmfp/portal-ui-lib';
 import { getResourceValueByJsonPath } from './resource-field-by-path';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 
 export const getValueByPath = <T extends object, R = unknown>(
   obj: T,
