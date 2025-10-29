@@ -89,7 +89,6 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
       organizationId: 'originClusterId/test-org',
       kcpCA: 'dW5kZWZpbmVk',
       organization: 'test-org',
-      accountPath: 'root:orgs:test-org',
       entityId: 'originClusterId/test-org',
       entityName: 'test-org',
     });

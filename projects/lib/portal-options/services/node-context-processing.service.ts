@@ -29,10 +29,10 @@ export class NodeContextProcessingServiceImpl
       return;
     }
 
-    await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPathForNextAccountEntity(
+    await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
+      entityNode.parent || ({} as PortalLuigiNode),
       entityId,
       kind,
-      entityNode,
     );
 
     const operation = replaceDotsAndHyphensWithUnderscores(group);
