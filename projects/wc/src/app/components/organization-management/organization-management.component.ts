@@ -23,7 +23,7 @@ import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
   Resource,
   ResourceDefinition,
-} from '@platform-mesh/portal-ui-lib/models/models';
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceService,
