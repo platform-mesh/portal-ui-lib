@@ -13,7 +13,6 @@ interface PortalEntityContext {
 export interface PortalNodeContext extends NodeContext {
   portalContext: PortalContext;
   kcpPath?: string;
-  kcpPathOverwrite?: string;
   translationTable?: any;
   namespaceId?: string;
   entity?: Resource;
