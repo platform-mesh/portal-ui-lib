@@ -15,6 +15,7 @@ concurrency:
 jobs:
   pipe:
     uses: platform-mesh/.github/.github/workflows/pipeline-node-module.yml@main
+    secrets: inherit
     with:
       publishFromDist: true
-    secrets: inherit
+      environment: npmjs:@platform-mesh/portal-ui-lib
