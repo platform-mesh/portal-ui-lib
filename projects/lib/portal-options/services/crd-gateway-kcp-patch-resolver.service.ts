@@ -18,7 +18,7 @@ export class CrdGatewayKcpPatchResolver {
       this.gatewayService.updateCrdGatewayUrlWithEntityPath(
         nextNode.context.kcpPath,
       );
-      return;
+      return nextNode.context.kcpPath;
     }
 
     let entityKcpPath = kind !== 'Account' || !entityId ? '' : `:${entityId}`;
@@ -38,5 +38,6 @@ export class CrdGatewayKcpPatchResolver {
     if (!nextNode.context.kcpPath) {
       nextNode.context.kcpPath = kcpPath;
     }
+    return kcpPath;
   }
 }

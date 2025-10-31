@@ -29,11 +29,12 @@ export class NodeContextProcessingServiceImpl
       return;
     }
 
-    await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
-      entityNode,
-      entityId,
-      kind,
-    );
+    const kcpPath =
+      await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
+        entityNode,
+        entityId,
+        kind,
+      );
 
     const operation = replaceDotsAndHyphensWithUnderscores(group);
     const namespaceId =
@@ -65,10 +66,12 @@ export class NodeContextProcessingServiceImpl
       );
 
       // update the current already calculated by Luigi context for a node
+      ctx.kcpPath = kcpPath;
       ctx.entity = entity;
       ctx.entityName = entityId;
       ctx.entityId = `${entity.metadata?.annotations?.['kcp.io/cluster']}/${entityId}`;
       // update the node context of sa node to contain the entity for future context calculations
+      entityNode.context.kcpPath = kcpPath;
       entityNode.context.entity = entity;
       entityNode.context.entityName = ctx.entityName;
       entityNode.context.entityId = ctx.entityId;
