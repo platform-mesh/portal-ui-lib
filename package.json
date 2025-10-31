@@ -34,7 +34,7 @@
     "@angular/compiler-cli": "20.3.9",
     "@angular/localize": "20.3.9",
     "@briebug/jest-schematic": "6.0.0",
-    "@openmfp/portal-ui-lib": "0.182.8",
+    "@openmfp/portal-ui-lib": "0.182.9",
     "@openmfp/config-prettier": "0.9.1",
     "@types/jest": "30.0.0",
     "@types/jmespath": "0.15.2",
