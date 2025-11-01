@@ -90,6 +90,7 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
       kcpCA: 'dW5kZWZpbmVk',
       organization: 'test-org',
       entityId: 'originClusterId/test-org',
+      entityName: 'test-org',
     });
 
     expect(mockResourceService.readAccountInfo).toHaveBeenCalledWith({

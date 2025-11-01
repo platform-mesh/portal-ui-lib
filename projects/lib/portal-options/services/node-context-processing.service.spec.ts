@@ -18,7 +18,7 @@ describe('NodeContextProcessingServiceImpl', () => {
     } as unknown as jest.Mocked<ResourceService>;
 
     mockCrdGatewayKcpPatchResolver = {
-      resolveCrdGatewayKcpPathForNextAccountEntity: jest.fn(),
+      resolveCrdGatewayKcpPath: jest.fn(),
     } as unknown as jest.Mocked<CrdGatewayKcpPatchResolver>;
 
     TestBed.configureTestingModule({
@@ -65,8 +65,8 @@ describe('NodeContextProcessingServiceImpl', () => {
       await service.processNodeContext(entityId, entityNode, ctx);
 
       expect(
-        mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPathForNextAccountEntity,
-      ).toHaveBeenCalledWith(entityId, 'TestKind', entityNode);
+        mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).toHaveBeenCalledWith(entityNode, entityId, 'TestKind');
       expect(mockResourceService.read).toHaveBeenCalled();
     });
   });

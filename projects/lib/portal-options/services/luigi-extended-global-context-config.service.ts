@@ -49,6 +49,7 @@ export class LuigiExtendedGlobalContextConfigServiceImpl
         organizationId: `${organizationOriginClusterId}/${entityId}`,
         kcpCA: btoa(accountInfo?.spec?.clusterInfo?.ca),
         entityId: `${organizationOriginClusterId}/${entityId}`, // if no entity selected the entityId is the same as the organizationId
+        entityName: entityId,
       };
     } catch (e) {
       console.error(`Failed to read entity ${entityId} from ${operation}`, e);

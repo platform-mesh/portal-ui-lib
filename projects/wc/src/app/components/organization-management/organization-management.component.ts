@@ -19,7 +19,9 @@ import {
   Validators,
 } from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
+import {
+  EnvConfigService,
+  I18nService} from '@openmfp/portal-ui-lib';
 import {
   Resource,
   ResourceDefinition,
@@ -120,8 +122,8 @@ export class OrganizationManagementComponent implements OnInit {
             result.map((o) => ({
               name: o.metadata.name,
               ready:
-                o.status.conditions.find((c) => c.type === 'Ready')?.status ===
-                'True',
+                o.status?.conditions?.find((c) => c.type === 'Ready')
+                  ?.status === 'True',
             })),
           );
 
