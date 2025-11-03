@@ -7,6 +7,5 @@ export const getValueByPath = <T extends object, R = unknown>(
 ): R | undefined => {
   return getResourceValueByJsonPath(obj as Resource, {
     jsonPathExpression: path,
-    property: '',
   });
 };

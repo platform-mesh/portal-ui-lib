@@ -1,6 +1,5 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
-
 export interface LabelDisplay {
   backgroundColor?: string;
   color?: string;
@@ -10,9 +9,22 @@ export interface LabelDisplay {
   textTransform?: string;
 }
 
+export type TransformType =
+  | 'uppercase'
+  | 'lowercase'
+  | 'capitalize'
+  | 'decode'
+  | 'encode';
+
+export interface PropertyField {
+  key: string;
+  transform?: TransformType[];
+}
+
 export interface FieldDefinition {
   label?: string;
   property: string | string[];
+  propertyField?: PropertyField;
   jsonPathExpression?: string;
   required?: boolean;
   values?: string[];
@@ -56,6 +68,7 @@ export interface Resource extends Record<string, any> {
   status?: ResourceStatus;
   __typename?: string;
   ready?: boolean;
+  data?: Record<string, any>;
 }
 
 export interface ResourceDefinition {

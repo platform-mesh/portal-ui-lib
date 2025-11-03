@@ -82,3 +82,83 @@ describe('getResourceValueByJsonPath', () => {
     expect(result).toBe('image1');
   });
 });
+
+describe('getResourceValueByJsonPath with propertyField', () => {
+  it('returns transformed single propertyField value', () => {
+    const resource = {
+      data: {
+        user: { name: 'john doe' },
+      },
+    } as unknown as Resource;
+
+    const field = {
+      property: 'data.user',
+      propertyField: { key: 'name', transform: ['capitalize'] },
+    } as unknown as FieldDefinition;
+
+    const result = getResourceValueByJsonPath(resource, field);
+    expect(result).toBe('John doe');
+  });
+
+  it('applies encode transform', () => {
+    const resource = {
+      data: {
+        secret: { token: 'hello' },
+      },
+    } as unknown as Resource;
+
+    const field = {
+      property: 'data.secret',
+      propertyField: { key: 'token', transform: ['encode'] },
+    } as unknown as FieldDefinition;
+
+    const result = getResourceValueByJsonPath(resource, field);
+    expect(result).toBe('aGVsbG8=');
+  });
+
+  it('applies multiple transforms in order (uppercase then encode)', () => {
+    const resource = {
+      data: {
+        info: { v: 'abc' },
+      },
+    } as unknown as Resource;
+
+    const field = {
+      property: 'data.info',
+      propertyField: { key: 'v', transform: ['uppercase', 'encode'] },
+    } as unknown as FieldDefinition;
+
+    const result = getResourceValueByJsonPath(resource, field);
+    expect(result).toBe('QUJD');
+  });
+
+  it('returns undefined if value missing for key', () => {
+    const resource = {
+      data: {
+        user: {},
+      },
+    } as unknown as Resource;
+
+    const field = {
+      property: 'data.user',
+      propertyField: { key: 'missing' },
+    } as unknown as FieldDefinition;
+
+    const result = getResourceValueByJsonPath(resource, field);
+    expect(result).toBeUndefined();
+  });
+
+  it('skips when base object is undefined', () => {
+    const resource = {
+      data: {},
+    } as unknown as Resource;
+
+    const field = {
+      property: 'data.missing',
+      propertyField: { key: 'anything' },
+    } as unknown as FieldDefinition;
+
+    const result = getResourceValueByJsonPath(resource, field);
+    expect(result).toBeUndefined();
+  });
+});
