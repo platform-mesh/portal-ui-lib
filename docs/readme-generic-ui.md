@@ -52,6 +52,14 @@ Each field definition supports the following properties:
 
 - `"label"`: Display name for the field
 - `"property"`: JSON path to the resource property (string or array of strings for fallback values)
+- `"propertyField"`: In case the property is a scalar value that represents an object, this property can be used to specify the field to be used for display within that object
+  - `"key"`: The name of the field to be used for display
+  - `"transform"`: An array of text manipulations to be applied to the value, the available are:  
+    | 'uppercase'
+    | 'lowercase'
+    | 'capitalize'
+    | 'decode'
+    | 'encode'
 - `"jsonPathExpression"`: Alternative JSONPath expression for complex data access (takes precedence over `property`)
 - `"required"`: Boolean flag indicating if the field is mandatory (for create views)
 - `"values"`: Array of predefined values for selection
@@ -106,7 +114,7 @@ Below is an example content-configuration for an accounts node using the generic
               "namespace": null,
               "readyCondition": {
                 "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
-                "property": ["status.conditions.status", "status.conditions.type"],
+                "property": ["status.conditions.status", "status.conditions.type"]
               },
               "ui": {
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
@@ -119,6 +127,14 @@ Below is an example content-configuration for an accounts node using the generic
                     {
                       "label": "Display Name",
                       "property": "spec.displayName"
+                    },
+                    {
+                      "label": "Key",
+                      "property": "data",
+                      "propertyField": {
+                        "key": "OPENAI_API_KEY",
+                        "transform": ["uppercase", "encode"]
+                      }
                     },
                     {
                       "label": "Type",
@@ -213,7 +229,7 @@ Below is an example content-configuration for an accounts node using the generic
                         "operation": "cities",
                         "gqlQuery": "subscription { cities { data { id name } } }",
                         "value": "data.id",
-                        "key": "data.name",
+                        "key": "data.name"
                       }
                     }
                   ]
