@@ -1,164 +1,359 @@
-import { getResourceValueByJsonPath } from './resource-field-by-path';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  decodeBase64,
+  encodeBase64,
+  getResourceValueByJsonPath,
+} from './resource-field-by-path';
+import { PropertyField, Resource } from '@platform-mesh/portal-ui-lib/models';
+import jsonpath from 'jsonpath';
+
+jest.mock('jsonpath');
 
 describe('getResourceValueByJsonPath', () => {
-  it('should return undefined when property is not defined', () => {
-    const resource = {} as Resource;
-    const field = {} as FieldDefinition;
-    const result = getResourceValueByJsonPath(resource, field);
+  const mockResource: Resource = {
+    metadata: { name: 'test-resource' },
+    spec: { value: 'test-value', nested: { field: 'nested-value' } },
+  } as any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return undefined when no property or jsonPathExpression is provided', () => {
+    const result = getResourceValueByJsonPath(mockResource, {});
     expect(result).toBeUndefined();
   });
 
-  it('should return undefined when property is an array', () => {
-    const resource = {} as Resource;
-    const field = { property: ['prop1', 'prop2'] } as FieldDefinition;
-
+  it('should return undefined and log error when property is an array', () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    const result = getResourceValueByJsonPath(resource, field);
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: ['path1', 'path2'],
+    });
 
     expect(result).toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith(
-      'Property defined as an array: ["prop1","prop2"], provide "jsonPathExpression" field to properly ready resource value',
+      expect.stringContaining('Property defined as an array'),
     );
     consoleSpy.mockRestore();
   });
 
-  it('should use jsonPathExpression if provided', () => {
-    const resource = { metadata: { name: 'test' } } as Resource;
-    const field = {
-      property: 'not-used',
-      jsonPathExpression: 'metadata.name',
-    } as FieldDefinition;
+  it('should query resource using jsonPathExpression', () => {
+    (jsonpath.query as jest.Mock).mockReturnValue(['test-result']);
 
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBe('test');
+    const result = getResourceValueByJsonPath(mockResource, {
+      jsonPathExpression: 'spec.value',
+    });
+
+    expect(jsonpath.query).toHaveBeenCalledWith(mockResource, '$.spec.value');
+    expect(result).toBe('test-result');
   });
 
-  it('should use property if jsonPathExpression is not provided', () => {
-    const resource = { metadata: { name: 'test' } } as Resource;
-    const field = { property: 'metadata.name' } as FieldDefinition;
+  it('should query resource using property', () => {
+    (jsonpath.query as jest.Mock).mockReturnValue(['property-result']);
 
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBe('test');
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'metadata.name',
+    });
+
+    expect(jsonpath.query).toHaveBeenCalledWith(
+      mockResource,
+      '$.metadata.name',
+    );
+    expect(result).toBe('property-result');
   });
 
-  it('should return undefined when jsonpath query returns empty array', () => {
-    const resource = { metadata: { name: 'test' } } as Resource;
-    const field = { property: 'metadata.nonexistent' } as FieldDefinition;
+  it('should return undefined when query result is empty', () => {
+    (jsonpath.query as jest.Mock).mockReturnValue([]);
 
-    const result = getResourceValueByJsonPath(resource, field);
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'nonexistent',
+    });
+
     expect(result).toBeUndefined();
   });
 
-  it('should return the first value when jsonpath query returns multiple values', () => {
-    const resource = {
-      items: [{ name: 'item1' }, { name: 'item2' }],
-    } as unknown as Resource;
-    const field = { property: 'items[*].name' } as FieldDefinition;
+  it('should apply propertyField transform when provided', () => {
+    const mockValue = { key1: 'value1', key2: 'value2' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
 
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBe('item1');
+    const propertyField: PropertyField = {
+      key: 'key1',
+      transform: ['uppercase'],
+    };
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField,
+    });
+
+    expect(result).toBe('VALUE1');
   });
 
-  it('should handle complex nested paths', () => {
-    const resource = {
-      spec: {
-        template: {
-          spec: {
-            containers: [
-              { name: 'container1', image: 'image1' },
-              { name: 'container2', image: 'image2' },
-            ],
-          },
-        },
-      },
-    } as unknown as Resource;
+  it('should handle none existing transform', () => {
+    const mockValue = { text: 'hello world' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
 
-    const field = {
-      property: 'spec.template.spec.containers[0].image',
-    } as FieldDefinition;
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['notknown' as any] },
+    });
 
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBe('image1');
+    expect(result).toBe('hello world');
+  });
+
+  it('should handle uppercase transform', () => {
+    const mockValue = { text: 'hello world' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['uppercase'] },
+    });
+
+    expect(result).toBe('HELLO WORLD');
+  });
+
+  it('should handle lowercase transform', () => {
+    const mockValue = { text: 'HELLO WORLD' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['lowercase'] },
+    });
+
+    expect(result).toBe('hello world');
+  });
+
+  it('should handle capitalize transform', () => {
+    const mockValue = { text: 'hello' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['capitalize'] },
+    });
+
+    expect(result).toBe('Hello');
+  });
+
+  it('should handle multiple transforms', () => {
+    const mockValue = { text: 'HELLO WORLD' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['lowercase', 'capitalize'] },
+    });
+
+    expect(result).toBe('Hello world');
+  });
+
+  it('should handle encode transform', () => {
+    const mockValue = { text: 'test' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['encode'] },
+    });
+
+    expect(result).toBe(encodeBase64('test'));
+  });
+
+  it('should return original value when encode transform fails', () => {
+    jest.spyOn(global, 'btoa').mockImplementation(() => {
+      throw new Error('btoa error');
+    });
+    jest.spyOn(console, 'error').mockImplementation();
+
+    const mockValue = { text: 'test-value' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['encode'] },
+    });
+
+    expect(result).toBe('test-value');
+
+    jest.restoreAllMocks();
+  });
+
+  it('should handle decode transform', () => {
+    const encoded = encodeBase64('test');
+    const mockValue = { text: encoded };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['decode'] },
+    });
+
+    expect(result).toBe('test');
+  });
+
+  it('should return original value when transform fails', () => {
+    const mockValue = { text: 'invalid-base64!!!' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['decode'] },
+    });
+
+    expect(result).toBe('invalid-base64!!!');
+  });
+
+  it('should handle null value in transform', () => {
+    const mockValue = { text: null };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['uppercase'] },
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('should handle undefined value in transform', () => {
+    const mockValue = { text: undefined };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: ['uppercase'] },
+    });
+
+    expect(result).toBeUndefined();
+  });
+
+  it('should return value when no transform is provided', () => {
+    const mockValue = { text: 'no-transform' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text' },
+    });
+
+    expect(result).toBe('no-transform');
+  });
+
+  it('should return value when transform is empty array', () => {
+    const mockValue = { text: 'empty-transform' };
+    (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      property: 'spec.data',
+      propertyField: { key: 'text', transform: [] },
+    });
+
+    expect(result).toBe('empty-transform');
   });
 });
 
-describe('getResourceValueByJsonPath with propertyField', () => {
-  it('returns transformed single propertyField value', () => {
-    const resource = {
-      data: {
-        user: { name: 'john doe' },
-      },
-    } as unknown as Resource;
-
-    const field = {
-      property: 'data.user',
-      propertyField: { key: 'name', transform: ['capitalize'] },
-    } as unknown as FieldDefinition;
-
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBe('John doe');
-  });
-
-  it('applies encode transform', () => {
-    const resource = {
-      data: {
-        secret: { token: 'hello' },
-      },
-    } as unknown as Resource;
-
-    const field = {
-      property: 'data.secret',
-      propertyField: { key: 'token', transform: ['encode'] },
-    } as unknown as FieldDefinition;
-
-    const result = getResourceValueByJsonPath(resource, field);
+describe('encodeBase64', () => {
+  it('should encode simple ASCII string', () => {
+    const result = encodeBase64('hello');
     expect(result).toBe('aGVsbG8=');
   });
 
-  it('applies multiple transforms in order (uppercase then encode)', () => {
-    const resource = {
-      data: {
-        info: { v: 'abc' },
-      },
-    } as unknown as Resource;
-
-    const field = {
-      property: 'data.info',
-      propertyField: { key: 'v', transform: ['uppercase', 'encode'] },
-    } as unknown as FieldDefinition;
-
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBe('QUJD');
+  it('should encode UTF-8 string with special characters', () => {
+    const result = encodeBase64('Hello, 世界');
+    expect(decodeBase64(result)).toBe('Hello, 世界');
   });
 
-  it('returns undefined if value missing for key', () => {
-    const resource = {
-      data: {
-        user: {},
-      },
-    } as unknown as Resource;
-
-    const field = {
-      property: 'data.user',
-      propertyField: { key: 'missing' },
-    } as unknown as FieldDefinition;
-
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBeUndefined();
+  it('should encode emojis', () => {
+    const result = encodeBase64('👍🎉');
+    expect(decodeBase64(result)).toBe('👍🎉');
   });
 
-  it('skips when base object is undefined', () => {
-    const resource = {
-      data: {},
-    } as unknown as Resource;
+  it('should encode empty string', () => {
+    const result = encodeBase64('');
+    expect(result).toBe('');
+  });
 
-    const field = {
-      property: 'data.missing',
-      propertyField: { key: 'anything' },
-    } as unknown as FieldDefinition;
+  it('should throw error when encoding fails', () => {
+    jest.spyOn(global, 'btoa').mockImplementation(() => {
+      throw new Error('btoa error');
+    });
 
-    const result = getResourceValueByJsonPath(resource, field);
-    expect(result).toBeUndefined();
+    expect(() => encodeBase64('test')).toThrow(
+      'Failed to encode string to Base64',
+    );
+
+    jest.restoreAllMocks();
+  });
+
+  it('should log error when encoding fails', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    jest.spyOn(global, 'btoa').mockImplementation(() => {
+      throw new Error('btoa error');
+    });
+
+    try {
+      encodeBase64('test');
+    } catch {}
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Base64 encoding failed:',
+      expect.any(Error),
+    );
+
+    jest.restoreAllMocks();
+    consoleSpy.mockRestore();
+  });
+});
+
+describe('decodeBase64', () => {
+  it('should decode simple ASCII string', () => {
+    const result = decodeBase64('aGVsbG8=');
+    expect(result).toBe('hello');
+  });
+
+  it('should decode UTF-8 string with special characters', () => {
+    const encoded = encodeBase64('Hello, 世界');
+    const result = decodeBase64(encoded);
+    expect(result).toBe('Hello, 世界');
+  });
+
+  it('should decode emojis', () => {
+    const encoded = encodeBase64('👍🎉');
+    const result = decodeBase64(encoded);
+    expect(result).toBe('👍🎉');
+  });
+
+  it('should decode empty string', () => {
+    const result = decodeBase64('');
+    expect(result).toBe('');
+  });
+
+  it('should throw error for invalid base64', () => {
+    expect(() => decodeBase64('invalid!!!')).toThrow(
+      'Failed to decode Base64 string',
+    );
+  });
+
+  it('should log error when decoding fails', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    try {
+      decodeBase64('invalid!!!');
+    } catch {}
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Base64 decoding failed:',
+      expect.any(Error),
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('should handle round-trip encoding and decoding', () => {
+    const original = 'Test string with 特殊字符 and emojis 🚀';
+    const encoded = encodeBase64(original);
+    const decoded = decodeBase64(encoded);
+    expect(decoded).toBe(original);
   });
 });
