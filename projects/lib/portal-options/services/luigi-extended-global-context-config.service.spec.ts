@@ -88,6 +88,7 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
     expect(result).toEqual({
       organizationId: 'originClusterId/test-org',
       kcpCA: 'dW5kZWZpbmVk',
+      kcpPath: 'root:orgs:test-org',
       organization: 'test-org',
       entityId: 'originClusterId/test-org',
       entityName: 'test-org',
