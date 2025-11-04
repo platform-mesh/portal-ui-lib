@@ -44,6 +44,7 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
             children: [
               {
                 pathSegment: 'overview',
+                context: {} as PortalNodeContext,
                 hideSideNav: true,
                 hideFromNav: true,
                 defineEntity: {

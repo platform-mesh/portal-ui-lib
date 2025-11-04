@@ -18,7 +18,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceService,
@@ -43,18 +43,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-
-const defaultColumns: FieldDefinition[] = [
-  {
-    label: 'Name',
-    property: 'metadata.name',
-  },
-  {
-    label: 'Workspace Status',
-    jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
-    property: ['status.conditions.status', 'status.conditions.type'],
-  },
-];
 
 @Component({
   selector: 'list-view',
@@ -98,7 +86,7 @@ export class ListViewComponent implements OnInit {
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(
-    () => this.resourceDefinition()?.ui?.listView?.fields || defaultColumns,
+    () => this.resourceDefinition()?.ui?.listView?.fields ?? [],
   );
   viewColomns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
