@@ -7,7 +7,6 @@ import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
-
 @Injectable({
   providedIn: 'root',
 })
@@ -30,11 +29,12 @@ export class NodeContextProcessingServiceImpl
       return;
     }
 
-    await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPathForNextAccountEntity(
-      entityId,
-      kind,
-      entityNode,
-    );
+    const kcpPath =
+      await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
+        entityNode,
+        entityId,
+        kind,
+      );
 
     const operation = replaceDotsAndHyphensWithUnderscores(group);
     const namespaceId =
@@ -66,13 +66,15 @@ export class NodeContextProcessingServiceImpl
       );
 
       // update the current already calculated by Luigi context for a node
+      ctx.kcpPath = kcpPath;
       ctx.entity = entity;
+      ctx.entityName = entityId;
       ctx.entityId = `${entity.metadata?.annotations?.['kcp.io/cluster']}/${entityId}`;
       // update the node context of sa node to contain the entity for future context calculations
-      if (entityNode.context) {
-        entityNode.context.entity = entity;
-        entityNode.context.entityId = ctx.entityId;
-      }
+      entityNode.context.kcpPath = kcpPath;
+      entityNode.context.entity = entity;
+      entityNode.context.entityName = ctx.entityName;
+      entityNode.context.entityId = ctx.entityId;
     } catch (e) {
       console.error(`Not able to read entity ${entityId} from ${operation}`);
     }

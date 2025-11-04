@@ -30,19 +30,17 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
         showBreadcrumbs: false,
         hideSideNav: true,
         hideFromNav: true,
+        context: {} as PortalNodeContext,
         entityType: 'global',
         children: [
           {
-            context: {
-              profileUserId: ':profileUserId',
-            } as unknown as PortalNodeContext,
-            defineEntity: {
-              id: 'user',
-              contextKey: 'profileUserId',
-            },
-            pathSegment: ':profileUserId',
+            pathSegment: ':userId',
             hideSideNav: true,
             hideFromNav: true,
+            defineEntity: {
+              id: 'user',
+            },
+            context: {} as PortalNodeContext,
             children: [
               {
                 pathSegment: 'overview',
