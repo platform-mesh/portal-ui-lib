@@ -35,18 +35,22 @@
 
   <ui5-table>
     <ui5-table-header-row slot="headerRow">
-      <ui5-table-header-cell width="32px" class="not-ready-indicator"></ui5-table-header-cell>
+      <ui5-table-header-cell
+        width="32px"
+        class="not-ready-indicator"
+      ></ui5-table-header-cell>
       @for (column of viewColomns(); track column.property) {
         @if (column.group) {
-          <ui5-table-header-cell>{{ column.group.label ?? column.group.name }}</ui5-table-header-cell>
+          <ui5-table-header-cell>{{
+            column.group.label ?? column.group.name
+          }}</ui5-table-header-cell>
         } @else {
           <ui5-table-header-cell>{{ column.label }}</ui5-table-header-cell>
         }
       }
       <ui5-table-header-cell class="actions-column"
-      >Actions
-      </ui5-table-header-cell
-      >
+        >Actions
+      </ui5-table-header-cell>
     </ui5-table-header-row>
 
     <ui5-illustrated-message slot="nodata" name="NoData">
@@ -55,22 +59,39 @@
     </ui5-illustrated-message>
 
     @for (item of resources(); track item.metadata.name) {
-      <ui5-table-row [interactive]="item.ready" [class.disabled]="!item.ready" (click)="navigateToResource(item)">
+      <ui5-table-row
+        [interactive]="item.ready"
+        [class.disabled]="!item.ready"
+        (click)="navigateToResource(item)"
+      >
         <ui5-table-cell>
           @if (!item.ready) {
-            <ui5-icon class="not-ready-indicator" (click)="$event.stopPropagation()" [showTooltip]="true" accessibleName="Resource is not ready" name="alert" design="Critical"></ui5-icon>
+            <ui5-icon
+              class="not-ready-indicator"
+              (click)="$event.stopPropagation()"
+              [showTooltip]="true"
+              accessibleName="Resource is not ready"
+              name="alert"
+              design="Critical"
+            ></ui5-icon>
           }
         </ui5-table-cell>
-        @for (column of viewColomns(); let first = $first;  track column.label) {
+
+        @for (column of viewColomns(); let first = $first; track column.label) {
           @if (column.group) {
             <ui5-table-cell [class.multiline]="column.group.multiline ?? true">
-              @for (field of column.group.fields; let last = $last; track field.label) {
+              @for (
+                field of column.group.fields;
+                let last = $last;
+                track field.label
+              ) {
                 <div>
                   <span>{{ field.label }}: </span>
                   <value-cell
                     [labelDisplay]="field.labelDisplay"
                     [displayAsPlainText]="!!field.displayAsPlainText"
-                    [value]="getResourceValueByJsonPath(item, field)" />
+                    [value]="getResourceValueByJsonPath(item, field)"
+                  />
                 </div>
                 @if (!last && column.group.delimiter) {
                   <span>{{ column.group.delimiter }}</span>
@@ -82,13 +103,22 @@
               <value-cell
                 [labelDisplay]="column.labelDisplay"
                 [displayAsPlainText]="!!column.displayAsPlainText"
-                [value]="getResourceValueByJsonPath(item, column)" />
+                [value]="getResourceValueByJsonPath(item, column)"
+              />
             </ui5-table-cell>
           }
         }
         <ui5-table-cell class="actions-column">
-          <ui5-icon class="edit-item" name="edit" (click)="openEditResourceModal($event, item)"></ui5-icon>
-          <ui5-icon class="delete-item" name="delete" (click)="openDeleteResourceModal($event, item)"></ui5-icon>
+          <ui5-icon
+            class="edit-item"
+            name="edit"
+            (click)="openEditResourceModal($event, item)"
+          ></ui5-icon>
+          <ui5-icon
+            class="delete-item"
+            name="delete"
+            (click)="openDeleteResourceModal($event, item)"
+          ></ui5-icon>
         </ui5-table-cell>
       </ui5-table-row>
     }

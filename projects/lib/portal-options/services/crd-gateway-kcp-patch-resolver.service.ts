@@ -9,18 +9,20 @@ export class CrdGatewayKcpPatchResolver {
   private gatewayService = inject(GatewayService);
   private envConfigService = inject(EnvConfigService);
 
-  public async resolveCrdGatewayKcpPathForNextAccountEntity(
-    entityId: string,
-    kind: string,
+  public async resolveCrdGatewayKcpPath(
     nextNode: PortalLuigiNode,
+    entityId?: string,
+    kind?: string,
   ) {
-    if (kind !== 'Account' || !entityId) {
-      return;
+    if (nextNode.context.kcpPath) {
+      this.gatewayService.updateCrdGatewayUrlWithEntityPath(
+        nextNode.context.kcpPath,
+      );
+      return nextNode.context.kcpPath;
     }
 
-    let entityKcpPath = `:${entityId}`;
-    let node: PortalLuigiNode | undefined = nextNode.parent;
-
+    let entityKcpPath = kind !== 'Account' || !entityId ? '' : `:${entityId}`;
+    let node: PortalLuigiNode | undefined = nextNode;
     do {
       const entity = node?.context?.entity;
       if (entity?.metadata?.name && entity['__typename'] === 'Account') {
@@ -30,25 +32,12 @@ export class CrdGatewayKcpPatchResolver {
     } while (node);
 
     const org = (await this.envConfigService.getEnvConfig()).idpName;
-    const kcpPath =
-      nextNode.context?.kcpPath || `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
+    const kcpPath = `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
     this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);
-  }
 
-  public async resolveCrdGatewayKcpPath(nextNode: PortalLuigiNode) {
-    let entityKcpPath = '';
-    let node: PortalLuigiNode | undefined = nextNode;
-    do {
-      const entity = node.context?.entity;
-      if (entity?.metadata?.name && entity['__typename'] === 'Account') {
-        entityKcpPath = `:${entity.metadata.name}${entityKcpPath}`;
-      }
-      node = node.parent;
-    } while (node);
-
-    const org = (await this.envConfigService.getEnvConfig()).idpName;
-    const kcpPath =
-      nextNode.context?.kcpPath || `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
-    this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);
+    if (!nextNode.context.kcpPath) {
+      nextNode.context.kcpPath = kcpPath;
+    }
+    return kcpPath;
   }
 }

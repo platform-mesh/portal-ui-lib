@@ -61,7 +61,18 @@ describe('CrdGatewayKcpPatchResolver', () => {
     ).toHaveBeenCalledWith(`${kcpRootOrgsPath}:org1:acc1:acc2:acc3`);
   });
 
-  it('should use kcpPath from node context if provided', async () => {
+  it('should set kcpPath for node context if not provided', async () => {
+    const node: PortalLuigiNode = {
+      context: {},
+      parent: undefined,
+    } as any;
+
+    await resolver.resolveCrdGatewayKcpPath(node);
+
+    expect(node.context.kcpPath).toEqual('root:orgs:org1');
+  });
+
+  it('should not set kcpPath for node context if present', async () => {
     const node: PortalLuigiNode = {
       context: { kcpPath: 'customPath' },
       parent: undefined,
@@ -69,9 +80,7 @@ describe('CrdGatewayKcpPatchResolver', () => {
 
     await resolver.resolveCrdGatewayKcpPath(node);
 
-    expect(
-      gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
-    ).toHaveBeenCalledWith('customPath');
+    expect(node.context.kcpPath).toEqual('customPath');
   });
 
   it('should handle node without entity metadata', async () => {
@@ -84,43 +93,7 @@ describe('CrdGatewayKcpPatchResolver', () => {
     ).toHaveBeenCalledWith(`${kcpRootOrgsPath}:org1`);
   });
 
-  describe('resolveCrdGatewayKcpPathForNextAccountEntity', () => {
-    it('should return early if kind is not Account', async () => {
-      const nextNode: PortalLuigiNode = {
-        context: {},
-        parent: undefined,
-      } as any;
-
-      await resolver.resolveCrdGatewayKcpPathForNextAccountEntity(
-        'leafAcc',
-        'Project',
-        nextNode,
-      );
-
-      expect(
-        gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
-      ).not.toHaveBeenCalled();
-      expect(envConfigServiceMock.getEnvConfig).not.toHaveBeenCalled();
-    });
-
-    it('should return early if entityId is empty', async () => {
-      const nextNode: PortalLuigiNode = {
-        context: {},
-        parent: undefined,
-      } as any;
-
-      await resolver.resolveCrdGatewayKcpPathForNextAccountEntity(
-        '',
-        'Account',
-        nextNode,
-      );
-
-      expect(
-        gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
-      ).not.toHaveBeenCalled();
-      expect(envConfigServiceMock.getEnvConfig).not.toHaveBeenCalled();
-    });
-
+  describe('resolveCrdGatewayKcpPath', () => {
     it('should aggregate parent Account entities and append entityId', async () => {
       const nextNode: PortalLuigiNode = {
         context: {},
@@ -142,38 +115,12 @@ describe('CrdGatewayKcpPatchResolver', () => {
         },
       } as any;
 
-      await resolver.resolveCrdGatewayKcpPathForNextAccountEntity(
-        'leafAcc',
-        'Account',
-        nextNode,
-      );
+      await resolver.resolveCrdGatewayKcpPath(nextNode, 'leafAcc', 'Account');
 
       expect(envConfigServiceMock.getEnvConfig).toHaveBeenCalled();
       expect(
         gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
       ).toHaveBeenCalledWith(`${kcpRootOrgsPath}:org1:acc1:acc2:leafAcc`);
-    });
-
-    it('should use kcpPath from node context if provided (override)', async () => {
-      const nextNode: PortalLuigiNode = {
-        context: { kcpPath: 'overridePath' },
-        parent: {
-          context: {
-            entity: { metadata: { name: 'accParent' }, __typename: 'Account' },
-          },
-          parent: undefined,
-        },
-      } as any;
-
-      await resolver.resolveCrdGatewayKcpPathForNextAccountEntity(
-        'leafAcc',
-        'Account',
-        nextNode,
-      );
-
-      expect(
-        gatewayServiceMock.updateCrdGatewayUrlWithEntityPath,
-      ).toHaveBeenCalledWith('overridePath');
     });
   });
 });
