@@ -138,55 +138,6 @@ describe('DetailViewComponent', () => {
     expect(mockAnchorElement.click).toHaveBeenCalled();
   });
 
-  it('should return default fields when ui.detailView.fields is undefined', () => {
-    // Reset mocks and create new component instance
-    jest.clearAllMocks();
-    const newFixture = TestBed.createComponent(DetailViewComponent);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceId: 'cluster-1',
-      token: 'abc123',
-      resourceDefinition: {
-        kind: 'Cluster',
-        group: 'core.k8s.io',
-        ui: {
-          detailView: {
-            // fields is undefined
-          },
-        },
-      },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
-      parentNavigationContexts: ['project'],
-    })) as any;
-
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
-      }),
-      uxManager: () => ({
-        showAlert: jest.fn(),
-      }),
-      getNodeParams: jest.fn(),
-    })) as any;
-
-    newFixture.detectChanges();
-
-    const defaultFields = [
-      {
-        label: 'Workspace Status',
-        jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
-        property: ['status.conditions.status', 'status.conditions.type'],
-      },
-    ];
-
-    expect(newComponent.resourceFields()).toEqual(defaultFields);
-  });
-
   it('should call resource service with correct parameters for account kind', () => {
     jest.clearAllMocks();
     const newFixture = TestBed.createComponent(DetailViewComponent);

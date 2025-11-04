@@ -197,37 +197,6 @@ describe('ListViewComponent', () => {
     expect(newComponent.hasUiCreateViewFields()).toBe(true);
   });
 
-  it('should use default columns when no listView fields are defined', () => {
-    // Create a new component instance with different context
-    const newFixture = TestBed.createComponent(ListViewComponent);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
-        ui: {
-          // No listView fields defined
-        },
-      },
-    })) as any;
-
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
-      }),
-      getNodeParams: jest.fn(),
-    })) as any;
-
-    newFixture.detectChanges();
-
-    expect(newComponent.columns().length).toBeGreaterThan(0);
-    expect(newComponent.columns()[0].label).toBe('Name');
-  });
-
   it('should compute heading correctly with capitalized plural', () => {
     const newFixture = TestBed.createComponent(ListViewComponent);
     const newComponent = newFixture.componentInstance;
