@@ -12,7 +12,7 @@
   },
   "prettier": "@openmfp/config-prettier",
   "peerDependencies": {
-    "@openmfp/portal-ui-lib": "0.183.0",
+    "@openmfp/portal-ui-lib": "0.183.1",
     "@angular/common": "20.3.9",
     "@angular/compiler": "20.3.9",
     "@angular/core": "20.3.9",
