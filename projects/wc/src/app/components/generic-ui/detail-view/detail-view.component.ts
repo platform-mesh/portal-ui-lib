@@ -1,3 +1,7 @@
+import { processFields } from '../../../utils/proccess-fields';
+import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { kubeConfigTemplate } from './kubeconfig-template';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,7 +14,7 @@ import {
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   GatewayService,
   ResourceNodeContext,
@@ -31,18 +35,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { processFields } from '../../../utils/proccess-fields';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { kubeConfigTemplate } from './kubeconfig-template';
-import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
-
-const defaultFields: FieldDefinition[] = [
-  {
-    label: 'Workspace Status',
-    jsonPathExpression: 'status.conditions[?(@.type=="Ready")].status',
-    property: ['status.conditions.status', 'status.conditions.type'],
-  },
-];
 
 @Component({
   selector: 'detail-view',
@@ -75,7 +67,7 @@ export class DetailViewComponent {
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   resourceFields = computed(
-    () => this.resourceDefinition()?.ui?.detailView?.fields || defaultFields,
+    () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
   );
   resourceId = computed(() => this.context().entity?.metadata.name);
   workspacePath = computed(() =>
