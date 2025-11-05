@@ -1,3 +1,4 @@
+import { kcpRootOrgsPath } from '../models/constants';
 import { Injectable, inject } from '@angular/core';
 import {
   AuthService,
@@ -48,7 +49,9 @@ export class LuigiExtendedGlobalContextConfigServiceImpl
         organization: entityId,
         organizationId: `${organizationOriginClusterId}/${entityId}`,
         kcpCA: btoa(accountInfo?.spec?.clusterInfo?.ca),
+        kcpPath: `${kcpRootOrgsPath}:${entityId}`,
         entityId: `${organizationOriginClusterId}/${entityId}`, // if no entity selected the entityId is the same as the organizationId
+        entityName: entityId,
       };
     } catch (e) {
       console.error(`Failed to read entity ${entityId} from ${operation}`, e);
