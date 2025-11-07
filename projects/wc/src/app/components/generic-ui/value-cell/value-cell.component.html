@@ -1,5 +1,7 @@
 @if (displayAsPlainText()) {
   {{ value() }}
+} @else if (displayAsSecret()) {
+  <wc-secret-value [value]="value()"></wc-secret-value>
 } @else {
   @if (isBoolLike()) {
     <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
@@ -7,8 +9,12 @@
     <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
   } @else if (isLabelValue()) {
     <wc-label-value [labelDisplay]="labelDisplayValue()!" [value]="value()"></wc-label-value>
-  }
-  @else {
+  } @else {
     {{ value() }}
   }
+}
+
+@if (withCopyButton()) {
+  <ui5-icon (click)="copyValue($event)" name="copy">
+  </ui5-icon>
 }

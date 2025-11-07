@@ -88,9 +88,9 @@
                 <div>
                   <span>{{ field.label }}: </span>
                   <value-cell
-                    [labelDisplay]="field.labelDisplay"
-                    [displayAsPlainText]="!!field.displayAsPlainText"
-                    [value]="getResourceValueByJsonPath(item, field)"
+                    [fieldDefinition]="field"
+                    [resource]="item"
+                    [LuigiClient]="LuigiClient()"
                   />
                 </div>
                 @if (!last && column.group.delimiter) {
@@ -101,9 +101,9 @@
           } @else {
             <ui5-table-cell>
               <value-cell
-                [labelDisplay]="column.labelDisplay"
-                [displayAsPlainText]="!!column.displayAsPlainText"
-                [value]="getResourceValueByJsonPath(item, column)"
+                [fieldDefinition]="column"
+                [resource]="item"
+                [LuigiClient]="LuigiClient()"
               />
             </ui5-table-cell>
           }

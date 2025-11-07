@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 
-
 @Component({ selector: 'ui5-component', template: '', standalone: true })
 export class MockComponent {}
 
@@ -31,4 +30,8 @@ jest.mock('@ui5/webcomponents-ngx', () => {
     BarComponent: MockComponent,
     LinkComponent: MockComponent,
   };
+});
+
+jest.mock('@ui5/webcomponents-icons/dist/copy.js', () => ({}), {
+  virtual: true,
 });
