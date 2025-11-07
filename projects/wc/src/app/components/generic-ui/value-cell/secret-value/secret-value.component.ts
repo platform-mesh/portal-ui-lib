@@ -9,6 +9,5 @@ import { Component, computed, input } from '@angular/core';
 })
 export class SecretValueComponent {
   value = input.required<string>();
-
   maskedValue = computed(() => '*'.repeat(this.value().length || 8));
 }

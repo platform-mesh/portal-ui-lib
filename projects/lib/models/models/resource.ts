@@ -1,6 +1,5 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
-
 export interface LabelDisplay {
   backgroundColor?: string;
   color?: string;
