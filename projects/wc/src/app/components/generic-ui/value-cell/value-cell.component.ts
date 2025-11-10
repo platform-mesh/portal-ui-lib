@@ -40,12 +40,9 @@ export class ValueCellComponent {
   value = computed(() =>
     getResourceValueByJsonPath(this.resource(), this.fieldDefinition()),
   );
-  labelDisplay = computed(() => this.fieldDefinition().labelDisplay);
-  displayAsSecret = computed(() => this.fieldDefinition().displayAsSecret);
-  withCopyButton = computed(() => this.fieldDefinition().withCopyButton);
-  displayAsPlainText = computed(
-    () => this.fieldDefinition().displayAsPlainText,
-  );
+  uiSettings = computed(() => this.fieldDefinition().uiSettings);
+  displayAs = computed(() => this.uiSettings()?.displayAs);
+  withCopyButton = computed(() => this.uiSettings()?.withCopyButton);
 
   isLabelValue = computed(() => this.labelDisplayValue() !== undefined);
   isBoolLike = computed(() => this.boolValue() !== undefined);
@@ -54,7 +51,7 @@ export class ValueCellComponent {
   boolValue = computed(() => this.normalizeBoolean(this.value()));
   stringValue = computed(() => this.normalizeString(this.value()));
   labelDisplayValue = computed(() =>
-    this.normalizeLabelDisplay(this.labelDisplay()),
+    this.normalizeLabelDisplay(this.uiSettings()?.labelDisplay),
   );
 
   private normalizeBoolean(value: unknown): boolean | undefined {

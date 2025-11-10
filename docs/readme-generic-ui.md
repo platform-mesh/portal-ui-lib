@@ -68,14 +68,18 @@ Each field definition supports the following properties:
   - `"label"`: Display name for the group
   - `"delimiter"`: String used to separate grouped values
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
-- `"labelDisplay"`: Boolean value for using the defaults or an object for customizing the visual appearance of field values:
-  - `"backgroundColor"`: Background color for the value (CSS color value)
-  - `"color"`: Text color for the value (CSS color value)
-  - `"fontWeight"`: Font weight for the value (CSS font-weight value)
-  - `"fontStyle"`: Font style for the value (CSS font-style value)
-  - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
-  - `"textTransform"`: Text transformation for the value (CSS text-transform value)
-- `"displayAsPlainText"`: Boolean valu that give you ability to render value as it is, without any built-in transformation.
+- `"uiSettings"`: Object for configuring UI-specific display settings:
+  - `"labelDisplay"`: Boolean value for using the defaults or an object for customizing the visual appearance of field values:
+    - `"backgroundColor"`: Background color for the value (CSS color value)
+    - `"color"`: Text color for the value (CSS color value)
+    - `"fontWeight"`: Font weight for the value (CSS font-weight value)
+    - `"fontStyle"`: Font style for the value (CSS font-style value)
+    - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
+    - `"textTransform"`: Text transformation for the value (CSS text-transform value)
+  - `"displayAs"`: Controls how the value is displayed:
+    - `'plainText'`: Render value as plain text without any built-in transformation
+    - `'secret'`: Render value as a secret with show/hide hover
+  - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
@@ -84,6 +88,13 @@ Each field definition supports the following properties:
 
 #### Example Content Configuration for an Accounts Node
 Below is an example content-configuration for an accounts node using the generic list view.
+
+This example demonstrates various features including:
+- **Secret fields**: The "Key" field in `listView` and "API Key" field in `detailView` use `displayAs: "secret"` to hide sensitive data with a toggle
+- **Copy buttons**: Multiple fields include `withCopyButton: true` for easy copying to clipboard
+- **Plain text display**: The "External URL" field uses `displayAs: "plainText"` to prevent automatic link formatting
+- **Custom styling**: The "Type" and "Display Name" fields use `labelDisplay` for visual customization
+- **Field grouping**: Contact information is grouped using the `group` property
 
 ```json
 {
@@ -134,6 +145,10 @@ Below is an example content-configuration for an accounts node using the generic
                       "propertyField": {
                         "key": "OPENAI_API_KEY",
                         "transform": ["uppercase", "encode"]
+                      },
+                      "uiSettings": {
+                        "displayAs": "secret",
+                        "withCopyButton": true
                       }
                     },
                     {
@@ -178,6 +193,29 @@ Below is an example content-configuration for an accounts node using the generic
                       "labelDisplay": {
                         "color": "#2e7d32",
                         "fontWeight": "600"
+                      }
+                    },
+                    {
+                      "label": "API Key",
+                      "property": "spec.credentials.apiKey",
+                      "uiSettings": {
+                        "displayAs": "secret",
+                        "withCopyButton": true
+                      }
+                    },
+                    {
+                      "label": "Account ID",
+                      "property": "metadata.uid",
+                      "uiSettings": {
+                        "withCopyButton": true
+                      }
+                    },
+                    {
+                      "label": "External URL",
+                      "property": "spec.externalUrl",
+                      "uiSettings": {
+                        "displayAs": "plainText",
+                        "withCopyButton": true
                       }
                     },
                     {

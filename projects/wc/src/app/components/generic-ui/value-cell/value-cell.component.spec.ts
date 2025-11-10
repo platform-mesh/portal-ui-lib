@@ -2,8 +2,10 @@ import { ValueCellComponent } from './value-cell.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models/models';
-
+import {
+  FieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models/models';
 
 describe('ValueCellComponent', () => {
   let component: ValueCellComponent;
@@ -164,7 +166,9 @@ describe('ValueCellComponent', () => {
   describe('labelDisplay functionality', () => {
     it('should render label-value component when labelDisplay is an object', () => {
       const labelDisplay = { backgroundColor: '#ffffff', color: '#000000' };
-      const { fixture } = makeComponent('test-value', { labelDisplay });
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-label-value')).toBeTruthy();
@@ -173,7 +177,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should render label-value component when labelDisplay is true', () => {
-      const { fixture } = makeComponent('test-value', { labelDisplay: true });
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay: true },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-label-value')).toBeTruthy();
@@ -182,7 +188,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should not render label-value component when labelDisplay is false', () => {
-      const { fixture } = makeComponent('test-value', { labelDisplay: false });
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay: false },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-label-value')).toBeFalsy();
@@ -192,7 +200,7 @@ describe('ValueCellComponent', () => {
 
     it('should not render label-value component when labelDisplay is undefined', () => {
       const { fixture } = makeComponent('test-value', {
-        labelDisplay: undefined,
+        uiSettings: { labelDisplay: undefined },
       });
       const compiled = fixture.nativeElement;
 
@@ -203,7 +211,7 @@ describe('ValueCellComponent', () => {
 
     it('should not render label-value component when labelDisplay is null', () => {
       const { fixture } = makeComponent('test-value', {
-        labelDisplay: null as any,
+        uiSettings: { labelDisplay: null as any },
       });
       const compiled = fixture.nativeElement;
 
@@ -214,7 +222,7 @@ describe('ValueCellComponent', () => {
 
     it('should render label-value component when labelDisplay is a string', () => {
       const { fixture } = makeComponent('test-value', {
-        labelDisplay: 'some-string' as any,
+        uiSettings: { labelDisplay: 'some-string' as any },
       });
       const compiled = fixture.nativeElement;
 
@@ -225,7 +233,7 @@ describe('ValueCellComponent', () => {
 
     it('should render label-value component when labelDisplay is a number', () => {
       const { fixture } = makeComponent('test-value', {
-        labelDisplay: 42 as any,
+        uiSettings: { labelDisplay: 42 as any },
       });
       const compiled = fixture.nativeElement;
 
@@ -235,39 +243,41 @@ describe('ValueCellComponent', () => {
     });
   });
 
-  describe('displayAsSecret functionality', () => {
-    it('should render secret-value component when displayAsSecret is true', () => {
+  describe('displayAs secret functionality', () => {
+    it('should render secret-value component when displayAs is secret', () => {
       const { fixture } = makeComponent('secret-password', {
-        displayAsSecret: true,
+        uiSettings: { displayAs: 'secret' },
       });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-secret-value')).toBeTruthy();
-      expect(component.displayAsSecret()).toBe(true);
+      expect(component.displayAs()).toBe('secret');
     });
 
-    it('should not render secret-value component when displayAsSecret is false', () => {
+    it('should not render secret-value component when displayAs is not secret', () => {
       const { fixture } = makeComponent('plain-text', {
-        displayAsSecret: false,
+        uiSettings: { displayAs: 'plainText' },
       });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
-      expect(component.displayAsSecret()).toBe(false);
+      expect(component.displayAs()).toBe('plainText');
     });
 
-    it('should not render secret-value component when displayAsSecret is undefined', () => {
+    it('should not render secret-value component when displayAs is undefined', () => {
       const { fixture } = makeComponent('plain-text');
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
-      expect(component.displayAsSecret()).toBeUndefined();
+      expect(component.displayAs()).toBeUndefined();
     });
   });
 
   describe('withCopyButton functionality', () => {
     it('should render copy button when withCopyButton is true', () => {
-      const { fixture } = makeComponent('test-value', { withCopyButton: true });
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { withCopyButton: true },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('ui5-icon[name="copy"]')).toBeTruthy();
@@ -276,7 +286,7 @@ describe('ValueCellComponent', () => {
 
     it('should not render copy button when withCopyButton is false', () => {
       const { fixture } = makeComponent('test-value', {
-        withCopyButton: false,
+        uiSettings: { withCopyButton: false },
       });
       const compiled = fixture.nativeElement;
 
@@ -300,7 +310,7 @@ describe('ValueCellComponent', () => {
       const customLuigiClient = createMockLuigiClient(showAlertSpy);
       const { fixture } = makeComponent(
         'test-value',
-        { withCopyButton: true },
+        { uiSettings: { withCopyButton: true } },
         customLuigiClient,
       );
 
@@ -320,7 +330,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should stop event propagation when copy button is clicked', () => {
-      const { fixture } = makeComponent('test-value', { withCopyButton: true });
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { withCopyButton: true },
+      });
       const compiled = fixture.nativeElement;
       const copyButton = compiled.querySelector('ui5-icon[name="copy"]');
 
@@ -334,10 +346,10 @@ describe('ValueCellComponent', () => {
     });
   });
 
-  describe('displayAsPlainText functionality', () => {
-    it('should render plain text when displayAsPlainText is true', () => {
+  describe('displayAs plainText functionality', () => {
+    it('should render plain text when displayAs is plainText', () => {
       const { fixture } = makeComponent('test-value', {
-        displayAsPlainText: true,
+        uiSettings: { displayAs: 'plainText' },
       });
       const compiled = fixture.nativeElement;
 
@@ -348,9 +360,9 @@ describe('ValueCellComponent', () => {
       expect(compiled.textContent.trim()).toContain('test-value');
     });
 
-    it('should not render plain text when displayAsPlainText is false', () => {
+    it('should not render plain text when displayAs is not plainText', () => {
       const { fixture } = makeComponent('https://example.com', {
-        displayAsPlainText: false,
+        uiSettings: {},
       });
       const compiled = fixture.nativeElement;
 
@@ -650,7 +662,7 @@ describe('ValueCellComponent', () => {
 
     it('should prioritize boolean over label when both are valid', () => {
       const { fixture } = makeComponent('true', {
-        labelDisplay: { backgroundColor: '#ffffff' },
+        uiSettings: { labelDisplay: { backgroundColor: '#ffffff' } },
       });
       const compiled = fixture.nativeElement;
 
@@ -661,7 +673,7 @@ describe('ValueCellComponent', () => {
 
     it('should prioritize URL over label when both are valid', () => {
       const { fixture } = makeComponent('https://example.com', {
-        labelDisplay: { backgroundColor: '#ffffff' },
+        uiSettings: { labelDisplay: { backgroundColor: '#ffffff' } },
       });
       const compiled = fixture.nativeElement;
 
@@ -672,7 +684,7 @@ describe('ValueCellComponent', () => {
 
     it('should render label when boolean and URL are not valid but labelDisplay is provided', () => {
       const { fixture } = makeComponent('some-text', {
-        labelDisplay: { backgroundColor: '#ffffff' },
+        uiSettings: { labelDisplay: { backgroundColor: '#ffffff' } },
       });
       const compiled = fixture.nativeElement;
 
@@ -682,7 +694,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should render plain text when no special rendering is needed', () => {
-      const { fixture } = makeComponent('some-text', { labelDisplay: false });
+      const { fixture } = makeComponent('some-text', {
+        uiSettings: { labelDisplay: false },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();

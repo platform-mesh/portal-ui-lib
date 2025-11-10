@@ -21,6 +21,12 @@ export interface PropertyField {
   transform?: TransformType[];
 }
 
+export interface UiSettings {
+  labelDisplay?: LabelDisplay | boolean;
+  displayAs?: 'plainText' | 'secret';
+  withCopyButton?: boolean;
+}
+
 export interface FieldDefinition {
   label?: string;
   property: string | string[];
@@ -34,10 +40,7 @@ export interface FieldDefinition {
     delimiter?: string;
     multiline?: boolean;
   };
-  labelDisplay?: LabelDisplay | boolean;
-  displayAsPlainText?: boolean;
-  withCopyButton?: boolean;
-  displayAsSecret?: boolean;
+  uiSettings?: UiSettings;
   dynamicValuesDefinition?: {
     operation: string;
     gqlQuery: string;
