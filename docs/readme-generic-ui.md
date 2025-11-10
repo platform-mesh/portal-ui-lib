@@ -148,18 +148,18 @@ This example demonstrates various features including:
                       },
                       "uiSettings": {
                         "displayAs": "secret",
-                        "withCopyButton": true
+                        "withCopyButton": true,
+                        "labelDisplay": {
+                          "backgroundColor": "#e3f2fd",
+                          "color": "#1976d2",
+                          "fontWeight": "bold",
+                          "textTransform": "uppercase"
+                        }
                       }
                     },
                     {
                       "label": "Type",
                       "property": "spec.type",
-                      "labelDisplay": {
-                        "backgroundColor": "#e3f2fd",
-                        "color": "#1976d2",
-                        "fontWeight": "bold",
-                        "textTransform": "uppercase"
-                      }
                     },
                     {
                       "label": "Contact Info",
@@ -190,9 +190,11 @@ This example demonstrates various features including:
                     {
                       "label": "Display Name",
                       "property": "spec.displayName",
-                      "labelDisplay": {
-                        "color": "#2e7d32",
-                        "fontWeight": "600"
+                      "uiSettings": {
+                        "labelDisplay": {
+                          "color": "#2e7d32",
+                          "fontWeight": "600"
+                        }
                       }
                     },
                     {
