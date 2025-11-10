@@ -1,16 +1,23 @@
-@if (displayAs() === 'plainText') {
-  {{ value() }}
-} @else if (displayAs() === 'secret') {
-  <wc-secret-value [value]="value()"></wc-secret-value>
-} @else if (isBoolLike()) {
-  <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
-} @else if (isUrlValue()) {
-  <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
-} @else if (isLabelValue()) {
-  <wc-label-value [labelDisplay]="labelDisplayValue()!" [value]="value()"></wc-label-value>
-} @else {
-  {{ value() }}
-}
+<span [class.label-value]="labelDisplay()" [style]="{
+  backgroundColor: labelDisplay()?.backgroundColor,
+  color: labelDisplay()?.color,
+  fontWeight: labelDisplay()?.fontWeight,
+  fontStyle: labelDisplay()?.fontStyle,
+  textDecoration: labelDisplay()?.textDecoration,
+  textTransform: labelDisplay()?.textTransform,
+}">
+  @if (displayAs() === 'plainText') {
+    {{ value() }}
+  } @else if (displayAs() === 'secret') {
+    <wc-secret-value [value]="value()"></wc-secret-value>
+  } @else if (isBoolLike()) {
+    <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
+  } @else if (isUrlValue()) {
+    <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
+  } @else {
+    {{ value() }}
+  }
+</span>
 
 @if (withCopyButton()) {
   <ui5-icon (click)="copyValue($event)" name="copy">

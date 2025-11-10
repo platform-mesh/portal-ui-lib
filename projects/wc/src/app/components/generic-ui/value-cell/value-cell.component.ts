@@ -1,5 +1,4 @@
 import { BooleanValueComponent } from './boolean-value/boolean-value.component';
-import { LabelValue } from './label-value/label-value.component';
 import { LinkValueComponent } from './link-value/link-value.component';
 import { SecretValueComponent } from './secret-value/secret-value.component';
 import {
@@ -25,7 +24,6 @@ import { IconComponent } from '@ui5/webcomponents-ngx';
     IconComponent,
     BooleanValueComponent,
     LinkValueComponent,
-    LabelValue,
     SecretValueComponent,
   ],
   templateUrl: './value-cell.component.html',
@@ -40,19 +38,19 @@ export class ValueCellComponent {
   value = computed(() =>
     getResourceValueByJsonPath(this.resource(), this.fieldDefinition()),
   );
+
   uiSettings = computed(() => this.fieldDefinition().uiSettings);
   displayAs = computed(() => this.uiSettings()?.displayAs);
   withCopyButton = computed(() => this.uiSettings()?.withCopyButton);
+  labelDisplay = computed(() =>
+    this.normalizeLabelDisplay(this.uiSettings()?.labelDisplay),
+  );
 
-  isLabelValue = computed(() => this.labelDisplayValue() !== undefined);
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
 
   boolValue = computed(() => this.normalizeBoolean(this.value()));
   stringValue = computed(() => this.normalizeString(this.value()));
-  labelDisplayValue = computed(() =>
-    this.normalizeLabelDisplay(this.uiSettings()?.labelDisplay),
-  );
 
   private normalizeBoolean(value: unknown): boolean | undefined {
     const normalizedValue = value?.toString()?.toLowerCase();

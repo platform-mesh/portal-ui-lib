@@ -1,3 +1,6 @@
+import { BooleanValueComponent } from './boolean-value/boolean-value.component';
+import { LinkValueComponent } from './link-value/link-value.component';
+import { SecretValueComponent } from './secret-value/secret-value.component';
 import { ValueCellComponent } from './value-cell.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -50,7 +53,15 @@ describe('ValueCellComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ValueCellComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    }).overrideComponent(ValueCellComponent, {
+      set: {
+        imports: [
+          BooleanValueComponent,
+          LinkValueComponent,
+          SecretValueComponent,
+        ],
+        schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      },
     });
   });
 
@@ -164,82 +175,49 @@ describe('ValueCellComponent', () => {
   });
 
   describe('labelDisplay functionality', () => {
-    it('should render label-value component when labelDisplay is an object', () => {
+    it('should apply label styles when labelDisplay is an object', () => {
       const labelDisplay = { backgroundColor: '#ffffff', color: '#000000' };
       const { fixture } = makeComponent('test-value', {
         uiSettings: { labelDisplay },
       });
       const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
 
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual(labelDisplay);
+      expect(span.classList.contains('label-value')).toBe(true);
+      expect(component.labelDisplay()).toEqual(labelDisplay);
     });
 
-    it('should render label-value component when labelDisplay is true', () => {
+    it('should apply label-value class when labelDisplay is true', () => {
       const { fixture } = makeComponent('test-value', {
         uiSettings: { labelDisplay: true },
       });
       const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
 
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual({});
+      expect(span.classList.contains('label-value')).toBe(true);
+      expect(component.labelDisplay()).toEqual({});
     });
 
-    it('should not render label-value component when labelDisplay is false', () => {
+    it('should not apply label-value class when labelDisplay is false', () => {
       const { fixture } = makeComponent('test-value', {
         uiSettings: { labelDisplay: false },
       });
       const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
 
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-      expect(component.isLabelValue()).toBe(false);
-      expect(component.labelDisplayValue()).toBeUndefined();
+      expect(span.classList.contains('label-value')).toBe(false);
+      expect(component.labelDisplay()).toBeUndefined();
     });
 
-    it('should not render label-value component when labelDisplay is undefined', () => {
+    it('should not apply label-value class when labelDisplay is undefined', () => {
       const { fixture } = makeComponent('test-value', {
         uiSettings: { labelDisplay: undefined },
       });
       const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
 
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-      expect(component.isLabelValue()).toBe(false);
-      expect(component.labelDisplayValue()).toBeUndefined();
-    });
-
-    it('should not render label-value component when labelDisplay is null', () => {
-      const { fixture } = makeComponent('test-value', {
-        uiSettings: { labelDisplay: null as any },
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-      expect(component.isLabelValue()).toBe(false);
-      expect(component.labelDisplayValue()).toBeUndefined();
-    });
-
-    it('should render label-value component when labelDisplay is a string', () => {
-      const { fixture } = makeComponent('test-value', {
-        uiSettings: { labelDisplay: 'some-string' as any },
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual({});
-    });
-
-    it('should render label-value component when labelDisplay is a number', () => {
-      const { fixture } = makeComponent('test-value', {
-        uiSettings: { labelDisplay: 42 as any },
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual({});
+      expect(span.classList.contains('label-value')).toBe(false);
+      expect(component.labelDisplay()).toBeUndefined();
     });
   });
 
@@ -355,7 +333,6 @@ describe('ValueCellComponent', () => {
 
       expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
       expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
       expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
       expect(compiled.textContent.trim()).toContain('test-value');
     });
@@ -657,40 +634,6 @@ describe('ValueCellComponent', () => {
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
       expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-    });
-
-    it('should prioritize boolean over label when both are valid', () => {
-      const { fixture } = makeComponent('true', {
-        uiSettings: { labelDisplay: { backgroundColor: '#ffffff' } },
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-    });
-
-    it('should prioritize URL over label when both are valid', () => {
-      const { fixture } = makeComponent('https://example.com', {
-        uiSettings: { labelDisplay: { backgroundColor: '#ffffff' } },
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-    });
-
-    it('should render label when boolean and URL are not valid but labelDisplay is provided', () => {
-      const { fixture } = makeComponent('some-text', {
-        uiSettings: { labelDisplay: { backgroundColor: '#ffffff' } },
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
     });
 
     it('should render plain text when no special rendering is needed', () => {
@@ -698,10 +641,11 @@ describe('ValueCellComponent', () => {
         uiSettings: { labelDisplay: false },
       });
       const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
 
       expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
       expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
+      expect(span.classList.contains('label-value')).toBe(false);
       expect(compiled.textContent.trim()).toBe('some-text');
     });
   });
