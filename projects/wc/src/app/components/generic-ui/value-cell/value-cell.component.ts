@@ -6,6 +6,7 @@ import {
   Component,
   computed,
   input,
+  signal,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
@@ -15,6 +16,8 @@ import {
 import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils/utils';
 import '@ui5/webcomponents-icons/dist/copy.js';
+import '@ui5/webcomponents-icons/dist/hide.js';
+import '@ui5/webcomponents-icons/dist/show.js';
 import { IconComponent } from '@ui5/webcomponents-ngx';
 
 @Component({
@@ -51,6 +54,12 @@ export class ValueCellComponent {
 
   boolValue = computed(() => this.normalizeBoolean(this.value()));
   stringValue = computed(() => this.normalizeString(this.value()));
+  isVisible = signal(false);
+
+  toggleVisibility(e: Event): void {
+    e.stopPropagation();
+    this.isVisible.set(!this.isVisible());
+  }
 
   private normalizeBoolean(value: unknown): boolean | undefined {
     const normalizedValue = value?.toString()?.toLowerCase();

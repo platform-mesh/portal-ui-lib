@@ -1,7 +1,6 @@
 :host {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
 .label-value {
@@ -15,4 +14,14 @@
   font-size: 0.875rem;
   line-height: 1.4rem;
   margin: 3px 0;
+}
+
+.toggle-icon {
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 0.25rem;
+
+  &:hover {
+    color: var(--sapButton_Hover_TextColor, #0854a0);
+  }
 }

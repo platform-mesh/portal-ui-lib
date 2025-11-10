@@ -35,3 +35,9 @@ jest.mock('@ui5/webcomponents-ngx', () => {
 jest.mock('@ui5/webcomponents-icons/dist/copy.js', () => ({}), {
   virtual: true,
 });
+jest.mock('@ui5/webcomponents-icons/dist/hide.js', () => ({}), {
+  virtual: true,
+});
+jest.mock('@ui5/webcomponents-icons/dist/show.js', () => ({}), {
+  virtual: true,
+});

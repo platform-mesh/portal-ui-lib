@@ -249,6 +249,93 @@ describe('ValueCellComponent', () => {
       expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
       expect(component.displayAs()).toBeUndefined();
     });
+
+    it('should render toggle icon when displayAs is secret', () => {
+      const { fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      const toggleIcon = compiled.querySelector('ui5-icon.toggle-icon');
+      expect(toggleIcon).toBeTruthy();
+    });
+
+    it('should not render toggle icon when displayAs is not secret', () => {
+      const { fixture } = makeComponent('plain-text', {
+        uiSettings: { displayAs: 'plainText' },
+      });
+      const compiled = fixture.nativeElement;
+
+      const toggleIcon = compiled.querySelector('ui5-icon.toggle-icon');
+      expect(toggleIcon).toBeFalsy();
+    });
+
+    it('should initialize isVisible as false', () => {
+      const { component } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+
+      expect(component.isVisible()).toBe(false);
+    });
+
+    it('should toggle visibility when icon is clicked', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      expect(component.isVisible()).toBe(false);
+
+      const icon = compiled.querySelector('ui5-icon.toggle-icon');
+      icon?.click();
+      fixture.detectChanges();
+
+      expect(component.isVisible()).toBe(true);
+    });
+
+    it('should toggle back to hidden when icon is clicked again', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      const icon = compiled.querySelector('ui5-icon.toggle-icon');
+
+      icon?.click();
+      fixture.detectChanges();
+      expect(component.isVisible()).toBe(true);
+
+      icon?.click();
+      fixture.detectChanges();
+      expect(component.isVisible()).toBe(false);
+    });
+
+    it('should stop event propagation when toggle icon is clicked', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+
+      const event = new Event('click');
+      const stopPropagationSpy = jest.spyOn(event, 'stopPropagation');
+
+      component.toggleVisibility(event);
+      fixture.detectChanges();
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+    });
+
+    it('should pass isVisible state to secret-value component', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      component.isVisible.set(true);
+      fixture.detectChanges();
+
+      const secretValueComponent = compiled.querySelector('wc-secret-value');
+      expect(secretValueComponent).toBeTruthy();
+    });
   });
 
   describe('withCopyButton functionality', () => {

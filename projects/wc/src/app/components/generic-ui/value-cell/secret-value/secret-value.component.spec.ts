@@ -1,5 +1,4 @@
 import { SecretValueComponent } from './secret-value.component';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 describe('SecretValueComponent', () => {
@@ -20,13 +19,18 @@ describe('SecretValueComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [SecretValueComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      schemas: [],
     });
   });
 
   it('should create', () => {
     const { component } = makeComponent('test-secret');
     expect(component).toBeTruthy();
+  });
+
+  it('should initialize with isVisible as false', () => {
+    const { component } = makeComponent('test-secret');
+    expect(component.isVisible()).toBe(false);
   });
 
   it('should mask value with asterisks', () => {
@@ -68,13 +72,65 @@ describe('SecretValueComponent', () => {
     );
   });
 
-  it('should display original value in hidden span', () => {
+  it('should display masked value by default', () => {
     const { fixture } = makeComponent('secret-value');
     const compiled = fixture.nativeElement;
 
+    const maskedSpan = compiled.querySelector('.masked');
     const originalSpan = compiled.querySelector('.original');
+
+    expect(maskedSpan).toBeTruthy();
+    expect(originalSpan).toBeFalsy();
+  });
+
+  it('should display original value when isVisible is true', () => {
+    const { component, fixture } = makeComponent('secret-value');
+
+    fixture.componentRef.setInput('isVisible', true);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement;
+    const originalSpan = compiled.querySelector('.original');
+    const maskedSpan = compiled.querySelector('.masked');
+
     expect(originalSpan).toBeTruthy();
     expect(originalSpan?.textContent).toBe('secret-value');
+    expect(maskedSpan).toBeFalsy();
+  });
+
+  it('should switch from masked to original when isVisible changes', () => {
+    const { component, fixture } = makeComponent('secret-value');
+    const compiled = fixture.nativeElement;
+
+    expect(component.isVisible()).toBe(false);
+    expect(compiled.querySelector('.masked')).toBeTruthy();
+    expect(compiled.querySelector('.original')).toBeFalsy();
+
+    fixture.componentRef.setInput('isVisible', true);
+    fixture.detectChanges();
+
+    expect(component.isVisible()).toBe(true);
+    expect(compiled.querySelector('.original')).toBeTruthy();
+    expect(compiled.querySelector('.masked')).toBeFalsy();
+  });
+
+  it('should switch back to masked when isVisible changes to false', () => {
+    const { component, fixture } = makeComponent('secret-value');
+
+    fixture.componentRef.setInput('isVisible', true);
+    fixture.detectChanges();
+    expect(component.isVisible()).toBe(true);
+
+    fixture.componentRef.setInput('isVisible', false);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement;
+    const maskedSpan = compiled.querySelector('.masked');
+    const originalSpan = compiled.querySelector('.original');
+
+    expect(component.isVisible()).toBe(false);
+    expect(maskedSpan).toBeTruthy();
+    expect(originalSpan).toBeFalsy();
   });
 
   it('should update masked value when input changes', () => {
@@ -85,5 +141,22 @@ describe('SecretValueComponent', () => {
     fixture.detectChanges();
 
     expect(component.maskedValue()).toBe('*'.repeat('updated-secret'.length));
+  });
+
+  it('should maintain visibility state when input changes', () => {
+    const { component, fixture } = makeComponent('initial');
+
+    fixture.componentRef.setInput('isVisible', true);
+    fixture.detectChanges();
+
+    expect(component.isVisible()).toBe(true);
+
+    fixture.componentRef.setInput('value', 'updated-secret');
+    fixture.detectChanges();
+
+    expect(component.isVisible()).toBe(true);
+    const compiled = fixture.nativeElement;
+    const originalSpan = compiled.querySelector('.original');
+    expect(originalSpan?.textContent).toBe('updated-secret');
   });
 });
