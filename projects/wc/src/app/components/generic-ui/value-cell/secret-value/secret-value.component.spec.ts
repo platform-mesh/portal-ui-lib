@@ -40,7 +40,7 @@ describe('SecretValueComponent', () => {
     expect(component.maskedValue()).toBe(
       '*'.repeat('my-secret-password'.length),
     );
-    expect(compiled.querySelector('.masked')?.textContent).toBe(
+    expect(compiled.querySelector('.secret-value')?.textContent?.trim()).toBe(
       '*'.repeat('my-secret-password'.length),
     );
   });
@@ -50,7 +50,9 @@ describe('SecretValueComponent', () => {
     const compiled = fixture.nativeElement;
 
     expect(component.maskedValue()).toBe('*'.repeat(8));
-    expect(compiled.querySelector('.masked')?.textContent).toBe('*'.repeat(8));
+    expect(compiled.querySelector('.secret-value')?.textContent?.trim()).toBe(
+      '*'.repeat(8),
+    );
   });
 
   it('should mask short value correctly', () => {
@@ -58,7 +60,9 @@ describe('SecretValueComponent', () => {
     const compiled = fixture.nativeElement;
 
     expect(component.maskedValue()).toBe('***');
-    expect(compiled.querySelector('.masked')?.textContent).toBe('***');
+    expect(compiled.querySelector('.secret-value')?.textContent?.trim()).toBe(
+      '***',
+    );
   });
 
   it('should mask long value correctly', () => {
@@ -67,7 +71,7 @@ describe('SecretValueComponent', () => {
     const compiled = fixture.nativeElement;
 
     expect(component.maskedValue()).toBe('*'.repeat(100));
-    expect(compiled.querySelector('.masked')?.textContent).toBe(
+    expect(compiled.querySelector('.secret-value')?.textContent?.trim()).toBe(
       '*'.repeat(100),
     );
   });
@@ -76,11 +80,13 @@ describe('SecretValueComponent', () => {
     const { fixture } = makeComponent('secret-value');
     const compiled = fixture.nativeElement;
 
-    const maskedSpan = compiled.querySelector('.masked');
-    const originalSpan = compiled.querySelector('.original');
+    const secretSpan = compiled.querySelector('.secret-value');
 
-    expect(maskedSpan).toBeTruthy();
-    expect(originalSpan).toBeFalsy();
+    expect(secretSpan).toBeTruthy();
+    expect(secretSpan?.classList.contains('masked')).toBe(true);
+    expect(secretSpan?.textContent?.trim()).toBe(
+      '*'.repeat('secret-value'.length),
+    );
   });
 
   it('should display original value when isVisible is true', () => {
@@ -90,28 +96,30 @@ describe('SecretValueComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement;
-    const originalSpan = compiled.querySelector('.original');
-    const maskedSpan = compiled.querySelector('.masked');
+    const secretSpan = compiled.querySelector('.secret-value');
 
-    expect(originalSpan).toBeTruthy();
-    expect(originalSpan?.textContent).toBe('secret-value');
-    expect(maskedSpan).toBeFalsy();
+    expect(secretSpan).toBeTruthy();
+    expect(secretSpan?.classList.contains('masked')).toBe(false);
+    expect(secretSpan?.textContent?.trim()).toBe('secret-value');
   });
 
   it('should switch from masked to original when isVisible changes', () => {
     const { component, fixture } = makeComponent('secret-value');
     const compiled = fixture.nativeElement;
+    const secretSpan = compiled.querySelector('.secret-value');
 
     expect(component.isVisible()).toBe(false);
-    expect(compiled.querySelector('.masked')).toBeTruthy();
-    expect(compiled.querySelector('.original')).toBeFalsy();
+    expect(secretSpan?.classList.contains('masked')).toBe(true);
+    expect(secretSpan?.textContent?.trim()).toBe(
+      '*'.repeat('secret-value'.length),
+    );
 
     fixture.componentRef.setInput('isVisible', true);
     fixture.detectChanges();
 
     expect(component.isVisible()).toBe(true);
-    expect(compiled.querySelector('.original')).toBeTruthy();
-    expect(compiled.querySelector('.masked')).toBeFalsy();
+    expect(secretSpan?.classList.contains('masked')).toBe(false);
+    expect(secretSpan?.textContent?.trim()).toBe('secret-value');
   });
 
   it('should switch back to masked when isVisible changes to false', () => {
@@ -125,12 +133,13 @@ describe('SecretValueComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement;
-    const maskedSpan = compiled.querySelector('.masked');
-    const originalSpan = compiled.querySelector('.original');
+    const secretSpan = compiled.querySelector('.secret-value');
 
     expect(component.isVisible()).toBe(false);
-    expect(maskedSpan).toBeTruthy();
-    expect(originalSpan).toBeFalsy();
+    expect(secretSpan?.classList.contains('masked')).toBe(true);
+    expect(secretSpan?.textContent?.trim()).toBe(
+      '*'.repeat('secret-value'.length),
+    );
   });
 
   it('should update masked value when input changes', () => {
@@ -156,7 +165,7 @@ describe('SecretValueComponent', () => {
 
     expect(component.isVisible()).toBe(true);
     const compiled = fixture.nativeElement;
-    const originalSpan = compiled.querySelector('.original');
-    expect(originalSpan?.textContent).toBe('updated-secret');
+    const secretSpan = compiled.querySelector('.secret-value');
+    expect(secretSpan?.textContent?.trim()).toBe('updated-secret');
   });
 });
