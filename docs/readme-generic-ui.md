@@ -76,7 +76,7 @@ Each field definition supports the following properties:
     - `"fontStyle"`: Font style for the value (CSS font-style value)
     - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
     - `"textTransform"`: Text transformation for the value (CSS text-transform value)
-  - `"displayAs"`: Controls how the value is displayed:
+  - `"displayAs"`: Controls how the value is displayed (if nothing is provided the plain text is displayed):
     - `'secret'`: Render value as a secret with show/hide toggle
     - `'boolIcon'`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
     - `'link'`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
