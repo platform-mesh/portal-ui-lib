@@ -1,3 +1,4 @@
+@let displayType = displayAs();
 <span [class.label-value]="labelDisplay()" [style]="{
   backgroundColor: labelDisplay()?.backgroundColor,
   color: labelDisplay()?.color,
@@ -6,20 +7,18 @@
   textDecoration: labelDisplay()?.textDecoration,
   textTransform: labelDisplay()?.textTransform,
 }">
-  @if (displayAs() === 'plainText') {
-    {{ value() }}
-  } @else if (displayAs() === 'secret') {
+  @if (displayType === 'secret') {
     <wc-secret-value [value]="value()" [isVisible]="isVisible()"></wc-secret-value>
-  } @else if (isBoolLike()) {
+  } @else if (displayType === 'boolIcon' && isBoolLike()) {
     <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
-  } @else if (isUrlValue()) {
+  } @else if (displayType === 'link' && isUrlValue()) {
     <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
   } @else {
     {{ value() }}
   }
 </span>
 
-@if (displayAs() === 'secret') {
+@if (displayType === 'secret') {
   <ui5-icon
     class="toggle-icon"
     [name]="isVisible() ? 'hide' : 'show'"

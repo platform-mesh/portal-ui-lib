@@ -77,8 +77,9 @@ Each field definition supports the following properties:
     - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
     - `"textTransform"`: Text transformation for the value (CSS text-transform value)
   - `"displayAs"`: Controls how the value is displayed:
-    - `'plainText'`: Render value as plain text without any built-in transformation
-    - `'secret'`: Render value as a secret with show/hide hover
+    - `'secret'`: Render value as a secret with show/hide toggle
+    - `'boolIcon'`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
+    - `'link'`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
   - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
@@ -92,7 +93,8 @@ Below is an example content-configuration for an accounts node using the generic
 This example demonstrates various features including:
 - **Secret fields**: The "Key" field in `listView` and "API Key" field in `detailView` use `displayAs: "secret"` to hide sensitive data with a toggle
 - **Copy buttons**: Multiple fields include `withCopyButton: true` for easy copying to clipboard
-- **Plain text display**: The "External URL" field uses `displayAs: "plainText"` to prevent automatic link formatting
+- **Link display**: The "External URL" field uses `displayAs: "link"` to render URLs as clickable links
+- **Boolean display**: The "Active" field uses `displayAs: "boolIcon"` to show boolean values as icons
 - **Custom styling**: The "Type" and "Display Name" fields use `labelDisplay` for visual customization
 - **Field grouping**: Contact information is grouped using the `group` property
 
@@ -216,8 +218,15 @@ This example demonstrates various features including:
                       "label": "External URL",
                       "property": "spec.externalUrl",
                       "uiSettings": {
-                        "displayAs": "plainText",
+                        "displayAs": "link",
                         "withCopyButton": true
+                      }
+                    },
+                    {
+                      "label": "Active",
+                      "property": "spec.active",
+                      "uiSettings": {
+                        "displayAs": "boolIcon"
                       }
                     },
                     {

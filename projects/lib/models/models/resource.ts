@@ -1,5 +1,6 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
+
 export interface LabelDisplay {
   backgroundColor?: string;
   color?: string;
@@ -23,7 +24,7 @@ export interface PropertyField {
 
 export interface UiSettings {
   labelDisplay?: LabelDisplay | boolean;
-  displayAs?: 'plainText' | 'secret';
+  displayAs?: 'secret' | 'boolIcon' | 'link';
   withCopyButton?: boolean;
 }
 
