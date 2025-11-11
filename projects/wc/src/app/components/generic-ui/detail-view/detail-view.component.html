@@ -49,9 +49,10 @@
                   <span [class.multiline]="viewField.group.multiline ?? true">
                     <span>{{ field.label }}: </span>
                     <value-cell
-                    [labelDisplay]="field.labelDisplay"
-                    [value]="getResourceValueByJsonPath(resource, field)"
-                    [displayAsPlainText]="!!field.displayAsPlainText" />
+                    [fieldDefinition]="field"
+                    [resource]="resource"
+                    [LuigiClient]="LuigiClient()"
+                    />
                   </span>
                   @if (!last && viewField.group.delimiter) {
                     <span>{{ viewField.group.delimiter }}</span>
@@ -62,9 +63,10 @@
               <ui5-label>{{ viewField.label }}</ui5-label>
               <p>
                 <value-cell
-                [labelDisplay]="viewField.labelDisplay"
-                [value]="getResourceValueByJsonPath(resource, viewField)"
-                [displayAsPlainText]="!!viewField.displayAsPlainText" />
+                [fieldDefinition]="viewField"
+                [resource]="resource"
+                [LuigiClient]="LuigiClient()"
+                />
               </p>
             }
           </div>

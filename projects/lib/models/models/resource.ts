@@ -1,5 +1,6 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
+
 export interface LabelDisplay {
   backgroundColor?: string;
   color?: string;
@@ -21,6 +22,12 @@ export interface PropertyField {
   transform?: TransformType[];
 }
 
+export interface UiSettings {
+  labelDisplay?: LabelDisplay | boolean;
+  displayAs?: 'secret' | 'boolIcon' | 'link';
+  withCopyButton?: boolean;
+}
+
 export interface FieldDefinition {
   label?: string;
   property: string | string[];
@@ -34,8 +41,7 @@ export interface FieldDefinition {
     delimiter?: string;
     multiline?: boolean;
   };
-  labelDisplay?: LabelDisplay | boolean;
-  displayAsPlainText?: boolean;
+  uiSettings?: UiSettings;
   dynamicValuesDefinition?: {
     operation: string;
     gqlQuery: string;

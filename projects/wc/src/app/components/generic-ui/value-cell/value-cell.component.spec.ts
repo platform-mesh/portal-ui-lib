@@ -1,31 +1,49 @@
+import { BooleanValueComponent } from './boolean-value/boolean-value.component';
+import { LinkValueComponent } from './link-value/link-value.component';
+import { SecretValueComponent } from './secret-value/secret-value.component';
 import { ValueCellComponent } from './value-cell.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { LuigiClient } from '@luigi-project/client/luigi-element';
+import {
+  FieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models/models';
 
 describe('ValueCellComponent', () => {
   let component: ValueCellComponent;
   let fixture: ComponentFixture<ValueCellComponent>;
+  let mockLuigiClient: LuigiClient;
 
-  const makeComponent = (value: unknown) => {
-    fixture = TestBed.createComponent(ValueCellComponent);
-    component = fixture.componentInstance;
+  const createMockLuigiClient = (showAlertSpy?: jest.Mock): LuigiClient =>
+    ({
+      uxManager: () => ({
+        showAlert: showAlertSpy || jest.fn(),
+      }),
+    }) as any;
 
-    fixture.componentRef.setInput('value', value as any);
-
-    fixture.detectChanges();
-
-    return { component, fixture };
-  };
-
-  const makeComponentWithLabelDisplay = (
+  const makeComponent = (
     value: unknown,
-    labelDisplay: unknown,
+    fieldDefinition: Partial<FieldDefinition> = {},
+    customLuigiClient?: LuigiClient,
   ) => {
+    mockLuigiClient = customLuigiClient || createMockLuigiClient();
     fixture = TestBed.createComponent(ValueCellComponent);
     component = fixture.componentInstance;
 
-    fixture.componentRef.setInput('value', value as any);
-    fixture.componentRef.setInput('labelDisplay', labelDisplay as any);
+    const resource: Resource = {
+      metadata: { name: 'test-resource' },
+      spec: { value },
+    } as any;
+
+    const field: FieldDefinition = {
+      property: 'spec.value',
+      ...fieldDefinition,
+    };
+
+    fixture.componentRef.setInput('resource', resource);
+    fixture.componentRef.setInput('fieldDefinition', field);
+    fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
 
     fixture.detectChanges();
 
@@ -35,7 +53,15 @@ describe('ValueCellComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ValueCellComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    }).overrideComponent(ValueCellComponent, {
+      set: {
+        imports: [
+          BooleanValueComponent,
+          LinkValueComponent,
+          SecretValueComponent,
+        ],
+        schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      },
     });
   });
 
@@ -45,7 +71,9 @@ describe('ValueCellComponent', () => {
   });
 
   it('should render boolean-value component for boolean-like values', () => {
-    const { fixture } = makeComponent('true');
+    const { fixture } = makeComponent('true', {
+      uiSettings: { displayAs: 'boolIcon' },
+    });
     const compiled = fixture.nativeElement;
 
     expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -54,7 +82,9 @@ describe('ValueCellComponent', () => {
   });
 
   it('should render boolean-value component for false boolean-like values', () => {
-    const { fixture } = makeComponent('false');
+    const { fixture } = makeComponent('false', {
+      uiSettings: { displayAs: 'boolIcon' },
+    });
     const compiled = fixture.nativeElement;
 
     expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -63,7 +93,9 @@ describe('ValueCellComponent', () => {
   });
 
   it('should render boolean-value component for actual boolean values', () => {
-    const { fixture } = makeComponent(true);
+    const { fixture } = makeComponent(true, {
+      uiSettings: { displayAs: 'boolIcon' },
+    });
     const compiled = fixture.nativeElement;
 
     expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -72,7 +104,9 @@ describe('ValueCellComponent', () => {
   });
 
   it('should render link-value component for valid URLs', () => {
-    const { fixture } = makeComponent('https://example.com');
+    const { fixture } = makeComponent('https://example.com', {
+      uiSettings: { displayAs: 'link' },
+    });
     const compiled = fixture.nativeElement;
 
     expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -81,7 +115,9 @@ describe('ValueCellComponent', () => {
   });
 
   it('should render link-value component for valid URLs with different protocols', () => {
-    const { fixture } = makeComponent('http://test.com');
+    const { fixture } = makeComponent('http://test.com', {
+      uiSettings: { displayAs: 'link' },
+    });
     const compiled = fixture.nativeElement;
 
     expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -120,7 +156,9 @@ describe('ValueCellComponent', () => {
   });
 
   it('should render plain text for invalid URLs', () => {
-    const { fixture } = makeComponent('not-a-url');
+    const { fixture } = makeComponent('not-a-url', {
+      uiSettings: { displayAs: 'link' },
+    });
     const compiled = fixture.nativeElement;
 
     expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
@@ -149,83 +187,270 @@ describe('ValueCellComponent', () => {
   });
 
   describe('labelDisplay functionality', () => {
-    it('should render label-value component when labelDisplay is an object', () => {
+    it('should apply label styles when labelDisplay is an object', () => {
       const labelDisplay = { backgroundColor: '#ffffff', color: '#000000' };
-      const { fixture } = makeComponentWithLabelDisplay(
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay },
+      });
+      const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
+
+      expect(span.classList.contains('label-value')).toBe(true);
+      expect(component.labelDisplay()).toEqual(labelDisplay);
+    });
+
+    it('should apply label-value class when labelDisplay is true', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay: true },
+      });
+      const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
+
+      expect(span.classList.contains('label-value')).toBe(true);
+      expect(component.labelDisplay()).toEqual({});
+    });
+
+    it('should not apply label-value class when labelDisplay is false', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay: false },
+      });
+      const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
+
+      expect(span.classList.contains('label-value')).toBe(false);
+      expect(component.labelDisplay()).toBeUndefined();
+    });
+
+    it('should not apply label-value class when labelDisplay is undefined', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { labelDisplay: undefined },
+      });
+      const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
+
+      expect(span.classList.contains('label-value')).toBe(false);
+      expect(component.labelDisplay()).toBeUndefined();
+    });
+  });
+
+  describe('displayAs secret functionality', () => {
+    it('should render secret-value component when displayAs is secret', () => {
+      const { fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      expect(compiled.querySelector('wc-secret-value')).toBeTruthy();
+      expect(component.displayAs()).toBe('secret');
+    });
+
+    it('should not render secret-value component when displayAs is not secret', () => {
+      const { fixture } = makeComponent('plain-text', {
+        uiSettings: { displayAs: 'link' },
+      });
+      const compiled = fixture.nativeElement;
+
+      expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
+      expect(component.displayAs()).toBe('link');
+    });
+
+    it('should not render secret-value component when displayAs is undefined', () => {
+      const { fixture } = makeComponent('plain-text');
+      const compiled = fixture.nativeElement;
+
+      expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
+      expect(component.displayAs()).toBeUndefined();
+    });
+
+    it('should render toggle icon when displayAs is secret', () => {
+      const { fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      const toggleIcon = compiled.querySelector('ui5-icon.toggle-icon');
+      expect(toggleIcon).toBeTruthy();
+    });
+
+    it('should not render toggle icon when displayAs is not secret', () => {
+      const { fixture } = makeComponent('plain-text', {
+        uiSettings: { displayAs: 'link' },
+      });
+      const compiled = fixture.nativeElement;
+
+      const toggleIcon = compiled.querySelector('ui5-icon.toggle-icon');
+      expect(toggleIcon).toBeFalsy();
+    });
+
+    it('should initialize isVisible as false', () => {
+      const { component } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+
+      expect(component.isVisible()).toBe(false);
+    });
+
+    it('should toggle visibility when icon is clicked', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      expect(component.isVisible()).toBe(false);
+
+      const icon = compiled.querySelector('ui5-icon.toggle-icon');
+      icon?.click();
+      fixture.detectChanges();
+
+      expect(component.isVisible()).toBe(true);
+    });
+
+    it('should toggle back to hidden when icon is clicked again', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      const icon = compiled.querySelector('ui5-icon.toggle-icon');
+
+      icon?.click();
+      fixture.detectChanges();
+      expect(component.isVisible()).toBe(true);
+
+      icon?.click();
+      fixture.detectChanges();
+      expect(component.isVisible()).toBe(false);
+    });
+
+    it('should stop event propagation when toggle icon is clicked', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+
+      const event = new Event('click');
+      const stopPropagationSpy = jest.spyOn(event, 'stopPropagation');
+
+      component.toggleVisibility(event);
+      fixture.detectChanges();
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+    });
+
+    it('should pass isVisible state to secret-value component', () => {
+      const { component, fixture } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+      const compiled = fixture.nativeElement;
+
+      component.isVisible.set(true);
+      fixture.detectChanges();
+
+      const secretValueComponent = compiled.querySelector('wc-secret-value');
+      expect(secretValueComponent).toBeTruthy();
+    });
+  });
+
+  describe('withCopyButton functionality', () => {
+    it('should render copy button when withCopyButton is true', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { withCopyButton: true },
+      });
+      const compiled = fixture.nativeElement;
+
+      expect(compiled.querySelector('ui5-icon[name="copy"]')).toBeTruthy();
+      expect(component.withCopyButton()).toBe(true);
+    });
+
+    it('should not render copy button when withCopyButton is false', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { withCopyButton: false },
+      });
+      const compiled = fixture.nativeElement;
+
+      expect(compiled.querySelector('ui5-icon[name="copy"]')).toBeFalsy();
+      expect(component.withCopyButton()).toBe(false);
+    });
+
+    it('should not render copy button when withCopyButton is undefined', () => {
+      const { fixture } = makeComponent('test-value');
+      const compiled = fixture.nativeElement;
+
+      expect(compiled.querySelector('ui5-icon[name="copy"]')).toBeFalsy();
+      expect(component.withCopyButton()).toBeUndefined();
+    });
+
+    it('should copy value to clipboard when copy button is clicked', async () => {
+      const writeTextSpy = jest.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextSpy } });
+
+      const showAlertSpy = jest.fn();
+      const customLuigiClient = createMockLuigiClient(showAlertSpy);
+      const { fixture } = makeComponent(
         'test-value',
-        labelDisplay,
+        { uiSettings: { withCopyButton: true } },
+        customLuigiClient,
       );
-      const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual(labelDisplay);
+      const compiled = fixture.nativeElement;
+      const copyButton = compiled.querySelector('ui5-icon[name="copy"]');
+
+      const event = new Event('click');
+      copyButton.dispatchEvent(event);
+      fixture.detectChanges();
+
+      expect(writeTextSpy).toHaveBeenCalledWith('test-value');
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Copied to clipboard',
+        type: 'success',
+        closeAfter: 2000,
+      });
     });
 
-    it('should render label-value component when labelDisplay is true', () => {
-      const { fixture } = makeComponentWithLabelDisplay('test-value', true);
+    it('should stop event propagation when copy button is clicked', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { withCopyButton: true },
+      });
+      const compiled = fixture.nativeElement;
+      const copyButton = compiled.querySelector('ui5-icon[name="copy"]');
+
+      const event = new Event('click');
+      const stopPropagationSpy = jest.spyOn(event, 'stopPropagation');
+
+      component.copyValue(event);
+      fixture.detectChanges();
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('displayAs plainText functionality', () => {
+    it('should render plain text when displayAs is undefined', () => {
+      const { fixture } = makeComponent('test-value', {
+        uiSettings: { displayAs: undefined },
+      });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual({});
+      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
+      expect(compiled.textContent.trim()).toContain('test-value');
     });
 
-    it('should not render label-value component when labelDisplay is false', () => {
-      const { fixture } = makeComponentWithLabelDisplay('test-value', false);
+    it('should not render plain text when displayAs is not plainText', () => {
+      const { fixture } = makeComponent('https://example.com', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-      expect(component.isLabelValue()).toBe(false);
-      expect(component.labelDisplayValue()).toBeUndefined();
-    });
-
-    it('should not render label-value component when labelDisplay is undefined', () => {
-      const { fixture } = makeComponentWithLabelDisplay(
-        'test-value',
-        undefined,
-      );
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-      expect(component.isLabelValue()).toBe(false);
-      expect(component.labelDisplayValue()).toBeUndefined();
-    });
-
-    it('should not render label-value component when labelDisplay is null', () => {
-      const { fixture } = makeComponentWithLabelDisplay('test-value', null);
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-      expect(component.isLabelValue()).toBe(false);
-      expect(component.labelDisplayValue()).toBeUndefined();
-    });
-
-    it('should render label-value component when labelDisplay is a string', () => {
-      const { fixture } = makeComponentWithLabelDisplay(
-        'test-value',
-        'some-string',
-      );
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual({});
-    });
-
-    it('should render label-value component when labelDisplay is a number', () => {
-      const { fixture } = makeComponentWithLabelDisplay('test-value', 42);
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
-      expect(component.isLabelValue()).toBe(true);
-      expect(component.labelDisplayValue()).toEqual({});
+      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
     });
   });
 
   describe('boolean normalization edge cases', () => {
     it('should handle boolean true value', () => {
-      const { fixture } = makeComponent(true);
+      const { fixture } = makeComponent(true, {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -234,7 +459,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle boolean false value', () => {
-      const { fixture } = makeComponent(false);
+      const { fixture } = makeComponent(false, {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -243,7 +470,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle string "True" (capitalized)', () => {
-      const { fixture } = makeComponent('True');
+      const { fixture } = makeComponent('True', {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -252,7 +481,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle string "FALSE" (uppercase)', () => {
-      const { fixture } = makeComponent('FALSE');
+      const { fixture } = makeComponent('FALSE', {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -261,7 +492,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle string "TRUE" (uppercase)', () => {
-      const { fixture } = makeComponent('TRUE');
+      const { fixture } = makeComponent('TRUE', {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -270,7 +503,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should not treat "yes" as boolean', () => {
-      const { fixture } = makeComponent('yes');
+      const { fixture } = makeComponent('yes', {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
@@ -307,7 +542,9 @@ describe('ValueCellComponent', () => {
 
     it('should handle object with toString method returning "true"', () => {
       const obj = { toString: () => 'true' };
-      const { fixture } = makeComponent(obj);
+      const { fixture } = makeComponent(obj, {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -317,7 +554,9 @@ describe('ValueCellComponent', () => {
 
     it('should handle object with toString method returning "false"', () => {
       const obj = { toString: () => 'false' };
-      const { fixture } = makeComponent(obj);
+      const { fixture } = makeComponent(obj, {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
@@ -328,7 +567,9 @@ describe('ValueCellComponent', () => {
 
   describe('URL validation edge cases', () => {
     it('should handle valid HTTPS URL', () => {
-      const { fixture } = makeComponent('https://example.com');
+      const { fixture } = makeComponent('https://example.com', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -337,7 +578,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle valid HTTP URL', () => {
-      const { fixture } = makeComponent('http://example.com');
+      const { fixture } = makeComponent('http://example.com', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -346,7 +589,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle valid FTP URL', () => {
-      const { fixture } = makeComponent('ftp://example.com');
+      const { fixture } = makeComponent('ftp://example.com', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -355,7 +600,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle valid URL with port', () => {
-      const { fixture } = makeComponent('https://example.com:8080');
+      const { fixture } = makeComponent('https://example.com:8080', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -364,7 +611,12 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle valid URL with path', () => {
-      const { fixture } = makeComponent('https://example.com/path/to/resource');
+      const { fixture } = makeComponent(
+        'https://example.com/path/to/resource',
+        {
+          uiSettings: { displayAs: 'link' },
+        },
+      );
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -377,6 +629,9 @@ describe('ValueCellComponent', () => {
     it('should handle valid URL with query parameters', () => {
       const { fixture } = makeComponent(
         'https://example.com?param=value&other=test',
+        {
+          uiSettings: { displayAs: 'link' },
+        },
       );
       const compiled = fixture.nativeElement;
 
@@ -388,7 +643,9 @@ describe('ValueCellComponent', () => {
     });
 
     it('should handle valid URL with fragment', () => {
-      const { fixture } = makeComponent('https://example.com#section');
+      const { fixture } = makeComponent('https://example.com#section', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -412,16 +669,20 @@ describe('ValueCellComponent', () => {
       expect(component.isUrlValue()).toBe(false);
     });
 
-    it('should not treat "mailto:test@example.com" as valid URL for link component', () => {
-      const { fixture } = makeComponent('mailto:test@example.com');
+    it('should treat "mailto:test@example.com" as valid URL for link component', () => {
+      const { fixture } = makeComponent('mailto:test@example.com', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
     });
 
-    it('should not treat "tel:+1234567890" as valid URL for link component', () => {
-      const { fixture } = makeComponent('tel:+1234567890');
+    it('should treat "tel:+1234567890" as valid URL for link component', () => {
+      const { fixture } = makeComponent('tel:+1234567890', {
+        uiSettings: { displayAs: 'link' },
+      });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-link-value')).toBeTruthy();
@@ -505,54 +766,25 @@ describe('ValueCellComponent', () => {
 
   describe('complex scenarios', () => {
     it('should prioritize boolean over URL when both are valid', () => {
-      const { fixture } = makeComponent('true');
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-    });
-
-    it('should prioritize boolean over label when both are valid', () => {
-      const { fixture } = makeComponentWithLabelDisplay('true', {
-        backgroundColor: '#ffffff',
+      const { fixture } = makeComponent('true', {
+        uiSettings: { displayAs: 'boolIcon' },
       });
       const compiled = fixture.nativeElement;
 
       expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
       expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-    });
-
-    it('should prioritize URL over label when both are valid', () => {
-      const { fixture } = makeComponentWithLabelDisplay('https://example.com', {
-        backgroundColor: '#ffffff',
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
-    });
-
-    it('should render label when boolean and URL are not valid but labelDisplay is provided', () => {
-      const { fixture } = makeComponentWithLabelDisplay('some-text', {
-        backgroundColor: '#ffffff',
-      });
-      const compiled = fixture.nativeElement;
-
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeTruthy();
     });
 
     it('should render plain text when no special rendering is needed', () => {
-      const { fixture } = makeComponentWithLabelDisplay('some-text', false);
+      const { fixture } = makeComponent('some-text', {
+        uiSettings: { labelDisplay: false },
+      });
       const compiled = fixture.nativeElement;
+      const span = compiled.querySelector('span');
 
       expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
       expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-label-value')).toBeFalsy();
+      expect(span.classList.contains('label-value')).toBe(false);
       expect(compiled.textContent.trim()).toBe('some-text');
     });
   });

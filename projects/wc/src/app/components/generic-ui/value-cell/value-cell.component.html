@@ -1,14 +1,32 @@
-@if (displayAsPlainText()) {
-  {{ value() }}
-} @else {
-  @if (isBoolLike()) {
+@let displayType = displayAs();
+<span [class.label-value]="labelDisplay()" [style]="{
+  backgroundColor: labelDisplay()?.backgroundColor,
+  color: labelDisplay()?.color,
+  fontWeight: labelDisplay()?.fontWeight,
+  fontStyle: labelDisplay()?.fontStyle,
+  textDecoration: labelDisplay()?.textDecoration,
+  textTransform: labelDisplay()?.textTransform,
+}">
+  @if (displayType === 'secret') {
+    <wc-secret-value [value]="value()" [isVisible]="isVisible()"></wc-secret-value>
+  } @else if (displayType === 'boolIcon' && isBoolLike()) {
     <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
-  } @else if (isUrlValue()) {
+  } @else if (displayType === 'link' && isUrlValue()) {
     <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
-  } @else if (isLabelValue()) {
-    <wc-label-value [labelDisplay]="labelDisplayValue()!" [value]="value()"></wc-label-value>
-  }
-  @else {
+  } @else {
     {{ value() }}
   }
+</span>
+
+@if (displayType === 'secret') {
+  <ui5-icon
+    class="toggle-icon"
+    [name]="isVisible() ? 'hide' : 'show'"
+    (click)="toggleVisibility($event)"
+  ></ui5-icon>
+}
+
+@if (withCopyButton()) {
+  <ui5-icon class="toggle-icon" (click)="copyValue($event)" name="copy">
+  </ui5-icon>
 }
