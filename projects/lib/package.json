@@ -12,22 +12,6 @@
   },
   "prettier": "@openmfp/config-prettier",
   "peerDependencies": {
-    "@openmfp/portal-ui-lib": "0.183.14",
-    "@angular/common": "20.3.9",
-    "@angular/compiler": "20.3.9",
-    "@angular/core": "20.3.9",
-    "@angular/elements": "20.3.9",
-    "@angular/forms": "20.3.9",
-    "@angular/platform-browser": "20.3.9",
-    "@angular/platform-browser-dynamic": "20.3.9",
-    "@angular/router": "20.3.9",
-    "@ui5/webcomponents-ngx": "0.5.6",
-    "apollo-angular": "11.0.0",
-    "gql-query-builder": "3.8.0",
-    "graphql": "16.12.0",
-    "graphql-sse": "2.6.0",
-    "rxjs": "7.8.2",
-    "zone.js": "0.15.1",
-    "jsonpath": "1.1.1"
+    "@openmfp/portal-ui-lib": "0.183.14"
   }
 }
