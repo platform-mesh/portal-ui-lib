@@ -55,6 +55,9 @@ describe('ListViewComponent', () => {
           listView: {
             fields: [],
           },
+          detailView: {
+            fields: [],
+          },
         },
       },
     })) as any;
@@ -126,6 +129,59 @@ describe('ListViewComponent', () => {
 
     component.navigateToResource(resource as any);
     expect(navSpy).toHaveBeenCalledWith('res1');
+  });
+
+  it('should not navigate when detailView is not defined', () => {
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          listView: {
+            fields: [],
+          },
+        },
+      },
+    })) as any;
+
+    const resource = { metadata: { name: 'res1' } };
+    const navSpy = jest.fn();
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        navigate: navSpy,
+      }),
+    })) as any;
+
+    newComponent.navigateToResource(resource as any);
+    expect(navSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not navigate when ui is not defined', () => {
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+      },
+    })) as any;
+
+    const resource = { metadata: { name: 'res1' } };
+    const navSpy = jest.fn();
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        navigate: navSpy,
+      }),
+    })) as any;
+
+    newComponent.navigateToResource(resource as any);
+    expect(navSpy).not.toHaveBeenCalled();
   });
 
   it('should open create resource modal', () => {
