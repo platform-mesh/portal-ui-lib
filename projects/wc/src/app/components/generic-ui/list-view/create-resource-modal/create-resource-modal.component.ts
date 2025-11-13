@@ -3,6 +3,7 @@ import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 import { ResourceFieldNames } from './create-resource-modal.enums';
 import {
+  ChangeDetectionStrategy,
   Component,
   OnInit,
   ViewEncapsulation,
@@ -55,6 +56,7 @@ import { set } from 'lodash';
   templateUrl: './create-resource-modal.component.html',
   styleUrl: './create-resource-modal.component.scss',
   encapsulation: ViewEncapsulation.ShadowDom,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateResourceModalComponent implements OnInit {
   fields = input<FieldDefinition[]>([]);

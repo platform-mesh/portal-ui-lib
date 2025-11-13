@@ -1,5 +1,12 @@
 import { OrganizationManagementComponent } from '../organization-management/organization-management.component';
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
@@ -45,6 +52,7 @@ interface Header {
       }
     `,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WelcomeComponent implements OnInit {
   private i18nService = inject(I18nService);

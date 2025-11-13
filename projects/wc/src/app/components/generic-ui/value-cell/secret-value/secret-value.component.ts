@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 @Component({
   selector: 'wc-secret-value',
@@ -6,6 +6,7 @@ import { Component, computed, input } from '@angular/core';
   schemas: [],
   templateUrl: './secret-value.component.html',
   styleUrl: './secret-value.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SecretValueComponent {
   value = input.required<string>();
