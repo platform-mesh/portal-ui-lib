@@ -169,6 +169,11 @@ export class ListViewComponent implements OnInit {
   }
 
   navigateToResource(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+    if (!resourceDefinition.ui?.detailView) {
+      return;
+    }
+
     if (!resource.metadata.name) {
       this.LuigiClient().uxManager().showAlert({
         text: 'Resource name is not defined',
