@@ -1,6 +1,13 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
+  "schematics": {
+    "@schematics/angular:component": {
+      "changeDetection": "OnPush",
+      "style": "scss",
+      "type": "Component"
+    }
+  },
   "newProjectRoot": "projects",
   "projects": {
     "lib": {

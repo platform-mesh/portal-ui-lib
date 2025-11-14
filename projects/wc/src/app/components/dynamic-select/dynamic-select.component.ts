@@ -1,4 +1,13 @@
-import { Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -9,15 +18,16 @@ import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import { OptionComponent, SelectComponent } from '@ui5/webcomponents-ngx';
 import { Observable, map } from 'rxjs';
 
-
 @Component({
   selector: 'dynamic-select',
   imports: [SelectComponent, OptionComponent],
   templateUrl: './dynamic-select.component.html',
   styleUrl: './dynamic-select.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicSelectComponent {
-  dynamicValuesDefinition = input.required<NonNullable<FieldDefinition['dynamicValuesDefinition']>>();
+  dynamicValuesDefinition =
+    input.required<NonNullable<FieldDefinition['dynamicValuesDefinition']>>();
   context = input.required<ResourceNodeContext>();
 
   value = input<string>('');
