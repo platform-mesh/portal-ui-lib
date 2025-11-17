@@ -12,6 +12,6 @@
   },
   "prettier": "@openmfp/config-prettier",
   "peerDependencies": {
-    "@openmfp/portal-ui-lib": "0.183.14"
+    "@openmfp/portal-ui-lib": "0.184.0"
   }
 }
