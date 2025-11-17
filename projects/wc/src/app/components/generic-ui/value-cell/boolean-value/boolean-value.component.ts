@@ -25,6 +25,7 @@ export type IconDesignType =
 })
 export class BooleanValueComponent {
   boolValue = input.required<boolean>();
+  testId = input<string>('boolean-value-icon');
   iconDesign = computed<IconDesignType>(() => {
     return this.boolValue() ? ICON_DESIGN_POSITIVE : ICON_DESIGN_NEGATIVE;
   });

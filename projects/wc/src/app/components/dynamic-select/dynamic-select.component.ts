@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   input,
@@ -41,6 +42,11 @@ export class DynamicSelectComponent {
   blur = output<void>();
 
   dynamicValues$ = signal<{ value: string; key: string }[]>([]);
+  testId = computed(() => {
+    const definition = this.dynamicValuesDefinition();
+    const operation = definition.operation?.trim();
+    return operation ? `dynamic-select-${operation}` : 'dynamic-select';
+  });
 
   private resourceService = inject(ResourceService);
   private destroyRef = inject(DestroyRef);
@@ -53,6 +59,14 @@ export class DynamicSelectComponent {
           this.dynamicValues$.set(result);
         });
     });
+  }
+
+  optionTestId(value: string | null | undefined): string {
+    const normalizedValue = value?.toString().trim();
+    if (normalizedValue) {
+      return `${this.testId()}-option-${normalizedValue}`;
+    }
+    return `${this.testId()}-option-empty`;
   }
 
   private getDynamicValues(

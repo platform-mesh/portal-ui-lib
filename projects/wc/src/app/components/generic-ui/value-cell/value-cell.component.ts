@@ -51,6 +51,7 @@ export class ValueCellComponent {
 
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
+  testId = computed(() => `value-cell-${this.fieldDefinition().property}`);
 
   boolValue = computed(() => this.normalizeBoolean(this.value()));
   stringValue = computed(() => this.normalizeString(this.value()));
