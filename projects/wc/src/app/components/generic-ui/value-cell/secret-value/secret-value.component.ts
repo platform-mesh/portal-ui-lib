@@ -11,5 +11,6 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 export class SecretValueComponent {
   value = input.required<string>();
   isVisible = input<boolean>(false);
+  testId = input<string>('secret-value');
   maskedValue = computed(() => '*'.repeat(this.value().length || 8));
 }
