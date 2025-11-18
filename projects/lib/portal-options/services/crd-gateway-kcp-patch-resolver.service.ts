@@ -14,7 +14,7 @@ export class CrdGatewayKcpPatchResolver {
     entityId?: string,
     kind?: string,
   ) {
-    if (nextNode.context.kcpPath) {
+    if (nextNode.context?.kcpPath) {
       this.gatewayService.updateCrdGatewayUrlWithEntityPath(
         nextNode.context.kcpPath,
       );
