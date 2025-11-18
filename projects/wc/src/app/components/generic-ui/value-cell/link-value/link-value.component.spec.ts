@@ -96,4 +96,21 @@ describe('LinkValueComponent', () => {
 
     expect(linkElement).toBeTruthy();
   });
+
+  it('should have default testId', () => {
+    const { component } = makeComponent('https://example.com');
+    expect(component.testId()).toBe('link-value-link');
+  });
+
+  it('should accept custom testId', () => {
+    fixture = TestBed.createComponent(LinkValueComponent);
+    component = fixture.componentInstance;
+
+    fixture.componentRef.setInput('urlValue', 'https://example.com');
+    fixture.componentRef.setInput('testId', 'custom-link-test-id');
+
+    fixture.detectChanges();
+
+    expect(component.testId()).toBe('custom-link-test-id');
+  });
 });

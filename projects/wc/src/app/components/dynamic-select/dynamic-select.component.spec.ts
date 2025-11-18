@@ -66,4 +66,132 @@ describe('DynamicSelectComponent', () => {
       { value: '2', key: 'Second' },
     ]);
   });
+
+  it('should generate testId with operation name', () => {
+    const fieldDefinition = {
+      operation: 'getData',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
+    mockResourceService.list.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.testId()).toBe('dynamic-select-getData');
+  });
+
+  it('should generate default testId without operation name', () => {
+    const fieldDefinition = {
+      operation: '',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
+    mockResourceService.list.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.testId()).toBe('dynamic-select');
+  });
+
+  it('should generate optionTestId with value', () => {
+    const fieldDefinition = {
+      operation: 'getData',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
+    mockResourceService.list.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.optionTestId('option1')).toBe(
+      'dynamic-select-getData-option-option1',
+    );
+  });
+
+  it('should generate optionTestId for empty value', () => {
+    const fieldDefinition = {
+      operation: 'getData',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
+    mockResourceService.list.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.optionTestId('')).toBe(
+      'dynamic-select-getData-option-empty',
+    );
+  });
+
+  it('should generate optionTestId for null value', () => {
+    const fieldDefinition = {
+      operation: 'getData',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
+    mockResourceService.list.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.optionTestId(null)).toBe(
+      'dynamic-select-getData-option-empty',
+    );
+  });
+
+  it('should generate optionTestId for undefined value', () => {
+    const fieldDefinition = {
+      operation: 'getData',
+      gqlQuery: '{ someQuery }',
+      key: 'name',
+      value: 'id',
+    };
+
+    const context = { id: 'ctx' };
+
+    fixture.componentRef.setInput('dynamicValuesDefinition', fieldDefinition);
+    fixture.componentRef.setInput('context', context);
+
+    mockResourceService.list.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+
+    expect(component.optionTestId(undefined)).toBe(
+      'dynamic-select-getData-option-empty',
+    );
+  });
 });

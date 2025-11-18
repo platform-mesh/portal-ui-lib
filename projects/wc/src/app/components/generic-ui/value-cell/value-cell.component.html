@@ -1,5 +1,5 @@
 @let displayType = displayAs();
-<span [class.label-value]="labelDisplay()" [style]="{
+<span [attr.test-id]="testId()" [class.label-value]="labelDisplay()" [style]="{
   backgroundColor: labelDisplay()?.backgroundColor,
   color: labelDisplay()?.color,
   fontWeight: labelDisplay()?.fontWeight,
@@ -8,11 +8,21 @@
   textTransform: labelDisplay()?.textTransform,
 }">
   @if (displayType === 'secret') {
-    <wc-secret-value [value]="value()" [isVisible]="isVisible()"></wc-secret-value>
+    <wc-secret-value
+    [testId]="testId() + '-secret'"
+    [value]="value()"
+    [isVisible]="isVisible()"
+    ></wc-secret-value>
   } @else if (displayType === 'boolIcon' && isBoolLike()) {
-    <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
+    <wc-boolean-value
+    [testId]="testId() + '-boolean'"
+    [boolValue]="boolValue()!"
+    ></wc-boolean-value>
   } @else if (displayType === 'link' && isUrlValue()) {
-    <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
+    <wc-link-value
+    [testId]="testId() + '-link'"
+    [urlValue]="stringValue()!"
+    ></wc-link-value>
   } @else {
     {{ value() }}
   }
@@ -20,6 +30,7 @@
 
 @if (displayType === 'secret') {
   <ui5-icon
+    [attr.test-id]="testId() + '-secret-toggle'"
     class="toggle-icon"
     [name]="isVisible() ? 'hide' : 'show'"
     (click)="toggleVisibility($event)"
@@ -27,6 +38,11 @@
 }
 
 @if (withCopyButton()) {
-  <ui5-icon class="toggle-icon" (click)="copyValue($event)" name="copy">
+  <ui5-icon
+    [attr.test-id]="testId() + '-copy'"
+    class="toggle-icon"
+    (click)="copyValue($event)"
+    name="copy"
+  >
   </ui5-icon>
 }

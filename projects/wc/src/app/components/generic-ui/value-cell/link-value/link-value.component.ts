@@ -10,6 +10,7 @@ import { LinkComponent } from '@ui5/webcomponents-ngx';
 })
 export class LinkValueComponent {
   urlValue = input.required<string>();
+  testId = input<string>('link-value-link');
 
   public stopPropagation(event: Event) {
     event.stopPropagation();

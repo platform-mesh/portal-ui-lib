@@ -168,4 +168,21 @@ describe('SecretValueComponent', () => {
     const secretSpan = compiled.querySelector('.secret-value');
     expect(secretSpan?.textContent?.trim()).toBe('updated-secret');
   });
+
+  it('should have default testId', () => {
+    const { component } = makeComponent('test-secret');
+    expect(component.testId()).toBe('secret-value');
+  });
+
+  it('should accept custom testId', () => {
+    fixture = TestBed.createComponent(SecretValueComponent);
+    component = fixture.componentInstance;
+
+    fixture.componentRef.setInput('value', 'test-secret');
+    fixture.componentRef.setInput('testId', 'custom-secret-test-id');
+
+    fixture.detectChanges();
+
+    expect(component.testId()).toBe('custom-secret-test-id');
+  });
 });
