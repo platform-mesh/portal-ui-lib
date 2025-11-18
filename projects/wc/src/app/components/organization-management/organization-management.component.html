@@ -1,9 +1,9 @@
-<div class="organization-management">
-  <div>
+<div test-id="organization-management" class="organization-management">
+  <div test-id="organization-management-explanation">
     {{ texts.explanation }}
   </div>
 
-  <div>
+  <div test-id="organization-management-switch-section">
     <ui5-label for="select-switch" show-colon>{{
       texts.switchOrganization.label
     }}</ui5-label
@@ -12,6 +12,7 @@
       @let newOrganization = organizationToSwitch();
       <ui5-select
         id="select-switch"
+        test-id="organization-management-select"
         [value]="newOrganization?.name ?? ''"
         (ui5Change)="setOrganizationToSwitch($event)"
       >
@@ -20,11 +21,12 @@
             class="option"
             [tooltip]="org.ready ? undefined : texts.switchOrganization.tooltip"
             [value]="org.name"
+            [attr.test-id]="'organization-management-option-' + org.name"
           >
             <div class="option">
               <span>{{org.name}}</span>
               @if(!org.ready) {
-                <ui5-icon name="alert" design="Critical"></ui5-icon>
+                <ui5-icon [attr.test-id]="'organization-management-option-' + org.name + '-alert'" name="alert" design="Critical"></ui5-icon>
               }
             </div>
           </ui5-option>
@@ -33,12 +35,13 @@
         <div slot="label" class="option">
           <span>{{newOrganization?.name}}</span>
           @if(newOrganization && !newOrganization?.ready) {
-            <ui5-icon name="alert" design="Critical"></ui5-icon>
+            <ui5-icon test-id="organization-management-select-alert" name="alert" design="Critical"></ui5-icon>
           }
         </div>
 
       </ui5-select>
       <ui5-button
+        test-id="organization-management-switch-button"
         [tooltip]="newOrganization?.ready ? undefined : texts.switchOrganization.tooltip"
         [disabled]="!newOrganization || !newOrganization?.ready"
         design="Emphasized"
@@ -49,7 +52,7 @@
     </div>
   </div>
 
-  <div>
+  <div test-id="organization-management-onboard-section">
     <ui5-label for="input-onboard" show-colon>{{
       texts.onboardOrganization.label
     }}</ui5-label
@@ -57,6 +60,7 @@
     <div class="organization-management-input">
         <ui5-input
           id="input-onboard"
+          test-id="organization-management-input"
           placeholder="{{ texts.onboardOrganization.placeholder }}"
           [formControl]="newOrganizationControl"
           [valueState]="getValueState(newOrganizationControl)"
@@ -65,7 +69,12 @@
             <a href="{{ k8sMessages.RFC_1035.href }}" target="_blank">{{ k8sMessages.RFC_1035.message }}</a>
           </div>
       </ui5-input>
-      <ui5-button [disabled]="newOrganizationControl.invalid" design="Emphasized" (ui5Click)="onboardOrganization()">{{
+      <ui5-button
+        test-id="organization-management-onboard-button"
+        [disabled]="newOrganizationControl.invalid"
+        design="Emphasized"
+        (ui5Click)="onboardOrganization()"
+      >{{
         texts.onboardOrganization.button
       }}</ui5-button>
     </div>

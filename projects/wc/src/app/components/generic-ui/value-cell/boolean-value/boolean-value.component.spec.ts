@@ -99,4 +99,21 @@ describe('BooleanValueComponent', () => {
     const { component } = makeComponent(true);
     expect(component.boolValue()).toBe(true);
   });
+
+  it('should have default testId', () => {
+    const { component } = makeComponent(true);
+    expect(component.testId()).toBe('boolean-value-icon');
+  });
+
+  it('should accept custom testId', () => {
+    fixture = TestBed.createComponent(BooleanValueComponent);
+    component = fixture.componentInstance;
+
+    fixture.componentRef.setInput('boolValue', true);
+    fixture.componentRef.setInput('testId', 'custom-test-id');
+
+    fixture.detectChanges();
+
+    expect(component.testId()).toBe('custom-test-id');
+  });
 });

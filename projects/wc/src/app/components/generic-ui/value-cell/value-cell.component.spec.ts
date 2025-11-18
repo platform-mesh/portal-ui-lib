@@ -788,4 +788,60 @@ describe('ValueCellComponent', () => {
       expect(compiled.textContent.trim()).toBe('some-text');
     });
   });
+
+  describe('testId functionality', () => {
+    it('should generate testId from field property', () => {
+      const { component } = makeComponent('test-value');
+
+      expect(component.testId()).toBe('value-cell-spec.value');
+    });
+
+    it('should generate testId with custom property', () => {
+      mockLuigiClient = createMockLuigiClient();
+      fixture = TestBed.createComponent(ValueCellComponent);
+      component = fixture.componentInstance;
+
+      const resource: Resource = {
+        metadata: { name: 'test-resource' },
+        spec: { password: 'secret-password' },
+      } as any;
+
+      const field: FieldDefinition = {
+        property: 'spec.password',
+        uiSettings: { displayAs: 'secret' },
+      };
+
+      fixture.componentRef.setInput('resource', resource);
+      fixture.componentRef.setInput('fieldDefinition', field);
+      fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
+
+      fixture.detectChanges();
+
+      expect(component.testId()).toBe('value-cell-spec.password');
+    });
+
+    it('should pass testId to boolean component', () => {
+      const { component } = makeComponent('true', {
+        uiSettings: { displayAs: 'boolIcon' },
+      });
+
+      expect(component.testId()).toBe('value-cell-spec.value');
+    });
+
+    it('should pass testId to link component', () => {
+      const { component } = makeComponent('https://example.com', {
+        uiSettings: { displayAs: 'link' },
+      });
+
+      expect(component.testId()).toBe('value-cell-spec.value');
+    });
+
+    it('should pass testId to secret component', () => {
+      const { component } = makeComponent('secret-password', {
+        uiSettings: { displayAs: 'secret' },
+      });
+
+      expect(component.testId()).toBe('value-cell-spec.value');
+    });
+  });
 });
