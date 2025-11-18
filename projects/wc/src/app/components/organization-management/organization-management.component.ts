@@ -19,9 +19,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import {
-  EnvConfigService,
-  I18nService} from '@openmfp/portal-ui-lib';
+import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
   Resource,
   ResourceDefinition,

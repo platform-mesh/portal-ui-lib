@@ -1,12 +1,12 @@
-<ui5-dynamic-page>
+<ui5-dynamic-page test-id="generic-detail-view">
   <ui5-dynamic-page-title slot="titleArea">
 
     <ui5-title slot="heading">
-      <div class="resource-title">
+      <div test-id="generic-detail-view-title" class="resource-title">
         {{ resource()?.spec?.displayName || resourceId() }}
       </div>
     </ui5-title>
-    <ui5-text class="resource-title-subheading" slot="subheading">
+    <ui5-text test-id="generic-detail-view-subtitle" class="resource-title-subheading" slot="subheading">
       The {{ resourceDefinition()?.singular }} for
       {{ resource()?.spec?.displayName || resourceId() }}
     </ui5-text>
@@ -18,6 +18,7 @@
       design="Transparent"
     >
       <ui5-toolbar-button
+        test-id="generic-detail-view-download"
         text="Download kubeconfig"
         icon="download-from-cloud"
         design="Emphasized"
@@ -30,6 +31,7 @@
     <div class="resource-info">
       @if (resourceDefinition()?.ui?.logoUrl) {
         <img
+          test-id="generic-detail-view-logo"
           class="resource-logo"
           src="{{ resourceDefinition()?.ui?.logoUrl }}"
           alt="Logo"
@@ -37,14 +39,14 @@
       }
       <div class="resource-info-cell">
         <ui5-label>Workspace Path</ui5-label>
-        <p>{{ workspacePath() }}</p>
+        <p test-id="generic-detail-view-workspace-path">{{ workspacePath() }}</p>
       </div>
       @if (resource(); as resource) {
         @for (viewField of viewFields(); track viewField.property) {
-          <div class="resource-info-cell">
+          <div class="resource-info-cell" [attr.test-id]="'generic-detail-view-field-' + viewField.property">
             @if(viewField.group) {
-              <ui5-label>{{ viewField.group.label ?? viewField.group.name }}</ui5-label>
-              <p>
+              <ui5-label [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-label'">{{ viewField.group.label ?? viewField.group.name }}</ui5-label>
+              <p [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-value'">
                 @for (field of viewField.group.fields; let last = $last; track field.label) {
                   <span [class.multiline]="viewField.group.multiline ?? true">
                     <span>{{ field.label }}: </span>
@@ -60,8 +62,8 @@
                 }
               </p>
             } @else {
-              <ui5-label>{{ viewField.label }}</ui5-label>
-              <p>
+              <ui5-label [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-label'">{{ viewField.label }}</ui5-label>
+              <p [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-value'">
                 <value-cell
                 [fieldDefinition]="viewField"
                 [resource]="resource"
