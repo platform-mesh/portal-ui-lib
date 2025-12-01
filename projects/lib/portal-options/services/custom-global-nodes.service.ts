@@ -67,7 +67,9 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
             defineEntity: {
               id: 'user',
             },
-            context: {} as PortalNodeContext,
+            context: {
+              userId: ':userId',
+            } as PortalNodeContext,
             children: [
               {
                 pathSegment: 'overview',

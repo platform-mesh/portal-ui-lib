@@ -15,8 +15,8 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
-import { EMPTY, Observable } from 'rxjs';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
+import { EMPTY, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 interface ResourceResponseError extends Record<string, any> {
