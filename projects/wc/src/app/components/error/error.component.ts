@@ -7,6 +7,7 @@ import {
   ViewEncapsulation,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js';
@@ -33,12 +34,12 @@ export class ErrorComponent implements OnInit {
 
   public context = input.required<any>();
 
-  config: ErrorConfig = {
+  config = signal<ErrorConfig>({
     scene: 'UnableToLoad',
     illustratedMessageTitle: '',
     illustratedMessageText: '',
     buttons: [],
-  };
+  });
 
   async ngOnInit() {
     await this.setSceneConfig();
@@ -56,15 +57,15 @@ export class ErrorComponent implements OnInit {
     const nodeContext = this.context();
     switch (+nodeContext.id) {
       case 403: {
-        this.config = await this.getError403Config();
+        this.config.set(await this.getError403Config());
         break;
       }
       case 404: {
-        this.config = await this.getError404Config();
+        this.config.set(await this.getError404Config());
         break;
       }
       default: {
-        this.config = await this.getErrorDefaultConfig();
+        this.config.set(await this.getErrorDefaultConfig());
       }
     }
 

@@ -1,13 +1,14 @@
-@if (config.scene) {
+@let configVM = config();
+@if (configVM.scene) {
     <div class="page">
       <div class="container">
-        <ui5-illustrated-message [name]="config.scene">
-          <ui5-title slot="title" level="H1">{{config.illustratedMessageTitle}}</ui5-title>
+        <ui5-illustrated-message [name]="configVM.scene">
+          <ui5-title slot="title" level="H1">{{configVM.illustratedMessageTitle}}</ui5-title>
           <div slot="subtitle">
-            <p>{{config.illustratedMessageText}}</p>
+            <p>{{configVM.illustratedMessageText}}</p>
           </div>
           <div>
-              @for (button of config.buttons; track button.url) {
+              @for (button of configVM.buttons; track button.url) {
                   <ui5-button
                     design="Transparent"
                     (click)="goTo(button)"
