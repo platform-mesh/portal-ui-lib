@@ -30,7 +30,6 @@ import {
 export class ErrorComponent implements OnInit {
   private i18nService = inject(I18nService);
   private luigiCoreService = inject(LuigiCoreService);
-  private cdr = inject(ChangeDetectorRef);
 
   public context = input.required<any>();
 
@@ -68,8 +67,6 @@ export class ErrorComponent implements OnInit {
         this.config.set(await this.getErrorDefaultConfig());
       }
     }
-
-    this.cdr.markForCheck();
   }
 
   private async getError404Config(): Promise<ErrorConfig> {
