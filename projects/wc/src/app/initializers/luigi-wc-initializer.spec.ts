@@ -4,6 +4,7 @@ import {
   OrganizationManagementComponent,
   WelcomeComponent,
 } from '../components';
+import { ErrorComponent } from '../components/error/error.component';
 import * as wc from '../utils/wc';
 import { provideLuigiWebComponents } from './luigi-wc-initializer';
 import { ApplicationInitStatus } from '@angular/core';
@@ -30,6 +31,7 @@ describe('provideLuigiWebComponents', () => {
       'generic-detail-view': DetailViewComponent,
       'organization-management': OrganizationManagementComponent,
       'welcome-view': WelcomeComponent,
+      'error-component': ErrorComponent,
     } as Record<string, any>;
 
     // Validate first arg equals the components map
