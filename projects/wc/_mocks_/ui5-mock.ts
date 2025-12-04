@@ -41,3 +41,25 @@ jest.mock('@ui5/webcomponents-icons/dist/hide.js', () => ({}), {
 jest.mock('@ui5/webcomponents-icons/dist/show.js', () => ({}), {
   virtual: true,
 });
+
+jest.mock(
+  '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js',
+  () => ({}),
+  {
+    virtual: true,
+  },
+);
+jest.mock(
+  '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js',
+  () => ({}),
+  {
+    virtual: true,
+  },
+);
+jest.mock(
+  '@ui5/webcomponents-fiori/dist/illustrations/tnt/UnsuccessfulAuth.js',
+  () => ({}),
+  {
+    virtual: true,
+  },
+);
