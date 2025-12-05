@@ -18,13 +18,13 @@ interface Header {
 }
 
 @Component({
-  selector: 'app-welcome',
+  selector: 'pm-welcome',
   template: `
     <div class="center-container">
       <img src="{{ header()?.logo }}" width="100" alt="" />
       <div class="message-box">Welcome to the {{ header()?.title }}!</div>
       @if (enhancedContext(); as enhancedContext) {
-        <organization-management
+        <pm-organization-management
           [context]="enhancedContext"
           [LuigiClient]="LuigiClient()"
         />

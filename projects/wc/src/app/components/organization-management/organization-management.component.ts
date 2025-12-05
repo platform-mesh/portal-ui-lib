@@ -42,7 +42,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'organization-management',
+  selector: 'pm-organization-management',
   standalone: true,
   imports: [
     LabelComponent,

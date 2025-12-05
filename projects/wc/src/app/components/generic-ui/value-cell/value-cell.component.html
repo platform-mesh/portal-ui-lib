@@ -8,21 +8,21 @@
   textTransform: labelDisplay()?.textTransform,
 }">
   @if (displayType === 'secret') {
-    <wc-secret-value
+    <pm-secret-value
     [testId]="testId() + '-secret'"
     [value]="value()"
     [isVisible]="isVisible()"
-    ></wc-secret-value>
+    ></pm-secret-value>
   } @else if (displayType === 'boolIcon' && isBoolLike()) {
-    <wc-boolean-value
+    <pm-boolean-value
     [testId]="testId() + '-boolean'"
     [boolValue]="boolValue()!"
-    ></wc-boolean-value>
+    ></pm-boolean-value>
   } @else if (displayType === 'link' && isUrlValue()) {
-    <wc-link-value
+    <pm-link-value
     [testId]="testId() + '-link'"
     [urlValue]="stringValue()!"
-    ></wc-link-value>
+    ></pm-link-value>
   } @else {
     {{ value() }}
   }

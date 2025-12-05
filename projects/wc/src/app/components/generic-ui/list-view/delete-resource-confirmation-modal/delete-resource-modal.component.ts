@@ -29,7 +29,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'delete-resource-modal',
+  selector: 'pm-delete-resource-modal',
   standalone: true,
   imports: [
     ReactiveFormsModule,

@@ -50,7 +50,7 @@
                 @for (field of viewField.group.fields; let last = $last; track field.label) {
                   <span [class.multiline]="viewField.group.multiline ?? true">
                     <span>{{ field.label }}: </span>
-                    <value-cell
+                    <pm-value-cell
                     [fieldDefinition]="field"
                     [resource]="resource"
                     [LuigiClient]="LuigiClient()"
@@ -64,7 +64,7 @@
             } @else {
               <ui5-label [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-label'">{{ viewField.label }}</ui5-label>
               <p [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-value'">
-                <value-cell
+                <pm-value-cell
                 [fieldDefinition]="viewField"
                 [resource]="resource"
                 [LuigiClient]="LuigiClient()"

@@ -20,7 +20,7 @@ import { OptionComponent, SelectComponent } from '@ui5/webcomponents-ngx';
 import { Observable, map } from 'rxjs';
 
 @Component({
-  selector: 'dynamic-select',
+  selector: 'pm-dynamic-select',
   imports: [SelectComponent, OptionComponent],
   templateUrl: './dynamic-select.component.html',
   styleUrl: './dynamic-select.component.scss',
@@ -45,7 +45,7 @@ export class DynamicSelectComponent {
   testId = computed(() => {
     const definition = this.dynamicValuesDefinition();
     const operation = definition.operation?.trim();
-    return operation ? `dynamic-select-${operation}` : 'dynamic-select';
+    return operation ? `pm-dynamic-select-${operation}` : 'pm-dynamic-select';
   });
 
   private resourceService = inject(ResourceService);

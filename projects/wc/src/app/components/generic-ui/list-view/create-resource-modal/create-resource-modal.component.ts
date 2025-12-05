@@ -38,7 +38,7 @@ import {
 import { set } from 'lodash';
 
 @Component({
-  selector: 'create-resource-modal',
+  selector: 'pm-create-resource-modal',
   standalone: true,
   imports: [
     ReactiveFormsModule,

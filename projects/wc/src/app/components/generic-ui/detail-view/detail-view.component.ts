@@ -37,7 +37,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'detail-view',
+  selector: 'pm-detail-view',
   standalone: true,
   imports: [
     DynamicPageComponent,

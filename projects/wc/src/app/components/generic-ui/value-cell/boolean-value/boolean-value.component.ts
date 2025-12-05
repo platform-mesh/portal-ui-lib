@@ -17,7 +17,7 @@ export type IconDesignType =
   | typeof ICON_DESIGN_NEGATIVE;
 
 @Component({
-  selector: 'wc-boolean-value',
+  selector: 'pm-boolean-value',
   imports: [IconComponent],
   templateUrl: './boolean-value.component.html',
   styleUrl: './boolean-value.component.scss',

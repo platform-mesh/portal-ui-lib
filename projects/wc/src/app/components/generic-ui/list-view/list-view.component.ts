@@ -45,7 +45,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'list-view',
+  selector: 'pm-list-view',
   standalone: true,
   templateUrl: './list-view.component.html',
   styleUrls: ['./list-view.component.scss'],

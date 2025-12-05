@@ -44,7 +44,7 @@
       "projectType": "application",
       "root": "projects/wc",
       "sourceRoot": "projects/wc/src",
-      "prefix": "wc",
+      "prefix": "pm",
       "architect": {
         "build": {
           "builder": "ngx-build-plus:browser",

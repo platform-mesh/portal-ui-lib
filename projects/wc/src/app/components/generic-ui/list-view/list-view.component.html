@@ -48,7 +48,7 @@
       <ui5-table-header-cell test-id="generic-list-header-actions" class="actions-column">Actions</ui5-table-header-cell>
     </ui5-table-header-row>
 
-    <ui5-illustrated-message test-id="generic-list-view-nodata" slot="nodata" name="NoData">
+    <ui5-illustrated-message test-id="generic-list-view-nodata" slot="noData" name="NoData">
       <span slot="title">No Resources</span>
       <span slot="subtitle">There are currently no items to show.</span>
     </ui5-illustrated-message>
@@ -87,7 +87,7 @@
               ) {
                 <div [attr.test-id]="'generic-list-cell-' + i + '-' + column.property + '-' + field.property">
                   <span>{{ field.label }}: </span>
-                  <value-cell
+                  <pm-value-cell
                     [fieldDefinition]="field"
                     [resource]="item"
                     [LuigiClient]="LuigiClient()"
@@ -100,11 +100,11 @@
             </ui5-table-cell>
           } @else {
             <ui5-table-cell [attr.test-id]="'generic-list-cell-' + i + '-' + column.property">
-              <value-cell
+              <pm-value-cell
                 [fieldDefinition]="column"
                 [resource]="item"
                 [LuigiClient]="LuigiClient()"
-              />
+                />
             </ui5-table-cell>
           }
         }
@@ -130,7 +130,7 @@
 </ui5-dynamic-page>
 
 @if (hasUiCreateViewFields()) {
-  <create-resource-modal
+  <pm-create-resource-modal
     #createModal
     [fields]="resourceDefinition()?.ui?.createView?.fields ?? []"
     (resource)="create($event)"
@@ -139,7 +139,7 @@
   />
 }
 
-<delete-resource-modal
+<pm-delete-resource-modal
   #deleteModal
   (resource)="delete($event)"
   [context]="context()"

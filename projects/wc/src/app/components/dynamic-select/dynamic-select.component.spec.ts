@@ -84,7 +84,7 @@ describe('DynamicSelectComponent', () => {
 
     fixture.detectChanges();
 
-    expect(component.testId()).toBe('dynamic-select-getData');
+    expect(component.testId()).toBe('pm-dynamic-select-getData');
   });
 
   it('should generate default testId without operation name', () => {
@@ -104,7 +104,7 @@ describe('DynamicSelectComponent', () => {
 
     fixture.detectChanges();
 
-    expect(component.testId()).toBe('dynamic-select');
+    expect(component.testId()).toBe('pm-dynamic-select');
   });
 
   it('should generate optionTestId with value', () => {
@@ -125,7 +125,7 @@ describe('DynamicSelectComponent', () => {
     fixture.detectChanges();
 
     expect(component.optionTestId('option1')).toBe(
-      'dynamic-select-getData-option-option1',
+      'pm-dynamic-select-getData-option-option1',
     );
   });
 
@@ -147,7 +147,7 @@ describe('DynamicSelectComponent', () => {
     fixture.detectChanges();
 
     expect(component.optionTestId('')).toBe(
-      'dynamic-select-getData-option-empty',
+      'pm-dynamic-select-getData-option-empty',
     );
   });
 
@@ -169,7 +169,7 @@ describe('DynamicSelectComponent', () => {
     fixture.detectChanges();
 
     expect(component.optionTestId(null)).toBe(
-      'dynamic-select-getData-option-empty',
+      'pm-dynamic-select-getData-option-empty',
     );
   });
 
@@ -191,7 +191,7 @@ describe('DynamicSelectComponent', () => {
     fixture.detectChanges();
 
     expect(component.optionTestId(undefined)).toBe(
-      'dynamic-select-getData-option-empty',
+      'pm-dynamic-select-getData-option-empty',
     );
   });
 });

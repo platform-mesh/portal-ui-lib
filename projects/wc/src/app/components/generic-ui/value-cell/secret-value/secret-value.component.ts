@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 @Component({
-  selector: 'wc-secret-value',
+  selector: 'pm-secret-value',
   imports: [],
   schemas: [],
   templateUrl: './secret-value.component.html',

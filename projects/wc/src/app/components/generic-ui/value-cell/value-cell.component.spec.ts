@@ -76,7 +76,7 @@ describe('ValueCellComponent', () => {
     });
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
     expect(component.isBoolLike()).toBe(true);
     expect(component.boolValue()).toBe(true);
   });
@@ -87,7 +87,7 @@ describe('ValueCellComponent', () => {
     });
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
     expect(component.isBoolLike()).toBe(true);
     expect(component.boolValue()).toBe(false);
   });
@@ -98,7 +98,7 @@ describe('ValueCellComponent', () => {
     });
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
     expect(component.isBoolLike()).toBe(true);
     expect(component.boolValue()).toBe(true);
   });
@@ -109,7 +109,7 @@ describe('ValueCellComponent', () => {
     });
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+    expect(compiled.querySelector('pm-link-value')).toBeTruthy();
     expect(component.isUrlValue()).toBe(true);
     expect(component.stringValue()).toBe('https://example.com');
   });
@@ -120,7 +120,7 @@ describe('ValueCellComponent', () => {
     });
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+    expect(compiled.querySelector('pm-link-value')).toBeTruthy();
     expect(component.isUrlValue()).toBe(true);
   });
 
@@ -128,8 +128,8 @@ describe('ValueCellComponent', () => {
     const { fixture } = makeComponent('cluster-a');
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-    expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     expect(compiled.textContent.trim()).toBe('cluster-a');
     expect(component.isBoolLike()).toBe(false);
     expect(component.isUrlValue()).toBe(false);
@@ -139,8 +139,8 @@ describe('ValueCellComponent', () => {
     const { fixture } = makeComponent('');
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-    expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     expect(component.isBoolLike()).toBe(false);
     expect(component.isUrlValue()).toBe(false);
   });
@@ -149,8 +149,8 @@ describe('ValueCellComponent', () => {
     const { fixture } = makeComponent('   ');
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-    expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     expect(component.isBoolLike()).toBe(false);
     expect(component.isUrlValue()).toBe(false);
   });
@@ -161,8 +161,8 @@ describe('ValueCellComponent', () => {
     });
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-    expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     expect(compiled.textContent.trim()).toBe('not-a-url');
     expect(component.isUrlValue()).toBe(false);
   });
@@ -171,8 +171,8 @@ describe('ValueCellComponent', () => {
     const { fixture } = makeComponent(null);
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-    expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     expect(component.isBoolLike()).toBe(false);
     expect(component.isUrlValue()).toBe(false);
   });
@@ -181,8 +181,8 @@ describe('ValueCellComponent', () => {
     const { fixture } = makeComponent(123);
     const compiled = fixture.nativeElement;
 
-    expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-    expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+    expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     expect(compiled.textContent.trim()).toBe('123');
   });
 
@@ -240,7 +240,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-secret-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-secret-value')).toBeTruthy();
       expect(component.displayAs()).toBe('secret');
     });
 
@@ -250,7 +250,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-secret-value')).toBeFalsy();
       expect(component.displayAs()).toBe('link');
     });
 
@@ -258,7 +258,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('plain-text');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-secret-value')).toBeFalsy();
       expect(component.displayAs()).toBeUndefined();
     });
 
@@ -345,7 +345,7 @@ describe('ValueCellComponent', () => {
       component.isVisible.set(true);
       fixture.detectChanges();
 
-      const secretValueComponent = compiled.querySelector('wc-secret-value');
+      const secretValueComponent = compiled.querySelector('pm-secret-value');
       expect(secretValueComponent).toBeTruthy();
     });
   });
@@ -430,9 +430,9 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-secret-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-secret-value')).toBeFalsy();
       expect(compiled.textContent.trim()).toContain('test-value');
     });
 
@@ -442,7 +442,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
     });
   });
 
@@ -453,7 +453,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(true);
     });
@@ -464,7 +464,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(false);
     });
@@ -475,7 +475,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(true);
     });
@@ -486,7 +486,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(false);
     });
@@ -497,7 +497,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(true);
     });
@@ -508,7 +508,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
       expect(component.isBoolLike()).toBe(false);
       expect(component.boolValue()).toBeUndefined();
     });
@@ -517,7 +517,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('no');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
       expect(component.isBoolLike()).toBe(false);
       expect(component.boolValue()).toBeUndefined();
     });
@@ -526,7 +526,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('1');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
       expect(component.isBoolLike()).toBe(false);
       expect(component.boolValue()).toBeUndefined();
     });
@@ -535,7 +535,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('0');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
       expect(component.isBoolLike()).toBe(false);
       expect(component.boolValue()).toBeUndefined();
     });
@@ -547,7 +547,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(true);
     });
@@ -559,7 +559,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
       expect(component.isBoolLike()).toBe(true);
       expect(component.boolValue()).toBe(false);
     });
@@ -572,7 +572,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe('https://example.com');
     });
@@ -583,7 +583,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe('http://example.com');
     });
@@ -594,7 +594,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe('ftp://example.com');
     });
@@ -605,7 +605,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe('https://example.com:8080');
     });
@@ -619,7 +619,7 @@ describe('ValueCellComponent', () => {
       );
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe(
         'https://example.com/path/to/resource',
@@ -635,7 +635,7 @@ describe('ValueCellComponent', () => {
       );
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe(
         'https://example.com?param=value&other=test',
@@ -648,7 +648,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
       expect(component.stringValue()).toBe('https://example.com#section');
     });
@@ -657,7 +657,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('example.com');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.isUrlValue()).toBe(false);
     });
 
@@ -665,7 +665,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('www.example.com');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.isUrlValue()).toBe(false);
     });
 
@@ -675,7 +675,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
     });
 
@@ -685,7 +685,7 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeTruthy();
       expect(component.isUrlValue()).toBe(true);
     });
 
@@ -693,7 +693,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('https://');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.isUrlValue()).toBe(false);
     });
 
@@ -701,7 +701,7 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('https://example.com with spaces');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.isUrlValue()).toBe(false);
     });
   });
@@ -711,8 +711,8 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('   ');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.stringValue()).toBeUndefined();
     });
 
@@ -720,8 +720,8 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('\t\n\r');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.stringValue()).toBeUndefined();
     });
 
@@ -729,8 +729,8 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent('  test  ');
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.stringValue()).toBe('  test  ');
     });
 
@@ -738,8 +738,8 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent(123);
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.stringValue()).toBeUndefined();
     });
 
@@ -748,8 +748,8 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent(obj);
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.stringValue()).toBeUndefined();
     });
 
@@ -758,8 +758,8 @@ describe('ValueCellComponent', () => {
       const { fixture } = makeComponent(arr);
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(component.stringValue()).toBeUndefined();
     });
   });
@@ -771,8 +771,8 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeTruthy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeTruthy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
     });
 
     it('should render plain text when no special rendering is needed', () => {
@@ -782,8 +782,8 @@ describe('ValueCellComponent', () => {
       const compiled = fixture.nativeElement;
       const span = compiled.querySelector('span');
 
-      expect(compiled.querySelector('wc-boolean-value')).toBeFalsy();
-      expect(compiled.querySelector('wc-link-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-boolean-value')).toBeFalsy();
+      expect(compiled.querySelector('pm-link-value')).toBeFalsy();
       expect(span.classList.contains('label-value')).toBe(false);
       expect(compiled.textContent.trim()).toBe('some-text');
     });

@@ -53,7 +53,7 @@
             }
           </ui5-select>
         } @else if (field.dynamicValuesDefinition) {
-          <dynamic-select
+          <pm-dynamic-select
             [attr.test-id]="'create-field-' + fieldProperty"
             [context]="context()"
             [dynamicValuesDefinition]="field.dynamicValuesDefinition"

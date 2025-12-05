@@ -1,7 +1,6 @@
 import { ButtonConfig, ErrorConfig } from './models/error.model';
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   OnInit,
   ViewEncapsulation,
@@ -20,7 +19,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'app-error',
+  selector: 'pm-error',
   standalone: true,
   templateUrl: './error.component.html',
   encapsulation: ViewEncapsulation.ShadowDom,

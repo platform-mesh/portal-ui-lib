@@ -21,7 +21,7 @@ import '@ui5/webcomponents-icons/dist/show.js';
 import { IconComponent } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'value-cell',
+  selector: 'pm-value-cell',
   standalone: true,
   imports: [
     IconComponent,
