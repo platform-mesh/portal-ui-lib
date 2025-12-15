@@ -7,6 +7,8 @@ import {
   AccountInfo,
   Resource,
   ResourceDefinition,
+  ResourceOperationTypeMap,
+  ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   getValueByPath,
@@ -114,6 +116,27 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = false,
   ): Observable<Resource[] | any> {
+    return fieldsOrRawQuery instanceof Array
+      ? this.listWithFields(
+          operation,
+          fieldsOrRawQuery,
+          nodeContext,
+          readFromParentKcpPath,
+        )
+      : this.listWithRawQuery(
+          operation,
+          fieldsOrRawQuery,
+          nodeContext,
+          readFromParentKcpPath,
+        );
+  }
+
+  private listWithFields(
+    operation: string,
+    fields: any[],
+    nodeContext: ResourceNodeContext,
+    readFromParentKcpPath: boolean,
+  ): Observable<Resource[] | any> {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const variables = {
       ...(isNamespacedResource && {
@@ -121,21 +144,15 @@ export class ResourceService {
       }),
     };
 
-    let query: { variables: any; query: string };
+    fields.push({ metadata: ['uid'] });
 
-    if (fieldsOrRawQuery instanceof Array) {
-      query = gqlBuilder.subscription({
-        operation,
-        fields: fieldsOrRawQuery,
-        variables: variables,
-      });
-    } else {
-      query = {
-        variables: this.normalizeGqlBuilderVariables(variables),
-        query: fieldsOrRawQuery,
-      };
-    }
+    const query = gqlBuilder.subscription({
+      operation,
+      fields: ['type', { object: fields }],
+      variables: variables,
+    });
 
+    const result = new Map<string, Resource>();
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .subscribe({
@@ -145,9 +162,58 @@ export class ResourceService {
         variables: query.variables,
       })
       .pipe(
+        map((res: any): Resource[] => {
+          const resourceResult: ResourceSubscriptionResult | undefined =
+            getValueByPath(res.data, operation);
+
+          if (!resourceResult) {
+            return Array.from(result.values());
+          }
+
+          const { type, object } = resourceResult;
+          if (type === ResourceOperationTypeMap.ADDED) {
+            result.set(object.metadata.uid!, object);
+          } else if (type === ResourceOperationTypeMap.MODIFIED) {
+            result.set(object.metadata.uid!, object);
+          } else if (type === ResourceOperationTypeMap.DELETED) {
+            result.delete(object.metadata.uid!);
+          }
+
+          return Array.from(result.values());
+        }),
+        catchError((error) => {
+          this.alertErrors(error);
+          console.error('Error executing GraphQL query.', error);
+          return error;
+        }),
+      );
+  }
+
+  private listWithRawQuery(
+    operation: string,
+    rawQuery: string,
+    nodeContext: ResourceNodeContext,
+    readFromParentKcpPath: boolean,
+  ): Observable<any> {
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const variables = {
+      ...(isNamespacedResource && {
+        namespace: { type: 'String', value: nodeContext.namespaceId },
+      }),
+    };
+
+    return this.apolloFactory
+      .apollo(nodeContext, readFromParentKcpPath)
+      .query({
+        query: gql`
+          ${rawQuery}
+        `,
+        variables: this.normalizeGqlBuilderVariables(variables),
+      })
+      .pipe(
         map(
           (res: any): Resource[] =>
-            getValueByPath<any, Resource[]>(res.data, operation) ?? [],
+            getValueByPath<any, any>(res.data, operation) ?? [],
         ),
         catchError((error) => {
           this.alertErrors(error);
