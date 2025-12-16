@@ -106,7 +106,6 @@ export class CreateResourceModalComponent implements OnInit {
       } else {
         this.resource.emit(result);
       }
-      this.close();
     }
   }
 

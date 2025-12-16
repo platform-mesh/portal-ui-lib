@@ -133,6 +133,7 @@ export class ListViewComponent implements OnInit {
       .delete(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.deleteModal()?.close();
           console.debug('Resource deleted.');
         },
         error: (error) => {
@@ -151,6 +152,7 @@ export class ListViewComponent implements OnInit {
       .create(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.createModal()?.close();
           console.debug('Resource created', result);
         },
       });
@@ -163,6 +165,7 @@ export class ListViewComponent implements OnInit {
       .update(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.createModal()?.close();
           console.debug('Resource updated', result);
         },
       });
