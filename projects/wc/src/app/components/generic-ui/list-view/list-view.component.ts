@@ -237,7 +237,6 @@ export class ListViewComponent {
     }
 
     const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
-    console.log('readyStatus', readyStatus);
     return !!readyStatus;
   }
 

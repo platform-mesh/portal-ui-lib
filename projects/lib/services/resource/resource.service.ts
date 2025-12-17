@@ -235,8 +235,6 @@ export class ResourceService {
       variables: variables,
     });
 
-    console.log(listQuery.query);
-
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .query({
