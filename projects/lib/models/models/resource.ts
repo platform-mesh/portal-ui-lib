@@ -115,4 +115,9 @@ export interface ResourceSubscriptionResult {
   object: Resource;
 }
 
+export interface ResourceListResult {
+  resourceVersion: string;
+  items: Resource[];
+}
+
 export type KubernetesScope = 'Cluster' | 'Namespaced';

@@ -6,7 +6,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
   ViewEncapsulation,
   computed,
   effect,
@@ -70,7 +69,7 @@ import {
     ValueCellComponent,
   ],
 })
-export class ListViewComponent implements OnInit {
+export class ListViewComponent {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
   private destroyRef = inject(DestroyRef);
@@ -101,8 +100,6 @@ export class ListViewComponent implements OnInit {
       this.list();
     });
   }
-
-  ngOnInit(): void {}
 
   list() {
     const fields = this.generateGqlFieldsWithReadyConditions();

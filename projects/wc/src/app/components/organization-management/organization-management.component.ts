@@ -110,9 +110,17 @@ export class OrganizationManagementComponent implements OnInit {
         ],
       },
     ]);
+
     const queryOperation = 'core_platform_mesh_io_accounts';
     this.resourceService
-      .list(queryOperation, fields, this.context())
+      .list(queryOperation, fields, {
+        ...this.context(),
+        resourceDefinition: {
+          group: 'core.platform-mesh.io',
+          plural: 'accounts',
+          scope: 'Cluster',
+        } as ResourceDefinition,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
