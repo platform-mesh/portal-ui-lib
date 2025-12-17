@@ -76,12 +76,11 @@ describe('DeleteResourceModalComponent', () => {
     expect(control.errors).toBeNull();
   });
 
-  it('should emit the resource and close the dialog when deleting resource', () => {
+  it('should emit the resource when deleting resource', () => {
     component.open(resource);
     spyOn(component.resource, 'emit');
     component.delete();
     expect(component.resource.emit).toHaveBeenCalledWith(resource);
-    expect(mockDialog.open).toBeFalsy();
   });
 
   it('should set value and marks touched/dirty', () => {

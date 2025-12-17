@@ -130,6 +130,7 @@ export class ListViewComponent {
       .delete(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.deleteModal()?.close();
           console.debug('Resource deleted.');
         },
         error: (error) => {
@@ -148,6 +149,7 @@ export class ListViewComponent {
       .create(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.createModal()?.close();
           console.debug('Resource created', result);
         },
       });
@@ -160,6 +162,7 @@ export class ListViewComponent {
       .update(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.createModal()?.close();
           console.debug('Resource updated', result);
         },
       });

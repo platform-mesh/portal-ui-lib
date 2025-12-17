@@ -85,7 +85,6 @@ export class DeleteResourceModalComponent implements OnInit {
     if (res) {
       this.resource.emit(res);
     }
-    this.close();
   }
 
   setFormControlValue($event: any, formControlName: string) {
