@@ -6,7 +6,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
   ViewEncapsulation,
   computed,
   effect,
@@ -45,7 +44,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'list-view',
+  selector: 'pm-list-view',
   standalone: true,
   templateUrl: './list-view.component.html',
   styleUrls: ['./list-view.component.scss'],
@@ -70,7 +69,7 @@ import {
     ValueCellComponent,
   ],
 })
-export class ListViewComponent implements OnInit {
+export class ListViewComponent {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
   private destroyRef = inject(DestroyRef);
@@ -102,8 +101,6 @@ export class ListViewComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {}
-
   list() {
     const fields = this.generateGqlFieldsWithReadyConditions();
     const resourceDefinition = this.getResourceDefinition();
@@ -133,6 +130,7 @@ export class ListViewComponent implements OnInit {
       .delete(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.deleteModal()?.close();
           console.debug('Resource deleted.');
         },
         error: (error) => {
@@ -151,6 +149,7 @@ export class ListViewComponent implements OnInit {
       .create(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.createModal()?.close();
           console.debug('Resource created', result);
         },
       });
@@ -163,12 +162,18 @@ export class ListViewComponent implements OnInit {
       .update(resource, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
+          this.createModal()?.close();
           console.debug('Resource updated', result);
         },
       });
   }
 
   navigateToResource(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+    if (!resourceDefinition.ui?.detailView) {
+      return;
+    }
+
     if (!resource.metadata.name) {
       this.LuigiClient().uxManager().showAlert({
         text: 'Resource name is not defined',
@@ -232,7 +237,6 @@ export class ListViewComponent implements OnInit {
     }
 
     const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
-    console.log('readyStatus', readyStatus);
     return !!readyStatus;
   }
 

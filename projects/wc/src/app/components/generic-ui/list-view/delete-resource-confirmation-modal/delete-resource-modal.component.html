@@ -1,11 +1,11 @@
-<ui5-dialog #dialog>
+<ui5-dialog test-id="delete-resource-dialog" #dialog>
   <ui5-bar slot="header" design="Header">
-    <ui5-title slot="startContent">
-      <ui5-icon name="alert" design="Critical"></ui5-icon>
+    <ui5-title test-id="delete-resource-dialog-title" slot="startContent">
+      <ui5-icon test-id="delete-resource-dialog-alert" name="alert" design="Critical"></ui5-icon>
       Delete {{ innerResource()?.metadata?.name?.toLowerCase() }}
     </ui5-title>
   </ui5-bar>
-  <section class="content" [formGroup]="form">
+  <section test-id="delete-resource-dialog-content" class="content" [formGroup]="form">
     <div class="inputs">
       <p>Are you sure you want to delete {{ context()?.resourceDefinition?.singular }}
         <b>{{ innerResource()?.metadata?.name?.toLowerCase() }}</b>?</p>
@@ -18,6 +18,7 @@
       <ui5-input
         class="input"
         placeholder="Type name"
+        test-id="delete-resource-input"
         [value]="form.controls.resource.value"
         (blur)="onFieldBlur('resource')"
         (change)="setFormControlValue($event, 'resource')"
@@ -29,6 +30,7 @@
   </section>
   <ui5-toolbar class="ui5-content-density-compact" slot="footer">
     <ui5-toolbar-button
+      test-id="delete-resource-confirm"
       class="dialogCloser"
       [disabled]="form.invalid || form.controls.resource.value !== innerResource()?.metadata?.name?.toLowerCase()"
       design="Emphasized"
@@ -37,6 +39,7 @@
     >
     </ui5-toolbar-button>
     <ui5-toolbar-button
+      test-id="delete-resource-cancel"
       class="dialogCloser"
       design="Transparent"
       text="Cancel"

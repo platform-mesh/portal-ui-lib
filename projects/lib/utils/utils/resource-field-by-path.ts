@@ -25,7 +25,8 @@ export const getResourceValueByJsonPath = (
     return undefined;
   }
 
-  const queryResult = jsonpath.query(resource, `$.${property}`);
+  const prefix = property.startsWith('$.') ? '' : '$.';
+  const queryResult = jsonpath.query(resource, `${prefix}${property}`);
   const value = queryResult.length ? queryResult[0] : undefined;
 
   if (value && field.propertyField) {

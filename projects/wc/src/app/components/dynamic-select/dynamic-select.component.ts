@@ -1,4 +1,14 @@
-import { Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -9,15 +19,16 @@ import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import { OptionComponent, SelectComponent } from '@ui5/webcomponents-ngx';
 import { Observable, map } from 'rxjs';
 
-
 @Component({
-  selector: 'dynamic-select',
+  selector: 'pm-dynamic-select',
   imports: [SelectComponent, OptionComponent],
   templateUrl: './dynamic-select.component.html',
   styleUrl: './dynamic-select.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicSelectComponent {
-  dynamicValuesDefinition = input.required<NonNullable<FieldDefinition['dynamicValuesDefinition']>>();
+  dynamicValuesDefinition =
+    input.required<NonNullable<FieldDefinition['dynamicValuesDefinition']>>();
   context = input.required<ResourceNodeContext>();
 
   value = input<string>('');
@@ -31,6 +42,11 @@ export class DynamicSelectComponent {
   blur = output<void>();
 
   dynamicValues$ = signal<{ value: string; key: string }[]>([]);
+  testId = computed(() => {
+    const definition = this.dynamicValuesDefinition();
+    const operation = definition.operation?.trim();
+    return operation ? `pm-dynamic-select-${operation}` : 'pm-dynamic-select';
+  });
 
   private resourceService = inject(ResourceService);
   private destroyRef = inject(DestroyRef);
@@ -43,6 +59,14 @@ export class DynamicSelectComponent {
           this.dynamicValues$.set(result);
         });
     });
+  }
+
+  optionTestId(value: string | null | undefined): string {
+    const normalizedValue = value?.toString().trim();
+    if (normalizedValue) {
+      return `${this.testId()}-option-${normalizedValue}`;
+    }
+    return `${this.testId()}-option-empty`;
   }
 
   private getDynamicValues(

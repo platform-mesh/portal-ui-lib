@@ -1,14 +1,48 @@
-@if (displayAsPlainText()) {
-  {{ value() }}
-} @else {
-  @if (isBoolLike()) {
-    <wc-boolean-value [boolValue]="boolValue()!"></wc-boolean-value>
-  } @else if (isUrlValue()) {
-    <wc-link-value [urlValue]="stringValue()!"></wc-link-value>
-  } @else if (isLabelValue()) {
-    <wc-label-value [labelDisplay]="labelDisplayValue()!" [value]="value()"></wc-label-value>
-  }
-  @else {
+@let displayType = displayAs();
+<span [attr.test-id]="testId()" [class.label-value]="labelDisplay()" [style]="{
+  backgroundColor: labelDisplay()?.backgroundColor,
+  color: labelDisplay()?.color,
+  fontWeight: labelDisplay()?.fontWeight,
+  fontStyle: labelDisplay()?.fontStyle,
+  textDecoration: labelDisplay()?.textDecoration,
+  textTransform: labelDisplay()?.textTransform,
+}">
+  @if (displayType === 'secret') {
+    <pm-secret-value
+    [testId]="testId() + '-secret'"
+    [value]="value()"
+    [isVisible]="isVisible()"
+    ></pm-secret-value>
+  } @else if (displayType === 'boolIcon' && isBoolLike()) {
+    <pm-boolean-value
+    [testId]="testId() + '-boolean'"
+    [boolValue]="boolValue()!"
+    ></pm-boolean-value>
+  } @else if (displayType === 'link' && isUrlValue()) {
+    <pm-link-value
+    [testId]="testId() + '-link'"
+    [urlValue]="stringValue()!"
+    ></pm-link-value>
+  } @else {
     {{ value() }}
   }
+</span>
+
+@if (displayType === 'secret') {
+  <ui5-icon
+    [attr.test-id]="testId() + '-secret-toggle'"
+    class="toggle-icon"
+    [name]="isVisible() ? 'hide' : 'show'"
+    (click)="toggleVisibility($event)"
+  ></ui5-icon>
+}
+
+@if (withCopyButton()) {
+  <ui5-icon
+    [attr.test-id]="testId() + '-copy'"
+    class="toggle-icon"
+    (click)="copyValue($event)"
+    name="copy"
+  >
+  </ui5-icon>
 }

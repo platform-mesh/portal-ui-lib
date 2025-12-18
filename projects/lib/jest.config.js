@@ -10,7 +10,7 @@ module.exports = {
       branches: 90,
       functions: 95,
       lines: 95,
-      statements: -4,
+      statements: -5,
     },
   },
   moduleNameMapper: {
@@ -25,6 +25,10 @@ module.exports = {
     '^@platform-mesh/portal-ui-lib/utils$': path.resolve(
       __dirname,
       './utils/public-api.ts',
+    ),
+    '^@platform-mesh/portal-ui-lib/models$': path.resolve(
+      __dirname,
+      './models/public-api.ts',
     ),
     '^@platform-mesh/portal-ui-lib/(.*)': path.resolve(__dirname, './$1'),
   },

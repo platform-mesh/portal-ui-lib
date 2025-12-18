@@ -92,7 +92,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
       const result = await config.pageNotFoundHandler();
 
       expect(result).toEqual({
-        redirectTo: 'welcome',
+        redirectTo: 'error/404',
         keepURL: true,
       });
     });
@@ -111,7 +111,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
       const result = await config.pageNotFoundHandler();
 
       expect(result).toEqual({
-        redirectTo: 'error/404',
+        redirectTo: 'welcome',
         keepURL: true,
       });
     });
@@ -171,7 +171,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
       const result = await config.pageNotFoundHandler();
 
       expect(result).toEqual({
-        redirectTo: 'error/404',
+        redirectTo: 'welcome',
         keepURL: true,
       });
     });
@@ -190,7 +190,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
       const result = await config.pageNotFoundHandler();
 
       expect(result).toEqual({
-        redirectTo: 'welcome',
+        redirectTo: 'error/404',
         keepURL: true,
       });
     });
@@ -215,7 +215,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
       const result = await config.pageNotFoundHandler();
 
       expect(result).toEqual({
-        redirectTo: 'error/404',
+        redirectTo: 'welcome',
         keepURL: true,
       });
     });

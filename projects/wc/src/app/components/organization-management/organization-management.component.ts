@@ -19,9 +19,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import {
-  EnvConfigService,
-  I18nService} from '@openmfp/portal-ui-lib';
+import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
   Resource,
   ResourceDefinition,
@@ -44,7 +42,7 @@ import {
 } from '@ui5/webcomponents-ngx';
 
 @Component({
-  selector: 'organization-management',
+  selector: 'pm-organization-management',
   standalone: true,
   imports: [
     LabelComponent,
@@ -112,9 +110,17 @@ export class OrganizationManagementComponent implements OnInit {
         ],
       },
     ]);
+
     const queryOperation = 'core_platform_mesh_io_accounts';
     this.resourceService
-      .list(queryOperation, fields, this.context())
+      .list(queryOperation, fields, {
+        ...this.context(),
+        resourceDefinition: {
+          group: 'core.platform-mesh.io',
+          plural: 'accounts',
+          scope: 'Cluster',
+        } as ResourceDefinition,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {

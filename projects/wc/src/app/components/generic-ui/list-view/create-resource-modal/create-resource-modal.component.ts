@@ -3,6 +3,7 @@ import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
 import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
 import { ResourceFieldNames } from './create-resource-modal.enums';
 import {
+  ChangeDetectionStrategy,
   Component,
   OnInit,
   ViewEncapsulation,
@@ -22,7 +23,7 @@ import {
 } from '@angular/forms';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
+import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 import {
   BarComponent,
   DialogComponent,
@@ -37,7 +38,7 @@ import {
 import { set } from 'lodash';
 
 @Component({
-  selector: 'create-resource-modal',
+  selector: 'pm-create-resource-modal',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -55,6 +56,7 @@ import { set } from 'lodash';
   templateUrl: './create-resource-modal.component.html',
   styleUrl: './create-resource-modal.component.scss',
   encapsulation: ViewEncapsulation.ShadowDom,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateResourceModalComponent implements OnInit {
   fields = input<FieldDefinition[]>([]);
@@ -104,7 +106,6 @@ export class CreateResourceModalComponent implements OnInit {
       } else {
         this.resource.emit(result);
       }
-      this.close();
     }
   }
 
@@ -123,11 +124,16 @@ export class CreateResourceModalComponent implements OnInit {
     this.form.controls[formControlName].markAsTouched();
   }
 
-  sanitizePropertyName(property: string | string[]) {
+  sanitizePropertyName(field: FieldDefinition) {
+    const property: string | string[] = field.property;
     if (property instanceof Array) {
       throw new Error('Wrong property type, array not supported');
     }
-    return (property as string).replaceAll('.', '_');
+
+    return (
+      (property as string).replaceAll('.', '_') +
+      (field.propertyField ? `_${field.propertyField?.key}` : '')
+    );
   }
 
   isEditMode() {
@@ -146,10 +152,10 @@ export class CreateResourceModalComponent implements OnInit {
     return this.fields().reduce(
       (obj, fieldDefinition) => {
         const validators = this.getValidator(fieldDefinition);
-        const fieldName = this.sanitizePropertyName(fieldDefinition.property);
+        const fieldName = this.sanitizePropertyName(fieldDefinition);
         const fieldValue =
           resource && typeof fieldDefinition.property === 'string'
-            ? getValueByPath(resource, fieldDefinition.property)
+            ? getResourceValueByJsonPath(resource, fieldDefinition)
             : '';
         obj[fieldName] = new FormControl(fieldValue, validators);
 

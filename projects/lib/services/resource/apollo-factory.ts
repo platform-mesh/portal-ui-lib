@@ -1,6 +1,6 @@
 import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
-import { Injectable, NgZone, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   type ApolloClientOptions,
   ApolloLink,
@@ -39,12 +39,16 @@ class SSELink extends ApolloLink {
   }
 }
 
+const noopZone = {
+  run: (fn: any) => fn(),
+  runOutsideAngular: (fn: any) => fn(),
+} as any;
+
 @Injectable({
   providedIn: 'root',
 })
 export class ApolloFactory {
   private httpLink = inject(HttpLink);
-  private ngZone = inject(NgZone);
   private gatewayService = inject(GatewayService);
 
   public readonly apollo = (
@@ -52,7 +56,7 @@ export class ApolloFactory {
     readFromParentKcpPath = false,
   ): Apollo =>
     new Apollo(
-      this.ngZone,
+      noopZone,
       this.createApolloOptions(nodeContext, readFromParentKcpPath),
     );
 

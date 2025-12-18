@@ -21,6 +21,12 @@ export interface PropertyField {
   transform?: TransformType[];
 }
 
+export interface UiSettings {
+  labelDisplay?: LabelDisplay | boolean;
+  displayAs?: 'secret' | 'boolIcon' | 'link';
+  withCopyButton?: boolean;
+}
+
 export interface FieldDefinition {
   label?: string;
   property: string | string[];
@@ -34,8 +40,7 @@ export interface FieldDefinition {
     delimiter?: string;
     multiline?: boolean;
   };
-  labelDisplay?: LabelDisplay | boolean;
-  displayAsPlainText?: boolean;
+  uiSettings?: UiSettings;
   dynamicValuesDefinition?: {
     operation: string;
     gqlQuery: string;
@@ -94,6 +99,25 @@ export interface UIDefinition {
   listView?: UiView;
   createView?: UiView;
   detailView?: UiView;
+}
+
+export const ResourceOperationTypeMap = {
+  ADDED: 'ADDED',
+  MODIFIED: 'MODIFIED',
+  DELETED: 'DELETED',
+} as const;
+
+export type ResourceOperationType =
+  (typeof ResourceOperationTypeMap)[keyof typeof ResourceOperationTypeMap];
+
+export interface ResourceSubscriptionResult {
+  type: ResourceOperationType;
+  object: Resource;
+}
+
+export interface ResourceListResult {
+  resourceVersion: string;
+  items: Resource[];
 }
 
 export type KubernetesScope = 'Cluster' | 'Namespaced';

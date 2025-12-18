@@ -20,12 +20,12 @@ export class CustomRoutingConfigServiceImpl implements RoutingConfigService {
 
   getRoutingConfig(): any {
     return {
-      pageNotFoundHandler: async () => {
+      pageNotFoundHandler: () => {
         if (!this.envConfig?.baseDomain) {
           return this.redirectTo('error/404');
         }
 
-        if (window.location.hostname !== this.envConfig.baseDomain) {
+        if (window.location.hostname === this.envConfig.baseDomain) {
           return this.redirectTo('welcome');
         }
 

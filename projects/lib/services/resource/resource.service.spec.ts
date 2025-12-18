@@ -3,7 +3,7 @@ import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { mock } from 'jest-mock-extended';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 describe('ResourceService', () => {
   let service: ResourceService;
@@ -16,6 +16,7 @@ describe('ResourceService', () => {
     kind: 'TestKind',
     scope: 'Namespaced',
     namespace: 'default',
+    plural: 'testkinds',
   };
 
   const namespacedNodeContext: any = {
@@ -26,6 +27,7 @@ describe('ResourceService', () => {
       kind: 'TestKind',
       scope: 'Namespaced',
       namespace: 'default',
+      plural: 'testkinds',
     },
   };
 
@@ -36,6 +38,7 @@ describe('ResourceService', () => {
       kind: 'TestKind',
       scope: 'Cluster',
       namespace: 'default',
+      plural: 'testkinds',
     },
   };
 
@@ -274,50 +277,175 @@ describe('ResourceService', () => {
   });
 
   describe('list', () => {
+    it('should throw error when resourceDefinition is missing', (done) => {
+      const contextWithoutDefinition: any = {
+        cluster: 'test',
+        namespaceId: 'test-namespace',
+      };
+
+      service.list('myList', ['name'], contextWithoutDefinition).subscribe({
+        error: (err) => {
+          expect(err.message).toBe('Resource definition is required');
+          done();
+        },
+      });
+    });
+
+    it('should throw error when initialListQuery returns empty result', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {},
+          },
+        }),
+      );
+
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        error: (err) => {
+          expect(err.message).toBe('Resource list result not found');
+          done();
+        },
+      });
+    });
+
+    it('should return initial items from query via startWith', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [
+                  { name: 'res1', metadata: { uid: 'uid1' } },
+                  { name: 'res2', metadata: { uid: 'uid2' } },
+                ],
+              },
+            },
+          },
+        }),
+      );
+      const subject = new Subject();
+      mockApollo.subscribe.mockReturnValue(subject.asObservable());
+
+      const results: any[] = [];
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        next: (res) => results.push(res),
+      });
+
+      expect(results[0]).toEqual([
+        { name: 'res1', metadata: { uid: 'uid1' } },
+        { name: 'res2', metadata: { uid: 'uid2' } },
+      ]);
+      done();
+    });
+
     it('should list namespaced resources', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
       mockApollo.subscribe.mockReturnValue(
-        of({ data: { myList: [{ name: 'res1' }] } }),
+        of({
+          data: {
+            myList: {
+              type: 'ADDED',
+              object: { name: 'res2', metadata: { uid: 'uid2' } },
+            },
+          },
+        }),
       );
       service
         .list('myList', ['name'], namespacedNodeContext)
         .subscribe((res) => {
-          expect(res).toEqual([{ name: 'res1' }]);
+          expect(mockApollo.query).toHaveBeenCalled();
           expect(mockApollo.subscribe).toHaveBeenCalledWith({
             query: expect.anything(),
-            variables: { namespace: namespacedNodeContext.namespaceId },
+            variables: {
+              namespace: namespacedNodeContext.namespaceId,
+              resourceVersion: '123',
+            },
           });
           done();
         });
     });
 
     it('should list cluster resources', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
       mockApollo.subscribe.mockReturnValue(
-        of({ data: { myList: [{ name: 'res1' }] } }),
+        of({
+          data: {
+            myList: {
+              type: 'ADDED',
+              object: { name: 'res2', metadata: { uid: 'uid2' } },
+            },
+          },
+        }),
       );
       service
         .list('myList', ['name'], clusterScopeNodeContext)
         .subscribe((res) => {
-          expect(res).toEqual([{ name: 'res1' }]);
+          expect(mockApollo.query).toHaveBeenCalled();
           expect(mockApollo.subscribe).toHaveBeenCalledWith({
             query: expect.anything(),
-            variables: {},
+            variables: { resourceVersion: '123' },
           });
           done();
         });
     });
 
     it('should list resources with namespace', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
       mockApollo.subscribe.mockReturnValue(
-        of({ data: { myList: [{ name: 'res1' }] } }),
+        of({
+          data: {
+            myList: {
+              type: 'ADDED',
+              object: { name: 'res2', metadata: { uid: 'uid2' } },
+            },
+          },
+        }),
       );
 
       service
         .list('myList', ['name'], namespacedNodeContext)
         .subscribe((res) => {
-          expect(res).toEqual([{ name: 'res1' }]);
+          expect(mockApollo.query).toHaveBeenCalled();
           expect(mockApollo.subscribe).toHaveBeenCalledWith({
             query: expect.anything(),
-            variables: { namespace: namespacedNodeContext.namespaceId },
+            variables: {
+              namespace: namespacedNodeContext.namespaceId,
+              resourceVersion: '123',
+            },
           });
           done();
         });
@@ -325,13 +453,15 @@ describe('ResourceService', () => {
 
     it('should list namespaced resources (raw query string)', (done) => {
       const rawQuery = `
-      subscription {
+      query {
         myList {
-          name
+          myData {
+            name
+          }
         }
       }
     `;
-      mockApollo.subscribe.mockReturnValue(
+      mockApollo.query.mockReturnValue(
         of({ data: { myList: { myData: [{ name: 'res2' }] } } }),
       );
 
@@ -339,7 +469,7 @@ describe('ResourceService', () => {
         .list('myList.myData', rawQuery, namespacedNodeContext)
         .subscribe((res) => {
           expect(res).toEqual([{ name: 'res2' }]);
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+          expect(mockApollo.query).toHaveBeenCalledWith({
             query: expect.anything(),
             variables: {
               namespace: namespacedNodeContext.namespaceId,
@@ -351,13 +481,13 @@ describe('ResourceService', () => {
 
     it('should list cluster resources (raw query string)', (done) => {
       const rawQuery = `
-      subscription {
+      query {
         myList {
           name
         }
       }
     `;
-      mockApollo.subscribe.mockReturnValue(
+      mockApollo.query.mockReturnValue(
         of({ data: { myList: [{ name: 'res2' }] } }),
       );
 
@@ -365,7 +495,7 @@ describe('ResourceService', () => {
         .list('myList', rawQuery, clusterScopeNodeContext)
         .subscribe((res) => {
           expect(res).toEqual([{ name: 'res2' }]);
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+          expect(mockApollo.query).toHaveBeenCalledWith({
             query: expect.anything(),
             variables: {},
           });
@@ -375,6 +505,18 @@ describe('ResourceService', () => {
 
     it('should handle list error', (done) => {
       const error = new Error('fail');
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [],
+              },
+            },
+          },
+        }),
+      );
       mockApollo.subscribe.mockReturnValue(throwError(() => error));
       console.error = jest.fn();
 
@@ -384,6 +526,128 @@ describe('ResourceService', () => {
             'Error executing GraphQL query.',
             error,
           );
+          done();
+        },
+      });
+    });
+
+    it('should handle MODIFIED operation in subscription', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
+      const subject = new Subject();
+      mockApollo.subscribe.mockReturnValue(subject.asObservable());
+
+      const results: any[] = [];
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        next: (res) => results.push(res),
+      });
+
+      subject.next({
+        data: {
+          myList: {
+            type: 'MODIFIED',
+            object: { name: 'res1-updated', metadata: { uid: 'uid1' } },
+          },
+        },
+      });
+
+      expect(results[1]).toEqual([
+        { name: 'res1-updated', metadata: { uid: 'uid1' } },
+      ]);
+      done();
+    });
+
+    it('should handle DELETED operation in subscription', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
+      const subject = new Subject();
+      mockApollo.subscribe.mockReturnValue(subject.asObservable());
+
+      const results: any[] = [];
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        next: (res) => results.push(res),
+      });
+
+      subject.next({
+        data: {
+          myList: {
+            type: 'DELETED',
+            object: { name: 'res1', metadata: { uid: 'uid1' } },
+          },
+        },
+      });
+
+      expect(results[1]).toEqual([]);
+      done();
+    });
+
+    it('should return current values when resourceResult is undefined', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
+      const subject = new Subject();
+      mockApollo.subscribe.mockReturnValue(subject.asObservable());
+
+      const results: any[] = [];
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        next: (res) => results.push(res),
+      });
+
+      subject.next({
+        data: {
+          myList: undefined,
+        },
+      });
+
+      expect(results[1]).toEqual([{ name: 'res1', metadata: { uid: 'uid1' } }]);
+      done();
+    });
+
+    it('should handle raw query list error', (done) => {
+      const rawQuery = `query { myList { name } }`;
+      const error = new Error('raw query fail');
+      mockApollo.query.mockReturnValue(throwError(() => error));
+      console.error = jest.fn();
+
+      service.list('myList', rawQuery, namespacedNodeContext).subscribe({
+        error: (err) => {
+          expect(console.error).toHaveBeenCalledWith(
+            'Error executing GraphQL query.',
+            error,
+          );
+          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+            text: 'raw query fail',
+            type: 'error',
+          });
           done();
         },
       });

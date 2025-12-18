@@ -10,3 +10,7 @@ export function replaceDotsAndHyphensWithUnderscores(input: string): string {
 
   return input.replace(/[.-]/g, '_');
 }
+
+export function capitalize(input: string): string {
+  return input.charAt(0).toUpperCase() + input.slice(1);
+}

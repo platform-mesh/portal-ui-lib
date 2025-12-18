@@ -47,6 +47,17 @@ describe('getResourceValueByJsonPath', () => {
     expect(result).toBe('test-result');
   });
 
+  it('should query resource using jsonPathExpression', () => {
+    (jsonpath.query as jest.Mock).mockReturnValue(['test-result']);
+
+    const result = getResourceValueByJsonPath(mockResource, {
+      jsonPathExpression: '$.spec.value',
+    });
+
+    expect(jsonpath.query).toHaveBeenCalledWith(mockResource, '$.spec.value');
+    expect(result).toBe('test-result');
+  });
+
   it('should query resource using property', () => {
     (jsonpath.query as jest.Mock).mockReturnValue(['property-result']);
 
