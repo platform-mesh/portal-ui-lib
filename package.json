@@ -6,6 +6,9 @@
   },
   "author": "Platform Mesh",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "ng": "ng",
     "build": "npm run build:lib && npm run build:wc",
