@@ -1,5 +1,6 @@
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
+import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
@@ -10,11 +11,10 @@ import { firstValueFrom } from 'rxjs';
 @Injectable({
   providedIn: 'root',
 })
-export class NodeContextProcessingServiceImpl
-  implements NodeContextProcessingService
-{
+export class NodeContextProcessingServiceImpl implements NodeContextProcessingService {
   private resourceService = inject(ResourceService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
+  private accountPathResolver = inject(AccountPathResolverService);
 
   public async processNodeContext(
     entityId: string,
@@ -46,6 +46,13 @@ export class NodeContextProcessingServiceImpl
       query = `query ($name: String!, $namespace: String!) { ${operation} { ${kind}(name: $name, namespace: $namespace) ${queryPart} }}`;
     }
 
+    const accountPath =
+      this.accountPathResolver.resolveAccountHierarchy(
+        entityNode,
+        entityId,
+        kind,
+      );
+
     try {
       const entity = await firstValueFrom(
         this.resourceService.read(
@@ -69,12 +76,14 @@ export class NodeContextProcessingServiceImpl
       ctx.kcpPath = kcpPath;
       ctx.entity = entity;
       ctx.entityName = entityId;
+      ctx.accountPath = accountPath;
       ctx.entityId = `${entity.metadata?.annotations?.['kcp.io/cluster']}/${entityId}`;
       // update the node context of sa node to contain the entity for future context calculations
       entityNode.context.kcpPath = kcpPath;
       entityNode.context.entity = entity;
       entityNode.context.entityName = ctx.entityName;
       entityNode.context.entityId = ctx.entityId;
+      entityNode.context.accountPath = accountPath;
     } catch (e) {
       console.error(`Not able to read entity ${entityId} from ${operation}`);
     }
