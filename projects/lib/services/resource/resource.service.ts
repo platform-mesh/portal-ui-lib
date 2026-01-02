@@ -81,8 +81,8 @@ export class ResourceService {
           console.error('Error executing GraphQL query.', error);
 
           if (
-            error.message.includes('forbidden') ||
-            error.message.includes('access denied')
+            error.message?.toLowerCase().includes('forbidden') ||
+            error.message?.includes('access denied')
           ) {
             this.luigiCoreService.navigation().navigate('/error/403');
           } else {

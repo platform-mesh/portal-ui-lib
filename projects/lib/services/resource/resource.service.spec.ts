@@ -255,6 +255,10 @@ describe('ResourceService', () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
       console.error = jest.fn();
+      const navigateMock = jest.fn();
+      mockLuigiCoreService.navigation.mockReturnValue({
+        navigate: navigateMock,
+      });
 
       service
         .read(
@@ -270,6 +274,37 @@ describe('ResourceService', () => {
               'Error executing GraphQL query.',
               error,
             );
+            expect(navigateMock).toHaveBeenCalledWith('/error/404');
+            done();
+          },
+        });
+    });
+
+    it('should handle 403 read error', (done) => {
+      const error = new Error('fail forbidden');
+      error.message = 'Forbidden';
+      mockApollo.query.mockReturnValue(throwError(() => error));
+      console.error = jest.fn();
+      const navigateMock = jest.fn();
+      mockLuigiCoreService.navigation.mockReturnValue({
+        navigate: navigateMock,
+      });
+
+      service
+        .read(
+          'test-name',
+          'core_k8s_io',
+          'TestKind',
+          ['name'],
+          namespacedNodeContext,
+        )
+        .subscribe({
+          error: (err) => {
+            expect(console.error).toHaveBeenCalledWith(
+              'Error executing GraphQL query.',
+              error,
+            );
+            expect(navigateMock).toHaveBeenCalledWith('/error/403');
             done();
           },
         });
