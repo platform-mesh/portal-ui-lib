@@ -1,5 +1,9 @@
 import { kcpRootOrgsPath } from '../models/constants';
 import { PortalLuigiNode } from '../models/luigi-node';
+import {
+  collectAccountNamesFromHierarchy,
+  getInitialAccountId,
+} from '../utils/account-hierarchy.util';
 import { Injectable, inject } from '@angular/core';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { GatewayService } from '@platform-mesh/portal-ui-lib/services';
@@ -21,15 +25,15 @@ export class CrdGatewayKcpPatchResolver {
       return nextNode.context.kcpPath;
     }
 
-    let entityKcpPath = kind !== 'Account' || !entityId ? '' : `:${entityId}`;
-    let node: PortalLuigiNode | undefined = nextNode;
-    do {
-      const entity = node?.context?.entity;
-      if (entity?.metadata?.name && entity['__typename'] === 'Account') {
-        entityKcpPath = `:${entity.metadata.name}${entityKcpPath}`;
-      }
-      node = node?.parent;
-    } while (node);
+    const accountNames = collectAccountNamesFromHierarchy(nextNode);
+    const initialId = getInitialAccountId(entityId, kind);
+
+    if (initialId) {
+      accountNames.push(initialId);
+    }
+
+    const entityKcpPath =
+      accountNames.length > 0 ? `:${accountNames.join(':')}` : '';
 
     const org = (await this.envConfigService.getEnvConfig()).idpName;
     const kcpPath = `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
