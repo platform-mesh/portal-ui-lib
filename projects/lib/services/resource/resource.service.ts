@@ -79,6 +79,16 @@ export class ResourceService {
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
+
+          if (
+            error.message.includes('forbidden') ||
+            error.message.includes('access denied')
+          ) {
+            this.luigiCoreService.navigation().navigate('/error/403');
+          } else {
+            this.luigiCoreService.navigation().navigate('/error/404');
+          }
+
           return error;
         }),
       );

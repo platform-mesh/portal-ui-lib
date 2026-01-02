@@ -34,10 +34,10 @@ export class CustomRoutingConfigServiceImpl implements RoutingConfigService {
     };
   }
 
-  public redirectTo(path: string): any {
+  public redirectTo(path: string, keepURL = true): any {
     return {
       redirectTo: path,
-      keepURL: true,
+      keepURL,
     };
   }
 }

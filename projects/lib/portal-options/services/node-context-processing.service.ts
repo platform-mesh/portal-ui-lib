@@ -10,9 +10,7 @@ import { firstValueFrom } from 'rxjs';
 @Injectable({
   providedIn: 'root',
 })
-export class NodeContextProcessingServiceImpl
-  implements NodeContextProcessingService
-{
+export class NodeContextProcessingServiceImpl implements NodeContextProcessingService {
   private resourceService = inject(ResourceService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
 
@@ -77,6 +75,7 @@ export class NodeContextProcessingServiceImpl
       entityNode.context.entityId = ctx.entityId;
     } catch (e) {
       console.error(`Not able to read entity ${entityId} from ${operation}`);
+      throw e;
     }
   }
 }

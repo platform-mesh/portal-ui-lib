@@ -82,28 +82,11 @@ export class ErrorComponent implements OnInit {
   }
 
   private async getError403Config(): Promise<ErrorConfig> {
-    const illustratedMessageText = await this.i18nService.getTranslationAsync(
-      'ERROR_CONTENT_NOT_ALLOWED_NO_PROJECT_MEMBER_TEXT',
-    );
-
     return {
       scene: 'tnt/UnsuccessfulAuth',
-      illustratedMessageTitle: '',
-      illustratedMessageText,
-      buttons: [
-        {
-          url: '',
-          label: await this.i18nService.getTranslationAsync(
-            'ERROR_CONTENT_NOT_ALLOWED_JOIN_PROJECT_BUTTON',
-          ),
-        },
-        {
-          url: '',
-          label: await this.i18nService.getTranslationAsync(
-            'ERROR_CONTENT_NOT_ALLOWED_VIEW_PROJECT_BUTTON',
-          ),
-        },
-      ],
+      illustratedMessageTitle: 'You are not authorized to access this content.',
+      illustratedMessageText: '',
+      buttons: [],
     };
   }
 
