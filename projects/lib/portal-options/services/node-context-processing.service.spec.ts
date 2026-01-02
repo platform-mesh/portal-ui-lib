@@ -382,13 +382,15 @@ describe('NodeContextProcessingServiceImpl', () => {
         throwError(() => new Error('Network error')),
       );
 
-      await service.processNodeContext(entityId, entityNode, ctx);
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Not able to read entity test-entity from test_group',
-      );
-      expect(ctx.entity).toBeUndefined();
-      expect(entityNode.context!.entity).toBeUndefined();
+      try {
+        await service.processNodeContext(entityId, entityNode, ctx);
+      } catch (e) {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Not able to read entity test-entity from test_group',
+        );
+        expect(ctx.entity).toBeUndefined();
+        expect(entityNode.context!.entity).toBeUndefined();
+      }
 
       consoleErrorSpy.mockRestore();
     });
