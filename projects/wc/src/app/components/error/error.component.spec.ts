@@ -80,7 +80,9 @@ describe('ErrorComponent', () => {
 
       await component.ngOnInit();
       expect(component.config().scene).toBe('NoEntries');
-      expect(component.config().illustratedMessageTitle).toBe('translated text');
+      expect(component.config().illustratedMessageTitle).toBe(
+        'translated text',
+      );
       expect(component.config().illustratedMessageText).toBe('translated text');
       expect(component.config().buttons).toBeDefined();
     });
@@ -95,10 +97,12 @@ describe('ErrorComponent', () => {
 
       await component.ngOnInit();
       expect(component.config().scene).toBe('tnt/UnsuccessfulAuth');
-      expect(component.config().illustratedMessageTitle).toBe('');
-      expect(component.config().illustratedMessageText).toBe('translated text');
+      expect(component.config().illustratedMessageTitle).toBe(
+        'You are not authorized to access this content.',
+      );
+      expect(component.config().illustratedMessageText).toBe('');
       expect(component.config().buttons).toBeDefined();
-      expect(component.config().buttons?.length).toBe(2);
+      expect(component.config().buttons?.length).toBe(0);
     });
 
     it('should set default error config for unknown error code', async () => {
@@ -111,7 +115,9 @@ describe('ErrorComponent', () => {
 
       await component.ngOnInit();
       expect(component.config().scene).toBe('UnableToLoad');
-      expect(component.config().illustratedMessageTitle).toBe('translated text');
+      expect(component.config().illustratedMessageTitle).toBe(
+        'translated text',
+      );
       expect(component.config().illustratedMessageText).toBe('');
       expect(component.config().buttons).toBeDefined();
     });
