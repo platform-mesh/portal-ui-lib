@@ -253,4 +253,18 @@ export class ListViewComponent {
 
     return resourceDefinition;
   }
+
+  protected isAvailable(item: Resource) {
+    return item.ready && !item.metadata.deletionTimestamp;
+  }
+
+  protected getAccessibleName(item: Resource): string {
+    if (item.metadata.deletionTimestamp) {
+      return 'Resource is pending deletion';
+    } else if (!item.ready) {
+      return 'Resource is not ready';
+    }
+
+    return '';
+  }
 }

@@ -21,7 +21,7 @@ import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
-import { catchError, map, startWith, switchMap } from 'rxjs/operators';
+import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -90,6 +90,13 @@ export class ResourceService {
           }
 
           return error;
+        }),
+        tap((resource) => {
+          if (resource.metadata?.deletionTimestamp) {
+            const message = `The resource ${resourceId} is pending deletion.`;
+            this.luigiCoreService.navigation().navigate('/error/422');
+            throw new Error(message);
+          }
         }),
       );
   }

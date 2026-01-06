@@ -11,6 +11,7 @@ import {
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js';
+import '@ui5/webcomponents-fiori/dist/illustrations/tnt/NoApplications.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/tnt/UnsuccessfulAuth.js';
 import {
   ButtonComponent,
@@ -62,6 +63,10 @@ export class ErrorComponent implements OnInit {
         this.config.set(await this.getError404Config());
         break;
       }
+      case 422: {
+        this.config.set(await this.getError422Config());
+        break;
+      }
       default: {
         this.config.set(await this.getErrorDefaultConfig());
       }
@@ -96,6 +101,15 @@ export class ErrorComponent implements OnInit {
       illustratedMessageTitle: await this.i18nService.getTranslationAsync(
         'ERROR_UNIDENTIFIED_TITLE',
       ),
+      illustratedMessageText: '',
+      buttons: [],
+    };
+  }
+
+  private async getError422Config() {
+    return {
+      scene: 'tnt/NoApplications',
+      illustratedMessageTitle: `The resource is pending deletion.`,
       illustratedMessageText: '',
       buttons: [],
     };
