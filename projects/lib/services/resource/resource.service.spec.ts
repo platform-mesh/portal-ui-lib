@@ -72,8 +72,7 @@ describe('ResourceService', () => {
       const invalidQuery =
         `query { core_k8s_io { TestKind(name: "test-name") {` as unknown as any;
 
-      const mockShowAlert = jest.fn();
-      service['luigiCoreService'].showAlert = mockShowAlert;
+      service['luigiCoreService'].showAlert = jest.fn();
 
       service
         .read(
@@ -251,6 +250,44 @@ describe('ResourceService', () => {
         });
     });
 
+    it('should handle resource in pending deletion state', (done) => {
+      const rawQuery = `query { core_k8s_io { TestKind(name: "test") { name } } }`;
+      const navigateMock = jest.fn();
+      mockLuigiCoreService.navigation.mockReturnValue({
+        navigate: navigateMock,
+      });
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              TestKind: {
+                name: 'test',
+                metadata: { deletionTimestamp: '2021-01-01T00:00:00Z' },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .read(
+          'test',
+          'core_k8s_io',
+          'TestKind',
+          rawQuery,
+          clusterScopeNodeContext,
+        )
+        .subscribe({
+          error: (error) => {
+            expect(navigateMock).toHaveBeenCalledWith('/error/422');
+            expect(error.message).toEqual(
+              'The resource test is pending deletion.',
+            );
+            done();
+          },
+        });
+    });
+
     it('should handle read error', (done) => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
@@ -269,7 +306,7 @@ describe('ResourceService', () => {
           namespacedNodeContext,
         )
         .subscribe({
-          error: (err) => {
+          error: (_err) => {
             expect(console.error).toHaveBeenCalledWith(
               'Error executing GraphQL query.',
               error,

@@ -105,6 +105,24 @@ describe('ErrorComponent', () => {
       expect(component.config().buttons?.length).toBe(0);
     });
 
+    it('should set 422 config', async () => {
+      const testContext = {
+        id: '422',
+        translationTable: {},
+      };
+
+      fixture.componentRef.setInput('context', testContext);
+
+      await component.ngOnInit();
+      expect(component.config().scene).toBe('tnt/NoApplications');
+      expect(component.config().illustratedMessageTitle).toBe(
+        'The resource is pending deletion.',
+      );
+      expect(component.config().illustratedMessageText).toBe('');
+      expect(component.config().buttons).toBeDefined();
+      expect(component.config().buttons?.length).toBe(0);
+    });
+
     it('should set default error config for unknown error code', async () => {
       const testContext = {
         id: '500',

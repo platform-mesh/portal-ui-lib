@@ -63,3 +63,10 @@ jest.mock(
     virtual: true,
   },
 );
+jest.mock(
+  '@ui5/webcomponents-fiori/dist/illustrations/tnt/NoApplications.js',
+  () => ({}),
+  {
+    virtual: true,
+  },
+);

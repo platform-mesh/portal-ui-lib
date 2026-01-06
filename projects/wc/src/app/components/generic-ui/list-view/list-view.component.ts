@@ -129,11 +129,11 @@ export class ListViewComponent {
     this.resourceService
       .delete(resource, resourceDefinition, this.context())
       .subscribe({
-        next: (result) => {
+        next: (_result) => {
           this.deleteModal()?.close();
           console.debug('Resource deleted.');
         },
-        error: (error) => {
+        error: (_error) => {
           this.luigiCoreService.showAlert({
             text: `Failure! Could not delete resource: ${resource.metadata.name}.`,
             type: 'error',
@@ -254,11 +254,11 @@ export class ListViewComponent {
     return resourceDefinition;
   }
 
-  protected isAvailable(item: Resource) {
+  isAvailable(item: Resource) {
     return item.ready && !item.metadata.deletionTimestamp;
   }
 
-  protected getAccessibleName(item: Resource): string {
+  getAccessibleName(item: Resource): string {
     if (item.metadata.deletionTimestamp) {
       return 'Resource is pending deletion';
     } else if (!item.ready) {
