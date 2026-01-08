@@ -42,7 +42,7 @@
     "@types/jest": "30.0.0",
     "@types/jmespath": "0.15.2",
     "@types/jsonpath": "0.2.4",
-    "@ui5/webcomponents-ngx": "0.5.9",
+    "@ui5/webcomponents-ngx": "0.5.10",
     "cpx2": "8.0.0",
     "jest": "29.7.0",
     "jest-jasmine2": "29.7.0",
