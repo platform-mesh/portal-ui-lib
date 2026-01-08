@@ -51,6 +51,7 @@ describe('ListViewComponent', () => {
         plural: 'clusters',
         kind: 'Cluster',
         group: 'core.k8s.io',
+        version: 'v1alpha1',
         ui: {
           listView: {
             fields: [],
@@ -887,8 +888,7 @@ describe('ListViewComponent', () => {
       expect(event.stopPropagation).toHaveBeenCalled();
       expect(mockResourceService.read).toHaveBeenCalledWith(
         '', // Should use empty string when name is undefined
-        expect.any(String),
-        expect.any(String),
+        expect.any(Object),
         expect.any(Array),
         expect.any(Object),
         false,

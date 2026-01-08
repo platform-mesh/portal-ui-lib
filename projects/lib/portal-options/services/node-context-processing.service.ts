@@ -4,7 +4,10 @@ import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  ResourceRequestParams,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
@@ -23,9 +26,10 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   ) {
     const group = entityNode.defineEntity?.graphqlEntity?.group;
     const kind = entityNode.defineEntity?.graphqlEntity?.kind;
+    const version = entityNode.defineEntity?.graphqlEntity?.version;
     const queryPart = entityNode.defineEntity?.graphqlEntity?.query;
 
-    if (!entityId || !group || !kind || !queryPart) {
+    if (!entityId || !group || !kind || !queryPart || !version) {
       return;
     }
 
@@ -41,24 +45,28 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       ctx.resourceDefinition?.scope === 'Namespaced'
         ? ctx.namespaceId
         : undefined;
-    let query = `query ($name: String!) { ${operation} { ${kind}(name: $name) ${queryPart} }}`;
+    let query = `query ($name: String!) { ${operation} { ${version} { ${kind}(name: $name) ${queryPart} }}}`;
     if (namespaceId) {
-      query = `query ($name: String!, $namespace: String!) { ${operation} { ${kind}(name: $name, namespace: $namespace) ${queryPart} }}`;
+      query = `query ($name: String!, $namespace: String!) { ${operation} { ${version} { ${kind}(name: $name, namespace: $namespace) ${queryPart} }}}`;
     }
 
-    const accountPath =
-      this.accountPathResolver.resolveAccountHierarchy(
-        entityNode,
-        entityId,
-        kind,
-      );
+    const accountPath = this.accountPathResolver.resolveAccountHierarchy(
+      entityNode,
+      entityId,
+      kind,
+    );
+
+    const params: ResourceRequestParams = {
+      kind,
+      version,
+      operation,
+    };
 
     try {
       const entity = await firstValueFrom(
         this.resourceService.read(
           entityId,
-          operation,
-          kind,
+          params,
           query,
           {
             resourceDefinition: ctx.resourceDefinition,

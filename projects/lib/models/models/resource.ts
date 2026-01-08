@@ -78,6 +78,7 @@ export interface Resource extends Record<string, any> {
 
 export interface ResourceDefinition {
   group: string;
+  version: string;
   plural: string;
   singular: string;
   kind: string;

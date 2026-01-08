@@ -27,6 +27,12 @@ interface ResourceResponseError extends Record<string, any> {
   message: string;
 }
 
+export interface ResourceRequestParams {
+  kind: string;
+  version: string;
+  operation: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -36,19 +42,18 @@ export class ResourceService {
 
   read(
     resourceId: string,
-    operation: string,
-    kind: string,
+    params: ResourceRequestParams,
     fieldsOrRawQuery: any[] | string,
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = true,
   ): Observable<Resource> {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
+
     let query: string | TypedDocumentNode<any, any> = this.resolveReadQuery(
+      params,
       fieldsOrRawQuery,
-      kind,
       resourceId,
       isNamespacedResource ? nodeContext.namespaceId : undefined,
-      operation,
     );
 
     try {
@@ -75,7 +80,10 @@ export class ResourceService {
         },
       })
       .pipe(
-        map((res) => res.data?.[operation]?.[kind]),
+        map(
+          (res) =>
+            res.data?.[params.operation]?.[params.version]?.[params.kind],
+        ),
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
@@ -102,13 +110,13 @@ export class ResourceService {
   }
 
   private resolveReadQuery(
+    params: ResourceRequestParams,
     fieldsOrRawQuery: any[] | string,
-    kind: string,
     resourceId: string,
     namespace: string | undefined,
-    operation: string,
   ) {
     if (fieldsOrRawQuery instanceof Array) {
+      const { kind, version, operation } = params;
       return (
         gqlBuilder
           .query({
@@ -121,8 +129,8 @@ export class ResourceService {
             },
             fields: fieldsOrRawQuery,
           })
-          .query.replace(kind, `${operation} { ${kind}`)
-          .trim() + '}'
+          .query.replace(kind, `${operation} { ${version} { ${kind}`)
+          .trim() + '}}'
       );
     } else {
       return fieldsOrRawQuery;
@@ -241,12 +249,17 @@ export class ResourceService {
     const operation = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
+    const version = resourceDefinition.version;
     const kind = capitalize(resourceDefinition.plural);
     const listQuery = gqlBuilder.query({
       operation,
       fields: [
         {
-          [kind]: ['resourceVersion', { items: fields }],
+          [version]: [
+            {
+              [kind]: ['resourceVersion', { items: fields }],
+            },
+          ],
         },
       ],
       variables: variables,
@@ -264,7 +277,7 @@ export class ResourceService {
         map((res: any): ResourceListResult => {
           const resourceListResult = getValueByPath<any, any>(
             res.data,
-            `${operation}.${kind}`,
+            `${operation}.${version}.${kind}`,
           );
           if (!resourceListResult) {
             throw new Error('Resource list result not found');
@@ -326,19 +339,24 @@ export class ResourceService {
     );
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const kind = resourceDefinition.kind;
+    const version = resourceDefinition.version;
 
     const mutation = gqlBuilder.mutation({
       operation: group,
       fields: [
         {
-          operation: `delete${kind}`,
-          variables: {
-            name: { type: 'String!', value: resource.metadata.name },
-            ...(isNamespacedResource && {
-              namespace: { type: 'String', value: nodeContext.namespaceId },
-            }),
-          },
-          fields: [],
+          [version]: [
+            {
+              operation: `delete${kind}`,
+              variables: {
+                name: { type: 'String!', value: resource.metadata.name },
+                ...(isNamespacedResource && {
+                  namespace: { type: 'String', value: nodeContext.namespaceId },
+                }),
+              },
+              fields: [],
+            },
+          ],
         },
       ],
     });
@@ -369,6 +387,7 @@ export class ResourceService {
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
+    const version = resourceDefinition.version;
     const kind = resourceDefinition.kind;
     const namespace = nodeContext.namespaceId;
 
@@ -376,14 +395,18 @@ export class ResourceService {
       operation: group,
       fields: [
         {
-          operation: `create${kind}`,
-          variables: {
-            ...(isNamespacedResource && {
-              namespace: { type: 'String', value: namespace },
-            }),
-            object: { type: `${kind}Input!`, value: resource },
-          },
-          fields: ['__typename'],
+          [version]: [
+            {
+              operation: `create${kind}`,
+              variables: {
+                ...(isNamespacedResource && {
+                  namespace: { type: 'String', value: namespace },
+                }),
+                object: { type: `${kind}Input!`, value: resource },
+              },
+              fields: ['__typename'],
+            },
+          ],
         },
       ],
     });
@@ -416,6 +439,7 @@ export class ResourceService {
       resourceDefinition.group,
     );
     const kind = resourceDefinition.kind;
+    const version = resourceDefinition.version;
     const namespace = nodeContext.namespaceId;
 
     const cleanResource = stripTypename(resource);
@@ -424,18 +448,22 @@ export class ResourceService {
       operation: group,
       fields: [
         {
-          operation: `update${kind}`,
-          variables: {
-            ...(isNamespacedResource && {
-              namespace: { type: 'String', value: namespace },
-            }),
-            name: { type: 'String!', value: resource.metadata.name },
-            object: {
-              type: `${kind}Input!`,
-              value: cleanResource,
+          [version]: [
+            {
+              operation: `update${kind}`,
+              variables: {
+                ...(isNamespacedResource && {
+                  namespace: { type: 'String', value: namespace },
+                }),
+                name: { type: 'String!', value: resource.metadata.name },
+                object: {
+                  type: `${kind}Input!`,
+                  value: cleanResource,
+                },
+              },
+              fields: ['__typename'],
             },
-          },
-          fields: ['__typename'],
+          ],
         },
       ],
     });
@@ -465,17 +493,19 @@ export class ResourceService {
         query: gql`
           {
             core_platform_mesh_io {
-              AccountInfo(name: "account") {
-                metadata {
-                  name
-                  annotations
-                }
-                spec {
-                  clusterInfo {
-                    ca
+              v1alpha1 {
+                AccountInfo(name: "account") {
+                  metadata {
+                    name
+                    annotations
                   }
-                  organization {
-                    originClusterId
+                  spec {
+                    clusterInfo {
+                      ca
+                    }
+                    organization {
+                      originClusterId
+                    }
                   }
                 }
               }
@@ -485,7 +515,7 @@ export class ResourceService {
       })
       .pipe(
         map((res: any) => {
-          return res.data.core_platform_mesh_io.AccountInfo;
+          return res.data.core_platform_mesh_io.v1alpha1.AccountInfo;
         }),
         catchError((error) => {
           this.alertErrors(error);

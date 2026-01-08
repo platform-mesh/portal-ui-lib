@@ -111,12 +111,13 @@ export class OrganizationManagementComponent implements OnInit {
       },
     ]);
 
-    const queryOperation = 'core_platform_mesh_io_accounts';
+    const queryOperation = 'core_platform_mesh_io_v1alpha1_accounts';
     this.resourceService
       .list(queryOperation, fields, {
         ...this.context(),
         resourceDefinition: {
           group: 'core.platform-mesh.io',
+          version: 'v1alpha1',
           plural: 'accounts',
           scope: 'Cluster',
         } as ResourceDefinition,
@@ -162,6 +163,7 @@ export class OrganizationManagementComponent implements OnInit {
       plural: 'accounts',
       singular: 'account',
       scope: 'Cluster',
+      version: 'v1alpha1',
     };
 
     this.resourceService

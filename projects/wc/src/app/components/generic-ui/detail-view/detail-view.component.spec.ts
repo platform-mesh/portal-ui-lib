@@ -47,6 +47,7 @@ describe('DetailViewComponent', () => {
       organization: 'org-123',
       kcpCA: 'kcp-ca-data',
       resourceDefinition: {
+        version: 'v1alpha1',
         kind: 'Cluster',
         group: 'core.k8s.io',
         ui: {
@@ -149,6 +150,7 @@ describe('DetailViewComponent', () => {
       resourceDefinition: {
         kind: 'Account',
         group: 'core.k8s.io',
+        version: 'v1alpha1',
         ui: {
           detailView: {
             fields: [],
@@ -177,8 +179,7 @@ describe('DetailViewComponent', () => {
 
     expect(mockResourceService.read).toHaveBeenCalledWith(
       'test-account',
-      'core_k8s_io',
-      'Account',
+      { kind: 'Account', operation: 'core_k8s_io', version: 'v1alpha1' },
       [],
       expect.any(Object),
       true,

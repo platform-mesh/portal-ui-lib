@@ -44,6 +44,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -79,6 +80,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -114,6 +116,24 @@ describe('NodeContextProcessingServiceImpl', () => {
           graphqlEntity: {
             group: 'test.group',
             kind: '',
+            query: '{ id }',
+          },
+        },
+        context: {},
+      } as any;
+      const ctx: PortalNodeContext = {} as any;
+
+      await service.processNodeContext('test-id', entityNode, ctx);
+
+      expect(mockResourceService.read).not.toHaveBeenCalled();
+    });
+
+    it('should return early if version is missing', async () => {
+      const entityNode: PortalLuigiNode = {
+        defineEntity: {
+          graphqlEntity: {
+            group: 'test.group',
+            kind: 'TestKind',
             query: '{ id }',
           },
         },
@@ -163,6 +183,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -186,9 +207,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        'test_group',
-        'TestKind',
-        'query ($name: String!) { test_group { TestKind(name: $name) { id name } }}',
+        { kind: 'TestKind', version: 'v1alpha1', operation: 'test_group' },
+        'query ($name: String!) { test_group { v1alpha1 { TestKind(name: $name) { id name } }}}',
         {
           resourceDefinition: ctx.resourceDefinition,
           portalContext: {
@@ -209,6 +229,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -233,9 +254,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        'test_group',
-        'TestKind',
-        'query ($name: String!, $namespace: String!) { test_group { TestKind(name: $name, namespace: $namespace) { id name } }}',
+        { kind: 'TestKind', version: 'v1alpha1', operation: 'test_group' },
+        'query ($name: String!, $namespace: String!) { test_group { v1alpha1 { TestKind(name: $name, namespace: $namespace) { id name } }}}',
         {
           resourceDefinition: ctx.resourceDefinition,
           portalContext: {
@@ -256,6 +276,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'Account',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -278,9 +299,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        'test_group',
-        'Account',
-        'query ($name: String!) { test_group { Account(name: $name) { id name } }}',
+        { kind: 'Account', version: 'v1alpha1', operation: 'test_group' },
+        'query ($name: String!) { test_group { v1alpha1 { Account(name: $name) { id name } }}}',
         {
           resourceDefinition: undefined,
           portalContext: {
@@ -301,6 +321,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -336,6 +357,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -368,6 +390,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test.group',
             kind: 'TestKind',
             query: '{ id name }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -403,6 +426,7 @@ describe('NodeContextProcessingServiceImpl', () => {
             group: 'test-group.with-dots',
             kind: 'TestKind',
             query: '{ id }',
+            version: 'v1alpha1',
           },
         },
         context: {},
@@ -425,9 +449,12 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        'test_group_with_dots',
-        'TestKind',
-        'query ($name: String!) { test_group_with_dots { TestKind(name: $name) { id } }}',
+        {
+          kind: 'TestKind',
+          version: 'v1alpha1',
+          operation: 'test_group_with_dots',
+        },
+        'query ($name: String!) { test_group_with_dots { v1alpha1 { TestKind(name: $name) { id } }}}',
         expect.any(Object),
         false,
       );

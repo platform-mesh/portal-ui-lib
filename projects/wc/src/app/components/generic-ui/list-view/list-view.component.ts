@@ -20,6 +20,7 @@ import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
+  ResourceRequestParams,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
@@ -104,7 +105,7 @@ export class ListViewComponent {
   list() {
     const fields = this.generateGqlFieldsWithReadyConditions();
     const resourceDefinition = this.getResourceDefinition();
-    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.plural}`;
+    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.version}_${resourceDefinition.plural}`;
 
     this.resourceService
       .list(queryOperation, fields, this.context())
@@ -194,23 +195,18 @@ export class ListViewComponent {
     event.stopPropagation?.();
     const resourceDefinition = this.getResourceDefinition();
 
-    const groupOperation = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group,
-    );
-    const kind = resourceDefinition.kind;
     const fields = generateGraphQLFields(
       resourceDefinition.ui?.createView?.fields ?? [],
     );
 
+    const params: ResourceRequestParams = {
+      kind: resourceDefinition.kind,
+      version: resourceDefinition.version,
+      operation: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
+    };
+
     this.resourceService
-      .read(
-        resource.metadata.name ?? '',
-        groupOperation,
-        kind,
-        fields,
-        this.context(),
-        false,
-      )
+      .read(resource.metadata.name ?? '', params, fields, this.context(), false)
       .subscribe({
         next: (result) => this.createModal()?.open(result),
       });

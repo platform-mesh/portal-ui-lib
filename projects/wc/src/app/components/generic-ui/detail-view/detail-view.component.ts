@@ -18,6 +18,7 @@ import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   GatewayService,
   ResourceNodeContext,
+  ResourceRequestParams,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
@@ -84,10 +85,12 @@ export class DetailViewComponent {
   private readResource(): void {
     const resourceDefinition = this.getResourceDefinition();
     const fields = generateGraphQLFields(this.resourceFields());
-    const queryOperation = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group,
-    );
-    const kind = resourceDefinition.kind;
+
+    const params: ResourceRequestParams = {
+      kind: resourceDefinition.kind,
+      version: resourceDefinition.version,
+      operation: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
+    };
 
     const resourceId = this.resourceId();
     if (!resourceId) {
@@ -102,11 +105,10 @@ export class DetailViewComponent {
     this.resourceService
       .read(
         resourceId,
-        queryOperation,
-        kind,
+        params,
         fields,
         this.context(),
-        kind.toLowerCase() === 'account',
+        params.kind.toLowerCase() === 'account',
       )
       .subscribe({
         next: (result) => this.resource.set(result),

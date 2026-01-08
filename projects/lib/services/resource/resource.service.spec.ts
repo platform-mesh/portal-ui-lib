@@ -14,6 +14,7 @@ describe('ResourceService', () => {
   const resourceDefinition: any = {
     group: 'core.k8s.io',
     kind: 'TestKind',
+    version: 'v1',
     scope: 'Namespaced',
     namespace: 'default',
     plural: 'testkinds',
@@ -25,6 +26,7 @@ describe('ResourceService', () => {
     resourceDefinition: {
       group: 'core.k8s.io',
       kind: 'TestKind',
+      version: 'v1',
       scope: 'Namespaced',
       namespace: 'default',
       plural: 'testkinds',
@@ -36,6 +38,7 @@ describe('ResourceService', () => {
     resourceDefinition: {
       group: 'core.k8s.io',
       kind: 'TestKind',
+      version: 'v1',
       scope: 'Cluster',
       namespace: 'default',
       plural: 'testkinds',
@@ -77,8 +80,7 @@ describe('ResourceService', () => {
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           invalidQuery,
           namespacedNodeContext,
         )
@@ -95,14 +97,15 @@ describe('ResourceService', () => {
 
     it('should read resource using fields', (done) => {
       mockApollo.query.mockReturnValue(
-        of({ data: { core_k8s_io: { TestKind: { name: 'test' } } } }),
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
 
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
         )
@@ -121,14 +124,15 @@ describe('ResourceService', () => {
 
     it('should read resource using fields with namespaced scope', (done) => {
       mockApollo.query.mockReturnValue(
-        of({ data: { core_k8s_io: { TestKind: { name: 'test' } } } }),
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
 
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
         )
@@ -147,14 +151,15 @@ describe('ResourceService', () => {
 
     it('should read resource using fields with cluster scope', (done) => {
       mockApollo.query.mockReturnValue(
-        of({ data: { core_k8s_io: { TestKind: { name: 'test' } } } }),
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
 
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           ['name'],
           clusterScopeNodeContext,
         )
@@ -173,14 +178,15 @@ describe('ResourceService', () => {
     it('should read resource using raw query, namespaced scope', (done) => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test-name") { name } } }`;
       mockApollo.query.mockReturnValue(
-        of({ data: { core_k8s_io: { TestKind: { name: 'test' } } } }),
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
 
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
         )
@@ -200,14 +206,15 @@ describe('ResourceService', () => {
     it('should read resource using raw query, cluster scope', (done) => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test") { name } } }`;
       mockApollo.query.mockReturnValue(
-        of({ data: { core_k8s_io: { TestKind: { name: 'test' } } } }),
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
 
       service
         .read(
           'test',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           rawQuery,
           clusterScopeNodeContext,
         )
@@ -226,14 +233,15 @@ describe('ResourceService', () => {
     it('should read resource using raw query with namespace', (done) => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test-name", namespace: "test-namespace") { name } } }`;
       mockApollo.query.mockReturnValue(
-        of({ data: { core_k8s_io: { TestKind: { name: 'test' } } } }),
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
 
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
         )
@@ -260,9 +268,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              TestKind: {
-                name: 'test',
-                metadata: { deletionTimestamp: '2021-01-01T00:00:00Z' },
+              v1: {
+                TestKind: {
+                  name: 'test',
+                  metadata: { deletionTimestamp: '2021-01-01T00:00:00Z' },
+                },
               },
             },
           },
@@ -272,8 +282,7 @@ describe('ResourceService', () => {
       service
         .read(
           'test',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           rawQuery,
           clusterScopeNodeContext,
         )
@@ -300,8 +309,7 @@ describe('ResourceService', () => {
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
         )
@@ -330,8 +338,7 @@ describe('ResourceService', () => {
       service
         .read(
           'test-name',
-          'core_k8s_io',
-          'TestKind',
+          { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
         )
@@ -385,12 +392,14 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [
-                  { name: 'res1', metadata: { uid: 'uid1' } },
-                  { name: 'res2', metadata: { uid: 'uid2' } },
-                ],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [
+                    { name: 'res1', metadata: { uid: 'uid1' } },
+                    { name: 'res2', metadata: { uid: 'uid2' } },
+                  ],
+                },
               },
             },
           },
@@ -416,9 +425,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
               },
             },
           },
@@ -454,9 +465,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
               },
             },
           },
@@ -489,9 +502,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
               },
             },
           },
@@ -581,9 +596,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [],
+                },
               },
             },
           },
@@ -608,9 +625,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
               },
             },
           },
@@ -644,9 +663,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
               },
             },
           },
@@ -678,9 +699,11 @@ describe('ResourceService', () => {
         of({
           data: {
             core_k8s_io: {
-              Testkinds: {
-                resourceVersion: '123',
-                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
               },
             },
           },
@@ -991,7 +1014,9 @@ describe('ResourceService', () => {
         of({
           data: {
             core_platform_mesh_io: {
-              AccountInfo: accountInfo,
+              v1alpha1: {
+                AccountInfo: accountInfo,
+              },
             },
           },
         }),
