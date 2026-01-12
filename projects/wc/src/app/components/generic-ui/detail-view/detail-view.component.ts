@@ -141,6 +141,7 @@ export class DetailViewComponent {
       kcpCA: this.context().kcpCA,
       token: this.context().token,
       kcpWorkspaceUrl: this.context().portalContext.kcpWorkspaceUrl,
+      accountPath: this.context().accountPath,
     };
 
     try {
@@ -159,7 +160,7 @@ export class DetailViewComponent {
       .replaceAll('<org-name>', kubeconfigProps.organization)
       .replaceAll(
         '<server-url>',
-        `${kubeconfigProps.kcpWorkspaceUrl}:${kubeconfigProps.accountId}`,
+        `${kubeconfigProps.kcpWorkspaceUrl}:${kubeconfigProps.accountPath}`,
       )
       .replaceAll('<oidc-issuer-url>', oidcIssuerUrl)
       .replaceAll('<ca-data>', kubeconfigProps.kcpCA)

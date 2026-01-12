@@ -43,6 +43,7 @@ describe('DetailViewComponent', () => {
     component.context = (() => ({
       resourceId: 'cluster-1',
       token: 'abc123',
+      accountPath: 'account-123',
       accountId: 'account-123',
       organization: 'org-123',
       kcpCA: 'kcp-ca-data',
