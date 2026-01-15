@@ -9,10 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import {
-  FieldDefinition,
-  LabelDisplay,
-} from '@platform-mesh/portal-ui-lib/models/models';
+import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models/models';
 import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils/utils';
 import '@ui5/webcomponents-icons/dist/copy.js';
@@ -45,9 +42,8 @@ export class ValueCellComponent {
   uiSettings = computed(() => this.fieldDefinition().uiSettings);
   displayAs = computed(() => this.uiSettings()?.displayAs);
   withCopyButton = computed(() => this.uiSettings()?.withCopyButton);
-  labelDisplay = computed(() =>
-    this.normalizeLabelDisplay(this.uiSettings()?.labelDisplay),
-  );
+  labelDisplay = computed(() => this.uiSettings()?.labelDisplay);
+  cssCustomization = computed(() => this.uiSettings()?.cssCustomization);
 
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
@@ -92,18 +88,6 @@ export class ValueCellComponent {
     } catch {
       return false;
     }
-  }
-
-  private normalizeLabelDisplay(value: unknown): LabelDisplay | undefined {
-    if (typeof value === 'object' && value !== null) {
-      return value;
-    }
-
-    if (value) {
-      return {};
-    }
-
-    return undefined;
   }
 
   public copyValue(event: Event) {

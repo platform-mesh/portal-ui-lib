@@ -1,12 +1,5 @@
 @let displayType = displayAs();
-<span [attr.test-id]="testId()" [class.label-value]="labelDisplay()" [style]="{
-  backgroundColor: labelDisplay()?.backgroundColor,
-  color: labelDisplay()?.color,
-  fontWeight: labelDisplay()?.fontWeight,
-  fontStyle: labelDisplay()?.fontStyle,
-  textDecoration: labelDisplay()?.textDecoration,
-  textTransform: labelDisplay()?.textTransform,
-}">
+<span [attr.test-id]="testId()" [class.label-value]="labelDisplay()" [style]="cssCustomization()">
   @if (displayType === 'secret') {
     <pm-secret-value
     [testId]="testId() + '-secret'"

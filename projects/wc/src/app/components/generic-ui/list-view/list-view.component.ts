@@ -90,6 +90,9 @@ export class ListViewComponent {
   );
   viewColomns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
+  imagePathProperty = computed(
+    () => this.resourceDefinition()?.ui?.resourceImageProperty,
+  );
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );

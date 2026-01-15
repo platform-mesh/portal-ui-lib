@@ -1,14 +1,5 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
-export interface LabelDisplay {
-  backgroundColor?: string;
-  color?: string;
-  fontWeight?: string;
-  fontStyle?: string;
-  textDecoration?: string;
-  textTransform?: string;
-}
-
 export type TransformType =
   | 'uppercase'
   | 'lowercase'
@@ -22,9 +13,10 @@ export interface PropertyField {
 }
 
 export interface UiSettings {
-  labelDisplay?: LabelDisplay | boolean;
+  labelDisplay?: boolean;
   displayAs?: 'secret' | 'boolIcon' | 'link';
   withCopyButton?: boolean;
+  cssCustomization?: Partial<CSSStyleDeclaration>;
 }
 
 export interface FieldDefinition {
@@ -97,6 +89,7 @@ interface UiView {
 
 export interface UIDefinition {
   logoUrl?: string;
+  resourceImageProperty?: string;
   listView?: UiView;
   createView?: UiView;
   detailView?: UiView;
