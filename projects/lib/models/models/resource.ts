@@ -76,6 +76,11 @@ export interface Resource extends Record<string, any> {
   data?: Record<string, any>;
 }
 
+export interface ReadyCondition {
+  jsonPathExpression: string;
+  property: string | string[];
+}
+
 export interface ResourceDefinition {
   group: string;
   version: string;
@@ -84,15 +89,13 @@ export interface ResourceDefinition {
   kind: string;
   scope?: KubernetesScope;
   namespace?: string;
-  readyCondition?: {
-    jsonPathExpression: string;
-    property: string | string[];
-  };
+  readyCondition?: ReadyCondition;
   ui?: UIDefinition;
 }
 
 interface UiView {
   fields: FieldDefinition[];
+  connectedResources?: ResourceDefinition[];
 }
 
 export interface UIDefinition {

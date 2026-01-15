@@ -1,4 +1,18 @@
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import {
+  FieldDefinition,
+  ReadyCondition,
+} from '@platform-mesh/portal-ui-lib/models';
+
+export const generateGqlFieldsWithReadyConditions = (
+  uiFields: FieldDefinition[],
+  readyCondition: ReadyCondition | undefined,
+) => {
+  if (!readyCondition) {
+    return generateGraphQLFields(uiFields);
+  }
+
+  return generateGraphQLFields(uiFields.concat(readyCondition));
+};
 
 export const generateGraphQLFields = (uiFields: FieldDefinition[]): any[] => {
   const graphQLFields = [];

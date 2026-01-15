@@ -1,5 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
 import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
+import { ListViewComponent } from '../list-view/list-view.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { kubeConfigTemplate } from './kubeconfig-template';
 import {
@@ -12,9 +13,13 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
-import { Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  Resource,
+  ResourceDefinition,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   GatewayService,
   ResourceNodeContext,
@@ -26,16 +31,31 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
+import '@ui5/webcomponents-icons/dist/collaborate.js';
+import '@ui5/webcomponents-icons/dist/competitor.js';
+import '@ui5/webcomponents-icons/dist/wallet.js';
 import {
+  CardComponent,
+  CardHeaderComponent,
   DynamicPageComponent,
   DynamicPageHeaderComponent,
   DynamicPageTitleComponent,
   LabelComponent,
+  LinkComponent,
   TextComponent,
   TitleComponent,
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+/* playground-hide-end */
+import '@ui5/webcomponents/dist/Card.js';
+import '@ui5/webcomponents/dist/CardHeader.js';
+import '@ui5/webcomponents/dist/Label.js';
+import '@ui5/webcomponents/dist/Link.js';
+import '@ui5/webcomponents/dist/List.js';
+import '@ui5/webcomponents/dist/ListItemStandard.js';
+import '@ui5/webcomponents/dist/Text.js';
+import '@ui5/webcomponents/dist/Title.js';
 
 @Component({
   selector: 'pm-detail-view',
@@ -50,6 +70,10 @@ import {
     DynamicPageHeaderComponent,
     LabelComponent,
     ValueCellComponent,
+    ListViewComponent,
+    LinkComponent,
+    CardComponent,
+    CardHeaderComponent,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
@@ -65,6 +89,11 @@ export class DetailViewComponent {
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
   resource = signal<Resource | undefined>(undefined);
+  connectedResource = signal<
+    | { resource: Resource[]; resourceDefinition: ResourceDefinition }[]
+    | undefined
+  >(undefined);
+  connectedResourceDefinition = signal<ResourceDefinition[]>([]);
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   resourceFields = computed(
@@ -113,6 +142,17 @@ export class DetailViewComponent {
       .subscribe({
         next: (result) => this.resource.set(result),
       });
+
+    this.connectedResourceDefinition.set(
+      resourceDefinition.ui?.detailView?.connectedResources || [],
+    );
+  }
+
+  contextPerConnectedResource(resourceDefinition: ResourceDefinition) {
+    return {
+      ...this.context(),
+      resourceDefinition,
+    };
   }
 
   navigateToParent() {
@@ -186,5 +226,10 @@ export class DetailViewComponent {
     }
 
     return resourceDefinition;
+  }
+
+  viewCard = signal<boolean>(false);
+  toggleCardView() {
+    this.viewCard.set(!this.viewCard());
   }
 }

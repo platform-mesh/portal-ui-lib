@@ -24,6 +24,7 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
+  generateGqlFieldsWithReadyConditions,
   generateGraphQLFields,
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
@@ -76,6 +77,7 @@ export class ListViewComponent {
   private destroyRef = inject(DestroyRef);
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
+  withHeader = input<boolean>(true);
   private createModal = viewChild<CreateResourceModalComponent>('createModal');
   private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
@@ -103,7 +105,10 @@ export class ListViewComponent {
   }
 
   list() {
-    const fields = this.generateGqlFieldsWithReadyConditions();
+    const fields = generateGqlFieldsWithReadyConditions(
+      this.columns(),
+      this.readyCondition(),
+    );
     const resourceDefinition = this.getResourceDefinition();
     const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.version}_${resourceDefinition.plural}`;
 
@@ -215,15 +220,6 @@ export class ListViewComponent {
   openDeleteResourceModal(event: MouseEvent, resource: Resource) {
     event.stopPropagation?.();
     this.deleteModal()?.open(resource);
-  }
-
-  private generateGqlFieldsWithReadyConditions() {
-    const readyCondition = this.readyCondition();
-    if (!readyCondition) {
-      return generateGraphQLFields(this.columns());
-    }
-
-    return generateGraphQLFields(this.columns().concat(readyCondition));
   }
 
   private getResourceReadyStatus(resource: Resource) {

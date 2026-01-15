@@ -1,12 +1,15 @@
 <ui5-dynamic-page test-id="generic-detail-view">
   <ui5-dynamic-page-title slot="titleArea">
-
     <ui5-title slot="heading">
       <div test-id="generic-detail-view-title" class="resource-title">
         {{ resource()?.spec?.displayName || resourceId() }}
       </div>
     </ui5-title>
-    <ui5-text test-id="generic-detail-view-subtitle" class="resource-title-subheading" slot="subheading">
+    <ui5-text
+      test-id="generic-detail-view-subtitle"
+      class="resource-title-subheading"
+      slot="subheading"
+    >
       The {{ resourceDefinition()?.singular }} for
       {{ resource()?.spec?.displayName || resourceId() }}
     </ui5-text>
@@ -39,21 +42,39 @@
       }
       <div class="resource-info-cell">
         <ui5-label>Workspace Path</ui5-label>
-        <p test-id="generic-detail-view-workspace-path">{{ workspacePath() }}</p>
+        <p test-id="generic-detail-view-workspace-path">
+          {{ workspacePath() }}
+        </p>
       </div>
       @if (resource(); as resource) {
         @for (viewField of viewFields(); track viewField.property) {
-          <div class="resource-info-cell" [attr.test-id]="'generic-detail-view-field-' + viewField.property">
-            @if(viewField.group) {
-              <ui5-label [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-label'">{{ viewField.group.label ?? viewField.group.name }}</ui5-label>
-              <p [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-value'">
-                @for (field of viewField.group.fields; let last = $last; track field.label) {
+          <div
+            class="resource-info-cell"
+            [attr.test-id]="'generic-detail-view-field-' + viewField.property"
+          >
+            @if (viewField.group) {
+              <ui5-label
+                [attr.test-id]="
+                  'generic-detail-view-field-' + viewField.property + '-label'
+                "
+                >{{ viewField.group.label ?? viewField.group.name }}</ui5-label
+              >
+              <p
+                [attr.test-id]="
+                  'generic-detail-view-field-' + viewField.property + '-value'
+                "
+              >
+                @for (
+                  field of viewField.group.fields;
+                  let last = $last;
+                  track field.label
+                ) {
                   <span [class.multiline]="viewField.group.multiline ?? true">
                     <span>{{ field.label }}: </span>
                     <pm-value-cell
-                    [fieldDefinition]="field"
-                    [resource]="resource"
-                    [LuigiClient]="LuigiClient()"
+                      [fieldDefinition]="field"
+                      [resource]="resource"
+                      [LuigiClient]="LuigiClient()"
                     />
                   </span>
                   @if (!last && viewField.group.delimiter) {
@@ -62,12 +83,21 @@
                 }
               </p>
             } @else {
-              <ui5-label [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-label'">{{ viewField.label }}</ui5-label>
-              <p [attr.test-id]="'generic-detail-view-field-' + viewField.property + '-value'">
+              <ui5-label
+                [attr.test-id]="
+                  'generic-detail-view-field-' + viewField.property + '-label'
+                "
+                >{{ viewField.label }}</ui5-label
+              >
+              <p
+                [attr.test-id]="
+                  'generic-detail-view-field-' + viewField.property + '-value'
+                "
+              >
                 <pm-value-cell
-                [fieldDefinition]="viewField"
-                [resource]="resource"
-                [LuigiClient]="LuigiClient()"
+                  [fieldDefinition]="viewField"
+                  [resource]="resource"
+                  [LuigiClient]="LuigiClient()"
                 />
               </p>
             }
@@ -77,5 +107,51 @@
     </div>
   </ui5-dynamic-page-header>
 
-  <slot></slot>
+  <div style="display: flex; flex-direction: row">
+    <div style="width: -webkit-fill-available">
+      @for (cr of connectedResourceDefinition(); track cr.kind) {
+        <div class="connected-resources-title">{{ cr.kind }}</div>
+        <div style="height: 200px" (click)="toggleCardView()">
+          <pm-list-view
+            [withHeader]="false"
+            [LuigiClient]="LuigiClient()"
+            [context]="contextPerConnectedResource(cr)"
+          />
+        </div>
+      }
+    </div>
+    <div style="margin: 2rem 1rem 2rem 2rem">
+      @if (viewCard()) {
+        <ui5-card>
+          <ui5-card-header
+            slot="header"
+            title-text="Donna Maria Moore"
+            subtitle-text="Senior Sales Executive"
+          >
+            <img
+              src="https://ui5.github.io/webcomponents/images/avatars/man_avatar_1.png"
+              slot="avatar"
+            />
+          </ui5-card-header>
+          <div class="content content-padding">
+            <ui5-title level="H5" style="padding-block-end: 1rem"
+              >Contact details</ui5-title
+            >
+            <div class="content-group">
+              <ui5-label show-colon>Company Name</ui5-label>
+              <ui5-text>Company A</ui5-text>
+            </div>
+            <div class="content-group">
+              <ui5-label show-colon>Address</ui5-label>
+              <ui5-text>481 West Street, Anytown 45066, USA</ui5-text>
+            </div>
+            <div class="content-group">
+              <ui5-label show-colon>Website</ui5-label>
+              <ui5-link target="_blank">www.company_a.example.com</ui5-link>
+            </div>
+          </div>
+        </ui5-card>
+      }
+    </div>
+  </div>
 </ui5-dynamic-page>

@@ -1,43 +1,45 @@
 <ui5-dynamic-page test-id="generic-list-view">
-  <ui5-dynamic-page-title slot="titleArea">
-    <ui5-title slot="heading">
-      <div class="title-logo">
-        <div test-id="generic-list-view-title">{{ heading() }}</div>
-        @if (resourceDefinition()?.ui?.logoUrl) {
-          <img
-            test-id="generic-list-view-logo"
-            class="logo"
-            src="{{ resourceDefinition()?.ui?.logoUrl }}"
-            alt="Logo"
-          />
-        }
-      </div>
-    </ui5-title>
-    <ui5-text
-      test-id="generic-list-view-subtitle"
-      class="title-subheading"
-      slot="subheading"
-    >
-      This page displays the created
-      {{ resourceDefinition()?.plural }} in your environment
-    </ui5-text>
+  @if (withHeader()) {
+    <ui5-dynamic-page-title slot="titleArea">
+      <ui5-title slot="heading">
+        <div class="title-logo">
+          <div test-id="generic-list-view-title">{{ heading() }}</div>
+          @if (resourceDefinition()?.ui?.logoUrl) {
+            <img
+              test-id="generic-list-view-logo"
+              class="logo"
+              src="{{ resourceDefinition()?.ui?.logoUrl }}"
+              alt="Logo"
+            />
+          }
+        </div>
+      </ui5-title>
+      <ui5-text
+        test-id="generic-list-view-subtitle"
+        class="title-subheading"
+        slot="subheading"
+      >
+        This page displays the created
+        {{ resourceDefinition()?.plural }} in your environment
+      </ui5-text>
 
-    <ui5-toolbar
-      class="title-actions"
-      id="actionsBar"
-      slot="actionsBar"
-      design="Transparent"
-    >
-      @if (hasUiCreateViewFields()) {
-        <ui5-toolbar-button
-          test-id="generic-list-view-create-button"
-          design="Emphasized"
-          text="Create"
-          (click)="openCreateResourceModal()"
-        ></ui5-toolbar-button>
-      }
-    </ui5-toolbar>
-  </ui5-dynamic-page-title>
+      <ui5-toolbar
+        class="title-actions"
+        id="actionsBar"
+        slot="actionsBar"
+        design="Transparent"
+      >
+        @if (hasUiCreateViewFields()) {
+          <ui5-toolbar-button
+            test-id="generic-list-view-create-button"
+            design="Emphasized"
+            text="Create"
+            (click)="openCreateResourceModal()"
+          ></ui5-toolbar-button>
+        }
+      </ui5-toolbar>
+    </ui5-dynamic-page-title>
+  }
 
   <ui5-table test-id="generic-list-table">
     <ui5-table-header-row slot="headerRow">
