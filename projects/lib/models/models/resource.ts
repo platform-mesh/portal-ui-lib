@@ -14,7 +14,8 @@ export interface PropertyField {
 
 export interface UiSettings {
   labelDisplay?: boolean;
-  displayAs?: 'secret' | 'boolIcon' | 'link';
+  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip';
+  tooltipIcon?: string;
   withCopyButton?: boolean;
   cssCustomization?: Partial<CSSStyleDeclaration>;
 }

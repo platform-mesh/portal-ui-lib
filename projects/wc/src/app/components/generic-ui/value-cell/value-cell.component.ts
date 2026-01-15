@@ -12,9 +12,6 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models/models';
 import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils/utils';
-import '@ui5/webcomponents-icons/dist/copy.js';
-import '@ui5/webcomponents-icons/dist/hide.js';
-import '@ui5/webcomponents-icons/dist/show.js';
 import { IconComponent } from '@ui5/webcomponents-ngx';
 
 @Component({
@@ -44,6 +41,7 @@ export class ValueCellComponent {
   withCopyButton = computed(() => this.uiSettings()?.withCopyButton);
   labelDisplay = computed(() => this.uiSettings()?.labelDisplay);
   cssCustomization = computed(() => this.uiSettings()?.cssCustomization);
+  tooltipIcon = computed(() => this.uiSettings()?.tooltipIcon);
 
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));

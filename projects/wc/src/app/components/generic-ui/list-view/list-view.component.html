@@ -64,7 +64,7 @@
         } @else {
           <ui5-table-header-cell
             [attr.test-id]="
-              'generic-list-header-' + (column.property || column.label || '')
+              'generic-list-header-' + column.property
             "
             >{{ column.label }}</ui5-table-header-cell
           >
@@ -131,7 +131,8 @@
                 let last = $last;
                 track field.property
               ) {
-                <div
+                <span
+                  class="group-value"
                   [attr.test-id]="
                     'generic-list-cell-' +
                     i +
@@ -141,13 +142,15 @@
                     field.property
                   "
                 >
+                @if (field.label) {
                   <span>{{ field.label }}: </span>
-                  <pm-value-cell
-                    [fieldDefinition]="field"
-                    [resource]="item"
-                    [LuigiClient]="LuigiClient()"
-                  />
-                </div>
+                }
+                <pm-value-cell
+                  [fieldDefinition]="field"
+                  [resource]="item"
+                  [LuigiClient]="LuigiClient()"
+                />
+              </span>
                 @if (!last && column.group.delimiter) {
                   <span>{{ column.group.delimiter }}</span>
                 }
