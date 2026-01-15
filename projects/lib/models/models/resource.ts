@@ -18,6 +18,21 @@ export interface UiSettings {
   tooltipIcon?: string;
   withCopyButton?: boolean;
   cssCustomization?: Partial<CSSStyleDeclaration>;
+  cssRules?: CssRule[];
+}
+
+export type CssRuleCondition =
+  | 'equals'
+  | 'notEquals'
+  | 'greaterThan'
+  | 'greaterThanOrEqual'
+  | 'lessThan'
+  | 'lessThanOrEqual'
+  | 'contains';
+
+export interface CssRule {
+  if: { condition: CssRuleCondition; value: string };
+  styles: Partial<CSSStyleDeclaration>;
 }
 
 export interface FieldDefinition {

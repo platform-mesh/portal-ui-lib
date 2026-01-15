@@ -17,7 +17,9 @@ module.exports = {
     '<rootDir>/projects/lib/',
     '<rootDir>/projects/wc/src/main.ts',
     '<rootDir>/projects/wc/src/app/app.config.ts',
+    '<rootDir>/projects/wc/src/app/utils/ui5-configuration.ts',
     '<rootDir>/projects/wc/jest.config.js',
+    '<rootDir>/projects/wc/_mocks_/',
   ],
   // Ensure mocks are applied before modules are loaded
   setupFiles: [`${__dirname}/jest.setup.ts`],

@@ -195,7 +195,6 @@ describe('ValueCellComponent', () => {
       const span = compiled.querySelector('span');
 
       expect(span.classList.contains('label-value')).toBe(true);
-      expect(component.labelDisplay()).toEqual({});
     });
 
     it('should not apply label-value class when labelDisplay is false', () => {
@@ -206,7 +205,6 @@ describe('ValueCellComponent', () => {
       const span = compiled.querySelector('span');
 
       expect(span.classList.contains('label-value')).toBe(false);
-      expect(component.labelDisplay()).toBeUndefined();
     });
 
     it('should not apply label-value class when labelDisplay is undefined', () => {

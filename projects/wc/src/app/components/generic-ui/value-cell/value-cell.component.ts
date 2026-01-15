@@ -1,7 +1,9 @@
+import { evaluateCssRules } from '../../../utils/cssRules.engine';
 import { BooleanValueComponent } from './boolean-value/boolean-value.component';
 import { LinkValueComponent } from './link-value/link-value.component';
 import { SecretValueComponent } from './secret-value/secret-value.component';
 import {
+  CUSTOM_ELEMENTS_SCHEMA,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -16,13 +18,13 @@ import { IconComponent } from '@ui5/webcomponents-ngx';
 
 @Component({
   selector: 'pm-value-cell',
-  standalone: true,
   imports: [
     IconComponent,
     BooleanValueComponent,
     LinkValueComponent,
     SecretValueComponent,
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './value-cell.component.html',
   styleUrls: ['./value-cell.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +44,13 @@ export class ValueCellComponent {
   labelDisplay = computed(() => this.uiSettings()?.labelDisplay);
   cssCustomization = computed(() => this.uiSettings()?.cssCustomization);
   tooltipIcon = computed(() => this.uiSettings()?.tooltipIcon);
+  cssRules = computed(() =>
+    evaluateCssRules(this.value(), this.uiSettings()?.cssRules),
+  );
+  cssStyles = computed(() => ({
+    ...this.cssCustomization(),
+    ...this.cssRules(),
+  }));
 
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));

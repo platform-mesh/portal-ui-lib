@@ -5,6 +5,7 @@ import {
   ICON_NAME_POSITIVE,
 } from './boolean-cell.constants';
 import {
+  CUSTOM_ELEMENTS_SCHEMA,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -19,6 +20,7 @@ export type IconDesignType =
 @Component({
   selector: 'pm-boolean-value',
   imports: [IconComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './boolean-value.component.html',
   styleUrl: './boolean-value.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

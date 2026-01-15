@@ -87,6 +87,13 @@ describe('DetailViewComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('should resolve workspace path with gateway service', () => {
+    expect(component.workspacePath()).toBe('https://example.com');
+    expect(mockGatewayService.resolveKcpPath).toHaveBeenCalledWith(
+      component.context(),
+    );
+  });
+
   it('should call read on init', () => {
     expect(mockResourceService.read).toHaveBeenCalled();
   });
