@@ -3,6 +3,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import * as utils from '@platform-mesh/portal-ui-lib/utils';
 import { of, throwError } from 'rxjs';
 
 describe('ListViewComponent', () => {
@@ -88,6 +89,60 @@ describe('ListViewComponent', () => {
     const resource = { metadata: { name: 'test' } } as any;
     component.delete(resource);
     expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
+  });
+
+  it('should include image and ready fields when listing resources', () => {
+    const listSpy = jest.fn().mockReturnValue(of([]));
+    mockResourceService.list = listSpy;
+
+    const readyCondition = {
+      jsonPathExpression: '$.status.ready',
+      property: 'status.ready',
+    };
+
+    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        version: 'v1alpha1',
+        readyCondition,
+        ui: {
+          resourceImageProperty: 'spec.image',
+          listView: {
+            fields: [{ property: 'metadata.name' }],
+          },
+        },
+      },
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    const expectedContext = newComponent.context();
+
+    newFixture.detectChanges();
+
+    const expectedFields = utils.generateGraphQLFields([
+      { property: 'metadata.name' },
+      { property: 'spec.image' },
+      readyCondition,
+    ]);
+
+    expect(listSpy).toHaveBeenCalledWith(
+      'core_k8s_io_v1alpha1_clusters',
+      expectedFields,
+      expectedContext,
+    );
   });
 
   it('should show alert when delete errors', () => {
