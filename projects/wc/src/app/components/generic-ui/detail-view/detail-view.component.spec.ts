@@ -1,5 +1,6 @@
 import { DetailViewComponent } from './detail-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import {
   GatewayService,
@@ -90,6 +91,56 @@ describe('DetailViewComponent', () => {
 
   it('should call read on init', () => {
     expect(mockResourceService.read).toHaveBeenCalled();
+  });
+
+  it('should compute showDownloadKubeconfig as false by default', () => {
+    expect(component.showDownloadKubeconfig()).toBe(false);
+  });
+
+  it('should compute showDownloadKubeconfig as true when enabled in definition', () => {
+    const newFixture = TestBed.createComponent(DetailViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            fields: [],
+            showDownloadKubeconfig: true,
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entity: {
+        metadata: { name: 'test-resource' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.showDownloadKubeconfig()).toBe(true);
   });
 
   it('should navigate to parent', () => {
@@ -510,5 +561,142 @@ describe('DetailViewComponent', () => {
         type: 'error',
       });
     });
+  });
+});
+
+describe('DetailViewComponent template', () => {
+  let mockResourceService: any;
+  let mockGatewayService: any;
+  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
+
+  beforeEach(() => {
+    envConfigServiceMock = mock();
+    mockResourceService = {
+      read: jest.fn().mockReturnValue(of({ name: 'test-resource' })),
+      readAccountInfo: jest.fn().mockReturnValue(of('mock-ca-data')),
+    };
+    mockGatewayService = {
+      resolveKcpPath: jest.fn().mockReturnValue('https://example.com'),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [DetailViewComponent],
+      providers: [
+        { provide: ResourceService, useValue: mockResourceService },
+        { provide: GatewayService, useValue: mockGatewayService },
+        { provide: EnvConfigService, useValue: envConfigServiceMock },
+      ],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    });
+
+    TestBed.overrideComponent(DetailViewComponent, {
+      set: { schemas: [CUSTOM_ELEMENTS_SCHEMA] },
+    });
+  });
+
+  it('should not render download button when disabled', () => {
+    const fixture = TestBed.createComponent(DetailViewComponent);
+    const component = fixture.componentInstance;
+
+    component.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entity: {
+        metadata: { name: 'test-resource' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement.shadowRoot?.querySelector(
+      '[test-id="generic-detail-view-download"]',
+    );
+    expect(el).toBeFalsy();
+  });
+
+  it('should render download button and call downloadKubeConfig on click when enabled', async () => {
+    const fixture = TestBed.createComponent(DetailViewComponent);
+    const component = fixture.componentInstance;
+
+    component.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            fields: [],
+            showDownloadKubeconfig: true,
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entity: {
+        metadata: { name: 'test-resource' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: jest.fn().mockReturnThis(),
+        navigate: jest.fn(),
+        withParams: jest.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: jest.fn(),
+      }),
+      getNodeParams: jest.fn(),
+    })) as any;
+
+    const downloadSpy = jest
+      .spyOn(component, 'downloadKubeConfig')
+      .mockResolvedValue(undefined as any);
+
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement.shadowRoot?.querySelector(
+      '[test-id="generic-detail-view-download"]',
+    ) as HTMLElement | null;
+    expect(el).toBeTruthy();
+
+    el?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await fixture.whenStable();
+
+    expect(downloadSpy).toHaveBeenCalled();
   });
 });
