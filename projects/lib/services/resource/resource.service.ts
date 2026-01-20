@@ -1,5 +1,3 @@
-import { ApolloFactory } from './apollo-factory';
-import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -22,6 +20,8 @@ import * as gqlBuilder from 'gql-query-builder';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
 import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
+import { ApolloFactory } from './apollo-factory';
+import { ResourceNodeContext } from './resource-node-context';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -523,6 +523,41 @@ export class ResourceService {
           return error;
         }),
       );
+  }
+
+  public readOrganizationReady(nodeContext: ResourceNodeContext): Observable<boolean> {
+    return this.apolloFactory
+      .apollo(nodeContext)
+      .query<boolean>({
+        query: gql`
+          {
+            core_kcp_io {
+              v1alpha1 {
+                LogicalCluster(name: "cluster") {
+                  status {
+                    phase
+                  }
+                }
+              }
+            }
+          }
+        `
+        })
+        .pipe(
+          map((res: any) => {
+            const isReady = res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase === 'Ready';
+            if(!isReady) {
+              this.luigiCoreService.navigation().navigate('/error/503');
+            }
+
+            return isReady;
+          }),
+          catchError((error) => {
+            this.alertErrors(error);
+            console.error('Error executing GraphQL query.', error);
+            throw error;
+          }),
+        );
   }
 
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
