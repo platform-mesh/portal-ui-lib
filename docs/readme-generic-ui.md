@@ -36,8 +36,8 @@ In order to use the generic list view, you need to adjust the node’s   `conten
     },
     ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
-      - `"logoUrl"`: resource logo shown in the view header
-      - `"resourceImageProperty"`: JSONPath expression to an image URL; when set, the list view renders an image column and automatically fetches this field
+      - `"logoUrl"`: resource type logo shown in the view header
+      - `"resourceImageProperty"`: JSONPath expression to an image URL of the given resource entity; when set, the list view renders an image column and automatically fetches this field
       - view definitions for the corresponding views
 
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
@@ -198,7 +198,21 @@ This example demonstrates various features including:
                         "cssCustomization": {
                           "color": "#2e7d32",
                           "fontWeight": "600"
-                        }
+                        },
+                        "cssRules": [
+                          {
+                            "if": { "condition": "equals", "value": "High" },
+                            "styles": { "color": "red" },
+                          },
+                          {
+                            "if": { "condition": "equals", "value": "Medium" },
+                            "styles": { "color": "orange" },
+                          },
+                          {
+                            "if": { "condition": "equals", "value": "Low" },
+                            "styles": { "color": "green" }
+                          }
+                        ],
                       }
                     },
                     {
