@@ -106,7 +106,7 @@ export class ListViewComponent {
   }
 
   list() {
-    const fields = this.generateGqlFields();
+    const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
     const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.version}_${resourceDefinition.plural}`;
 
@@ -220,7 +220,7 @@ export class ListViewComponent {
     this.deleteModal()?.open(resource);
   }
 
-  private generateGqlFields() {
+  private getListQueryFields() {
     const additionalFields: FieldDefinition[] = [];
 
     const imagePathProperty = this.imagePathProperty();
