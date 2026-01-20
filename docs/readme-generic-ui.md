@@ -41,7 +41,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
           the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column.
         `"labelDisplay"` this property allows you to customize the visual appearance of field values in both list and detail views.
-        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data.
+        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure`showDownloadKubeConfig` to enable/disable download kubeconfig button. By default it false.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
           there is a possibility to provide a list of values to select from. Also, it's possible to specify a GraphQL query to retrieve a dynamic list of values to select from using the `"dynamicValuesDefinition"`. You need to provide `"gqlQuery"` and `"operation"`, as well as `"key"` - a JSON path to the property that will be used as the displayed value, and `"value"` — a JSON path to the actual value.
