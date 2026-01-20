@@ -19,7 +19,11 @@ export class OrganizationReadyService {
 
     private async initChecks() {
       const portalConfig = await this.configService.getPortalConfig();
-      const envConfig = await this.envConfigService.getEnvConfig();
+      const envIdpName = (await this.envConfigService.getEnvConfig()).idpName;
+
+      if(envIdpName === 'welcome') {
+        return;
+      }
 
       this.check$
       .pipe(
@@ -30,7 +34,7 @@ export class OrganizationReadyService {
                   crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
               },
               token: this.authService.getToken(),
-              accountId: envConfig.idpName,
+              accountId: envIdpName,
           }),
           ),
           tap((isReady) => {

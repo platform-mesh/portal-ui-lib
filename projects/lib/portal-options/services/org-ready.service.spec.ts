@@ -11,7 +11,6 @@ async function flushMicrotasks(times = 3) {
 }
 
 describe('OrganizationReadyService', () => {
-  let service: OrganizationReadyService;
   let mockConfigService: jest.Mocked<ConfigService>;
   let mockEnvConfigService: jest.Mocked<EnvConfigService>;
   let mockAuthService: jest.Mocked<AuthService>;
@@ -53,13 +52,12 @@ describe('OrganizationReadyService', () => {
         { provide: ResourceService, useValue: mockResourceService },
       ],
     });
-
-    service = TestBed.inject(OrganizationReadyService);
   });
 
   it('should call readOrganizationReady with expected context', async () => {
     mockResourceService.readOrganizationReady.mockReturnValueOnce(of(true));
 
+    const service = TestBed.inject(OrganizationReadyService);
     await flushMicrotasks();
     service.checkOrganizationReady();
 
@@ -76,6 +74,7 @@ describe('OrganizationReadyService', () => {
   it('should not call readOrganizationReady again after it becomes ready', async () => {
     mockResourceService.readOrganizationReady.mockReturnValueOnce(of(true));
 
+    const service = TestBed.inject(OrganizationReadyService);
     await flushMicrotasks();
     service.checkOrganizationReady();
     service.checkOrganizationReady();
@@ -88,12 +87,27 @@ describe('OrganizationReadyService', () => {
       .mockReturnValueOnce(of(false))
       .mockReturnValueOnce(of(true));
 
+    const service = TestBed.inject(OrganizationReadyService);
     await flushMicrotasks();
     service.checkOrganizationReady();
     service.checkOrganizationReady();
     service.checkOrganizationReady();
 
     expect(mockResourceService.readOrganizationReady).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not perform checks when env idpName is welcome', async () => {
+    mockEnvConfigService.getEnvConfig.mockResolvedValueOnce({
+      idpName: 'welcome',
+    } as any);
+
+    const service = TestBed.inject(OrganizationReadyService);
+
+    await flushMicrotasks();
+    service.checkOrganizationReady();
+    service.checkOrganizationReady();
+
+    expect(mockResourceService.readOrganizationReady).not.toHaveBeenCalled();
   });
 });
 
