@@ -108,7 +108,11 @@ export interface UIDefinition {
   resourceImageProperty?: string;
   listView?: UiView;
   createView?: UiView;
-  detailView?: UiView;
+  detailView?: DetailView;
+}
+
+export interface DetailView extends UiView {
+  showDownloadKubeconfig?: boolean;
 }
 
 export const ResourceOperationTypeMap = {

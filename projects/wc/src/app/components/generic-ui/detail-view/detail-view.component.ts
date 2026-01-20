@@ -1,7 +1,3 @@
-import { processFields } from '../../../utils/proccess-fields';
-import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { kubeConfigTemplate } from './kubeconfig-template';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -36,6 +32,10 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+import { processFields } from '../../../utils/proccess-fields';
+import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { kubeConfigTemplate } from './kubeconfig-template';
 
 @Component({
   selector: 'pm-detail-view',
@@ -75,6 +75,7 @@ export class DetailViewComponent {
     this.gatewayService.resolveKcpPath(this.context()),
   );
   viewFields = computed(() => processFields(this.resourceFields()));
+  showDownloadKubeconfig = computed(() => this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ?? false);
 
   constructor() {
     effect(() => {

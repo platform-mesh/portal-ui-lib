@@ -39,11 +39,9 @@ In order to use the generic list view, you need to adjust the node’s   `conten
       - `"logoUrl"`: resource type logo shown in the view header
       - `"resourceImageProperty"`: JSONPath expression to an image URL of the given resource entity; when set, the list view renders an image column and automatically fetches this field
       - view definitions for the corresponding views
-
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
-          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column.
-        `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views.
-        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data.
+          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views.
+        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure`showDownloadKubeConfig` to enable/disable download kubeconfig button. By default it false.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
           there is a possibility to provide a list of values to select from. Also, it's possible to specify a GraphQL query to retrieve a dynamic list of values to select from using the `"dynamicValuesDefinition"`. You need to provide `"gqlQuery"` and `"operation"`, as well as `"key"` - a JSON path to the property that will be used as the displayed value, and `"value"` — a JSON path to the actual value.

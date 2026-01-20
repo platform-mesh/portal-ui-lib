@@ -17,13 +17,15 @@
       slot="actionsBar"
       design="Transparent"
     >
-      <ui5-toolbar-button
-        test-id="generic-detail-view-download"
-        text="Download kubeconfig"
-        icon="download-from-cloud"
-        design="Emphasized"
-        (click)="downloadKubeConfig()"
-      ></ui5-toolbar-button>
+      @if (showDownloadKubeconfig()) {
+        <ui5-toolbar-button
+          test-id="generic-detail-view-download"
+          text="Download kubeconfig"
+          icon="download-from-cloud"
+          design="Emphasized"
+          (click)="downloadKubeConfig()"
+        ></ui5-toolbar-button>
+      }
     </ui5-toolbar>
   </ui5-dynamic-page-title>
 
