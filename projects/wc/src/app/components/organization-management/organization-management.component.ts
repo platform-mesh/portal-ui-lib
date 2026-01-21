@@ -194,7 +194,7 @@ export class OrganizationManagementComponent implements OnInit {
       this.LuigiClient()
         .uxManager()
         .showAlert({
-          text: `A new organization is creating. Default password is set to 'password'.`,
+          text: `A new organization is creating. Once ready you can login using your e-mail. The default password is set to 'password'.`,
           type: 'info',
         });
     }
