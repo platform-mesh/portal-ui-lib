@@ -1,7 +1,3 @@
-import { processFields } from '../../../utils/proccess-fields';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -24,6 +20,7 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
+  buildResourcePath,
   generateGraphQLFields,
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
@@ -43,6 +40,10 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+import { processFields } from '../../../utils/proccess-fields';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 
 @Component({
   selector: 'pm-list-view',
@@ -105,7 +106,12 @@ export class ListViewComponent {
   list() {
     const fields = this.generateGqlFieldsWithReadyConditions();
     const resourceDefinition = this.getResourceDefinition();
-    const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.version}_${resourceDefinition.plural}`;
+    const queryOperation = replaceDotsAndHyphensWithUnderscores(buildResourcePath({
+        group: resourceDefinition.group,
+        version: resourceDefinition.version,
+        plural: resourceDefinition.plural,
+      }),
+    );
 
     this.resourceService
       .list(queryOperation, fields, this.context())

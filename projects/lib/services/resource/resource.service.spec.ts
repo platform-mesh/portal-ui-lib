@@ -20,6 +20,11 @@ describe('ResourceService', () => {
     plural: 'testkinds',
   };
 
+  const unversionedResourceDefinition: any = {
+    ...resourceDefinition,
+    version: undefined,
+  };
+
   const namespacedNodeContext: any = {
     cluster: 'test',
     namespaceId: 'test-namespace',
@@ -33,6 +38,14 @@ describe('ResourceService', () => {
     },
   };
 
+  const unversionedNamespacedNodeContext: any = {
+    ...namespacedNodeContext,
+    resourceDefinition: {
+      ...namespacedNodeContext.resourceDefinition,
+      version: undefined,
+    },
+  };
+
   const clusterScopeNodeContext: any = {
     namespaceId: 'test-namespace',
     resourceDefinition: {
@@ -42,6 +55,14 @@ describe('ResourceService', () => {
       scope: 'Cluster',
       namespace: 'default',
       plural: 'testkinds',
+    },
+  };
+
+  const unversionedClusterScopeNodeContext: any = {
+    ...clusterScopeNodeContext,
+    resourceDefinition: {
+      ...clusterScopeNodeContext.resourceDefinition,
+      version: undefined,
     },
   };
 
@@ -108,6 +129,33 @@ describe('ResourceService', () => {
           { kind: 'TestKind', version: 'v1', operation: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
+        )
+        .subscribe((res) => {
+          expect(res).toEqual({ name: 'test' });
+          expect(mockApollo.query).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: {
+              name: 'test-name',
+              namespace: 'test-namespace',
+            },
+          });
+          done();
+        });
+    });
+
+    it('should read resource using fields without version', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: { core_k8s_io: { TestKind: { name: 'test' } } },
+        }),
+      );
+
+      service
+        .read(
+          'test-name',
+          { kind: 'TestKind', version: undefined, operation: 'core_k8s_io' },
+          ['name'],
+          unversionedNamespacedNodeContext,
         )
         .subscribe((res) => {
           expect(res).toEqual({ name: 'test' });
@@ -460,6 +508,44 @@ describe('ResourceService', () => {
         });
     });
 
+    it('should list namespaced resources without version', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            myList: {
+              type: 'ADDED',
+              object: { name: 'res2', metadata: { uid: 'uid2' } },
+            },
+          },
+        }),
+      );
+      service
+        .list('myList', ['name'], unversionedNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: {
+              namespace: unversionedNamespacedNodeContext.namespaceId,
+              resourceVersion: '123',
+            },
+          });
+          done();
+        });
+    });
+
     it('should list cluster resources', (done) => {
       mockApollo.query.mockReturnValue(
         of({
@@ -488,6 +574,41 @@ describe('ResourceService', () => {
       service
         .list('myList', ['name'], clusterScopeNodeContext)
         .subscribe((res) => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: { resourceVersion: '123' },
+          });
+          done();
+        });
+    });
+
+    it('should list cluster resources without version', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              Testkinds: {
+                resourceVersion: '123',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+              },
+            },
+          },
+        }),
+      );
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            myList: {
+              type: 'ADDED',
+              object: { name: 'res2', metadata: { uid: 'uid2' } },
+            },
+          },
+        }),
+      );
+      service
+        .list('myList', ['name'], unversionedClusterScopeNodeContext)
+        .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
           expect(mockApollo.subscribe).toHaveBeenCalledWith({
             query: expect.anything(),
@@ -777,6 +898,23 @@ describe('ResourceService', () => {
         });
     });
 
+    it('should delete namespaced resource without version', (done) => {
+      mockApollo.mutate.mockReturnValue(of({}));
+
+      service
+        .delete(resource, unversionedResourceDefinition, unversionedNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            variables: {
+              name: 'test-name',
+              namespace: unversionedNamespacedNodeContext.namespaceId,
+            },
+          });
+          done();
+        });
+    });
+
     it('should delete cluster resource', (done) => {
       mockApollo.mutate.mockReturnValue(of({}));
 
@@ -843,6 +981,26 @@ describe('ResourceService', () => {
             variables: {
               object: resource,
               namespace: namespacedNodeContext.namespaceId,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should create namespaced resource without version', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .create(resource, unversionedResourceDefinition, unversionedNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            fetchPolicy: 'no-cache',
+            variables: {
+              object: resource,
+              namespace: unversionedNamespacedNodeContext.namespaceId,
             },
           });
           done();
@@ -957,6 +1115,27 @@ describe('ResourceService', () => {
               name: resource.metadata.name,
               object: resource,
               namespace: namespacedNodeContext.namespaceId,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should update namespaced resource without version', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(resource, unversionedResourceDefinition, unversionedNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            fetchPolicy: 'no-cache',
+            variables: {
+              name: resource.metadata.name,
+              object: resource,
+              namespace: unversionedNamespacedNodeContext.namespaceId,
             },
           });
           done();

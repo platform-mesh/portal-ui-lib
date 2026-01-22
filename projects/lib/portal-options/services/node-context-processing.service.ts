@@ -1,7 +1,3 @@
-import { PortalNodeContext } from '../models/luigi-context';
-import { PortalLuigiNode } from '../models/luigi-node';
-import { AccountPathResolverService } from './account-path-resolver.service';
-import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
 import {
@@ -10,6 +6,10 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
+import { PortalNodeContext } from '../models/luigi-context';
+import { PortalLuigiNode } from '../models/luigi-node';
+import { AccountPathResolverService } from './account-path-resolver.service';
+import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 
 @Injectable({
   providedIn: 'root',
@@ -29,7 +29,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     const version = entityNode.defineEntity?.graphqlEntity?.version;
     const queryPart = entityNode.defineEntity?.graphqlEntity?.query;
 
-    if (!entityId || !group || !kind || !queryPart || !version) {
+    if (!entityId || !group || !kind || !queryPart) {
       return;
     }
 
@@ -45,10 +45,13 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       ctx.resourceDefinition?.scope === 'Namespaced'
         ? ctx.namespaceId
         : undefined;
-    let query = `query ($name: String!) { ${operation} { ${version} { ${kind}(name: $name) ${queryPart} }}}`;
-    if (namespaceId) {
-      query = `query ($name: String!, $namespace: String!) { ${operation} { ${version} { ${kind}(name: $name, namespace: $namespace) ${queryPart} }}}`;
-    }
+    const variables = namespaceId
+      ? '($name: String!, $namespace: String!)'
+      : '($name: String!)';
+    const args = namespaceId ? 'name: $name, namespace: $namespace' : 'name: $name';
+    const versionOpen = version ? `${version} { ` : '';
+    const closing = version ? '}}}' : '}}';
+    const query = `query ${variables} { ${operation} { ${versionOpen}${kind}(${args}) ${queryPart} ${closing}`;
 
     const accountPath = this.accountPathResolver.resolveAccountHierarchy(
       entityNode,

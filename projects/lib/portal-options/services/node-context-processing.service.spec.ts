@@ -128,7 +128,8 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(mockResourceService.read).not.toHaveBeenCalled();
     });
 
-    it('should return early if version is missing', async () => {
+    it('should build query without version if version is missing', async () => {
+      const entityId = 'test-entity';
       const entityNode: PortalLuigiNode = {
         defineEntity: {
           graphqlEntity: {
@@ -139,11 +140,37 @@ describe('NodeContextProcessingServiceImpl', () => {
         },
         context: {},
       } as any;
-      const ctx: PortalNodeContext = {} as any;
+      const ctx: PortalNodeContext = {
+        portalContext: { crdGatewayApiUrl: 'http://test.com' },
+        token: 'test-token',
+        resourceDefinition: { scope: 'Cluster' },
+      } as any;
 
-      await service.processNodeContext('test-id', entityNode, ctx);
+      const mockEntity: Resource = {
+        metadata: {
+          name: 'test',
+          annotations: { 'kcp.io/cluster': 'cluster1' },
+        },
+      } as any;
 
-      expect(mockResourceService.read).not.toHaveBeenCalled();
+      mockResourceService.read.mockReturnValue(of(mockEntity));
+
+      await service.processNodeContext(entityId, entityNode, ctx);
+
+      expect(mockResourceService.read).toHaveBeenCalledWith(
+        entityId,
+        { kind: 'TestKind', version: undefined, operation: 'test_group' },
+        'query ($name: String!) { test_group { TestKind(name: $name) { id } }}',
+        {
+          resourceDefinition: ctx.resourceDefinition,
+          portalContext: {
+            crdGatewayApiUrl: ctx.portalContext.crdGatewayApiUrl,
+          },
+          token: ctx.token,
+          namespaceId: undefined,
+        },
+        false,
+      );
     });
 
     it('should return early if queryPart is missing', async () => {

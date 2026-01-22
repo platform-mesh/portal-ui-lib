@@ -6,7 +6,7 @@ import {
   LuigiNode,
   PortalConfig,
 } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import { FieldDefinition, Resource, ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceService,
@@ -119,7 +119,7 @@ export class NamespaceSelectionRendererService {
   private getNamespaceResources(
     portalConfig: PortalConfig,
   ): Observable<Resource[]> {
-    const operation = 'core_namespaces';
+    const operation = 'v1_namespaces';
     const fields = generateGraphQLFields(defaultColumns);
 
     try {
@@ -127,6 +127,11 @@ export class NamespaceSelectionRendererService {
         portalContext: {
           crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
         },
+        resourceDefinition: {
+          group: 'v1',
+          plural: 'namespaces',
+          scope: 'Cluster',
+        } as ResourceDefinition,
         token: this.authService.getToken(),
       } as ResourceNodeContext);
     } catch (e) {
