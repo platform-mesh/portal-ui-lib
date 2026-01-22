@@ -9,20 +9,17 @@ import { GatewayService } from '@platform-mesh/portal-ui-lib/services';
 export class CrdGatewayKcpPatchResolver {
   private gatewayService = inject(GatewayService);
   private envConfigService = inject(EnvConfigService);
-  private lastProccesedEntityId: string | undefined;
 
   public async resolveCrdGatewayKcpPath(
     nextNode: PortalLuigiNode,
     entityId?: string,
     kind?: string,
   ) {
-    if (nextNode.context?.kcpPath) {
-      if (this.lastProccesedEntityId === entityId) {
-        this.gatewayService.updateCrdGatewayUrlWithEntityPath(
-          nextNode.context.kcpPath,
-        );
-        return nextNode.context.kcpPath;
-      }
+    if (nextNode.context?.kcpPath && !nextNode.defineEntity?.contextKey) {
+      this.gatewayService.updateCrdGatewayUrlWithEntityPath(
+        nextNode.context.kcpPath,
+      );
+      return nextNode.context.kcpPath;
     }
 
     const accountNames = calculateAccountHierarchy(nextNode, entityId, kind);
@@ -34,10 +31,9 @@ export class CrdGatewayKcpPatchResolver {
     const kcpPath = `${kcpRootOrgsPath}:${org}${entityKcpPath}`;
     this.gatewayService.updateCrdGatewayUrlWithEntityPath(kcpPath);
 
-    if (nextNode.context && !nextNode.context.kcpPath) {
+    if (nextNode.context) {
       nextNode.context.kcpPath = kcpPath;
     }
-    this.lastProccesedEntityId = entityId;
     return kcpPath;
   }
 }
