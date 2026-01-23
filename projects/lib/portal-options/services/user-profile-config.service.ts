@@ -18,15 +18,6 @@ export class UserProfileConfigServiceImpl implements UserProfileConfigService {
           icon: 'customer',
           link: `/users/${userId}/overview`,
         },
-        {
-          label: 'PROFILE_ORGANIZATION',
-          icon: 'building',
-          link: '/organization-management',
-          openNodeInModal: {
-            width: '360px',
-            height: '260px',
-          },
-        },
       ],
     };
   }
