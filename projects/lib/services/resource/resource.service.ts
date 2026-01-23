@@ -505,6 +505,41 @@ export class ResourceService {
       );
   }
 
+  public readOrganizationReady(nodeContext: ResourceNodeContext): Observable<boolean> {
+    return this.apolloFactory
+      .apollo(nodeContext)
+      .query<boolean>({
+        query: gql`
+          {
+            core_kcp_io {
+              v1alpha1 {
+                LogicalCluster(name: "cluster") {
+                  status {
+                    phase
+                  }
+                }
+              }
+            }
+          }
+        `
+        })
+        .pipe(
+          map((res: any) => {
+            const isReady = res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase === 'Ready';
+            if(!isReady) {
+              this.luigiCoreService.navigation().navigate('/error/503');
+            }
+
+            return isReady;
+          }),
+          catchError((error) => {
+            this.alertErrors(error);
+            console.error('Error executing GraphQL query.', error);
+            throw error;
+          }),
+        );
+  }
+
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
     return nodeContext?.resourceDefinition?.scope === 'Namespaced';
   }

@@ -1,5 +1,3 @@
-import { ErrorComponent } from './error.component';
-import { ButtonConfig } from './models/error.model';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
@@ -7,6 +5,8 @@ import {
   IllustratedMessageComponent,
   TitleComponent,
 } from '@ui5/webcomponents-ngx';
+import { ErrorComponent } from './error.component';
+import { ButtonConfig } from './models/error.model';
 
 describe('ErrorComponent', () => {
   let component: ErrorComponent;
@@ -119,6 +119,26 @@ describe('ErrorComponent', () => {
         'The resource is pending deletion.',
       );
       expect(component.config().illustratedMessageText).toBe('');
+      expect(component.config().buttons).toBeDefined();
+      expect(component.config().buttons?.length).toBe(0);
+    });
+
+    it('should set 503 config', async () => {
+      const testContext = {
+        id: '503',
+        translationTable: {},
+      };
+
+      fixture.componentRef.setInput('context', testContext);
+
+      await component.ngOnInit();
+      expect(component.config().scene).toBe('UnableToLoad');
+      expect(component.config().illustratedMessageTitle).toBe(
+        'Organization is not ready yet',
+      );
+      expect(component.config().illustratedMessageText).toBe(
+        'Please try again later.',
+      );
       expect(component.config().buttons).toBeDefined();
       expect(component.config().buttons?.length).toBe(0);
     });
