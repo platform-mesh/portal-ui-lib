@@ -1,5 +1,3 @@
-import { k8sMessages } from '../../consts/k8s-messages';
-import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -30,7 +28,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
-  isLocalSetup,
+  isLocalSetup
 } from '@platform-mesh/portal-ui-lib/utils';
 import {
   ButtonComponent,
@@ -40,6 +38,8 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
+import { k8sMessages } from '../../consts/k8s-messages';
+import { k8sNameValidator } from '../../validators/k8s-name-validator';
 
 @Component({
   selector: 'pm-organization-management',
@@ -176,14 +176,7 @@ export class OrganizationManagementComponent implements OnInit {
             ready: false,
           });
           this.newOrganizationControl.reset();
-          this.LuigiClient()
-            .uxManager()
-            .showAlert({
-              text: this.getMessageForOrganizationCreation(
-                this.newOrganizationControl.value,
-              ),
-              type: 'info',
-            });
+          this.showOnboardingSuccessMessage();
         },
         error: (_error) => {
           this.LuigiClient()
@@ -196,12 +189,15 @@ export class OrganizationManagementComponent implements OnInit {
       });
   }
 
-  private getMessageForOrganizationCreation(orgName: string) {
-    if (isLocalSetup()) {
-      return `A new organization has been onboarded. Since the portal runs on localhost, you need to add the organization to your machine's hosts file in order to switch to it. Add the following entry to your hosts configuration: 127.0.0.1 ${orgName}.portal.dev.local. When onboarding a new organization, the system sends an email. Please check delivered emails in mailpit (https://portal.dev.local:8443/mailpit).`;
+  private showOnboardingSuccessMessage() {
+    if(isLocalSetup()) {
+      this.LuigiClient()
+        .uxManager()
+        .showAlert({
+          text: `A new organization is creating. Once ready you can login using your e-mail. The default password is set to 'password'.`,
+          type: 'info',
+        });
     }
-
-    return 'A new organization has been created. Select it from the list to switch.';
   }
 
   private readTranslations() {

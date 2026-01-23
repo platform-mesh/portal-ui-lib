@@ -1051,4 +1051,96 @@ describe('ResourceService', () => {
       });
     });
   });
+
+  describe('readOrganizationReady', () => {
+    it('should return true when organization is ready', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_kcp_io: {
+              v1alpha1: {
+                LogicalCluster: {
+                  status: { phase: 'Ready' },
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      const navigateMock = jest.fn();
+      mockLuigiCoreService.navigation.mockReturnValue({
+        navigate: navigateMock,
+      } as any);
+
+      service
+        .readOrganizationReady({
+          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
+          token: 't',
+        } as any)
+        .subscribe((isReady) => {
+          expect(isReady).toBe(true);
+          expect(navigateMock).not.toHaveBeenCalled();
+          done();
+        });
+    });
+
+    it('should navigate to 503 and return false when organization is not ready', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_kcp_io: {
+              v1alpha1: {
+                LogicalCluster: {
+                  status: { phase: 'Initializing' },
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      const navigateMock = jest.fn();
+      mockLuigiCoreService.navigation.mockReturnValue({
+        navigate: navigateMock,
+      } as any);
+
+      service
+        .readOrganizationReady({
+          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
+          token: 't',
+        } as any)
+        .subscribe((isReady) => {
+          expect(isReady).toBe(false);
+          expect(navigateMock).toHaveBeenCalledWith('/error/503');
+          done();
+        });
+    });
+
+    it('should alert and rethrow when query fails', (done) => {
+      const error = new Error('fail');
+      mockApollo.query.mockReturnValue(throwError(() => error));
+      console.error = jest.fn();
+
+      service
+        .readOrganizationReady({
+          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
+          token: 't',
+        } as any)
+        .subscribe({
+          error: (err) => {
+            expect(err).toBe(error);
+            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+              text: 'fail',
+              type: 'error',
+            });
+            expect(console.error).toHaveBeenCalledWith(
+              'Error executing GraphQL query.',
+              error,
+            );
+            done();
+          },
+        });
+    });
+  });
 });

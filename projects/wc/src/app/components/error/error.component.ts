@@ -1,4 +1,3 @@
-import { ButtonConfig, ErrorConfig } from './models/error.model';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,6 +17,7 @@ import {
   IllustratedMessageComponent,
   TitleComponent,
 } from '@ui5/webcomponents-ngx';
+import { ButtonConfig, ErrorConfig } from './models/error.model';
 
 @Component({
   selector: 'pm-error',
@@ -67,10 +67,23 @@ export class ErrorComponent implements OnInit {
         this.config.set(await this.getError422Config());
         break;
       }
+      case 503: {
+        this.config.set(await this.getError503Config());
+        break;
+      }
       default: {
         this.config.set(await this.getErrorDefaultConfig());
       }
     }
+  }
+
+  private async getError503Config(): Promise<ErrorConfig> {
+    return {
+      scene: 'UnableToLoad',
+      illustratedMessageTitle: 'Organization is not ready yet',
+      illustratedMessageText: 'Please try again later.',
+      buttons: [],
+    };
   }
 
   private async getError404Config(): Promise<ErrorConfig> {

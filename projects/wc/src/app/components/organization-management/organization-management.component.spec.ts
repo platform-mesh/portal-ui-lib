@@ -267,26 +267,6 @@ describe('OrganizationManagementComponent', () => {
     expect(window.location.href).toBe('https://validorg.test.com');
   });
 
-  it('should return non-local message for organization creation when not in local setup', () => {
-    // Mock window.location.hostname to simulate non-local setup
-    const originalHostname = window.location.hostname;
-    Object.defineProperty(window.location, 'hostname', {
-      value: 'production.example.com',
-      writable: true,
-    });
-
-    const message = component['getMessageForOrganizationCreation']('testOrg');
-    expect(message).toBe(
-      'A new organization has been created. Select it from the list to switch.',
-    );
-
-    // Restore original hostname
-    Object.defineProperty(window.location, 'hostname', {
-      value: originalHostname,
-      writable: true,
-    });
-  });
-
   it('should return Negative state for invalid and touched form control', () => {
     const formControl = {
       invalid: true,
