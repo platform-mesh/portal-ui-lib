@@ -1,3 +1,5 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -7,6 +9,7 @@ import {
   ResourceDefinition,
   ResourceListResult,
   ResourceOperationTypeMap,
+  ResourcePagination,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -20,8 +23,6 @@ import * as gqlBuilder from 'gql-query-builder';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
 import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceNodeContext } from './resource-node-context';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -142,19 +143,22 @@ export class ResourceService {
     fieldsOrRawQuery: any[] | string,
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = false,
-  ): Observable<Resource[] | any> {
+    pagination?: ResourcePagination,
+  ): Observable<ResourceListResult | any> {
     return fieldsOrRawQuery instanceof Array
       ? this.listWithFields(
           operation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
+          pagination,
         )
       : this.listWithRawQuery(
           operation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
+          pagination,
         );
   }
 
@@ -163,7 +167,8 @@ export class ResourceService {
     fields: any[],
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean,
-  ): Observable<Resource[] | any> {
+    pagination?: ResourcePagination,
+  ): Observable<ResourceListResult> {
     const resourceDefinition = nodeContext.resourceDefinition;
     if (!resourceDefinition) {
       return throwError(() => new Error('Resource definition is required'));
@@ -184,58 +189,72 @@ export class ResourceService {
       nodeContext,
       readFromParentKcpPath,
       variables,
+      pagination,
     ).pipe(
-      switchMap((value: ResourceListResult) => {
-        const { resourceVersion, items } = value;
-        const subscriptionQuery = gqlBuilder.subscription({
-          operation: operation,
-          fields: ['type', { object: fields }],
-          variables: {
-            ...variables,
-            resourceVersion: { type: 'String', value: resourceVersion },
-          },
-        });
+      switchMap(
+        (
+          listQueryResult: ResourceListResult,
+        ): Observable<ResourceListResult> => {
+          const subscriptionQuery = gqlBuilder.subscription({
+            operation: operation,
+            fields: ['type', { object: fields }],
+            variables: {
+              ...variables,
+              resourceVersion: {
+                type: 'String',
+                value: listQueryResult.resourceVersion,
+              },
+              limit: { type: 'Int', value: 2 },
+              continue: { type: 'String', value: listQueryResult.continue },
+            },
+          });
 
-        const result = new Map<string, Resource>(
-          items.map((item) => [item.metadata.uid!, item]),
-        );
-
-        return this.apolloFactory
-          .apollo(nodeContext, readFromParentKcpPath)
-          .subscribe({
-            query: gql`
-              ${subscriptionQuery.query}
-            `,
-            variables: subscriptionQuery.variables,
-          })
-          .pipe(
-            map((res: any): Resource[] => {
-              const resourceResult: ResourceSubscriptionResult | undefined =
-                getValueByPath(res.data, operation);
-
-              if (!resourceResult) {
-                return Array.from(result.values());
-              }
-
-              const { type, object } = resourceResult;
-              if (type === ResourceOperationTypeMap.ADDED) {
-                result.set(object.metadata.uid!, object);
-              } else if (type === ResourceOperationTypeMap.MODIFIED) {
-                result.set(object.metadata.uid!, object);
-              } else if (type === ResourceOperationTypeMap.DELETED) {
-                result.delete(object.metadata.uid!);
-              }
-
-              return Array.from(result.values());
-            }),
-            startWith(Array.from(result.values())),
-            catchError((error) => {
-              this.alertErrors(error);
-              console.error('Error executing GraphQL query.', error);
-              return error;
-            }),
+          const result = new Map<string, Resource>(
+            listQueryResult.items.map((item) => [item.metadata.uid!, item]),
           );
-      }),
+
+          const listSubscriptionResult = (): ResourceListResult => ({
+            ...listQueryResult,
+            items: Array.from(result.values()),
+          });
+
+          return this.apolloFactory
+            .apollo(nodeContext, readFromParentKcpPath)
+            .subscribe({
+              query: gql`
+                ${subscriptionQuery.query}
+              `,
+              variables: subscriptionQuery.variables,
+            })
+            .pipe(
+              map((res: any): ResourceListResult => {
+                const resourceResult: ResourceSubscriptionResult | undefined =
+                  getValueByPath(res.data, operation);
+
+                if (!resourceResult) {
+                  return listSubscriptionResult();
+                }
+
+                const { type, object } = resourceResult;
+                if (type === ResourceOperationTypeMap.ADDED) {
+                  result.set(object.metadata.uid!, object);
+                } else if (type === ResourceOperationTypeMap.MODIFIED) {
+                  result.set(object.metadata.uid!, object);
+                } else if (type === ResourceOperationTypeMap.DELETED) {
+                  result.delete(object.metadata.uid!);
+                }
+
+                return listSubscriptionResult();
+              }),
+              startWith(listSubscriptionResult()),
+              catchError((error) => {
+                this.alertErrors(error);
+                console.error('Error executing GraphQL query.', error);
+                return throwError(() => error);
+              }),
+            );
+        },
+      ),
     );
   }
 
@@ -244,7 +263,8 @@ export class ResourceService {
     fields: any[],
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean,
-    variables?: VariableOptions,
+    variables: VariableOptions,
+    pagination?: ResourcePagination,
   ): Observable<ResourceListResult> {
     const operation = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
@@ -257,7 +277,17 @@ export class ResourceService {
         {
           [version]: [
             {
-              [kind]: ['resourceVersion', { items: fields }],
+              operation: kind,
+              variables: {
+                limit: { type: 'Int', value: pagination?.limit },
+                continue: { type: 'String', value: pagination?.continue },
+              },
+              fields: [
+                'resourceVersion',
+                'remainingItemCount',
+                'continue',
+                { items: fields },
+              ],
             },
           ],
         },
@@ -293,6 +323,7 @@ export class ResourceService {
     rawQuery: string,
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean,
+    pagination?: ResourcePagination,
   ): Observable<any> {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const variables = {
@@ -525,7 +556,9 @@ export class ResourceService {
       );
   }
 
-  public readOrganizationReady(nodeContext: ResourceNodeContext): Observable<boolean> {
+  public readOrganizationReady(
+    nodeContext: ResourceNodeContext,
+  ): Observable<boolean> {
     return this.apolloFactory
       .apollo(nodeContext)
       .query<boolean>({
@@ -541,23 +574,25 @@ export class ResourceService {
               }
             }
           }
-        `
-        })
-        .pipe(
-          map((res: any) => {
-            const isReady = res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase === 'Ready';
-            if(!isReady) {
-              this.luigiCoreService.navigation().navigate('/error/503');
-            }
+        `,
+      })
+      .pipe(
+        map((res: any) => {
+          const isReady =
+            res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase ===
+            'Ready';
+          if (!isReady) {
+            this.luigiCoreService.navigation().navigate('/error/503');
+          }
 
-            return isReady;
-          }),
-          catchError((error) => {
-            this.alertErrors(error);
-            console.error('Error executing GraphQL query.', error);
-            throw error;
-          }),
-        );
+          return isReady;
+        }),
+        catchError((error) => {
+          this.alertErrors(error);
+          console.error('Error executing GraphQL query.', error);
+          throw error;
+        }),
+      );
   }
 
   private isNamespacedResource(nodeContext: ResourceNodeContext) {

@@ -120,7 +120,13 @@ export interface ResourceSubscriptionResult {
   object: Resource;
 }
 
-export interface ResourceListResult {
+export interface ResourcePagination {
+  limit: number;
+  continue: string | undefined;
+  remainingItemCount?: number;
+}
+
+export interface ResourceListResult extends ResourcePagination {
   resourceVersion: string;
   items: Resource[];
 }

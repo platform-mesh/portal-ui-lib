@@ -17,7 +17,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  Resource,
+  ResourceListResult,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceRequestParams,
@@ -28,11 +31,16 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
+import '@ui5/webcomponents-icons/dist/navigation-left-arrow.js';
+import '@ui5/webcomponents-icons/dist/navigation-right-arrow.js';
 import {
+  ButtonComponent,
   DynamicPageComponent,
   DynamicPageTitleComponent,
   IconComponent,
   IllustratedMessageComponent,
+  OptionComponent,
+  SelectComponent,
   TableCellComponent,
   TableComponent,
   TableHeaderCellComponent,
@@ -68,6 +76,9 @@ import {
     ToolbarButtonComponent,
     ToolbarComponent,
     ValueCellComponent,
+    ButtonComponent,
+    SelectComponent,
+    OptionComponent,
   ],
 })
 export class ListViewComponent {
@@ -94,12 +105,62 @@ export class ListViewComponent {
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
 
+  currentPage = signal<number>(1);
+  totalItemsCount = signal<number>(0);
+  paginationLimit = signal<number>(5);
+
+  private currentContinueToken: string | undefined = undefined;
+  private tokenHistory: (string | undefined)[] = [undefined]; // Stores tokens for back navigation
+
+  hasNextPage = signal<boolean>(false);
+  hasPrevPage = computed(() => this.currentPage() > 1);
+
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
     effect(() => {
+      this.resetPagination();
       this.list();
     });
+  }
+
+  private resetPagination() {
+    this.currentPage.set(1);
+    this.currentContinueToken = undefined;
+    this.tokenHistory = [undefined];
+    this.totalItemsCount.set(0);
+  }
+
+  onLimitChange(event: any) {
+    const newLimit = parseInt(event.detail.selectedOption.value, 10);
+    this.paginationLimit.set(newLimit);
+  }
+
+  private handlePageResults(result: ResourceListResult) {
+    this.hasNextPage.set(!!result.continue);
+    this.tokenHistory[this.currentPage()] = result.continue;
+
+    const loadedSoFar = (this.currentPage() - 1) * this.paginationLimit();
+    const totalEstimated =
+      loadedSoFar + result.items.length + (result.remainingItemCount || 0);
+    this.totalItemsCount.set(totalEstimated);
+  }
+
+  nextPage() {
+    if (!this.hasNextPage()) return;
+
+    this.currentContinueToken = this.tokenHistory[this.currentPage()];
+    this.currentPage.update((v) => v + 1);
+    this.list();
+  }
+
+  prevPage() {
+    if (!this.hasPrevPage()) return;
+
+    this.currentPage.update((v) => v - 1);
+    // Retrieve the token that was used for the PREVIOUS page
+    this.currentContinueToken = this.tokenHistory[this.currentPage() - 1];
+    this.list();
   }
 
   list() {
@@ -108,17 +169,20 @@ export class ListViewComponent {
     const queryOperation = `${replaceDotsAndHyphensWithUnderscores(resourceDefinition.group)}_${resourceDefinition.version}_${resourceDefinition.plural}`;
 
     this.resourceService
-      .list(queryOperation, fields, this.context())
+      .list(queryOperation, fields, this.context(), false, {
+        limit: this.paginationLimit(),
+        continue: this.currentContinueToken,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (result: any[]) => {
+        next: (result: ResourceListResult) => {
+          this.handlePageResults(result);
+
           this.resources.set(
-            result.map((resource) => {
-              return {
-                ...resource,
-                ready: this.getResourceReadyStatus(resource),
-              };
-            }),
+            result.items.map((resource) => ({
+              ...resource,
+              ready: this.getResourceReadyStatus(resource),
+            })),
           );
         },
       });
