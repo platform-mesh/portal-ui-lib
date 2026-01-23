@@ -6,7 +6,7 @@ describe('buildResourceOperation', () => {
       buildResourcePath({
         group: 'core.platform-mesh.io',
         version: 'v1alpha1',
-        plural: 'myresources',
+        kind: 'myresources',
       }),
     ).toBe('core.platform-mesh.io_v1alpha1_myresources');
   });
@@ -16,7 +16,7 @@ describe('buildResourceOperation', () => {
       buildResourcePath({
         group: 'core.platform-mesh.io',
         version: undefined,
-        plural: 'accounts',
+        kind: 'accounts',
       }),
     ).toBe('core.platform-mesh.io_accounts');
   });
@@ -25,7 +25,7 @@ describe('buildResourceOperation', () => {
     expect(
       buildResourcePath({
         group: 'core.platform-mesh.io',
-        plural: 'accounts',
+        kind: 'accounts',
       }, '.'),
     ).toBe('core.platform-mesh.io.accounts');
   });

@@ -231,7 +231,7 @@ describe('DetailViewComponent', () => {
 
     expect(mockResourceService.read).toHaveBeenCalledWith(
       'test-account',
-      { kind: 'Account', operation: 'core_k8s_io', version: 'v1alpha1' },
+      { kind: 'Account', group: 'core_k8s_io', version: 'v1alpha1' },
       [],
       expect.any(Object),
       true,

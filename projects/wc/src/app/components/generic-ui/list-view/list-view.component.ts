@@ -109,7 +109,7 @@ export class ListViewComponent {
     const queryOperation = replaceDotsAndHyphensWithUnderscores(buildResourcePath({
         group: resourceDefinition.group,
         version: resourceDefinition.version,
-        plural: resourceDefinition.plural,
+        kind: resourceDefinition.plural,
       }),
     );
 
@@ -208,7 +208,7 @@ export class ListViewComponent {
     const params: ResourceRequestParams = {
       kind: resourceDefinition.kind,
       version: resourceDefinition.version,
-      operation: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
+      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group ?? ''),
     };
 
     this.resourceService

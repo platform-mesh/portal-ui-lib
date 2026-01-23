@@ -4,7 +4,7 @@ import {
   ResourceRequestParams,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import { replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+import { parseRawGqlQueryToFields, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
@@ -24,12 +24,12 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     entityNode: PortalLuigiNode,
     ctx: PortalNodeContext,
   ) {
-    const group = entityNode.defineEntity?.graphqlEntity?.group;
+    const group = replaceDotsAndHyphensWithUnderscores(entityNode.defineEntity?.graphqlEntity?.group ?? '');
     const kind = entityNode.defineEntity?.graphqlEntity?.kind;
     const version = entityNode.defineEntity?.graphqlEntity?.version;
     const queryPart = entityNode.defineEntity?.graphqlEntity?.query;
 
-    if (!entityId || !group || !kind || !queryPart) {
+    if (!entityId || !kind || !queryPart) {
       return;
     }
 
@@ -40,29 +40,22 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
         kind,
       );
 
-    const operation = replaceDotsAndHyphensWithUnderscores(group);
+
+      const accountPath = this.accountPathResolver.resolveAccountHierarchy(
+        entityNode,
+        entityId,
+        kind,
+      );
+
     const namespaceId =
       ctx.resourceDefinition?.scope === 'Namespaced'
         ? ctx.namespaceId
         : undefined;
-    const variables = namespaceId
-      ? '($name: String!, $namespace: String!)'
-      : '($name: String!)';
-    const args = namespaceId ? 'name: $name, namespace: $namespace' : 'name: $name';
-    const versionOpen = version ? `${version} { ` : '';
-    const closing = version ? '}}}' : '}}';
-    const query = `query ${variables} { ${operation} { ${versionOpen}${kind}(${args}) ${queryPart} ${closing}`;
-
-    const accountPath = this.accountPathResolver.resolveAccountHierarchy(
-      entityNode,
-      entityId,
-      kind,
-    );
 
     const params: ResourceRequestParams = {
       kind,
       version,
-      operation,
+      group,
     };
 
     try {
@@ -70,7 +63,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
         this.resourceService.read(
           entityId,
           params,
-          query,
+          parseRawGqlQueryToFields(queryPart),
           {
             resourceDefinition: ctx.resourceDefinition,
             portalContext: {
@@ -96,7 +89,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       entityNode.context.entityId = ctx.entityId;
       entityNode.context.accountPath = accountPath;
     } catch (e) {
-      console.error(`Not able to read entity ${entityId} from ${operation}`);
+      console.error(`Not able to read entity ${entityId} from ${group ?? version ?? kind}`);
       throw e;
     }
   }

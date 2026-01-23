@@ -1,11 +1,11 @@
-import { PortalNodeContext } from '../models/luigi-context';
-import { PortalLuigiNode } from '../models/luigi-node';
-import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
-import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
 import { TestBed } from '@angular/core/testing';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
+import { PortalNodeContext } from '../models/luigi-context';
+import { PortalLuigiNode } from '../models/luigi-node';
+import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
+import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
 
 describe('NodeContextProcessingServiceImpl', () => {
   let service: NodeContextProcessingServiceImpl;
@@ -92,23 +92,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(mockResourceService.read).not.toHaveBeenCalled();
     });
 
-    it('should return early if group is missing', async () => {
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: '',
-            kind: 'TestKind',
-            query: '{ id }',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {} as any;
-
-      await service.processNodeContext('test-id', entityNode, ctx);
-
-      expect(mockResourceService.read).not.toHaveBeenCalled();
-    });
 
     it('should return early if kind is missing', async () => {
       const entityNode: PortalLuigiNode = {
@@ -159,8 +142,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        { kind: 'TestKind', version: undefined, operation: 'test_group' },
-        'query ($name: String!) { test_group { TestKind(name: $name) { id } }}',
+        { kind: 'TestKind', version: undefined, group: 'test_group' },
+        ['id'],
         {
           resourceDefinition: ctx.resourceDefinition,
           portalContext: {
@@ -234,8 +217,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        { kind: 'TestKind', version: 'v1alpha1', operation: 'test_group' },
-        'query ($name: String!) { test_group { v1alpha1 { TestKind(name: $name) { id name } }}}',
+        { kind: 'TestKind', version: 'v1alpha1', group: 'test_group' },
+        ['id', 'name'],
         {
           resourceDefinition: ctx.resourceDefinition,
           portalContext: {
@@ -281,8 +264,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        { kind: 'TestKind', version: 'v1alpha1', operation: 'test_group' },
-        'query ($name: String!, $namespace: String!) { test_group { v1alpha1 { TestKind(name: $name, namespace: $namespace) { id name } }}}',
+        { kind: 'TestKind', version: 'v1alpha1', group: 'test_group' },
+        ['id', 'name'],
         {
           resourceDefinition: ctx.resourceDefinition,
           portalContext: {
@@ -326,8 +309,8 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).toHaveBeenCalledWith(
         entityId,
-        { kind: 'Account', version: 'v1alpha1', operation: 'test_group' },
-        'query ($name: String!) { test_group { v1alpha1 { Account(name: $name) { id name } }}}',
+        { kind: 'Account', version: 'v1alpha1', group: 'test_group' },
+        ['id', 'name'],
         {
           resourceDefinition: undefined,
           portalContext: {
@@ -479,12 +462,44 @@ describe('NodeContextProcessingServiceImpl', () => {
         {
           kind: 'TestKind',
           version: 'v1alpha1',
-          operation: 'test_group_with_dots',
+          group: 'test_group_with_dots',
         },
-        'query ($name: String!) { test_group_with_dots { v1alpha1 { TestKind(name: $name) { id } }}}',
+        ['id'],
         expect.any(Object),
         false,
       );
+    });
+
+    it('should log and rethrow if read fails', async () => {
+      const entityId = 'test-entity';
+      const entityNode: PortalLuigiNode = {
+        defineEntity: {
+          graphqlEntity: {
+            group: 'test.group',
+            kind: 'TestKind',
+            query: '{ id }',
+            version: 'v1alpha1',
+          },
+        },
+        context: {},
+      } as any;
+      const ctx: PortalNodeContext = {
+        portalContext: { crdGatewayApiUrl: 'http://test.com' },
+        token: 'test-token',
+      } as any;
+
+      const err = new Error('read failed');
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      mockResourceService.read.mockReturnValue(throwError(() => err));
+
+      await expect(service.processNodeContext(entityId, entityNode, ctx)).rejects.toThrow(
+        'read failed',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Not able to read entity ${entityId} from`),
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 });
