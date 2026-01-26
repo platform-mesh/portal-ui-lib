@@ -6,6 +6,7 @@ import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
+import { query } from 'jsonpath';
 
 describe('NodeContextProcessingServiceImpl', () => {
   let service: NodeContextProcessingServiceImpl;
@@ -111,49 +112,22 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(mockResourceService.read).not.toHaveBeenCalled();
     });
 
-    it('should build query without version if version is missing', async () => {
-      const entityId = 'test-entity';
+    it('should return early if version is missing', async () => {
       const entityNode: PortalLuigiNode = {
         defineEntity: {
           graphqlEntity: {
             group: 'test.group',
-            kind: 'TestKind',
             query: '{ id }',
+            kind: 'TestKind',
           },
         },
         context: {},
       } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-        resourceDefinition: { scope: 'Cluster' },
-      } as any;
+      const ctx: PortalNodeContext = {} as any;
 
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
-        },
-      } as any;
+      await service.processNodeContext('test-id', entityNode, ctx);
 
-      mockResourceService.read.mockReturnValue(of(mockEntity));
-
-      await service.processNodeContext(entityId, entityNode, ctx);
-
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        entityId,
-        { kind: 'TestKind', version: undefined, group: 'test_group' },
-        ['id'],
-        {
-          resourceDefinition: ctx.resourceDefinition,
-          portalContext: {
-            crdGatewayApiUrl: ctx.portalContext.crdGatewayApiUrl,
-          },
-          token: ctx.token,
-          namespaceId: undefined,
-        },
-        false,
-      );
+      expect(mockResourceService.read).not.toHaveBeenCalled();
     });
 
     it('should return early if queryPart is missing', async () => {
@@ -419,7 +393,7 @@ describe('NodeContextProcessingServiceImpl', () => {
         await service.processNodeContext(entityId, entityNode, ctx);
       } catch (e) {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Not able to read entity test-entity from test_group',
+          'Not able to read entity test-entity from test_group.v1alpha1.TestKind',
         );
         expect(ctx.entity).toBeUndefined();
         expect(entityNode.context!.entity).toBeUndefined();

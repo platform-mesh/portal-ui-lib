@@ -128,7 +128,7 @@ export class NamespaceSelectionRendererService {
           crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
         },
         resourceDefinition: {
-          group: 'v1',
+          version: 'v1',
           plural: 'namespaces',
           scope: 'Cluster',
         } as ResourceDefinition,

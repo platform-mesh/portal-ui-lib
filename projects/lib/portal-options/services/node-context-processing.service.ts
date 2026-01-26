@@ -29,7 +29,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     const version = entityNode.defineEntity?.graphqlEntity?.version;
     const queryPart = entityNode.defineEntity?.graphqlEntity?.query;
 
-    if (!entityId || !kind || !queryPart) {
+    if (!entityId || !kind || !version || !queryPart) {
       return;
     }
 
@@ -89,7 +89,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       entityNode.context.entityId = ctx.entityId;
       entityNode.context.accountPath = accountPath;
     } catch (e) {
-      console.error(`Not able to read entity ${entityId} from ${group ?? version ?? kind}`);
+      console.error(`Not able to read entity ${entityId} from ${group ? `${group}.` : ''}${version}.${kind}`);
       throw e;
     }
   }

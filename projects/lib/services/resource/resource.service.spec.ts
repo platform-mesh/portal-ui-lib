@@ -188,33 +188,6 @@ describe('ResourceService', () => {
         });
     });
 
-    it('should read resource using fields without version', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: { core_k8s_io: { TestKind: { name: 'test' } } },
-        }),
-      );
-
-      service
-        .read(
-          'test-name',
-          { kind: 'TestKind', version: undefined, group: 'core_k8s_io' },
-          ['name'],
-          unversionedNamespacedNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: 'test-namespace',
-            },
-          });
-          done();
-        });
-    });
-
     it('should read resource using fields with namespaced scope', (done) => {
       mockApollo.query.mockReturnValue(
         of({

@@ -1,29 +1,31 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  AccountInfo,
-  Resource,
-  ResourceDefinition,
-  ResourceListResult,
-  ResourceOperationTypeMap,
-  ResourceSubscriptionResult,
-} from '@platform-mesh/portal-ui-lib/models';
-import {
-  buildResourcePath,
-  capitalize,
-  getValueByPath,
-  replaceDotsAndHyphensWithUnderscores,
-  stripTypename
-} from '@platform-mesh/portal-ui-lib/utils';
+import { AccountInfo, Resource, ResourceDefinition, ResourceListResult, ResourceOperationTypeMap, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
+import { buildResourcePath, capitalize, getValueByPath, replaceDotsAndHyphensWithUnderscores, stripTypename } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
 import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
 import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceNodeContext } from './resource-node-context';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -31,7 +33,7 @@ interface ResourceResponseError extends Record<string, any> {
 
 export interface ResourceRequestParams {
   kind: string;
-  version?: string;
+  version: string;
   group?: string;
 }
 
