@@ -158,7 +158,6 @@ export class ListViewComponent {
     if (!this.hasPrevPage()) return;
 
     this.currentPage.update((v) => v - 1);
-    // Retrieve the token that was used for the PREVIOUS page
     this.currentContinueToken = this.tokenHistory[this.currentPage() - 1];
     this.list();
   }
