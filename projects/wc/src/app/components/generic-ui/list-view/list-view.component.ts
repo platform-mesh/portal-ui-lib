@@ -31,8 +31,10 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
+import '@ui5/webcomponents-icons/dist/close-command-field.js';
 import '@ui5/webcomponents-icons/dist/navigation-left-arrow.js';
 import '@ui5/webcomponents-icons/dist/navigation-right-arrow.js';
+import '@ui5/webcomponents-icons/dist/open-command-field.js';
 import {
   ButtonComponent,
   DynamicPageComponent,
@@ -107,7 +109,7 @@ export class ListViewComponent {
 
   currentPage = signal<number>(1);
   totalItemsCount = signal<number>(0);
-  paginationLimit = signal<number>(5);
+  paginationLimit = signal<number>(10);
 
   private currentContinueToken: string | undefined = undefined;
   private tokenHistory: (string | undefined)[] = [undefined]; // Stores tokens for back navigation
@@ -154,10 +156,37 @@ export class ListViewComponent {
     this.list();
   }
 
+  lastPage() {
+    if (!this.lastTokenRead()) return;
+
+    const lastIndex = this.tokenHistory.length - 1;
+    this.currentContinueToken = this.tokenHistory[lastIndex - 1];
+    this.currentPage.set(lastIndex);
+    this.list();
+  }
+
+  lastTokenRead() {
+    return this.tokenHistory[this.tokenHistory.length - 1] === '';
+  }
+
+  protected isLastPage() {
+    return (
+      this.currentPage() * this.paginationLimit() >= this.totalItemsCount()
+    );
+  }
+
   prevPage() {
     if (!this.hasPrevPage()) return;
 
     this.currentPage.update((v) => v - 1);
+    this.currentContinueToken = this.tokenHistory[this.currentPage() - 1];
+    this.list();
+  }
+
+  firstPage() {
+    if (!this.hasPrevPage()) return;
+
+    this.currentPage.set(1);
     this.currentContinueToken = this.tokenHistory[this.currentPage() - 1];
     this.list();
   }

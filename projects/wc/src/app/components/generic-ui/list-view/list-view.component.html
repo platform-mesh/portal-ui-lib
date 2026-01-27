@@ -209,11 +209,17 @@
 
     <div style="display: flex; align-items: center; gap: 0.5rem">
       <ui5-button
+        icon="close-command-field"
+        [disabled]="!hasPrevPage()"
+        (click)="firstPage()"
+        tooltip="First page"
+      />
+      <ui5-button
         icon="navigation-left-arrow"
         [disabled]="!hasPrevPage()"
         (click)="prevPage()"
-      >
-      </ui5-button>
+        tooltip="Previous page"
+      />
 
       <span
         style="
@@ -230,8 +236,14 @@
         icon="navigation-right-arrow"
         [disabled]="!hasNextPage()"
         (click)="nextPage()"
-      >
-      </ui5-button>
+        tooltip="Next page"
+      />
+      <ui5-button
+        icon="open-command-field"
+        [disabled]="!lastTokenRead() || isLastPage()"
+        (click)="lastPage()"
+        tooltip="Last page"
+      />
     </div>
   </div>
 </ui5-dynamic-page>
