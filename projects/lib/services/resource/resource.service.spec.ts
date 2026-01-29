@@ -1,9 +1,9 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { mock } from 'jest-mock-extended';
 import { Subject, of, throwError } from 'rxjs';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceService } from './resource.service';
 
 describe('ResourceService', () => {
   let service: ResourceService;
@@ -749,14 +749,16 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service.list('myList', ['name'], grouplessClusterScopeNodeContext).subscribe(() => {
-        expect(mockApollo.query).toHaveBeenCalled();
-        expect(mockApollo.subscribe).toHaveBeenCalledWith({
-          query: expect.anything(),
-          variables: { resourceVersion: '123' },
+      service
+        .list('myList', ['name'], grouplessClusterScopeNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: { resourceVersion: '123' },
+          });
+          done();
         });
-        done();
-      });
     });
 
     it('should list cluster resources without group and version', (done) => {
@@ -1098,7 +1100,11 @@ describe('ResourceService', () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
       service
-        .delete(resource, unversionedResourceDefinition, unversionedNamespacedNodeContext)
+        .delete(
+          resource,
+          unversionedResourceDefinition,
+          unversionedNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1115,7 +1121,11 @@ describe('ResourceService', () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
       service
-        .delete(resource, grouplessResourceDefinition, grouplessNamespacedNodeContext)
+        .delete(
+          resource,
+          grouplessResourceDefinition,
+          grouplessNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1132,7 +1142,11 @@ describe('ResourceService', () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
       service
-        .delete(resource, grouplessUnversionedResourceDefinition, grouplessUnversionedNamespacedNodeContext)
+        .delete(
+          resource,
+          grouplessUnversionedResourceDefinition,
+          grouplessUnversionedNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1223,7 +1237,11 @@ describe('ResourceService', () => {
       );
 
       service
-        .create(resource, unversionedResourceDefinition, unversionedNamespacedNodeContext)
+        .create(
+          resource,
+          unversionedResourceDefinition,
+          unversionedNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1243,7 +1261,11 @@ describe('ResourceService', () => {
       );
 
       service
-        .create(resource, grouplessResourceDefinition, grouplessNamespacedNodeContext)
+        .create(
+          resource,
+          grouplessResourceDefinition,
+          grouplessNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1263,7 +1285,11 @@ describe('ResourceService', () => {
       );
 
       service
-        .create(resource, grouplessUnversionedResourceDefinition, grouplessUnversionedNamespacedNodeContext)
+        .create(
+          resource,
+          grouplessUnversionedResourceDefinition,
+          grouplessUnversionedNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1397,7 +1423,11 @@ describe('ResourceService', () => {
       );
 
       service
-        .update(resource, unversionedResourceDefinition, unversionedNamespacedNodeContext)
+        .update(
+          resource,
+          unversionedResourceDefinition,
+          unversionedNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1418,7 +1448,11 @@ describe('ResourceService', () => {
       );
 
       service
-        .update(resource, grouplessResourceDefinition, grouplessNamespacedNodeContext)
+        .update(
+          resource,
+          grouplessResourceDefinition,
+          grouplessNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1439,7 +1473,11 @@ describe('ResourceService', () => {
       );
 
       service
-        .update(resource, grouplessUnversionedResourceDefinition, grouplessUnversionedNamespacedNodeContext)
+        .update(
+          resource,
+          grouplessUnversionedResourceDefinition,
+          grouplessUnversionedNamespacedNodeContext,
+        )
         .subscribe(() => {
           expect(mockApollo.mutate).toHaveBeenCalledWith({
             mutation: expect.anything(),
@@ -1491,144 +1529,6 @@ describe('ResourceService', () => {
               text: 'fail',
               type: 'error',
             });
-            done();
-          },
-        });
-    });
-  });
-
-  describe('readAccountInfo', () => {
-    it('should read account info', (done) => {
-      const ca = 'cert-data';
-      const accountInfo = { spec: { clusterInfo: { ca } } };
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_platform_mesh_io: {
-              v1alpha1: {
-                AccountInfo: accountInfo,
-              },
-            },
-          },
-        }),
-      );
-
-      service.readAccountInfo(namespacedNodeContext).subscribe((res) => {
-        expect(res).toBe(accountInfo);
-        expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
-          namespacedNodeContext,
-        );
-        done();
-      });
-    });
-
-    it('should handle read account info error', (done) => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-
-      service.readAccountInfo(namespacedNodeContext).subscribe({
-        error: () => {
-          expect(console.error).toHaveBeenCalledWith(
-            'Error executing GraphQL query.',
-            error,
-          );
-          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-            text: 'fail',
-            type: 'error',
-          });
-          done();
-        },
-      });
-    });
-  });
-
-  describe('readOrganizationReady', () => {
-    it('should return true when organization is ready', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_kcp_io: {
-              v1alpha1: {
-                LogicalCluster: {
-                  status: { phase: 'Ready' },
-                },
-              },
-            },
-          },
-        }),
-      );
-
-      const navigateMock = jest.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      } as any);
-
-      service
-        .readOrganizationReady({
-          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
-          token: 't',
-        } as any)
-        .subscribe((isReady) => {
-          expect(isReady).toBe(true);
-          expect(navigateMock).not.toHaveBeenCalled();
-          done();
-        });
-    });
-
-    it('should navigate to 503 and return false when organization is not ready', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_kcp_io: {
-              v1alpha1: {
-                LogicalCluster: {
-                  status: { phase: 'Initializing' },
-                },
-              },
-            },
-          },
-        }),
-      );
-
-      const navigateMock = jest.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      } as any);
-
-      service
-        .readOrganizationReady({
-          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
-          token: 't',
-        } as any)
-        .subscribe((isReady) => {
-          expect(isReady).toBe(false);
-          expect(navigateMock).toHaveBeenCalledWith('/error/503');
-          done();
-        });
-    });
-
-    it('should alert and rethrow when query fails', (done) => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-
-      service
-        .readOrganizationReady({
-          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
-          token: 't',
-        } as any)
-        .subscribe({
-          error: (err) => {
-            expect(err).toBe(error);
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: 'fail',
-              type: 'error',
-            });
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
             done();
           },
         });

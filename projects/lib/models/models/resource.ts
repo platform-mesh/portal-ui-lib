@@ -67,14 +67,6 @@ export interface ResourceSpec extends Record<string, any> {
   displayName?: string;
 }
 
-export interface AccountInfo {
-  metadata: ObjectMeta;
-  spec: {
-    clusterInfo: { ca: string };
-    organization: { originClusterId: string };
-  };
-}
-
 export interface Resource extends Record<string, any> {
   metadata: ObjectMeta;
   spec?: ResourceSpec;

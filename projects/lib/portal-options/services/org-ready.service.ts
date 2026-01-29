@@ -3,15 +3,19 @@ import {
   AuthService,
   ConfigService,
   EnvConfigService,
+  LuigiCoreService,
 } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { Subject, exhaustMap, filter, tap } from 'rxjs';
+import { LogicalCluster } from '@platform-mesh/portal-ui-lib/models';
+import { LogicalClusterService } from '@platform-mesh/portal-ui-lib/services';
+import { Subject, exhaustMap, filter } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class OrganizationReadyService {
   private configService = inject(ConfigService);
   private envConfigService = inject(EnvConfigService);
-  private resourceService = inject(ResourceService);
+  private luigiCoreService = inject(LuigiCoreService);
+  private logicalClusterService = inject(LogicalClusterService);
   private authService = inject(AuthService);
 
   private isReady = false;
@@ -33,7 +37,7 @@ export class OrganizationReadyService {
       .pipe(
         filter(() => !this.isReady),
         exhaustMap(() =>
-          this.resourceService.readOrganizationReady({
+          this.logicalClusterService.read({
             portalContext: {
               crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
             },
@@ -41,8 +45,11 @@ export class OrganizationReadyService {
             accountId: idpName,
           }),
         ),
-        tap((isReady) => {
-          this.isReady = isReady;
+        map((res: LogicalCluster) => {
+          this.isReady = res.status.phase === 'Ready';
+          if (!this.isReady) {
+            this.luigiCoreService.navigation().navigate('/error/503');
+          }
         }),
       )
       .subscribe();

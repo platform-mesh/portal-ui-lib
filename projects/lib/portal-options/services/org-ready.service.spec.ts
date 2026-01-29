@@ -1,8 +1,14 @@
-import { TestBed } from '@angular/core/testing';
-import { AuthService, ConfigService, EnvConfigService } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of } from 'rxjs';
 import { OrganizationReadyService } from './org-ready.service';
+import { TestBed } from '@angular/core/testing';
+import {
+  AuthService,
+  ConfigService,
+  EnvConfigService,
+  LuigiCoreService,
+} from '@openmfp/portal-ui-lib';
+import { LogicalClusterService } from '@platform-mesh/portal-ui-lib/services';
+import { mock } from 'jest-mock-extended';
+import { of } from 'rxjs';
 
 async function flushMicrotasks(times = 3) {
   for (let i = 0; i < times; i++) {
@@ -14,24 +20,15 @@ describe('OrganizationReadyService', () => {
   let mockConfigService: jest.Mocked<ConfigService>;
   let mockEnvConfigService: jest.Mocked<EnvConfigService>;
   let mockAuthService: jest.Mocked<AuthService>;
-  let mockResourceService: jest.Mocked<ResourceService>;
+  let mockLogicalClusterService: jest.Mocked<LogicalClusterService>;
+  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
 
   beforeEach(() => {
-    mockConfigService = {
-      getPortalConfig: jest.fn(),
-    } as unknown as jest.Mocked<ConfigService>;
-
-    mockEnvConfigService = {
-      getEnvConfig: jest.fn(),
-    } as unknown as jest.Mocked<EnvConfigService>;
-
-    mockAuthService = {
-      getToken: jest.fn(),
-    } as unknown as jest.Mocked<AuthService>;
-
-    mockResourceService = {
-      readOrganizationReady: jest.fn(),
-    } as unknown as jest.Mocked<ResourceService>;
+    mockConfigService = mock();
+    mockEnvConfigService = mock();
+    mockAuthService = mock();
+    mockLogicalClusterService = mock();
+    mockLuigiCoreService = mock();
 
     mockConfigService.getPortalConfig.mockResolvedValue({
       portalContext: { crdGatewayApiUrl: 'http://crd-gateway' },
@@ -49,20 +46,27 @@ describe('OrganizationReadyService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: EnvConfigService, useValue: mockEnvConfigService },
         { provide: AuthService, useValue: mockAuthService },
-        { provide: ResourceService, useValue: mockResourceService },
+        { provide: LogicalClusterService, useValue: mockLogicalClusterService },
+        { provide: LuigiCoreService, useValue: mockLuigiCoreService },
       ],
     });
   });
 
   it('should call readOrganizationReady with expected context', async () => {
-    mockResourceService.readOrganizationReady.mockReturnValueOnce(of(true));
+    mockLogicalClusterService.read.mockReturnValueOnce(
+      of({
+        status: {
+          phase: 'Ready',
+        },
+      }),
+    );
 
     const service = TestBed.inject(OrganizationReadyService);
     await flushMicrotasks();
     service.checkOrganizationReady();
 
-    expect(mockResourceService.readOrganizationReady).toHaveBeenCalledTimes(1);
-    expect(mockResourceService.readOrganizationReady).toHaveBeenCalledWith({
+    expect(mockLogicalClusterService.read).toHaveBeenCalledTimes(1);
+    expect(mockLogicalClusterService.read).toHaveBeenCalledWith({
       portalContext: {
         crdGatewayApiUrl: 'http://crd-gateway',
       },
@@ -72,20 +76,42 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should not call readOrganizationReady again after it becomes ready', async () => {
-    mockResourceService.readOrganizationReady.mockReturnValueOnce(of(true));
+    mockLogicalClusterService.read.mockReturnValueOnce(
+      of({
+        status: {
+          phase: 'Ready',
+        },
+      }),
+    );
 
     const service = TestBed.inject(OrganizationReadyService);
     await flushMicrotasks();
     service.checkOrganizationReady();
     service.checkOrganizationReady();
 
-    expect(mockResourceService.readOrganizationReady).toHaveBeenCalledTimes(1);
+    expect(mockLogicalClusterService.read).toHaveBeenCalledTimes(1);
   });
 
   it('should keep checking until it becomes ready', async () => {
-    mockResourceService.readOrganizationReady
-      .mockReturnValueOnce(of(false))
-      .mockReturnValueOnce(of(true));
+    mockLogicalClusterService.read
+      .mockReturnValueOnce(
+        of({
+          status: {
+            phase: 'Initializing',
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          status: {
+            phase: 'Ready',
+          },
+        }),
+      );
+    const navigateMock = jest.fn();
+    mockLuigiCoreService.navigation.mockReturnValue({
+      navigate: navigateMock,
+    } as any);
 
     const service = TestBed.inject(OrganizationReadyService);
     await flushMicrotasks();
@@ -93,7 +119,8 @@ describe('OrganizationReadyService', () => {
     service.checkOrganizationReady();
     service.checkOrganizationReady();
 
-    expect(mockResourceService.readOrganizationReady).toHaveBeenCalledTimes(2);
+    expect(navigateMock).toHaveBeenCalledWith('/error/503');
+    expect(mockLogicalClusterService.read).toHaveBeenCalledTimes(2);
   });
 
   it('should not perform checks when env idpName is welcome', async () => {
@@ -107,7 +134,6 @@ describe('OrganizationReadyService', () => {
     service.checkOrganizationReady();
     service.checkOrganizationReady();
 
-    expect(mockResourceService.readOrganizationReady).not.toHaveBeenCalled();
+    expect(mockLogicalClusterService.read).not.toHaveBeenCalled();
   });
 });
-
