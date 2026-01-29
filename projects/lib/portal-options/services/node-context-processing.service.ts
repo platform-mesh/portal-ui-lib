@@ -1,15 +1,18 @@
+import { PortalNodeContext } from '../models/luigi-context';
+import { PortalLuigiNode } from '../models/luigi-node';
+import { AccountPathResolverService } from './account-path-resolver.service';
+import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
 import {
   ResourceRequestParams,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import { parseRawGqlQueryToFields, replaceDotsAndHyphensWithUnderscores } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  parseRawGqlQueryToFields,
+  replaceDotsAndHyphensWithUnderscores,
+} from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
-import { PortalNodeContext } from '../models/luigi-context';
-import { PortalLuigiNode } from '../models/luigi-node';
-import { AccountPathResolverService } from './account-path-resolver.service';
-import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +27,9 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     entityNode: PortalLuigiNode,
     ctx: PortalNodeContext,
   ) {
-    const group = replaceDotsAndHyphensWithUnderscores(entityNode.defineEntity?.graphqlEntity?.group ?? '');
+    const group = replaceDotsAndHyphensWithUnderscores(
+      entityNode.defineEntity?.graphqlEntity?.group,
+    );
     const kind = entityNode.defineEntity?.graphqlEntity?.kind;
     const version = entityNode.defineEntity?.graphqlEntity?.version;
     const queryPart = entityNode.defineEntity?.graphqlEntity?.query;
@@ -40,12 +45,11 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
         kind,
       );
 
-
-      const accountPath = this.accountPathResolver.resolveAccountHierarchy(
-        entityNode,
-        entityId,
-        kind,
-      );
+    const accountPath = this.accountPathResolver.resolveAccountHierarchy(
+      entityNode,
+      entityId,
+      kind,
+    );
 
     const namespaceId =
       ctx.resourceDefinition?.scope === 'Namespaced'
@@ -89,7 +93,9 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       entityNode.context.entityId = ctx.entityId;
       entityNode.context.accountPath = accountPath;
     } catch (e) {
-      console.error(`Not able to read entity ${entityId} from ${group ? `${group}.` : ''}${version}.${kind}`);
+      console.error(
+        `Not able to read entity ${entityId} from ${group ? `${group}.` : ''}${version}.${kind}`,
+      );
       throw e;
     }
   }

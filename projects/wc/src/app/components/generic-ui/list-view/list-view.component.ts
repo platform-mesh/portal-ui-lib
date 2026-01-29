@@ -1,3 +1,7 @@
+import { processFields } from '../../../utils/proccess-fields';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -40,10 +44,6 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { processFields } from '../../../utils/proccess-fields';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 
 @Component({
   selector: 'pm-list-view',
@@ -109,7 +109,8 @@ export class ListViewComponent {
   list() {
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
-    const queryOperation = replaceDotsAndHyphensWithUnderscores(buildResourcePath({
+    const queryOperation = replaceDotsAndHyphensWithUnderscores(
+      buildResourcePath({
         group: resourceDefinition.group,
         version: resourceDefinition.version,
         kind: resourceDefinition.plural,
@@ -211,7 +212,7 @@ export class ListViewComponent {
     const params: ResourceRequestParams = {
       kind: resourceDefinition.kind,
       version: resourceDefinition.version,
-      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group ?? ''),
+      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
     };
 
     this.resourceService

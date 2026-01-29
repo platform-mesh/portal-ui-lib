@@ -97,9 +97,7 @@ export class DetailViewComponent {
     const params: ResourceRequestParams = {
       kind: resourceDefinition.kind,
       version: resourceDefinition.version,
-      group: replaceDotsAndHyphensWithUnderscores(
-        resourceDefinition.group ?? '',
-      ),
+      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
     };
 
     const resourceId = this.resourceId();

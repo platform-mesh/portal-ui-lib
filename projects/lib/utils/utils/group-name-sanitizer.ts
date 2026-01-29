@@ -3,7 +3,9 @@
  * @param input - The input string to process
  * @returns The processed string with dots and hyphens replaced by underscores
  */
-export function replaceDotsAndHyphensWithUnderscores(input: string): string {
+export function replaceDotsAndHyphensWithUnderscores(
+  input: string | undefined,
+): string | undefined {
   if (!input) {
     return input;
   }

@@ -257,7 +257,7 @@ export class ResourceService {
     variables?: VariableOptions,
   ): Observable<ResourceListResult> {
     const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group ?? '',
+      resourceDefinition.group,
     );
     const version = resourceDefinition.version;
     const kind = capitalize(resourceDefinition.plural);
@@ -338,7 +338,7 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
   ) {
     const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group ?? '',
+      resourceDefinition.group,
     );
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const kind = resourceDefinition.kind;
@@ -382,7 +382,7 @@ export class ResourceService {
   ) {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group ?? '',
+      resourceDefinition.group,
     );
     const version = resourceDefinition.version;
     const kind = resourceDefinition.kind;
@@ -431,7 +431,7 @@ export class ResourceService {
   ) {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group ?? '',
+      resourceDefinition.group,
     );
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
