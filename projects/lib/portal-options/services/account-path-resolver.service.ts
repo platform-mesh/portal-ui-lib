@@ -19,7 +19,10 @@ export class AccountPathResolverService {
     const accountNames = calculateAccountHierarchy(entityNode, entityId, kind);
 
     const path = accountNames.join(':');
-    entityNode.context.accountPath = path;
+    if(entityNode.context){
+      entityNode.context.accountPath = path;
+    }
+
     return path;
   }
 }
