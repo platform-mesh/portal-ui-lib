@@ -520,7 +520,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            myList: {
+            mylist: {
               type: 'ADDED',
               object: { name: 'res2', metadata: { uid: 'uid2' } },
             },
@@ -528,7 +528,7 @@ describe('ResourceService', () => {
         }),
       );
       service
-        .list('myList', ['name'], namespacedNodeContext)
+        .list('mylist', ['name'], namespacedNodeContext)
         .subscribe((res) => {
           expect(mockApollo.query).toHaveBeenCalled();
           expect(mockApollo.subscribe).toHaveBeenCalledWith({
@@ -838,19 +838,19 @@ describe('ResourceService', () => {
     it('should list namespaced resources (raw query string)', (done) => {
       const rawQuery = `
       query {
-        myList {
-          myData {
+        mylist {
+          mydata {
             name
           }
         }
       }
     `;
       mockApollo.query.mockReturnValue(
-        of({ data: { myList: { myData: [{ name: 'res2' }] } } }),
+        of({ data: { mylist: { mydata: [{ name: 'res2' }] } } }),
       );
 
       service
-        .list('myList.myData', rawQuery, namespacedNodeContext)
+        .list('mylist.mydata', rawQuery, namespacedNodeContext)
         .subscribe((res) => {
           expect(res).toEqual([{ name: 'res2' }]);
           expect(mockApollo.query).toHaveBeenCalledWith({
@@ -866,19 +866,19 @@ describe('ResourceService', () => {
     it('should return empty array for raw query when path is missing', (done) => {
       const rawQuery = `
       query {
-        myList {
-          myData {
+        mylist {
+          mydata {
             name
           }
         }
       }
     `;
       mockApollo.query.mockReturnValue(
-        of({ data: { myList: { myData: [{ name: 'res2' }] } } }),
+        of({ data: { mylist: { mydata: [{ name: 'res2' }] } } }),
       );
 
       service
-        .list('myList.missing', rawQuery, namespacedNodeContext)
+        .list('mylist.missing', rawQuery, namespacedNodeContext)
         .subscribe((res) => {
           expect(res).toEqual([]);
           done();
@@ -888,17 +888,17 @@ describe('ResourceService', () => {
     it('should list cluster resources (raw query string)', (done) => {
       const rawQuery = `
       query {
-        myList {
+        mylist {
           name
         }
       }
     `;
       mockApollo.query.mockReturnValue(
-        of({ data: { myList: [{ name: 'res2' }] } }),
+        of({ data: { mylist: [{ name: 'res2' }] } }),
       );
 
       service
-        .list('myList', rawQuery, clusterScopeNodeContext)
+        .list('mylist', rawQuery, clusterScopeNodeContext)
         .subscribe((res) => {
           expect(res).toEqual([{ name: 'res2' }]);
           expect(mockApollo.query).toHaveBeenCalledWith({
@@ -958,13 +958,13 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(subject.asObservable());
 
       const results: any[] = [];
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+      service.list('mylist', ['name'], namespacedNodeContext).subscribe({
         next: (res) => results.push(res),
       });
 
       subject.next({
         data: {
-          myList: {
+          mylist: {
             type: 'MODIFIED',
             object: { name: 'res1-updated', metadata: { uid: 'uid1' } },
           },
@@ -996,13 +996,13 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(subject.asObservable());
 
       const results: any[] = [];
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+      service.list('mylist', ['name'], namespacedNodeContext).subscribe({
         next: (res) => results.push(res),
       });
 
       subject.next({
         data: {
-          myList: {
+          mylist: {
             type: 'DELETED',
             object: { name: 'res1', metadata: { uid: 'uid1' } },
           },

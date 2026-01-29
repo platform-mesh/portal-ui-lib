@@ -19,6 +19,8 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
+import Fields from 'gql-query-builder/build/Fields';
+import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
 import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
@@ -82,17 +84,7 @@ export class ResourceService {
       })
       .pipe(
         map((res) =>
-          getValueByPath<any, any>(
-            res.data,
-            buildResourcePath(
-              {
-                group: params.group,
-                version: params.version,
-                kind: params.kind,
-              },
-              '.',
-            ),
-          ),
+          getValueByPath<any, any>(res.data, buildResourcePath(params, '.')),
         ),
         catchError((error) => {
           this.alertErrors(error);
@@ -140,7 +132,10 @@ export class ResourceService {
         },
       ];
 
-      const queryOptions = this.calcQueryOptions(queryFields, [group, version]);
+      const queryOptions = this.calcQueryOptions(queryFields, [
+        { operation: group },
+        { operation: version },
+      ]);
       return gqlBuilder.query(queryOptions).query;
     } else {
       return fieldsOrRawQuery;
@@ -153,9 +148,10 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = false,
   ): Observable<Resource[] | any> {
+    const lowerCaseOperation = operation.toLowerCase();
     return fieldsOrRawQuery instanceof Array
       ? this.listWithFields(
-          operation,
+          lowerCaseOperation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
@@ -198,7 +194,7 @@ export class ResourceService {
       switchMap((value: ResourceListResult) => {
         const { resourceVersion, items } = value;
         const subscriptionQuery = gqlBuilder.subscription({
-          operation: operation.toLowerCase(),
+          operation: operation,
           fields: ['type', { object: fields }],
           variables: {
             ...variables,
@@ -261,11 +257,17 @@ export class ResourceService {
     );
     const version = resourceDefinition.version;
     const kind = capitalize(resourceDefinition.plural);
-    const queryOptions = this.calcQueryOptions(
-      ['resourceVersion', { items: fields }],
-      [group, version, kind],
-      variables,
-    );
+    const queryFields = [
+      {
+        operation: kind,
+        variables: variables,
+        fields: ['resourceVersion', { items: fields }],
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(queryFields, [
+      { operation: group },
+      { operation: version },
+    ]);
     const listQuery = gqlBuilder.query(queryOptions);
 
     return this.apolloFactory
@@ -355,7 +357,10 @@ export class ResourceService {
         fields: [],
       },
     ];
-    const queryOptions = this.calcQueryOptions(fields, [group, version]);
+    const queryOptions = this.calcQueryOptions(fields, [
+      { operation: group },
+      { operation: version },
+    ]);
     const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
@@ -401,8 +406,8 @@ export class ResourceService {
       },
     ];
     const queryOptions = this.calcQueryOptions(mutationFields, [
-      group,
-      version,
+      { operation: group },
+      { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
 
@@ -456,8 +461,8 @@ export class ResourceService {
       },
     ];
     const queryOptions = this.calcQueryOptions(mutationFields, [
-      group,
-      version,
+      { operation: group },
+      { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
 
@@ -492,13 +497,13 @@ export class ResourceService {
   }
 
   private calcQueryOptions(
-    innerFields: any[],
-    wrappers: (string | undefined)[],
-    variables?: VariableOptions,
-  ): { fields: any[]; operation: string; variables?: VariableOptions } {
-    const filteredWrappers = wrappers
-      .reverse()
-      .filter((wrapper): wrapper is string => !!wrapper);
+    innerFields: Fields,
+    wrappers: Partial<Omit<IQueryBuilderOptions, 'fields'>>[],
+  ): IQueryBuilderOptions {
+    const filteredWrappers = wrappers.filter(
+      (wrapper): wrapper is Omit<IQueryBuilderOptions, 'fields'> =>
+        !!wrapper?.operation,
+    );
 
     if (filteredWrappers.length === 0) {
       const completeQuery = innerFields.pop() as NestedField;
@@ -509,14 +514,27 @@ export class ResourceService {
       throw new Error('At least one wrapper or inner fields is required');
     }
 
-    let fields: any[] = innerFields;
-    let operation = filteredWrappers.shift() as string;
+    let fields = innerFields;
+    let nextWrapper = filteredWrappers.pop() as Omit<
+      IQueryBuilderOptions,
+      'fields'
+    >;
 
     filteredWrappers.forEach((wrapper) => {
-      fields = [{ [operation]: fields }];
-      operation = wrapper;
+      fields = [
+        {
+          operation: nextWrapper.operation,
+          fields: innerFields,
+          variables: nextWrapper.variables,
+        },
+      ];
+      nextWrapper = wrapper;
     });
 
-    return { fields, operation, variables };
+    return {
+      operation: nextWrapper.operation,
+      fields,
+      variables: nextWrapper.variables,
+    };
   }
 }

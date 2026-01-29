@@ -24,7 +24,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
 - context resource definition `"context"`
 
-  - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing properties of the resource.
+  - in the `"resourceDefinition"` the given fields need to be specified: `group, version,  plural, singular, kind, scope, namespace` describing properties of the resource.
   - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
     It's an object that contains two fields:
       - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
@@ -32,7 +32,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
     ```json
     "readyCondition": {
       "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
-      "property": ["status.conditions.status", "status.conditions.type"],
+      "property": ["status.conditions.status", "status.conditions.type"]
     },
     ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
@@ -119,6 +119,7 @@ This example demonstrates various features including:
           "context": {
             "resourceDefinition": {
               "group": "core.platform-mesh.io",
+              "version": "v1alpha1",
               "plural": "accounts",
               "singular": "account",
               "kind": "Account",
@@ -323,6 +324,124 @@ This example demonstrates various features including:
 }
 ```
 
+#### Example Content Configuration for an HttpBin Node with Namespaced Scope
+
+```json
+{
+    "name": "httpbins",
+    "creationTimestamp": "2022-05-17T11:37:17Z",
+    "luigiConfigFragment": {
+        "data": {
+            "nodes": [
+                {
+                    "pathSegment": "orchestrate_platform-mesh_io_httpbins",
+                    "navigationContext": "orchestrate_platform-mesh_io_httpbins",
+                    "label": "Http Bins",
+                    "icon": "paint-bucket",
+                    "order": 800,
+                    "entityType": "main.core_platform-mesh_io_account.namespace",
+                    "loadingIndicator": {
+                        "enabled": false
+                    },
+                    "keepSelectedForChildren": true,
+                    "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
+                    "webcomponent": {
+                        "selfRegistered": true
+                    },
+                    "context": {
+                        "resourceDefinition": {
+                            "group": "orchestrate.platform-mesh.io",
+                            "plural": "httpBins",
+                            "singular": "httpBin", 
+                            "version": "v1alpha1",
+                            "kind": "HttpBin",
+                            "scope": "Namespaced",
+                            "namespace": null,
+                            "readyCondition": {
+                              "jsonPathExpression": "status.ready",
+                              "property": ["status.ready"]
+                            },
+                            "ui": {
+                                "logoUrl": "https://www.kcp.io/icons/logo.svg",
+                                "listView": {
+                                    "fields": [
+                                        {
+                                            "label": "Name",
+                                            "property": "metadata.name"
+                                        },
+                                        {
+                                            "label": "Ready",
+                                            "property": "status.ready",
+                                            "uiSettings": {
+                                              "displayAs": "boolIcon"
+                                            }
+                                        },
+                                        {
+                                            "label": "Link",
+                                            "property": "status.url",
+                                            "uiSettings": {
+                                              "displayAs": "link"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "detailView": {},
+                                "createView": {
+                                    "fields": [
+                                        {
+                                            "label": "Name",
+                                            "property": "metadata.name",
+                                            "required": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "children": [
+                      {
+                          "pathSegment": ":httpbinId",
+                          "hideFromNav": true,
+                          "keepSelectedForChildren": false,
+                          "defineEntity": {
+                              "id": "orchestrate_platform-mesh_io_httpbin",
+                              "contextKey": "httpbinId",
+                              "graphqlEntity": {
+                                  "group": "orchestrate_platform-mesh_io",
+                                  "version": "v1alpha1",
+                                  "kind": "HttpBin",
+                                  "query": "{ metadata { name } }"
+                              }
+                          },
+                          "context": {
+                              "accountId": ":accountId",
+                              "namespaceId": ":namespaceId",
+                              "resourceId": ":httpbinId"
+                          }
+                      }
+                    ]
+                },
+                {
+                  "entityType": "main.core_platform-mesh_io_account.namespace.orchestrate_platform-mesh_io_httpbin",
+                  "pathSegment": "dashboard",
+                  "label": "Dashboard",
+                  "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
+                  "webcomponent": {
+                    "selfRegistered": true
+                  },
+                  "defineEntity": {
+                      "id": "dashboard"
+                  },
+                  "compound": {
+                      "children": []
+                  }
+                }
+            ]
+        }
+    }
+}
+```
+
 ### Generic Detail View
 
 To use the generic detail view, update the node’s `content-configuration` to include the following:
@@ -375,6 +494,7 @@ In case the detail view is an independent node provide context data:
   "context": {
     "resourceDefinition": {
       "group": "core.platform-mesh.io",
+      "version": "v1alpha1",
       "plural": "accounts",
       "singular": "account",
       "kind": "Account",
