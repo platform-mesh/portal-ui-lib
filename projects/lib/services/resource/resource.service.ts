@@ -85,17 +85,7 @@ export class ResourceService {
       })
       .pipe(
         map((res) =>
-          getValueByPath<any, any>(
-            res.data,
-            buildResourcePath(
-              {
-                group: params.group,
-                version: params.version,
-                kind: params.kind,
-              },
-              '.',
-            ),
-          ),
+          getValueByPath<any, any>(res.data, buildResourcePath(params, '.')),
         ),
         catchError((error) => {
           this.alertErrors(error);
@@ -168,7 +158,7 @@ export class ResourceService {
           readFromParentKcpPath,
         )
       : this.listWithRawQuery(
-          lowerCaseOperation,
+          operation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,

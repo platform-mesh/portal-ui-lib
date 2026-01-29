@@ -32,7 +32,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
     ```json
     "readyCondition": {
       "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
-      "property": ["status.conditions.status", "status.conditions.type"],
+      "property": ["status.conditions.status", "status.conditions.type"]
     },
     ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
