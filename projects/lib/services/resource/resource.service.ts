@@ -3,29 +3,29 @@ import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { AccountInfo, Resource, ResourceDefinition, ResourceListResult, ResourceOperationTypeMap, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
-import { buildResourcePath, capitalize, getValueByPath, replaceDotsAndHyphensWithUnderscores, stripTypename } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  AccountInfo,
+  Resource,
+  ResourceDefinition,
+  ResourceListResult,
+  ResourceOperationTypeMap,
+  ResourceSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/models';
+import {
+  buildResourcePath,
+  capitalize,
+  getValueByPath,
+  replaceDotsAndHyphensWithUnderscores,
+  stripTypename,
+} from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
+import Fields from 'gql-query-builder/build/Fields';
+import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
 import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
 import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -85,14 +85,7 @@ export class ResourceService {
       })
       .pipe(
         map((res) =>
-          getValueByPath<any, any>(
-            res.data,
-            buildResourcePath({
-              group: params.group,
-              version: params.version,
-              kind: params.kind,
-            }, '.'),
-          ),
+          getValueByPath<any, any>(res.data, buildResourcePath(params, '.')),
         ),
         catchError((error) => {
           this.alertErrors(error);
@@ -127,22 +120,24 @@ export class ResourceService {
   ) {
     if (fieldsOrRawQuery instanceof Array) {
       const { kind, version, group } = params;
-      const queryFields = [{
-        operation: kind,
-        variables: {
-          name: { value: resourceId, type: 'String!' },
-          ...(namespace && {
-            namespace: { value: namespace, type: 'String' },
-          }),
+      const queryFields = [
+        {
+          operation: kind,
+          variables: {
+            name: { value: resourceId, type: 'String!' },
+            ...(namespace && {
+              namespace: { value: namespace, type: 'String' },
+            }),
+          },
+          fields: fieldsOrRawQuery,
         },
-        fields: fieldsOrRawQuery,
-      }]
+      ];
 
-      const queryOptions = this.calcQueryOptions(queryFields, [group, version]);
-      return (
-        gqlBuilder
-          .query(queryOptions).query
-      );
+      const queryOptions = this.calcQueryOptions(queryFields, [
+        { operation: group },
+        { operation: version },
+      ]);
+      return gqlBuilder.query(queryOptions).query;
     } else {
       return fieldsOrRawQuery;
     }
@@ -154,9 +149,10 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = false,
   ): Observable<Resource[] | any> {
+    const lowerCaseOperation = operation.toLowerCase();
     return fieldsOrRawQuery instanceof Array
       ? this.listWithFields(
-          operation,
+          lowerCaseOperation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
@@ -199,7 +195,7 @@ export class ResourceService {
       switchMap((value: ResourceListResult) => {
         const { resourceVersion, items } = value;
         const subscriptionQuery = gqlBuilder.subscription({
-          operation: operation.toLowerCase(),
+          operation: operation,
           fields: ['type', { object: fields }],
           variables: {
             ...variables,
@@ -262,7 +258,17 @@ export class ResourceService {
     );
     const version = resourceDefinition.version;
     const kind = capitalize(resourceDefinition.plural);
-    const queryOptions = this.calcQueryOptions(['resourceVersion', { items: fields }], [group, version, kind], variables);
+    const queryFields = [
+      {
+        operation: kind,
+        variables: variables,
+        fields: ['resourceVersion', { items: fields }],
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(queryFields, [
+      { operation: group },
+      { operation: version },
+    ]);
     const listQuery = gqlBuilder.query(queryOptions);
 
     return this.apolloFactory
@@ -340,7 +346,8 @@ export class ResourceService {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
-    const fields = [{
+    const fields = [
+      {
         operation: `delete${kind}`,
         variables: {
           name: { type: 'String!', value: resource.metadata.name },
@@ -349,8 +356,12 @@ export class ResourceService {
           }),
         },
         fields: [],
-      }]
-    const queryOptions = this.calcQueryOptions(fields, [group, version]);
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(fields, [
+      { operation: group },
+      { operation: version },
+    ]);
     const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
@@ -393,9 +404,12 @@ export class ResourceService {
           object: { type: `${kind}Input!`, value: resource },
         },
         fields: ['__typename'],
-      }
+      },
     ];
-    const queryOptions = this.calcQueryOptions(mutationFields, [group, version]);
+    const queryOptions = this.calcQueryOptions(mutationFields, [
+      { operation: group },
+      { operation: version },
+    ]);
     const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
@@ -445,9 +459,12 @@ export class ResourceService {
           },
         },
         fields: ['__typename'],
-      }
+      },
     ];
-    const queryOptions = this.calcQueryOptions(mutationFields, [group, version]);
+    const queryOptions = this.calcQueryOptions(mutationFields, [
+      { operation: group },
+      { operation: version },
+    ]);
     const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
@@ -507,7 +524,9 @@ export class ResourceService {
       );
   }
 
-  public readOrganizationReady(nodeContext: ResourceNodeContext): Observable<boolean> {
+  public readOrganizationReady(
+    nodeContext: ResourceNodeContext,
+  ): Observable<boolean> {
     return this.apolloFactory
       .apollo(nodeContext)
       .query<boolean>({
@@ -523,23 +542,25 @@ export class ResourceService {
               }
             }
           }
-        `
-        })
-        .pipe(
-          map((res: any) => {
-            const isReady = res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase === 'Ready';
-            if(!isReady) {
-              this.luigiCoreService.navigation().navigate('/error/503');
-            }
+        `,
+      })
+      .pipe(
+        map((res: any) => {
+          const isReady =
+            res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase ===
+            'Ready';
+          if (!isReady) {
+            this.luigiCoreService.navigation().navigate('/error/503');
+          }
 
-            return isReady;
-          }),
-          catchError((error) => {
-            this.alertErrors(error);
-            console.error('Error executing GraphQL query.', error);
-            throw error;
-          }),
-        );
+          return isReady;
+        }),
+        catchError((error) => {
+          this.alertErrors(error);
+          console.error('Error executing GraphQL query.', error);
+          throw error;
+        }),
+      );
   }
 
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
@@ -554,26 +575,45 @@ export class ResourceService {
     );
   }
 
-  private calcQueryOptions(innerFields: any[], wrappers: (string | undefined)[], variables?: VariableOptions): {fields: any[],  operation: string, variables?: VariableOptions} {
-    const filteredWrappers = wrappers.reverse().filter((wrapper): wrapper is string => !!wrapper);
+  private calcQueryOptions(
+    innerFields: Fields,
+    wrappers: Partial<Omit<IQueryBuilderOptions, 'fields'>>[],
+  ): IQueryBuilderOptions {
+    const filteredWrappers = wrappers.filter(
+      (wrapper): wrapper is Omit<IQueryBuilderOptions, 'fields'> =>
+        !!wrapper?.operation,
+    );
 
-    if(filteredWrappers.length === 0) {
+    if (filteredWrappers.length === 0) {
       const completeQuery = innerFields.pop() as NestedField;
-      if(completeQuery && completeQuery.operation && completeQuery.fields) {
+      if (completeQuery && completeQuery.operation && completeQuery.fields) {
         return completeQuery;
       }
 
       throw new Error('At least one wrapper or inner fields is required');
     }
 
-    let fields: any[] = innerFields;
-    let operation = filteredWrappers.shift() as string;
+    let fields = innerFields;
+    let nextWrapper = filteredWrappers.pop() as Omit<
+      IQueryBuilderOptions,
+      'fields'
+    >;
 
     filteredWrappers.forEach((wrapper) => {
-      fields = [{ [operation]: fields }];
-      operation = wrapper;
+      fields = [
+        {
+          operation: nextWrapper.operation,
+          fields: innerFields,
+          variables: nextWrapper.variables,
+        },
+      ];
+      nextWrapper = wrapper;
     });
 
-    return { fields, operation, variables };
+    return {
+      operation: nextWrapper.operation,
+      fields,
+      variables: nextWrapper.variables,
+    };
   }
 }
