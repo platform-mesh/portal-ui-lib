@@ -83,6 +83,7 @@ export class DetailViewComponent {
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
       false,
   );
+  isDownloadingKubeConfig = signal(false);
 
   constructor() {
     effect(() => {
@@ -142,9 +143,13 @@ export class DetailViewComponent {
   }
 
   async downloadKubeConfig() {
-    const { accountId, portalContext, accountPath, kcpCA } = this.context();
+    if (this.isDownloadingKubeConfig()) {
+      return;
+    }
 
     try {
+      this.isDownloadingKubeConfig.set(true);
+      const { accountId, portalContext, accountPath, kcpCA } = this.context();
       const accountInfo = await firstValueFrom(
         this.accountInfoService.read(this.context()),
       );
@@ -165,6 +170,8 @@ export class DetailViewComponent {
       a.href = url;
       a.download = 'kubeconfig.yaml';
       a.click();
+
+      URL.revokeObjectURL(url);
     } catch (error) {
       this.LuigiClient()
         .uxManager()
@@ -172,6 +179,8 @@ export class DetailViewComponent {
           text: `Failed to download kubeconfig: ${error.message}`,
           type: 'error',
         });
+    } finally {
+      this.isDownloadingKubeConfig.set(false);
     }
   }
 

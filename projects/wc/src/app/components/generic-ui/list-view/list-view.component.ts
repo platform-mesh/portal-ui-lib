@@ -115,7 +115,7 @@ export class ListViewComponent {
         version: resourceDefinition.version,
         kind: resourceDefinition.plural,
       }),
-    );
+    ) as string;
 
     this.resourceService
       .list(queryOperation, fields, this.context())
