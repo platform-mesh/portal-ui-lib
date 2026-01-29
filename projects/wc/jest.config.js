@@ -48,6 +48,10 @@ module.exports = {
       __dirname,
       '../lib/utils/public-api.ts',
     ),
+    '^@platform-mesh/portal-ui-lib/models$': path.resolve(
+      __dirname,
+      '../lib/models/public-api.ts',
+    ),
     '^@platform-mesh/portal-ui-lib/(.*)': path.resolve(__dirname, '../lib/$1'),
   },
 };

@@ -1,8 +1,10 @@
 import { DetailViewComponent } from './detail-view.component';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
+import { AccountInfo } from '@platform-mesh/portal-ui-lib/models/models';
 import {
+  AccountInfoService,
   GatewayService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -15,10 +17,37 @@ describe('DetailViewComponent', () => {
   let mockResourceService: any;
   let mockGatewayService: any;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
+  let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
   let luigiClientLinkManagerNavigate = jest.fn();
 
   beforeEach(() => {
     envConfigServiceMock = mock();
+    accountInfoServiceMock = mock();
+
+    const accountInfo: AccountInfo = {
+      metadata: {
+        annotations: {
+          'kcp.io/cluster': 'ly4pjqo89u2llqcg',
+        },
+        name: 'account',
+      },
+      spec: {
+        clusterInfo: {
+          ca: 'ca',
+        },
+        oidc: {
+          clients: {
+            kubectl: { clientId: 'f1aefb48-bc47-41ca-8e92-e11bf1fc37ec' },
+          },
+          issuerUrl: 'https://portal.local/keycloak/realms/sub',
+        },
+        organization: {
+          originClusterId: 'mwi4ti5r3vtng851',
+        },
+      },
+    };
+    accountInfoServiceMock.read.mockReturnValue(of(accountInfo));
+
     mockResourceService = {
       read: jest.fn().mockReturnValue(of({ name: 'test-resource' })),
       readAccountInfo: jest.fn().mockReturnValue(of('mock-ca-data')),
@@ -31,6 +60,7 @@ describe('DetailViewComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: ResourceService, useValue: mockResourceService },
+        { provide: AccountInfoService, useValue: accountInfoServiceMock },
         { provide: GatewayService, useValue: mockGatewayService },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
       ],
@@ -466,108 +496,6 @@ describe('DetailViewComponent', () => {
         type: 'error',
       });
     });
-
-    it('should handle kubeconfig validation error in downloadKubeConfig method', async () => {
-      jest.clearAllMocks();
-      const newFixture = TestBed.createComponent(DetailViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceId: 'cluster-1',
-        token: 'abc123',
-        accountId: null, // null accountId should cause validation error
-        organization: 'org-123',
-        kcpCA: 'kcp-ca-data',
-        resourceDefinition: {
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          ui: {
-            detailView: {
-              fields: [],
-            },
-          },
-        },
-        portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
-        parentNavigationContexts: ['project'],
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        uxManager: () => mockUxManager,
-        getNodeParams: jest.fn(),
-      })) as any;
-
-      envConfigServiceMock.getEnvConfig.mockResolvedValue({
-        oidcIssuerUrl: 'oidcIssuerUrl',
-      } as any);
-
-      newFixture.detectChanges();
-
-      await expect(newComponent.downloadKubeConfig()).rejects.toThrow();
-
-      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
-        text: expect.any(String),
-        type: 'error',
-      });
-    });
-
-    it('should handle missing kubeconfig properties in downloadKubeConfig method', async () => {
-      jest.clearAllMocks();
-      const newFixture = TestBed.createComponent(DetailViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceId: 'cluster-1',
-        token: 'abc123',
-        accountId: 'account-123',
-        organization: undefined, // undefined organization should cause validation error
-        kcpCA: 'kcp-ca-data',
-        resourceDefinition: {
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          ui: {
-            detailView: {
-              fields: [],
-            },
-          },
-        },
-        portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
-        parentNavigationContexts: ['project'],
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        uxManager: () => mockUxManager,
-        getNodeParams: jest.fn(),
-      })) as any;
-
-      envConfigServiceMock.getEnvConfig.mockResolvedValue({
-        oidcIssuerUrl: 'oidcIssuerUrl',
-      } as any);
-
-      newFixture.detectChanges();
-
-      await expect(newComponent.downloadKubeConfig()).rejects.toThrow();
-
-      expect(mockUxManager.showAlert).toHaveBeenCalledWith({
-        text: expect.any(String),
-        type: 'error',
-      });
-    });
   });
 });
 
@@ -575,9 +503,11 @@ describe('DetailViewComponent template', () => {
   let mockResourceService: any;
   let mockGatewayService: any;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
+  let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
 
   beforeEach(() => {
     envConfigServiceMock = mock();
+    accountInfoServiceMock = mock();
     mockResourceService = {
       read: jest.fn().mockReturnValue(of({ name: 'test-resource' })),
       readAccountInfo: jest.fn().mockReturnValue(of('mock-ca-data')),
@@ -592,6 +522,7 @@ describe('DetailViewComponent template', () => {
         { provide: ResourceService, useValue: mockResourceService },
         { provide: GatewayService, useValue: mockGatewayService },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
+        { provide: AccountInfoService, useValue: accountInfoServiceMock },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     });

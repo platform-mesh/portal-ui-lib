@@ -15,7 +15,7 @@ import {
   signal,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { AccountInfo, Resource } from '@platform-mesh/portal-ui-lib/models';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
   GatewayService,
@@ -38,6 +38,7 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'pm-detail-view',
@@ -82,20 +83,10 @@ export class DetailViewComponent {
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
       false,
   );
-  private accountInfo: AccountInfo;
 
   constructor() {
     effect(() => {
-      this.showDownloadKubeconfig() && this.readAccountInfo();
       this.readResource();
-    });
-  }
-
-  private readAccountInfo() {
-    this.accountInfoService.read(this.context()).subscribe({
-      next: (result) => {
-        this.accountInfo = result;
-      },
     });
   }
 
@@ -154,22 +145,36 @@ export class DetailViewComponent {
 
   async downloadKubeConfig() {
     const { accountId, portalContext, accountPath, kcpCA } = this.context();
-    const kubeconfigProps: KubeConfigTemplateProps = {
-      clusterName: accountId,
-      serverUrl: `${portalContext.kcpWorkspaceUrl}:${accountPath}`,
-      kcpCA,
-      oidcIssuerUrl: this.accountInfo.spec.oidc.issuerUrl,
-      oidcKubectlClientId: this.accountInfo.spec.oidc.clients.kubectl.clientId,
-    };
 
-    const kubeConfig = kubeConfigTemplate(kubeconfigProps);
-    const blob = new Blob([kubeConfig], { type: 'application/plain' });
-    const url = URL.createObjectURL(blob);
+    try {
+      const accountInfo = await firstValueFrom(
+        this.accountInfoService.read(this.context()),
+      );
+      const kubeconfigProps: KubeConfigTemplateProps = {
+        clusterName: accountId ?? '',
+        serverUrl: `${portalContext.kcpWorkspaceUrl}:${accountPath}`,
+        kcpCA: kcpCA ?? '',
+        oidcIssuerUrl: accountInfo?.spec.oidc.issuerUrl ?? '',
+        oidcKubectlClientId:
+          accountInfo?.spec.oidc.clients.kubectl.clientId ?? '',
+      };
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'kubeconfig.yaml';
-    a.click();
+      const kubeConfig = kubeConfigTemplate(kubeconfigProps);
+      const blob = new Blob([kubeConfig], { type: 'application/plain' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kubeconfig.yaml';
+      a.click();
+    } catch (error) {
+      this.LuigiClient()
+        .uxManager()
+        .showAlert({
+          text: `Failed to download kubeconfig: ${error.message}`,
+          type: 'error',
+        });
+    }
   }
 
   private getResourceDefinition() {

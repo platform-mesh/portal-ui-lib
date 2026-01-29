@@ -1,7 +1,7 @@
 export interface KubeConfigTemplateProps {
-  clusterName: string | undefined;
-  serverUrl: string | undefined;
-  kcpCA: string | undefined;
+  clusterName: string;
+  serverUrl: string;
+  kcpCA: string;
   oidcIssuerUrl: string;
   oidcKubectlClientId: string;
 }

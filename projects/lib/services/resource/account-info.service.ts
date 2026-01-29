@@ -42,7 +42,7 @@ export class AccountInfoService {
             type: 'error',
           });
           console.error('Error executing GraphQL query.', error);
-          return error;
+          throw error;
         }),
       );
   }
