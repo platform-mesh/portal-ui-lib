@@ -13,28 +13,6 @@ import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, of } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const defaultColumns: FieldDefinition[] = [
   {
     label: 'Name',

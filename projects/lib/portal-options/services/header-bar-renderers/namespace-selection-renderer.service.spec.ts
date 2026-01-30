@@ -4,13 +4,6 @@ import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
 
-
-
-
-
-
-
-
 jest.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}), { virtual: true });
 
 function getChildrenByTag(el: Element, tag: string): Element[] {
