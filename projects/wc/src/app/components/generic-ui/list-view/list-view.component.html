@@ -40,7 +40,7 @@
   </ui5-dynamic-page-title>
 
   <ui5-table test-id="generic-list-table">
-    <ui5-table-header-row slot="headerRow" sticky>
+    <ui5-table-header-row slot="headerRow">
       @if (readyCondition()) {
         <ui5-table-header-cell
           width="20px"
@@ -238,7 +238,8 @@
       <span
         style="color: var(--sapTextColor); font-size: var(--sapFontSmallSize)"
       >
-        Total items: <b>{{ totalItemsCount() }}</b>
+        Items loaded:
+        <b>{{ `${resources().length} / ${totalItemsCount()}` }}</b>
       </span>
     </div>
   </div>

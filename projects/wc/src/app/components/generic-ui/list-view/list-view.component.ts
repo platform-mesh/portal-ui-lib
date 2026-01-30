@@ -55,6 +55,7 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+import { Subscription, tap } from 'rxjs';
 
 @Component({
   selector: 'pm-list-view',
@@ -113,11 +114,11 @@ export class ListViewComponent {
   );
 
   totalItemsCount = signal<number>(0);
-  paginationLimit = signal<number>(10);
+  paginationLimit = signal<number>(5);
   hasMore = signal<boolean>(false);
 
   private currentContinueToken: string | undefined = undefined;
-  private tokenHistory: (string | undefined)[] = [undefined]; // Stores tokens for back navigation
+  private previousListSubscription: Subscription;
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
@@ -129,7 +130,6 @@ export class ListViewComponent {
 
   private resetPagination() {
     this.currentContinueToken = undefined;
-    this.tokenHistory = [undefined];
     this.totalItemsCount.set(0);
     this.resources.set([]);
   }
@@ -140,26 +140,21 @@ export class ListViewComponent {
     this.resetPagination();
   }
 
-  private handlePageResults(result: ResourceListResult) {
-    this.hasMore.set(!!result.continue);
-
-    this.tokenHistory.push(result.continue);
-    const loadedSoFar = this.resources().length;
-    const totalEstimated =
-      loadedSoFar + result.items.length + (result.remainingItemCount || 0);
-    this.totalItemsCount.set(totalEstimated);
-  }
-
   loadMore() {
     if (!this.hasMore()) {
       return;
     }
 
-    this.currentContinueToken = this.tokenHistory.at(-1) ?? undefined;
     this.list();
   }
 
+  private isLoadingList = false;
   list() {
+    if (this.isLoadingList) {
+      return;
+    }
+    this.isLoadingList = true;
+
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
     const queryOperation = replaceDotsAndHyphensWithUnderscores(
@@ -170,26 +165,54 @@ export class ListViewComponent {
       }),
     ) as string;
 
-    this.resourceService
+    if (this.previousListSubscription) {
+      this.previousListSubscription.unsubscribe();
+    }
+
+    this.previousListSubscription = this.resourceService
       .list(queryOperation, fields, this.context(), false, {
         limit: this.paginationLimit(),
         continue: this.currentContinueToken,
       })
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        tap(() => (this.isLoadingList = false)),
+      )
       .subscribe({
         next: (result: ResourceListResult) => {
-          this.handlePageResults(result);
-
-          this.resources.update((resources) =>
-            resources.concat(
-              result.items.map((resource) => ({
-                ...resource,
-                ready: this.getResourceReadyStatus(resource),
-              })),
-            ),
+          this.mergeResources(result.items);
+          this.hasMore.set(!!result.continue);
+          this.currentContinueToken = result.continue;
+          this.totalItemsCount.set(
+            this.resources().length + (result.remainingItemCount || 0),
           );
         },
       });
+  }
+
+  private mergeResources(result: Resource[]) {
+    const processedResult: Resource[] = result.map((resource) => ({
+      ...resource,
+      ready: this.getResourceReadyStatus(resource),
+    }));
+
+    this.resources.update((resources) => {
+      const processedResultMap = processedResult.reduce(
+        (all, item) => all.set(item.metadata.name, item),
+        new Map<string, Resource>(),
+      );
+
+      return resources
+        .map((item) => {
+          const processedItem = processedResultMap.get(item.metadata.name);
+          if (processedItem) {
+            processedResultMap.delete(item.metadata.name);
+            return processedItem;
+          }
+          return item;
+        })
+        .concat([...processedResultMap.values()].sort());
+    });
   }
 
   delete(resource: Resource) {

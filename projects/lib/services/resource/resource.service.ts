@@ -210,8 +210,6 @@ export class ResourceService {
                 type: 'String',
                 value: listQueryResult.resourceVersion,
               },
-              limit: { type: 'Int', value: 2 },
-              continue: { type: 'String', value: listQueryResult.continue },
             },
           });
 
@@ -280,11 +278,17 @@ export class ResourceService {
     const queryFields = [
       {
         operation: kind,
-        variables: {...variables, limit: { type: 'Int', value: pagination?.limit },
-          continue: { type: 'String', value: pagination?.continue } },
-        fields: ['resourceVersion',
+        variables: {
+          ...variables,
+          limit: { type: 'Int', value: pagination?.limit },
+          continue: { type: 'String', value: pagination?.continue },
+        },
+        fields: [
+          'resourceVersion',
           'remainingItemCount',
-          'continue', { items: fields }],
+          'continue',
+          { items: fields },
+        ],
       },
     ];
     const queryOptions = this.calcQueryOptions(queryFields, [

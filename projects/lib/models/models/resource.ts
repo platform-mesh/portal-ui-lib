@@ -67,8 +67,12 @@ export interface ResourceSpec extends Record<string, any> {
   displayName?: string;
 }
 
+export interface ResourceMeta extends ObjectMeta {
+  name: string;
+}
+
 export interface Resource extends Record<string, any> {
-  metadata: ObjectMeta;
+  metadata: ResourceMeta;
   spec?: ResourceSpec;
   status?: ResourceStatus;
   __typename?: string;
