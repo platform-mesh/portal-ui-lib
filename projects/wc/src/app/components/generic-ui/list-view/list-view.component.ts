@@ -18,7 +18,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
- FieldDefinition, Resource,
+  FieldDefinition,
+  Resource,
   ResourceListResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -37,7 +38,6 @@ import '@ui5/webcomponents-icons/dist/navigation-left-arrow.js';
 import '@ui5/webcomponents-icons/dist/navigation-right-arrow.js';
 import '@ui5/webcomponents-icons/dist/open-command-field.js';
 import {
-  ButtonComponent,
   DynamicPageComponent,
   DynamicPageTitleComponent,
   IconComponent,
@@ -46,6 +46,7 @@ import {
   SelectComponent,
   TableCellComponent,
   TableComponent,
+  TableGrowingComponent,
   TableHeaderCellComponent,
   TableHeaderRowComponent,
   TableRowComponent,
@@ -79,9 +80,9 @@ import {
     ToolbarButtonComponent,
     ToolbarComponent,
     ValueCellComponent,
-    ButtonComponent,
     SelectComponent,
     OptionComponent,
+    TableGrowingComponent,
   ],
 })
 export class ListViewComponent {
@@ -111,16 +112,12 @@ export class ListViewComponent {
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
 
-  currentPage = signal<number>(1);
   totalItemsCount = signal<number>(0);
   paginationLimit = signal<number>(10);
+  hasMore = signal<boolean>(false);
 
   private currentContinueToken: string | undefined = undefined;
   private tokenHistory: (string | undefined)[] = [undefined]; // Stores tokens for back navigation
-
-  hasNextPage = signal<boolean>(false);
-  hasPrevPage = computed(() => this.currentPage() > 1);
-
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
@@ -131,67 +128,34 @@ export class ListViewComponent {
   }
 
   private resetPagination() {
-    this.currentPage.set(1);
     this.currentContinueToken = undefined;
     this.tokenHistory = [undefined];
     this.totalItemsCount.set(0);
+    this.resources.set([]);
   }
 
   onLimitChange(event: any) {
     const newLimit = parseInt(event.detail.selectedOption.value, 10);
     this.paginationLimit.set(newLimit);
+    this.resetPagination();
   }
 
   private handlePageResults(result: ResourceListResult) {
-    this.hasNextPage.set(!!result.continue);
-    this.tokenHistory[this.currentPage()] = result.continue;
+    this.hasMore.set(!!result.continue);
 
-    const loadedSoFar = (this.currentPage() - 1) * this.paginationLimit();
+    this.tokenHistory.push(result.continue);
+    const loadedSoFar = this.resources().length;
     const totalEstimated =
       loadedSoFar + result.items.length + (result.remainingItemCount || 0);
     this.totalItemsCount.set(totalEstimated);
   }
 
-  nextPage() {
-    if (!this.hasNextPage()) return;
+  loadMore() {
+    if (!this.hasMore()) {
+      return;
+    }
 
-    this.currentContinueToken = this.tokenHistory[this.currentPage()];
-    this.currentPage.update((v) => v + 1);
-    this.list();
-  }
-
-  lastPage() {
-    if (!this.lastTokenRead()) return;
-
-    const lastIndex = this.tokenHistory.length - 1;
-    this.currentContinueToken = this.tokenHistory[lastIndex - 1];
-    this.currentPage.set(lastIndex);
-    this.list();
-  }
-
-  lastTokenRead() {
-    return this.tokenHistory[this.tokenHistory.length - 1] === '';
-  }
-
-  protected isLastPage() {
-    return (
-      this.currentPage() * this.paginationLimit() >= this.totalItemsCount()
-    );
-  }
-
-  prevPage() {
-    if (!this.hasPrevPage()) return;
-
-    this.currentPage.update((v) => v - 1);
-    this.currentContinueToken = this.tokenHistory[this.currentPage() - 1];
-    this.list();
-  }
-
-  firstPage() {
-    if (!this.hasPrevPage()) return;
-
-    this.currentPage.set(1);
-    this.currentContinueToken = this.tokenHistory[this.currentPage() - 1];
+    this.currentContinueToken = this.tokenHistory.at(-1) ?? undefined;
     this.list();
   }
 
@@ -216,11 +180,13 @@ export class ListViewComponent {
         next: (result: ResourceListResult) => {
           this.handlePageResults(result);
 
-          this.resources.set(
-            result.items.map((resource) => ({
-              ...resource,
-              ready: this.getResourceReadyStatus(resource),
-            })),
+          this.resources.update((resources) =>
+            resources.concat(
+              result.items.map((resource) => ({
+                ...resource,
+                ready: this.getResourceReadyStatus(resource),
+              })),
+            ),
           );
         },
       });

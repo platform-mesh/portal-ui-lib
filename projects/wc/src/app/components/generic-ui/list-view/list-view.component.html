@@ -40,7 +40,7 @@
   </ui5-dynamic-page-title>
 
   <ui5-table test-id="generic-list-table">
-    <ui5-table-header-row slot="headerRow">
+    <ui5-table-header-row slot="headerRow" sticky>
       @if (readyCondition()) {
         <ui5-table-header-cell
           width="20px"
@@ -63,9 +63,7 @@
           >
         } @else {
           <ui5-table-header-cell
-            [attr.test-id]="
-              'generic-list-header-' + column.property
-            "
+            [attr.test-id]="'generic-list-header-' + column.property"
             >{{ column.label }}</ui5-table-header-cell
           >
         }
@@ -94,24 +92,32 @@
         (click)="navigateToResource(item)"
       >
         @if (readyCondition()) {
-          <ui5-table-cell [style]="{paddingLeft: '5px'}">
-          @if (!isAvailable(item)) {
-            <ui5-icon
-              [attr.test-id]="'generic-list-row-' + i + '-not-ready-icon'"
-              class="not-ready-indicator"
-              (click)="$event.stopPropagation()"
-              [showTooltip]="true"
-              accessibleName="{{ getAccessibleName(item) }}"
-              name="alert"
-              design="Critical"
-            ></ui5-icon>
-          }
+          <ui5-table-cell [style]="{ paddingLeft: '5px' }">
+            @if (!isAvailable(item)) {
+              <ui5-icon
+                [attr.test-id]="'generic-list-row-' + i + '-not-ready-icon'"
+                class="not-ready-indicator"
+                (click)="$event.stopPropagation()"
+                [showTooltip]="true"
+                accessibleName="{{ getAccessibleName(item) }}"
+                name="alert"
+                design="Critical"
+              ></ui5-icon>
+            }
           </ui5-table-cell>
         }
 
         @if (imagePathProperty(); as imagePathProperty) {
           <ui5-table-cell>
-            <img class="image-cell" [src]="getResourceValueByJsonPath(item, {jsonPathExpression: imagePathProperty})" alt="Resource image" />
+            <img
+              class="image-cell"
+              [src]="
+                getResourceValueByJsonPath(item, {
+                  jsonPathExpression: imagePathProperty,
+                })
+              "
+              alt="Resource image"
+            />
           </ui5-table-cell>
         }
 
@@ -142,15 +148,15 @@
                     field.property
                   "
                 >
-                @if (field.label) {
-                  <span>{{ field.label }}: </span>
-                }
-                <pm-value-cell
-                  [fieldDefinition]="field"
-                  [resource]="item"
-                  [LuigiClient]="LuigiClient()"
-                />
-              </span>
+                  @if (field.label) {
+                    <span>{{ field.label }}: </span>
+                  }
+                  <pm-value-cell
+                    [fieldDefinition]="field"
+                    [resource]="item"
+                    [LuigiClient]="LuigiClient()"
+                  />
+                </span>
                 @if (!last && column.group.delimiter) {
                   <span>{{ column.group.delimiter }}</span>
                 }
@@ -184,6 +190,16 @@
         </ui5-table-cell>
       </ui5-table-row>
     }
+
+    @if (hasMore()) {
+      <ui5-table-growing
+        id="growing"
+        mode="Button"
+        slot="features"
+        [text]="'Load more'"
+        (ui5LoadMore)="loadMore()"
+      />
+    }
   </ui5-table>
 
   <!-- Pagination Control -->
@@ -201,7 +217,7 @@
       <div style="display: flex; align-items: center; gap: 0.5rem">
         <span
           style="color: var(--sapTextColor); font-size: var(--sapFontSmallSize)"
-          >Items per page:</span
+          >Items per load:</span
         >
         <ui5-select (change)="onLimitChange($event)" style="width: 5rem">
           <ui5-option value="5" [selected]="paginationLimit() === 5"
@@ -224,45 +240,6 @@
       >
         Total items: <b>{{ totalItemsCount() }}</b>
       </span>
-    </div>
-
-    <div style="display: flex; align-items: center; gap: 0.5rem">
-      <ui5-button
-        icon="close-command-field"
-        [disabled]="!hasPrevPage()"
-        (click)="firstPage()"
-        tooltip="First page"
-      />
-      <ui5-button
-        icon="navigation-left-arrow"
-        [disabled]="!hasPrevPage()"
-        (click)="prevPage()"
-        tooltip="Previous page"
-      />
-
-      <span
-        style="
-          color: var(--sapTextColor);
-          font-size: var(--sapFontSmallSize);
-          min-width: 4rem;
-          text-align: center;
-        "
-      >
-        Page <b>{{ currentPage() }}</b>
-      </span>
-
-      <ui5-button
-        icon="navigation-right-arrow"
-        [disabled]="!hasNextPage()"
-        (click)="nextPage()"
-        tooltip="Next page"
-      />
-      <ui5-button
-        icon="open-command-field"
-        [disabled]="!lastTokenRead() || isLastPage()"
-        (click)="lastPage()"
-        tooltip="Last page"
-      />
     </div>
   </div>
 </ui5-dynamic-page>
