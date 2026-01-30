@@ -1,49 +1,61 @@
-import { inject, Injectable } from '@angular/core';
-import { AuthService, ConfigService, EnvConfigService } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { exhaustMap, filter, Subject, tap } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import {
+  AuthService,
+  ConfigService,
+  EnvConfigService,
+  LuigiCoreService,
+} from '@openmfp/portal-ui-lib';
+import { LogicalCluster } from '@platform-mesh/portal-ui-lib/models';
+import { LogicalClusterService } from '@platform-mesh/portal-ui-lib/services';
+import { Subject, exhaustMap, filter } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class OrganizationReadyService {
-    private configService = inject(ConfigService);
-    private envConfigService = inject(EnvConfigService);
-    private resourceService = inject(ResourceService);
-    private authService = inject(AuthService);
+  private configService = inject(ConfigService);
+  private envConfigService = inject(EnvConfigService);
+  private luigiCoreService = inject(LuigiCoreService);
+  private logicalClusterService = inject(LogicalClusterService);
+  private authService = inject(AuthService);
 
-    private isReady = false;
-    private check$ = new Subject<void>();
+  private isReady = false;
+  private check$ = new Subject<void>();
 
-    constructor() {
-      this.initChecks();
+  constructor() {
+    void this.initChecks();
+  }
+
+  private async initChecks() {
+    const portalConfig = await this.configService.getPortalConfig();
+    const { idpName } = await this.envConfigService.getEnvConfig();
+
+    if (idpName === 'welcome') {
+      return;
     }
 
-    private async initChecks() {
-      const portalConfig = await this.configService.getPortalConfig();
-      const envIdpName = (await this.envConfigService.getEnvConfig()).idpName;
-
-      if(envIdpName === 'welcome') {
-        return;
-      }
-
-      this.check$
+    this.check$
       .pipe(
         filter(() => !this.isReady),
         exhaustMap(() =>
-          this.resourceService.readOrganizationReady({
-              portalContext: {
-                  crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
-              },
-              token: this.authService.getToken(),
-              accountId: envIdpName,
+          this.logicalClusterService.read({
+            portalContext: {
+              crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
+            },
+            token: this.authService.getToken(),
+            accountId: idpName,
           }),
-          ),
-          tap((isReady) => {
-              this.isReady = isReady;
-          }),
-        ).subscribe()
-    }
+        ),
+        map((res: LogicalCluster) => {
+          this.isReady = res.status.phase === 'Ready';
+          if (!this.isReady) {
+            this.luigiCoreService.navigation().navigate('/error/503');
+          }
+        }),
+      )
+      .subscribe();
+  }
 
-    public checkOrganizationReady() {
-        this.check$.next();
-    }
+  public checkOrganizationReady() {
+    this.check$.next();
+  }
 }

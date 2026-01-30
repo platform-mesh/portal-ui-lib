@@ -4,7 +4,6 @@ import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
-  AccountInfo,
   Resource,
   ResourceDefinition,
   ResourceListResult,
@@ -13,6 +12,7 @@ import {
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
+  buildResourcePath,
   capitalize,
   getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
@@ -20,6 +20,9 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
 import * as gqlBuilder from 'gql-query-builder';
+import Fields from 'gql-query-builder/build/Fields';
+import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
+import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
 import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
@@ -31,7 +34,7 @@ interface ResourceResponseError extends Record<string, any> {
 export interface ResourceRequestParams {
   kind: string;
   version: string;
-  operation: string;
+  group?: string;
 }
 
 @Injectable({
@@ -81,9 +84,8 @@ export class ResourceService {
         },
       })
       .pipe(
-        map(
-          (res) =>
-            res.data?.[params.operation]?.[params.version]?.[params.kind],
+        map((res) =>
+          getValueByPath<any, any>(res.data, buildResourcePath(params, '.')),
         ),
         catchError((error) => {
           this.alertErrors(error);
@@ -101,7 +103,7 @@ export class ResourceService {
           return error;
         }),
         tap((resource) => {
-          if (resource.metadata?.deletionTimestamp) {
+          if (resource?.metadata?.deletionTimestamp) {
             const message = `The resource ${resourceId} is pending deletion.`;
             this.luigiCoreService.navigation().navigate('/error/422');
             throw new Error(message);
@@ -117,22 +119,25 @@ export class ResourceService {
     namespace: string | undefined,
   ) {
     if (fieldsOrRawQuery instanceof Array) {
-      const { kind, version, operation } = params;
-      return (
-        gqlBuilder
-          .query({
-            operation: kind,
-            variables: {
-              name: { value: resourceId, type: 'String!' },
-              ...(namespace && {
-                namespace: { value: namespace, type: 'String' },
-              }),
-            },
-            fields: fieldsOrRawQuery,
-          })
-          .query.replace(kind, `${operation} { ${version} { ${kind}`)
-          .trim() + '}}'
-      );
+      const { kind, version, group } = params;
+      const queryFields = [
+        {
+          operation: kind,
+          variables: {
+            name: { value: resourceId, type: 'String!' },
+            ...(namespace && {
+              namespace: { value: namespace, type: 'String' },
+            }),
+          },
+          fields: fieldsOrRawQuery,
+        },
+      ];
+
+      const queryOptions = this.calcQueryOptions(queryFields, [
+        { operation: group },
+        { operation: version },
+      ]);
+      return gqlBuilder.query(queryOptions).query;
     } else {
       return fieldsOrRawQuery;
     }
@@ -145,9 +150,10 @@ export class ResourceService {
     readFromParentKcpPath: boolean = false,
     pagination?: ResourcePagination,
   ): Observable<ResourceListResult | any> {
+    const lowerCaseOperation = operation.toLowerCase();
     return fieldsOrRawQuery instanceof Array
       ? this.listWithFields(
-          operation,
+          lowerCaseOperation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
@@ -266,34 +272,26 @@ export class ResourceService {
     variables: VariableOptions,
     pagination?: ResourcePagination,
   ): Observable<ResourceListResult> {
-    const operation = replaceDotsAndHyphensWithUnderscores(
+    const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
     const version = resourceDefinition.version;
     const kind = capitalize(resourceDefinition.plural);
-    const listQuery = gqlBuilder.query({
-      operation,
-      fields: [
-        {
-          [version]: [
-            {
-              operation: kind,
-              variables: {
-                limit: { type: 'Int', value: pagination?.limit },
-                continue: { type: 'String', value: pagination?.continue },
-              },
-              fields: [
-                'resourceVersion',
-                'remainingItemCount',
-                'continue',
-                { items: fields },
-              ],
-            },
-          ],
-        },
-      ],
-      variables: variables,
-    });
+    const queryFields = [
+      {
+        operation: kind,
+        variables: {...variables, limit: { type: 'Int', value: pagination?.limit },
+          continue: { type: 'String', value: pagination?.continue } },
+        fields: ['resourceVersion',
+          'remainingItemCount',
+          'continue', { items: fields }],
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(queryFields, [
+      { operation: group },
+      { operation: version },
+    ]);
+    const listQuery = gqlBuilder.query(queryOptions);
 
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
@@ -307,7 +305,7 @@ export class ResourceService {
         map((res: any): ResourceListResult => {
           const resourceListResult = getValueByPath<any, any>(
             res.data,
-            `${operation}.${version}.${kind}`,
+            buildResourcePath({ group, version, kind }, '.'),
           );
           if (!resourceListResult) {
             throw new Error('Resource list result not found');
@@ -371,26 +369,23 @@ export class ResourceService {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
-
-    const mutation = gqlBuilder.mutation({
-      operation: group,
-      fields: [
-        {
-          [version]: [
-            {
-              operation: `delete${kind}`,
-              variables: {
-                name: { type: 'String!', value: resource.metadata.name },
-                ...(isNamespacedResource && {
-                  namespace: { type: 'String', value: nodeContext.namespaceId },
-                }),
-              },
-              fields: [],
-            },
-          ],
+    const fields = [
+      {
+        operation: `delete${kind}`,
+        variables: {
+          name: { type: 'String!', value: resource.metadata.name },
+          ...(isNamespacedResource && {
+            namespace: { type: 'String', value: nodeContext.namespaceId },
+          }),
         },
-      ],
-    });
+        fields: [],
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(fields, [
+      { operation: group },
+      { operation: version },
+    ]);
+    const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
       .apollo(nodeContext)
@@ -422,25 +417,23 @@ export class ResourceService {
     const kind = resourceDefinition.kind;
     const namespace = nodeContext.namespaceId;
 
-    const mutation = gqlBuilder.mutation({
-      operation: group,
-      fields: [
-        {
-          [version]: [
-            {
-              operation: `create${kind}`,
-              variables: {
-                ...(isNamespacedResource && {
-                  namespace: { type: 'String', value: namespace },
-                }),
-                object: { type: `${kind}Input!`, value: resource },
-              },
-              fields: ['__typename'],
-            },
-          ],
+    const mutationFields: any[] = [
+      {
+        operation: `create${kind}`,
+        variables: {
+          ...(isNamespacedResource && {
+            namespace: { type: 'String', value: namespace },
+          }),
+          object: { type: `${kind}Input!`, value: resource },
         },
-      ],
-    });
+        fields: ['__typename'],
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(mutationFields, [
+      { operation: group },
+      { operation: version },
+    ]);
+    const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
       .apollo(nodeContext)
@@ -475,29 +468,27 @@ export class ResourceService {
 
     const cleanResource = stripTypename(resource);
 
-    const mutation = gqlBuilder.mutation({
-      operation: group,
-      fields: [
-        {
-          [version]: [
-            {
-              operation: `update${kind}`,
-              variables: {
-                ...(isNamespacedResource && {
-                  namespace: { type: 'String', value: namespace },
-                }),
-                name: { type: 'String!', value: resource.metadata.name },
-                object: {
-                  type: `${kind}Input!`,
-                  value: cleanResource,
-                },
-              },
-              fields: ['__typename'],
-            },
-          ],
+    const mutationFields: any[] = [
+      {
+        operation: `update${kind}`,
+        variables: {
+          ...(isNamespacedResource && {
+            namespace: { type: 'String', value: namespace },
+          }),
+          name: { type: 'String!', value: resource.metadata.name },
+          object: {
+            type: `${kind}Input!`,
+            value: cleanResource,
+          },
         },
-      ],
-    });
+        fields: ['__typename'],
+      },
+    ];
+    const queryOptions = this.calcQueryOptions(mutationFields, [
+      { operation: group },
+      { operation: version },
+    ]);
+    const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
       .apollo(nodeContext)
@@ -517,84 +508,6 @@ export class ResourceService {
       );
   }
 
-  readAccountInfo(nodeContext: ResourceNodeContext): Observable<AccountInfo> {
-    return this.apolloFactory
-      .apollo(nodeContext)
-      .query<string>({
-        query: gql`
-          {
-            core_platform_mesh_io {
-              v1alpha1 {
-                AccountInfo(name: "account") {
-                  metadata {
-                    name
-                    annotations
-                  }
-                  spec {
-                    clusterInfo {
-                      ca
-                    }
-                    organization {
-                      originClusterId
-                    }
-                  }
-                }
-              }
-            }
-          }
-        `,
-      })
-      .pipe(
-        map((res: any) => {
-          return res.data.core_platform_mesh_io.v1alpha1.AccountInfo;
-        }),
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          return error;
-        }),
-      );
-  }
-
-  public readOrganizationReady(
-    nodeContext: ResourceNodeContext,
-  ): Observable<boolean> {
-    return this.apolloFactory
-      .apollo(nodeContext)
-      .query<boolean>({
-        query: gql`
-          {
-            core_kcp_io {
-              v1alpha1 {
-                LogicalCluster(name: "cluster") {
-                  status {
-                    phase
-                  }
-                }
-              }
-            }
-          }
-        `,
-      })
-      .pipe(
-        map((res: any) => {
-          const isReady =
-            res.data.core_kcp_io.v1alpha1.LogicalCluster.status.phase ===
-            'Ready';
-          if (!isReady) {
-            this.luigiCoreService.navigation().navigate('/error/503');
-          }
-
-          return isReady;
-        }),
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          throw error;
-        }),
-      );
-  }
-
   private isNamespacedResource(nodeContext: ResourceNodeContext) {
     return nodeContext?.resourceDefinition?.scope === 'Namespaced';
   }
@@ -605,5 +518,47 @@ export class ResourceService {
     return Object.fromEntries(
       Object.entries(variables).map(([key, value]) => [key, value.value]),
     );
+  }
+
+  private calcQueryOptions(
+    innerFields: Fields,
+    wrappers: Partial<Omit<IQueryBuilderOptions, 'fields'>>[],
+  ): IQueryBuilderOptions {
+    const filteredWrappers = wrappers.filter(
+      (wrapper): wrapper is Omit<IQueryBuilderOptions, 'fields'> =>
+        !!wrapper?.operation,
+    );
+
+    if (filteredWrappers.length === 0) {
+      const completeQuery = innerFields.pop() as NestedField;
+      if (completeQuery && completeQuery.operation && completeQuery.fields) {
+        return completeQuery;
+      }
+
+      throw new Error('At least one wrapper or inner fields is required');
+    }
+
+    let fields = innerFields;
+    let nextWrapper = filteredWrappers.pop() as Omit<
+      IQueryBuilderOptions,
+      'fields'
+    >;
+
+    filteredWrappers.forEach((wrapper) => {
+      fields = [
+        {
+          operation: nextWrapper.operation,
+          fields: innerFields,
+          variables: nextWrapper.variables,
+        },
+      ];
+      nextWrapper = wrapper;
+    });
+
+    return {
+      operation: nextWrapper.operation,
+      fields,
+      variables: nextWrapper.variables,
+    };
   }
 }

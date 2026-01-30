@@ -1,3 +1,9 @@
+import { processFields } from '../../../utils/proccess-fields';
+import { ValueCellComponent } from '../value-cell/value-cell.component';
+import {
+  KubeConfigTemplateProps,
+  kubeConfigTemplate,
+} from './kubeconfig-template';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,9 +15,9 @@ import {
   signal,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
+  AccountInfoService,
   GatewayService,
   ResourceNodeContext,
   ResourceRequestParams,
@@ -32,10 +38,7 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { processFields } from '../../../utils/proccess-fields';
-import { validateKubeconfigProps } from '../../../utils/ts-guargs/validate-kubeconfig-props';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { kubeConfigTemplate } from './kubeconfig-template';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'pm-detail-view',
@@ -58,8 +61,8 @@ import { kubeConfigTemplate } from './kubeconfig-template';
 })
 export class DetailViewComponent {
   private resourceService = inject(ResourceService);
+  private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
-  private envConfigService = inject(EnvConfigService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   LuigiClient = input.required<LuigiClient>();
@@ -75,7 +78,12 @@ export class DetailViewComponent {
     this.gatewayService.resolveKcpPath(this.context()),
   );
   viewFields = computed(() => processFields(this.resourceFields()));
-  showDownloadKubeconfig = computed(() => this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ?? false);
+  showDownloadKubeconfig = computed(
+    () =>
+      this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
+      false,
+  );
+  isDownloadingKubeConfig = signal(false);
 
   constructor() {
     effect(() => {
@@ -90,7 +98,7 @@ export class DetailViewComponent {
     const params: ResourceRequestParams = {
       kind: resourceDefinition.kind,
       version: resourceDefinition.version,
-      operation: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
+      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
     };
 
     const resourceId = this.resourceId();
@@ -135,45 +143,45 @@ export class DetailViewComponent {
   }
 
   async downloadKubeConfig() {
-    const { oidcIssuerUrl } = await this.envConfigService.getEnvConfig();
-    const kubeconfigProps = {
-      accountId: this.context().accountId,
-      organization: this.context().organization,
-      kcpCA: this.context().kcpCA,
-      token: this.context().token,
-      kcpWorkspaceUrl: this.context().portalContext.kcpWorkspaceUrl,
-      accountPath: this.context().accountPath,
-    };
-
-    try {
-      validateKubeconfigProps(kubeconfigProps);
-    } catch (error) {
-      this.LuigiClient().uxManager().showAlert({
-        text: error.message,
-        type: 'error',
-      });
-
-      throw error;
+    if (this.isDownloadingKubeConfig()) {
+      return;
     }
 
-    const kubeConfig = kubeConfigTemplate
-      .replaceAll('<cluster-name>', kubeconfigProps.accountId)
-      .replaceAll('<org-name>', kubeconfigProps.organization)
-      .replaceAll(
-        '<server-url>',
-        `${kubeconfigProps.kcpWorkspaceUrl}:${kubeconfigProps.accountPath}`,
-      )
-      .replaceAll('<oidc-issuer-url>', oidcIssuerUrl)
-      .replaceAll('<ca-data>', kubeconfigProps.kcpCA)
-      .replaceAll('<token>', kubeconfigProps.token);
+    try {
+      this.isDownloadingKubeConfig.set(true);
+      const { accountId, portalContext, accountPath, kcpCA } = this.context();
+      const accountInfo = await firstValueFrom(
+        this.accountInfoService.read(this.context()),
+      );
+      const kubeconfigProps: KubeConfigTemplateProps = {
+        clusterName: accountId ?? '',
+        serverUrl: `${portalContext.kcpWorkspaceUrl}:${accountPath}`,
+        kcpCA: kcpCA ?? '',
+        oidcIssuerUrl: accountInfo?.spec.oidc.issuerUrl ?? '',
+        oidcKubectlClientId:
+          accountInfo?.spec.oidc.clients.kubectl.clientId ?? '',
+      };
 
-    const blob = new Blob([kubeConfig], { type: 'application/plain' });
-    const url = URL.createObjectURL(blob);
+      const kubeConfig = kubeConfigTemplate(kubeconfigProps);
+      const blob = new Blob([kubeConfig], { type: 'application/plain' });
+      const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'kubeconfig.yaml';
-    a.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kubeconfig.yaml';
+      a.click();
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      this.LuigiClient()
+        .uxManager()
+        .showAlert({
+          text: `Failed to download kubeconfig: ${error.message}`,
+          type: 'error',
+        });
+    } finally {
+      this.isDownloadingKubeConfig.set(false);
+    }
   }
 
   private getResourceDefinition() {

@@ -41,10 +41,18 @@
 
   <ui5-table test-id="generic-list-table">
     <ui5-table-header-row slot="headerRow">
-      <ui5-table-header-cell
-        width="32px"
-        class="not-ready-indicator"
-      ></ui5-table-header-cell>
+      @if (readyCondition()) {
+        <ui5-table-header-cell
+          width="20px"
+          class="not-ready-indicator"
+        ></ui5-table-header-cell>
+      }
+      @if (imagePathProperty()) {
+        <ui5-table-header-cell
+          width="88px"
+          class="image-column"
+        ></ui5-table-header-cell>
+      }
       @for (column of viewColomns(); track column.property) {
         @if (column.group) {
           <ui5-table-header-cell
@@ -56,7 +64,7 @@
         } @else {
           <ui5-table-header-cell
             [attr.test-id]="
-              'generic-list-header-' + (column.property || column.label || '')
+              'generic-list-header-' + column.property
             "
             >{{ column.label }}</ui5-table-header-cell
           >
@@ -85,7 +93,8 @@
         [class.disabled]="!isAvailable(item)"
         (click)="navigateToResource(item)"
       >
-        <ui5-table-cell>
+        @if (readyCondition()) {
+          <ui5-table-cell [style]="{paddingLeft: '5px'}">
           @if (!isAvailable(item)) {
             <ui5-icon
               [attr.test-id]="'generic-list-row-' + i + '-not-ready-icon'"
@@ -97,7 +106,14 @@
               design="Critical"
             ></ui5-icon>
           }
-        </ui5-table-cell>
+          </ui5-table-cell>
+        }
+
+        @if (imagePathProperty(); as imagePathProperty) {
+          <ui5-table-cell>
+            <img class="image-cell" [src]="getResourceValueByJsonPath(item, {jsonPathExpression: imagePathProperty})" alt="Resource image" />
+          </ui5-table-cell>
+        }
 
         @for (
           column of viewColomns();
@@ -115,7 +131,8 @@
                 let last = $last;
                 track field.property
               ) {
-                <div
+                <span
+                  class="group-value"
                   [attr.test-id]="
                     'generic-list-cell-' +
                     i +
@@ -125,13 +142,15 @@
                     field.property
                   "
                 >
+                @if (field.label) {
                   <span>{{ field.label }}: </span>
-                  <pm-value-cell
-                    [fieldDefinition]="field"
-                    [resource]="item"
-                    [LuigiClient]="LuigiClient()"
-                  />
-                </div>
+                }
+                <pm-value-cell
+                  [fieldDefinition]="field"
+                  [resource]="item"
+                  [LuigiClient]="LuigiClient()"
+                />
+              </span>
                 @if (!last && column.group.delimiter) {
                   <span>{{ column.group.delimiter }}</span>
                 }

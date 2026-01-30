@@ -56,6 +56,17 @@
   }
 }
 
+.image-cell {
+  width: 62px;
+  height: 62px;
+  margin: 2px 0;
+}
+
 .not-ready-indicator {
   pointer-events: auto;
+}
+
+.group-value {
+  display: flex;
+  align-items: center;
 }

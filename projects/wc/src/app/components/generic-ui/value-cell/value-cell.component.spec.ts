@@ -187,18 +187,6 @@ describe('ValueCellComponent', () => {
   });
 
   describe('labelDisplay functionality', () => {
-    it('should apply label styles when labelDisplay is an object', () => {
-      const labelDisplay = { backgroundColor: '#ffffff', color: '#000000' };
-      const { fixture } = makeComponent('test-value', {
-        uiSettings: { labelDisplay },
-      });
-      const compiled = fixture.nativeElement;
-      const span = compiled.querySelector('span');
-
-      expect(span.classList.contains('label-value')).toBe(true);
-      expect(component.labelDisplay()).toEqual(labelDisplay);
-    });
-
     it('should apply label-value class when labelDisplay is true', () => {
       const { fixture } = makeComponent('test-value', {
         uiSettings: { labelDisplay: true },
@@ -207,7 +195,6 @@ describe('ValueCellComponent', () => {
       const span = compiled.querySelector('span');
 
       expect(span.classList.contains('label-value')).toBe(true);
-      expect(component.labelDisplay()).toEqual({});
     });
 
     it('should not apply label-value class when labelDisplay is false', () => {
@@ -218,7 +205,6 @@ describe('ValueCellComponent', () => {
       const span = compiled.querySelector('span');
 
       expect(span.classList.contains('label-value')).toBe(false);
-      expect(component.labelDisplay()).toBeUndefined();
     });
 
     it('should not apply label-value class when labelDisplay is undefined', () => {

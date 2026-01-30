@@ -24,7 +24,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
 - context resource definition `"context"`
 
-  - in the `"resourceDefinition"` the given fields need to be specified: `group, plural, singular, kind, scope, namespace` describing properties of the resource.
+  - in the `"resourceDefinition"` the given fields need to be specified: `group, version,  plural, singular, kind, scope, namespace` describing properties of the resource.
   - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
     It's an object that contains two fields:
       - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
@@ -32,15 +32,15 @@ In order to use the generic list view, you need to adjust the node’s   `conten
     ```json
     "readyCondition": {
       "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
-      "property": ["status.conditions.status", "status.conditions.type"],
+      "property": ["status.conditions.status", "status.conditions.type"]
     },
     ```
-    - in the `"ui"` part of the `"resourceDefinition"` we can specify `"logoUrl"` for the resource as well as the definitions of the
-      corresponding views
-
+    - in the `"ui"` part of the `"resourceDefinition"` we can specify:
+      - `"logoUrl"`: resource type logo shown in the view header
+      - `"resourceImageProperty"`: JSONPath expression to an image URL of the given resource entity; when set, the list view renders an image column and automatically fetches this field
+      - view definitions for the corresponding views
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
-          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column.
-        `"labelDisplay"` this property allows you to customize the visual appearance of field values in both list and detail views.
+          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views.
         - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure`showDownloadKubeConfig` to enable/disable download kubeconfig button. By default it false.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
@@ -69,18 +69,17 @@ Each field definition supports the following properties:
   - `"delimiter"`: String used to separate grouped values
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
 - `"uiSettings"`: Object for configuring UI-specific display settings:
-  - `"labelDisplay"`: Boolean value for using the defaults or an object for customizing the visual appearance of field values:
-    - `"backgroundColor"`: Background color for the value (CSS color value)
-    - `"color"`: Text color for the value (CSS color value)
-    - `"fontWeight"`: Font weight for the value (CSS font-weight value)
-    - `"fontStyle"`: Font style for the value (CSS font-style value)
-    - `"textDecoration"`: Text decoration for the value (CSS text-decoration value)
-    - `"textTransform"`: Text transformation for the value (CSS text-transform value)
+  - `"labelDisplay"`: Boolean flag for applying the default emphasized style to the value
   - `"displayAs"`: Controls how the value is displayed (if nothing is provided the plain text is displayed):
     - `'secret'`: Render value as a secret with show/hide toggle
     - `'boolIcon'`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
     - `'link'`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
+    - `'tooltip'`: Render an icon with a tooltip; tooltip text is the field value
+  - `"tooltipIcon"`: UI5 icon name to use with `displayAs: "tooltip"` (defaults to `hint`) Don't forget to import picked icon to you portal from ui5 lib
   - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
+  - `"cssCustomization"`: Inline styles applied to the rendered value (partial `CSSStyleDeclaration`, e.g. `backgroundColor`, `fontWeight`)
+  - `"cssRules"`: Conditional inline styles applied based on the current value (merged on top of `cssCustomization`)
+    - supported conditions: `equals`, `notEquals`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`, `contains`
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
@@ -95,7 +94,7 @@ This example demonstrates various features including:
 - **Copy buttons**: Multiple fields include `withCopyButton: true` for easy copying to clipboard
 - **Link display**: The "External URL" field uses `displayAs: "link"` to render URLs as clickable links
 - **Boolean display**: The "Active" field uses `displayAs: "boolIcon"` to show boolean values as icons
-- **Custom styling**: The "Type" and "Display Name" fields use `labelDisplay` for visual customization
+- **Custom styling**: The "Key" and "Display Name" fields use `cssCustomization` for visual customization
 - **Field grouping**: Contact information is grouped using the `group` property
 
 ```json
@@ -120,6 +119,7 @@ This example demonstrates various features including:
           "context": {
             "resourceDefinition": {
               "group": "core.platform-mesh.io",
+              "version": "v1alpha1",
               "plural": "accounts",
               "singular": "account",
               "kind": "Account",
@@ -131,6 +131,7 @@ This example demonstrates various features including:
               },
               "ui": {
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
+                "resourceImageProperty": "spec.image",
                 "listView": {
                   "fields": [
                     {
@@ -151,7 +152,7 @@ This example demonstrates various features including:
                       "uiSettings": {
                         "displayAs": "secret",
                         "withCopyButton": true,
-                        "labelDisplay": {
+                        "cssCustomization": {
                           "backgroundColor": "#e3f2fd",
                           "color": "#1976d2",
                           "fontWeight": "bold",
@@ -193,10 +194,24 @@ This example demonstrates various features including:
                       "label": "Display Name",
                       "property": "spec.displayName",
                       "uiSettings": {
-                        "labelDisplay": {
+                        "cssCustomization": {
                           "color": "#2e7d32",
                           "fontWeight": "600"
-                        }
+                        },
+                        "cssRules": [
+                          {
+                            "if": { "condition": "equals", "value": "High" },
+                            "styles": { "color": "red" },
+                          },
+                          {
+                            "if": { "condition": "equals", "value": "Medium" },
+                            "styles": { "color": "orange" },
+                          },
+                          {
+                            "if": { "condition": "equals", "value": "Low" },
+                            "styles": { "color": "green" }
+                          }
+                        ],
                       }
                     },
                     {
@@ -309,6 +324,124 @@ This example demonstrates various features including:
 }
 ```
 
+#### Example Content Configuration for an HttpBin Node with Namespaced Scope
+
+```json
+{
+    "name": "httpbins",
+    "creationTimestamp": "2022-05-17T11:37:17Z",
+    "luigiConfigFragment": {
+        "data": {
+            "nodes": [
+                {
+                    "pathSegment": "orchestrate_platform-mesh_io_httpbins",
+                    "navigationContext": "orchestrate_platform-mesh_io_httpbins",
+                    "label": "Http Bins",
+                    "icon": "paint-bucket",
+                    "order": 800,
+                    "entityType": "main.core_platform-mesh_io_account.namespace",
+                    "loadingIndicator": {
+                        "enabled": false
+                    },
+                    "keepSelectedForChildren": true,
+                    "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
+                    "webcomponent": {
+                        "selfRegistered": true
+                    },
+                    "context": {
+                        "resourceDefinition": {
+                            "group": "orchestrate.platform-mesh.io",
+                            "plural": "httpBins",
+                            "singular": "httpBin", 
+                            "version": "v1alpha1",
+                            "kind": "HttpBin",
+                            "scope": "Namespaced",
+                            "namespace": null,
+                            "readyCondition": {
+                              "jsonPathExpression": "status.ready",
+                              "property": ["status.ready"]
+                            },
+                            "ui": {
+                                "logoUrl": "https://www.kcp.io/icons/logo.svg",
+                                "listView": {
+                                    "fields": [
+                                        {
+                                            "label": "Name",
+                                            "property": "metadata.name"
+                                        },
+                                        {
+                                            "label": "Ready",
+                                            "property": "status.ready",
+                                            "uiSettings": {
+                                              "displayAs": "boolIcon"
+                                            }
+                                        },
+                                        {
+                                            "label": "Link",
+                                            "property": "status.url",
+                                            "uiSettings": {
+                                              "displayAs": "link"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "detailView": {},
+                                "createView": {
+                                    "fields": [
+                                        {
+                                            "label": "Name",
+                                            "property": "metadata.name",
+                                            "required": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "children": [
+                      {
+                          "pathSegment": ":httpbinId",
+                          "hideFromNav": true,
+                          "keepSelectedForChildren": false,
+                          "defineEntity": {
+                              "id": "orchestrate_platform-mesh_io_httpbin",
+                              "contextKey": "httpbinId",
+                              "graphqlEntity": {
+                                  "group": "orchestrate_platform-mesh_io",
+                                  "version": "v1alpha1",
+                                  "kind": "HttpBin",
+                                  "query": "{ metadata { name } }"
+                              }
+                          },
+                          "context": {
+                              "accountId": ":accountId",
+                              "namespaceId": ":namespaceId",
+                              "resourceId": ":httpbinId"
+                          }
+                      }
+                    ]
+                },
+                {
+                  "entityType": "main.core_platform-mesh_io_account.namespace.orchestrate_platform-mesh_io_httpbin",
+                  "pathSegment": "dashboard",
+                  "label": "Dashboard",
+                  "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
+                  "webcomponent": {
+                    "selfRegistered": true
+                  },
+                  "defineEntity": {
+                      "id": "dashboard"
+                  },
+                  "compound": {
+                      "children": []
+                  }
+                }
+            ]
+        }
+    }
+}
+```
+
 ### Generic Detail View
 
 To use the generic detail view, update the node’s `content-configuration` to include the following:
@@ -361,6 +494,7 @@ In case the detail view is an independent node provide context data:
   "context": {
     "resourceDefinition": {
       "group": "core.platform-mesh.io",
+      "version": "v1alpha1",
       "plural": "accounts",
       "singular": "account",
       "kind": "Account",

@@ -6,14 +6,12 @@ import {
   EnvConfigService,
   LuigiExtendedGlobalContextConfigService,
 } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { AccountInfoService } from '@platform-mesh/portal-ui-lib/services';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
-export class LuigiExtendedGlobalContextConfigServiceImpl
-  implements LuigiExtendedGlobalContextConfigService
-{
-  private resourceService = inject(ResourceService);
+export class LuigiExtendedGlobalContextConfigServiceImpl implements LuigiExtendedGlobalContextConfigService {
+  private accountInfoService = inject(AccountInfoService);
   private envConfigService = inject(EnvConfigService);
   private configService = inject(ConfigService);
   private authService = inject(AuthService);
@@ -29,7 +27,7 @@ export class LuigiExtendedGlobalContextConfigServiceImpl
 
     try {
       const accountInfo = await firstValueFrom(
-        this.resourceService.readAccountInfo({
+        this.accountInfoService.read({
           portalContext: {
             crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
           },

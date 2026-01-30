@@ -1,8 +1,8 @@
+import { NamespaceSelectionRendererService } from './namespace-selection-renderer.service';
 import { TestBed } from '@angular/core/testing';
 import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
-import { NamespaceSelectionRendererService } from './namespace-selection-renderer.service';
 
 jest.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}), { virtual: true });
 
@@ -92,7 +92,7 @@ describe('NamespaceSelectionRendererService', () => {
 
     const cbItems = getChildrenByTag(cb, 'ui5-cb-item');
     const texts = cbItems.map((i) => i.getAttribute('text'));
-    expect(texts).toEqual(['-all-', 'ns1', 'ns2']);
+    expect(texts).toEqual(['ns1', 'ns2']);
 
     expect(cb.getAttribute('value')).toBe('ns1');
 
@@ -132,7 +132,9 @@ describe('NamespaceSelectionRendererService', () => {
   it('should handle list errors gracefully and log error with no extra items added', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-    const portalConfig: any = { portalContext: { crdGatewayApiUrl: 'https://api.example.com/graphql' } };
+    const portalConfig: any = {
+      portalContext: { crdGatewayApiUrl: 'https://api.example.com/graphql' },
+    };
     mockAuthService.getToken.mockReturnValue('token');
 
     mockResourceService.list.mockImplementation(() => {
@@ -163,8 +165,7 @@ describe('NamespaceSelectionRendererService', () => {
     const ui5cb = getChildrenByTag(container, 'ui5-combobox')[0];
     expect(ui5cb).toBeTruthy();
     const items = getChildrenByTag(ui5cb, 'ui5-cb-item');
-    expect(items.length).toBe(1);
-    expect(items[0].getAttribute('text')).toBe('-all-');
+    expect(items.length).toBe(0);
 
     expect(consoleSpy).toHaveBeenCalled();
 
@@ -213,7 +214,7 @@ describe('NamespaceSelectionRendererService', () => {
     const items = getChildrenByTag(cb, 'ui5-cb-item');
     const texts = items.map((i) => i.getAttribute('text'));
 
-    expect(texts).toEqual(['-all-', 'ns1']);
+    expect(texts).toEqual(['ns1']);
 
     Object.defineProperty(window, 'location', {
       value: { pathname: origPathname },

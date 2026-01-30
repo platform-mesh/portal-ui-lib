@@ -6,16 +6,12 @@ import {
   LuigiNode,
   PortalConfig,
 } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
-import {
-  ResourceNodeContext,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
+import { FieldDefinition, Resource, ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
 import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, of } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
-
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -74,10 +70,6 @@ export class NamespaceSelectionRendererService {
     ui5combobox.setAttribute('placeholder', 'Namespaces');
     containerElement.appendChild(ui5combobox);
 
-    const allResourceOption = document.createElement('ui5-cb-item');
-    allResourceOption.setAttribute('text', '-all-');
-    ui5combobox.appendChild(allResourceOption);
-
     return ui5combobox;
   }
 
@@ -119,7 +111,7 @@ export class NamespaceSelectionRendererService {
   private getNamespaceResources(
     portalConfig: PortalConfig,
   ): Observable<Resource[]> {
-    const operation = 'core_namespaces';
+    const operation = 'v1_namespaces';
     const fields = generateGraphQLFields(defaultColumns);
 
     try {
@@ -127,6 +119,11 @@ export class NamespaceSelectionRendererService {
         portalContext: {
           crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
         },
+        resourceDefinition: {
+          version: 'v1',
+          plural: 'namespaces',
+          scope: 'Cluster',
+        } as ResourceDefinition,
         token: this.authService.getToken(),
       } as ResourceNodeContext);
     } catch (e) {

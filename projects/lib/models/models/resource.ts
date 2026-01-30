@@ -1,14 +1,5 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
-export interface LabelDisplay {
-  backgroundColor?: string;
-  color?: string;
-  fontWeight?: string;
-  fontStyle?: string;
-  textDecoration?: string;
-  textTransform?: string;
-}
-
 export type TransformType =
   | 'uppercase'
   | 'lowercase'
@@ -22,9 +13,26 @@ export interface PropertyField {
 }
 
 export interface UiSettings {
-  labelDisplay?: LabelDisplay | boolean;
-  displayAs?: 'secret' | 'boolIcon' | 'link';
+  labelDisplay?: boolean;
+  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip';
+  tooltipIcon?: string;
   withCopyButton?: boolean;
+  cssCustomization?: Partial<CSSStyleDeclaration>;
+  cssRules?: CssRule[];
+}
+
+export type CssRuleCondition =
+  | 'equals'
+  | 'notEquals'
+  | 'greaterThan'
+  | 'greaterThanOrEqual'
+  | 'lessThan'
+  | 'lessThanOrEqual'
+  | 'contains';
+
+export interface CssRule {
+  if: { condition: CssRuleCondition; value: string };
+  styles: Partial<CSSStyleDeclaration>;
 }
 
 export interface FieldDefinition {
@@ -59,14 +67,6 @@ export interface ResourceSpec extends Record<string, any> {
   displayName?: string;
 }
 
-export interface AccountInfo {
-  metadata: ObjectMeta;
-  spec: {
-    clusterInfo: { ca: string };
-    organization: { originClusterId: string };
-  };
-}
-
 export interface Resource extends Record<string, any> {
   metadata: ObjectMeta;
   spec?: ResourceSpec;
@@ -77,7 +77,7 @@ export interface Resource extends Record<string, any> {
 }
 
 export interface ResourceDefinition {
-  group: string;
+  group?: string;
   version: string;
   plural: string;
   singular: string;
@@ -97,6 +97,7 @@ interface UiView {
 
 export interface UIDefinition {
   logoUrl?: string;
+  resourceImageProperty?: string;
   listView?: UiView;
   createView?: UiView;
   detailView?: DetailView;
