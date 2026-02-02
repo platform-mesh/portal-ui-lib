@@ -9,14 +9,14 @@ import {
 export class UserProfileConfigServiceImpl implements UserProfileConfigService {
   private authService = inject(AuthService);
   async getProfile(): Promise<UserProfile> {
-    const { userId } = this.authService.getUserInfo();
+    const { email } = this.authService.getUserInfo();
 
     return {
       items: [
         {
           label: 'PROFILE_PROFILE',
           icon: 'customer',
-          link: `/users/${userId}/overview`,
+          link: `/users/${email}/overview`,
         },
       ],
     };
