@@ -102,8 +102,9 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   ) {
     const organizationOriginClusterId =
       accountInfo?.spec?.organization?.originClusterId;
+    const organization = accountInfo?.spec?.organization?.name;
 
-    ctx.organizationId = `${organizationOriginClusterId}/${ctx.organization}`;
+    ctx.organizationId = `${organizationOriginClusterId}/${organization}`;
     ctx.kcpCA = btoa(accountInfo?.spec?.clusterInfo?.ca);
     ctx.entityId = `${accountInfo.spec?.account?.originClusterId}/${entityId}`;
   }

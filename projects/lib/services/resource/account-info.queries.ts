@@ -18,6 +18,7 @@ export const accountInfoRead = gql`
             }
             organization {
               originClusterId
+              name
             }
             oidc {
               clients

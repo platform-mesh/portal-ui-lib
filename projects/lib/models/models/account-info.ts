@@ -7,7 +7,7 @@ export interface AccountInfo {
       originClusterId: string;
     };
     clusterInfo: { ca: string };
-    organization: { originClusterId: string };
+    organization: { originClusterId: string; name: string };
     oidc: {
       issuerUrl: string;
       clients: {
