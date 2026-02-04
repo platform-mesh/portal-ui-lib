@@ -5,6 +5,7 @@ import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models/models';
 import {
   AccountInfoService,
+  ErrorHandlerService,
   GatewayService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -18,6 +19,7 @@ describe('DetailViewComponent', () => {
   let mockGatewayService: any;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
   let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
+  let errorHandlerServiceeMock: jest.Mocked<ErrorHandlerService>;
   let luigiClientLinkManagerNavigate = jest.fn();
 
   beforeEach(() => {
@@ -60,6 +62,7 @@ describe('DetailViewComponent', () => {
     mockGatewayService = {
       resolveKcpPath: jest.fn().mockReturnValue('https://example.com'),
     };
+    errorHandlerServiceeMock = mock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -67,6 +70,7 @@ describe('DetailViewComponent', () => {
         { provide: AccountInfoService, useValue: accountInfoServiceMock },
         { provide: GatewayService, useValue: mockGatewayService },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
+        { provide: ErrorHandlerService, useValue: errorHandlerServiceeMock },
       ],
     }).overrideComponent(DetailViewComponent, {
       set: { template: '<div></div>' },
@@ -363,6 +367,29 @@ describe('DetailViewComponent', () => {
         text: 'Resource ID is not defined',
         type: 'error',
       });
+    });
+
+    it('should call handleResourcePendingDeletionError during readResource if resource has deletionTimestamp', () => {
+      const terminatingResource = {
+        metadata: {
+          name: 'test-resource',
+          deletionTimestamp: '2026-02-04T12:00:00Z',
+        },
+      };
+
+      mockResourceService.read.mockReturnValue(of(terminatingResource));
+
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = component.context;
+      newComponent.LuigiClient = component.LuigiClient;
+
+      newFixture.detectChanges();
+
+      expect(
+        errorHandlerServiceeMock.handleResourcePendingDeletionError,
+      ).toHaveBeenCalledWith(terminatingResource);
     });
 
     it('should handle undefined parentNavigationContext in navigateToParent method', () => {
