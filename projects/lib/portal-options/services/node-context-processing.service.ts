@@ -58,7 +58,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
 
     try {
       const accountInfo = await firstValueFrom(
-        this.accountInfoService.readNoExceptionHandling({
+        this.accountInfoService.read({
           portalContext: {
             crdGatewayApiUrl: ctx.portalContext.crdGatewayApiUrl,
           },
