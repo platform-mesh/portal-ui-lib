@@ -92,9 +92,7 @@ describe('DetailViewComponent', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -160,9 +158,7 @@ describe('DetailViewComponent', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -203,7 +199,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-      entity: { metadata: { name: 'test-resource' } },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -249,9 +245,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-      entity: {
-        metadata: { name: 'test-account' },
-      },
+      entityName: 'test-account',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -299,9 +293,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -349,9 +341,6 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-        entity: {
-          metadata: { name: undefined }, // undefined name should make resourceId() return undefined
-        },
         parentNavigationContexts: ['project'],
       })) as any;
 
@@ -392,9 +381,7 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
+        entityName: 'test-resource',
         parentNavigationContexts: undefined, // undefined parentNavigationContexts
       })) as any;
 
@@ -437,9 +424,7 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
+        entityName: 'test-resource',
         parentNavigationContexts: [], // empty array
       })) as any;
 
@@ -474,9 +459,7 @@ describe('DetailViewComponent', () => {
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: undefined, // undefined resourceDefinition
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
+        entityName: 'test-resource',
         parentNavigationContexts: ['project'],
       })) as any;
 
@@ -557,9 +540,7 @@ describe('DetailViewComponent template', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -606,9 +587,7 @@ describe('DetailViewComponent template', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
