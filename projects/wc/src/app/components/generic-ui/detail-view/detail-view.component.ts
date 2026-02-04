@@ -40,7 +40,7 @@ import {
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
 import { firstValueFrom } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { tap } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-detail-view',
@@ -123,20 +123,16 @@ export class DetailViewComponent {
         params.kind.toLowerCase() === 'account',
       )
       .pipe(
-        catchError((error) => {
-          this.errorHandlerService.handlePostErrorNavigation(error);
-          throw error;
-        }),
         tap((resource) => {
           if (resource?.metadata?.deletionTimestamp) {
-            this.errorHandlerService.handleResourcePendingDeletionError(
-              resource,
-            );
+            this.errorHandlerService.handleResourcePendingDeletion(resource);
           }
         }),
       )
       .subscribe({
         next: (result) => this.resource.set(result),
+        error: (error) =>
+          this.errorHandlerService.handleUnauthorizedAccess(error),
       });
   }
 

@@ -25,21 +25,8 @@ describe('NodeContextProcessingServiceImpl', () => {
   const mockAccountPath = '/test-org/entity-123';
   const mockToken = 'test-token';
 
-  const mockEntityNode: PortalLuigiNode = {
-    defineEntity: {
-      graphqlEntity: {
-        kind: mockKind,
-      },
-    },
-    context: {},
-  } as PortalLuigiNode;
-
-  const mockContext = {
-    portalContext: {
-      crdGatewayApiUrl: 'https://api.example.com',
-    },
-    token: mockToken,
-  } as any as PortalNodeContext;
+  let mockEntityNode: PortalLuigiNode;
+  let mockContext: PortalNodeContext;
 
   const mockAccountInfo: AccountInfo = {
     spec: {
@@ -61,6 +48,22 @@ describe('NodeContextProcessingServiceImpl', () => {
     accountPathResolver = mock<AccountPathResolverService>();
     accountInfoService = mock<AccountInfoService>();
     organizationReadyService = mock<OrganizationReadyService>();
+
+    mockEntityNode = {
+      defineEntity: {
+        graphqlEntity: {
+          kind: mockKind,
+        },
+      },
+      context: {},
+    } as PortalLuigiNode;
+
+    mockContext = {
+      portalContext: {
+        crdGatewayApiUrl: 'https://api.example.com',
+      },
+      token: mockToken,
+    } as PortalNodeContext;
 
     TestBed.configureTestingModule({
       providers: [

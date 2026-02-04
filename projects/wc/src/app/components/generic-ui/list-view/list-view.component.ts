@@ -125,7 +125,7 @@ export class ListViewComponent {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError((error) => {
-          this.errorHandlerService.handlePostErrorNavigation(error);
+          this.errorHandlerService.handleUnauthorizedAccess(error);
           throw error;
         }),
       )

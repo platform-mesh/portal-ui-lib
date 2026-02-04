@@ -19,7 +19,7 @@ describe('DetailViewComponent', () => {
   let mockGatewayService: any;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
   let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
-  let errorHandlerServiceeMock: jest.Mocked<ErrorHandlerService>;
+  let errorHandlerServiceMock: jest.Mocked<ErrorHandlerService>;
   let luigiClientLinkManagerNavigate = jest.fn();
 
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('DetailViewComponent', () => {
     mockGatewayService = {
       resolveKcpPath: jest.fn().mockReturnValue('https://example.com'),
     };
-    errorHandlerServiceeMock = mock();
+    errorHandlerServiceMock = mock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -70,7 +70,7 @@ describe('DetailViewComponent', () => {
         { provide: AccountInfoService, useValue: accountInfoServiceMock },
         { provide: GatewayService, useValue: mockGatewayService },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
-        { provide: ErrorHandlerService, useValue: errorHandlerServiceeMock },
+        { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
       ],
     }).overrideComponent(DetailViewComponent, {
       set: { template: '<div></div>' },
@@ -388,7 +388,7 @@ describe('DetailViewComponent', () => {
       newFixture.detectChanges();
 
       expect(
-        errorHandlerServiceeMock.handleResourcePendingDeletionError,
+        errorHandlerServiceMock.handleResourcePendingDeletion,
       ).toHaveBeenCalledWith(terminatingResource);
     });
 

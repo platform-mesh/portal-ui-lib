@@ -2,15 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 
-interface Error {
-  message: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class ErrorHandlerService {
   private luigiCoreService = inject(LuigiCoreService);
 
-  handlePostErrorNavigation(error: Error) {
+  handleUnauthorizedAccess(error: any) {
     if (
       error.message?.toLowerCase().includes('forbidden') ||
       error.message?.toLowerCase()?.includes('access denied')
@@ -21,9 +17,7 @@ export class ErrorHandlerService {
     }
   }
 
-  handleResourcePendingDeletionError(resource: Resource) {
-    const message = `The resource ${resource.metadata.name} is pending deletion.`;
+  handleResourcePendingDeletion(_resource: Resource) {
     this.luigiCoreService.navigation().navigate('/error/422');
-    throw new Error(message);
   }
 }
