@@ -22,11 +22,7 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
       this.luigiCoreService.navigation().navigate(nextNode.initialRoute);
     }
 
-    await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
-      nextNode,
-      nextNode.context?.entityName,
-      nextNode.context?.entityKind,
-    );
+    await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(nextNode);
     this.accountPathResolverService.resolveAccountHierarchy(nextNode);
   }
 }
