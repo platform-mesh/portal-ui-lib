@@ -193,92 +193,21 @@ describe('ErrorHandlerService', () => {
     } as Resource;
 
     it('should navigate to 422 error page', () => {
-      expect(() =>
-        service.handleResourcePendingDeletion(mockResource),
-      ).toThrow();
+      service.handleResourcePendingDeletion(mockResource);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/422');
-    });
-
-    it('should throw error with resource name in message', () => {
-      expect(() => service.handleResourcePendingDeletion(mockResource)).toThrow(
-        'The resource test-resource is pending deletion.',
-      );
     });
 
     it('should call luigiCoreService.navigation', () => {
-      expect(() =>
-        service.handleResourcePendingDeletion(mockResource),
-      ).toThrow();
-
-      expect(luigiCoreService.navigation).toHaveBeenCalled();
-    });
-
-    it('should handle resource with different name', () => {
-      const differentResource: Resource = {
-        metadata: {
-          name: 'another-resource',
-          namespace: 'default',
-        },
-      } as Resource;
-
-      expect(() =>
-        service.handleResourcePendingDeletion(differentResource),
-      ).toThrow('The resource another-resource is pending deletion.');
-    });
-
-    it('should include exact resource name from metadata', () => {
-      const resourceWithSpecialName: Resource = {
-        metadata: {
-          name: 'my-app-v1.2.3',
-          namespace: 'production',
-        },
-      } as Resource;
-
-      expect(() =>
-        service.handleResourcePendingDeletion(resourceWithSpecialName),
-      ).toThrow('The resource my-app-v1.2.3 is pending deletion.');
+      (service.handleResourcePendingDeletion(mockResource),
+        expect(luigiCoreService.navigation).toHaveBeenCalled());
     });
 
     it('should call navigation.navigate with exactly /error/422', () => {
-      expect(() =>
-        service.handleResourcePendingDeletion(mockResource),
-      ).toThrow();
+      service.handleResourcePendingDeletion(mockResource);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/422');
       expect(mockNavigation.navigate).toHaveBeenCalledTimes(1);
-    });
-
-    it('should throw Error instance', () => {
-      expect(() => service.handleResourcePendingDeletion(mockResource)).toThrow(
-        Error,
-      );
-    });
-
-    it('should handle resource with hyphenated name', () => {
-      const hyphenatedResource: Resource = {
-        metadata: {
-          name: 'my-test-resource-name',
-          namespace: 'default',
-        },
-      } as Resource;
-
-      expect(() =>
-        service.handleResourcePendingDeletion(hyphenatedResource),
-      ).toThrow('The resource my-test-resource-name is pending deletion.');
-    });
-
-    it('should handle resource with numeric name', () => {
-      const numericResource: Resource = {
-        metadata: {
-          name: 'resource-123',
-          namespace: 'default',
-        },
-      } as Resource;
-
-      expect(() =>
-        service.handleResourcePendingDeletion(numericResource),
-      ).toThrow('The resource resource-123 is pending deletion.');
     });
   });
 
@@ -295,7 +224,7 @@ describe('ErrorHandlerService', () => {
       service.handleUnauthorizedAccess(error);
       const firstCallCount = mockNavigation.navigate.mock.calls.length;
 
-      expect(() => service.handleResourcePendingDeletion(resource)).toThrow();
+      service.handleResourcePendingDeletion(resource);
       const secondCallCount = mockNavigation.navigate.mock.calls.length;
 
       expect(secondCallCount).toBe(firstCallCount + 1);
