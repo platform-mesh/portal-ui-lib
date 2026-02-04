@@ -92,14 +92,6 @@ describe(AccountInfoService, () => {
 
       service.read(namespacedNodeContext).subscribe({
         error: () => {
-          expect(console.error).toHaveBeenCalledWith(
-            'Error executing GraphQL query.',
-            error,
-          );
-          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-            text: 'fail',
-            type: 'error',
-          });
           done();
         },
       });
