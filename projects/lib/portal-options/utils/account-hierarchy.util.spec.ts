@@ -11,7 +11,7 @@ const createNode = (
   parent?: PortalLuigiNode,
 ): PortalLuigiNode =>
   ({
-    context: name ? { entity: { metadata: { name }, __typename: type } } : {},
+    context: name ? { entityName: name, entityKind: type } : {},
     parent,
   }) as unknown as PortalLuigiNode;
 
