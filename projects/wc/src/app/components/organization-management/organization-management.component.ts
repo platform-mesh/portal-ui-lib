@@ -31,13 +31,13 @@ import {
   isLocalSetup
 } from '@platform-mesh/portal-ui-lib/utils';
 import {
-  ButtonComponent,
-  IconComponent,
-  InputComponent,
-  LabelComponent,
-  OptionComponent,
-  SelectComponent,
-} from '@ui5/webcomponents-ngx';
+  Button,
+  Icon,
+  Input,
+  Label,
+  Option,
+  Select,
+} from '@fundamental-ngx/ui5-webcomponents';
 import { k8sMessages } from '../../consts/k8s-messages';
 import { k8sNameValidator } from '../../validators/k8s-name-validator';
 
@@ -45,14 +45,14 @@ import { k8sNameValidator } from '../../validators/k8s-name-validator';
   selector: 'pm-organization-management',
   standalone: true,
   imports: [
-    LabelComponent,
-    InputComponent,
-    ButtonComponent,
-    OptionComponent,
-    SelectComponent,
+    Label,
+    Input,
+    Button,
+    Option,
+    Select,
     FormsModule,
     ReactiveFormsModule,
-    IconComponent,
+    Icon,
   ],
   templateUrl: './organization-management.component.html',
   styleUrl: './organization-management.component.scss',

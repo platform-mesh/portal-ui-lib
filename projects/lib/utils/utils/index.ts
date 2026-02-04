@@ -6,3 +6,4 @@ export * from './is-local-setup';
 export * from './parse-raw-gql-query';
 export * from './resource-field-by-path';
 export * from './resource-sanitizer';
+export * from './set-property-by-path';

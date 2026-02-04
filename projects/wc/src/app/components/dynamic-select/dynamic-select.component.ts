@@ -16,12 +16,12 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
-import { OptionComponent, SelectComponent } from '@ui5/webcomponents-ngx';
+import { Option, Select } from '@fundamental-ngx/ui5-webcomponents';
 import { Observable, map } from 'rxjs';
 
 @Component({
   selector: 'pm-dynamic-select',
-  imports: [SelectComponent, OptionComponent],
+  imports: [Select, Option],
   templateUrl: './dynamic-select.component.html',
   styleUrl: './dynamic-select.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

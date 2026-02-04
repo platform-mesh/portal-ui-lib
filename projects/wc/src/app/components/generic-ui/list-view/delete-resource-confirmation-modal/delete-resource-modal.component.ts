@@ -6,7 +6,6 @@ import {
   input,
   output,
   signal,
-  viewChild,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -15,32 +14,32 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import {
+  Bar,
+  Dialog,
+  Icon,
+  Input,
+  Text,
+  Title,
+  Toolbar,
+  ToolbarButton,
+} from '@fundamental-ngx/ui5-webcomponents';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-import {
-  BarComponent,
-  DialogComponent,
-  IconComponent,
-  InputComponent,
-  TextComponent,
-  TitleComponent,
-  ToolbarButtonComponent,
-  ToolbarComponent,
-} from '@ui5/webcomponents-ngx';
 
 @Component({
   selector: 'pm-delete-resource-modal',
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    DialogComponent,
-    TitleComponent,
-    ToolbarButtonComponent,
-    ToolbarComponent,
-    InputComponent,
-    BarComponent,
-    IconComponent,
-    TextComponent,
+    Dialog,
+    Title,
+    ToolbarButton,
+    Toolbar,
+    Input,
+    Bar,
+    Icon,
+    Text,
   ],
   templateUrl: './delete-resource-modal.component.html',
   styleUrl: './delete-resource-modal.component.scss',
@@ -48,8 +47,8 @@ import {
 })
 export class DeleteResourceModalComponent implements OnInit {
   context = input<ResourceNodeContext>();
-  dialog = viewChild<DialogComponent>('dialog');
   innerResource = signal<Resource | null>(null);
+  dialogOpen = signal<boolean>(false);
 
   resource = output<Resource>();
 
@@ -61,23 +60,17 @@ export class DeleteResourceModalComponent implements OnInit {
   }
 
   open(resource: Resource): void {
-    const dialog = this.dialog();
-    if (dialog) {
-      dialog.open = true;
-      this.innerResource.set(resource);
-      this.form?.controls?.resource?.updateValueAndValidity();
-    }
+    this.dialogOpen.set(true);
+    this.innerResource.set(resource);
+    this.form?.controls?.resource?.updateValueAndValidity();
   }
 
   close(): void {
-    const dialog = this.dialog();
-    if (dialog) {
-      this.form.controls.resource.setValue(null);
-      this.form.controls.resource.markAsPristine();
-      this.form.controls.resource.markAsUntouched();
-      this.form.controls.resource.updateValueAndValidity();
-      dialog.open = false;
-    }
+    this.form.controls.resource.setValue(null);
+    this.form.controls.resource.markAsPristine();
+    this.form.controls.resource.markAsUntouched();
+    this.form.controls.resource.updateValueAndValidity();
+    this.dialogOpen.set(false);
   }
 
   delete(): void {

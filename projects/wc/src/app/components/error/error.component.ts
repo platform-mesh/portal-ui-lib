@@ -13,10 +13,10 @@ import '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/tnt/NoApplications.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/tnt/UnsuccessfulAuth.js';
 import {
-  ButtonComponent,
-  IllustratedMessageComponent,
-  TitleComponent,
-} from '@ui5/webcomponents-ngx';
+  Button,
+  Title,
+} from '@fundamental-ngx/ui5-webcomponents';
+import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { ButtonConfig, ErrorConfig } from './models/error.model';
 
 @Component({
@@ -25,7 +25,7 @@ import { ButtonConfig, ErrorConfig } from './models/error.model';
   templateUrl: './error.component.html',
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IllustratedMessageComponent, ButtonComponent, TitleComponent],
+  imports: [IllustratedMessage, Button, Title],
 })
 export class ErrorComponent implements OnInit {
   private i18nService = inject(I18nService);

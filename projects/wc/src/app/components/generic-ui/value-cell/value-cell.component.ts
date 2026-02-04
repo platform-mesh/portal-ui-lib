@@ -14,12 +14,12 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models/models';
 import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils/utils';
-import { IconComponent } from '@ui5/webcomponents-ngx';
+import { Icon } from '@fundamental-ngx/ui5-webcomponents';
 
 @Component({
   selector: 'pm-value-cell',
   imports: [
-    IconComponent,
+    Icon,
     BooleanValueComponent,
     LinkValueComponent,
     SecretValueComponent,

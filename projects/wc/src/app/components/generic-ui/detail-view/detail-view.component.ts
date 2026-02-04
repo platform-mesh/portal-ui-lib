@@ -29,29 +29,27 @@ import {
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import {
-  DynamicPageComponent,
-  DynamicPageHeaderComponent,
-  DynamicPageTitleComponent,
-  LabelComponent,
-  TextComponent,
-  TitleComponent,
-  ToolbarButtonComponent,
-  ToolbarComponent,
-} from '@ui5/webcomponents-ngx';
+  Label,
+  Text,
+  Title,
+  ToolbarButton,
+  Toolbar,
+} from '@fundamental-ngx/ui5-webcomponents';
+import { DynamicPage, DynamicPageHeader, DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'pm-detail-view',
   standalone: true,
   imports: [
-    DynamicPageComponent,
-    DynamicPageTitleComponent,
-    TitleComponent,
-    TextComponent,
-    ToolbarComponent,
-    ToolbarButtonComponent,
-    DynamicPageHeaderComponent,
-    LabelComponent,
+    DynamicPage,
+    DynamicPageTitle,
+    Title,
+    Text,
+    Toolbar,
+    ToolbarButton,
+    DynamicPageHeader,
+    Label,
     ValueCellComponent,
   ],
   templateUrl: './detail-view.component.html',

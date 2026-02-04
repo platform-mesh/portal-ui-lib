@@ -4,11 +4,11 @@ import {
   Component,
   input,
 } from '@angular/core';
-import { LinkComponent } from '@ui5/webcomponents-ngx';
+import { Link } from '@fundamental-ngx/ui5-webcomponents';
 
 @Component({
   selector: 'pm-link-value',
-  imports: [LinkComponent],
+  imports: [Link],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './link-value.component.html',
   styleUrl: './link-value.component.scss',

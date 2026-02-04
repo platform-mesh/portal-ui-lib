@@ -11,7 +11,6 @@ import {
   input,
   output,
   signal,
-  viewChild,
 } from '@angular/core';
 import {
   FormBuilder,
@@ -21,37 +20,39 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
+import {
+  Bar,
+  Dialog,
+  Input,
+  Label,
+  Option,
+  Select,
+  Title,
+  Toolbar,
+  ToolbarButton,
+} from '@fundamental-ngx/ui5-webcomponents';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 import {
-  BarComponent,
-  DialogComponent,
-  InputComponent,
-  LabelComponent,
-  OptionComponent,
-  SelectComponent,
-  TitleComponent,
-  ToolbarButtonComponent,
-  ToolbarComponent,
-} from '@ui5/webcomponents-ngx';
-import { set } from 'lodash';
+  getResourceValueByJsonPath,
+  setPropertyByPath,
+} from '@platform-mesh/portal-ui-lib/utils';
 
 @Component({
   selector: 'pm-create-resource-modal',
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    DialogComponent,
-    OptionComponent,
-    SelectComponent,
-    InputComponent,
-    LabelComponent,
-    ToolbarButtonComponent,
-    ToolbarComponent,
+    Dialog,
+    Option,
+    Select,
+    Input,
+    Label,
+    ToolbarButton,
+    Toolbar,
     DynamicSelectComponent,
-    BarComponent,
-    TitleComponent,
+    Bar,
+    Title,
   ],
   templateUrl: './create-resource-modal.component.html',
   styleUrl: './create-resource-modal.component.scss',
@@ -63,7 +64,7 @@ export class CreateResourceModalComponent implements OnInit {
   context = input.required<ResourceNodeContext>();
   resource = output<Resource>();
   updateResource = output<Resource>();
-  dialog = viewChild<DialogComponent>('dialog');
+  dialogOpen = signal<boolean>(false);
 
   fb = inject(FormBuilder);
   form: FormGroup;
@@ -79,26 +80,24 @@ export class CreateResourceModalComponent implements OnInit {
   open(resource?: Resource) {
     this.originalResource.set(resource ?? null);
     this.form = this.fb.group(this.createControls(resource));
-    const dialog = this.dialog();
-    if (dialog) {
-      dialog.open = true;
-    }
+    this.dialogOpen.set(true);
   }
 
   close() {
-    const dialog = this.dialog();
-    if (dialog) {
-      dialog.open = false;
-      this.form.reset();
-      this.originalResource.set(null);
-    }
+    this.dialogOpen.set(false);
+    this.form.reset();
+    this.originalResource.set(null);
   }
 
   create() {
     if (this.form.valid) {
       const result = {} as Resource;
       for (const key in this.form.value) {
-        set(result, key.replaceAll('_', '.'), this.form.value[key]);
+        setPropertyByPath(
+          result,
+          key.replaceAll('_', '.'),
+          this.form.value[key],
+        );
       }
 
       if (this.isEditMode()) {

@@ -11,7 +11,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { IconComponent } from '@ui5/webcomponents-ngx';
+import { Icon } from '@fundamental-ngx/ui5-webcomponents';
 
 export type IconDesignType =
   | typeof ICON_DESIGN_POSITIVE
@@ -19,7 +19,7 @@ export type IconDesignType =
 
 @Component({
   selector: 'pm-boolean-value',
-  imports: [IconComponent],
+  imports: [Icon],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './boolean-value.component.html',
   styleUrl: './boolean-value.component.scss',

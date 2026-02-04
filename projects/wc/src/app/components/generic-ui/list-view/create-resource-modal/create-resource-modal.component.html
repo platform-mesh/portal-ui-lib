@@ -1,4 +1,4 @@
-<ui5-dialog test-id="create-resource-dialog" #dialog>
+<ui5-dialog test-id="create-resource-dialog" [open]="dialogOpen()">
   <ui5-bar slot="header" design="Header">
     <ui5-title test-id="create-resource-dialog-title" slot="startContent">
       @if (isEditMode()) {

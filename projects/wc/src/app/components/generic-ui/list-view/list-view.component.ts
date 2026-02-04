@@ -15,6 +15,23 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  Icon,
+  Table,
+  TableCell,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableRow,
+  Text,
+  Title,
+  Toolbar,
+  ToolbarButton,
+} from '@fundamental-ngx/ui5-webcomponents';
+import {
+  DynamicPage,
+  DynamicPageTitle,
+  IllustratedMessage,
+} from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
@@ -29,21 +46,6 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import {
-  DynamicPageComponent,
-  DynamicPageTitleComponent,
-  IconComponent,
-  IllustratedMessageComponent,
-  TableCellComponent,
-  TableComponent,
-  TableHeaderCellComponent,
-  TableHeaderRowComponent,
-  TableRowComponent,
-  TextComponent,
-  TitleComponent,
-  ToolbarButtonComponent,
-  ToolbarComponent,
-} from '@ui5/webcomponents-ngx';
 
 @Component({
   selector: 'pm-list-view',
@@ -55,19 +57,19 @@ import {
   imports: [
     CreateResourceModalComponent,
     DeleteResourceModalComponent,
-    DynamicPageComponent,
-    DynamicPageTitleComponent,
-    IconComponent,
-    IllustratedMessageComponent,
-    TableComponent,
-    TableCellComponent,
-    TableHeaderCellComponent,
-    TableHeaderRowComponent,
-    TableRowComponent,
-    TextComponent,
-    TitleComponent,
-    ToolbarButtonComponent,
-    ToolbarComponent,
+    DynamicPage,
+    DynamicPageTitle,
+    Icon,
+    IllustratedMessage,
+    Table,
+    TableCell,
+    TableHeaderCell,
+    TableHeaderRow,
+    TableRow,
+    Text,
+    Title,
+    ToolbarButton,
+    Toolbar,
     ValueCellComponent,
   ],
 })
