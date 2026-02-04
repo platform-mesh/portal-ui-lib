@@ -32,10 +32,19 @@
           "defaultConfiguration": "production"
         },
         "test": {
-          "builder": "@angular-builders/jest:run",
+          "builder": "@angular/build:unit-test",
           "options": {
-            "configPath": "jest.config.js",
-            "tsConfig": "tsconfig.spec.json"
+            "runnerConfig": "vitest.config.ts",
+            "tsConfig": "./tsconfig.spec.json",
+            "coverage": true,
+            "coverageExclude": ["**/*.html"],
+            "coverageInclude": ["projects/lib/src/**/*.ts"],
+            "coverageThresholds": {
+              "statements": 95,
+              "branches": 95,
+              "functions": 95,
+              "lines": 95
+            }
           }
         }
       }
@@ -81,10 +90,19 @@
           "defaultConfiguration": "production"
         },
         "test": {
-          "builder": "@angular-builders/jest:run",
+          "builder": "@angular/build:unit-test",
           "options": {
-            "configPath": "jest.config.js",
-            "tsConfig": "tsconfig.spec.json"
+            "runnerConfig": "vitest.config.ts",
+            "tsConfig": "./tsconfig.spec.json",
+            "coverage": true,
+            "coverageExclude": ["**/*.html"],
+            "coverageInclude": ["projects/wc/src/**/*.ts"],
+            "coverageThresholds": {
+              "statements": 95,
+              "branches": 75,
+              "functions": 95,
+              "lines": 95
+            }
           }
         },
         "lint": {
