@@ -13,7 +13,7 @@ export class ErrorHandlerService {
   handlePostErrorNavigation(error: Error) {
     if (
       error.message?.toLowerCase().includes('forbidden') ||
-      error.message?.includes('access denied')
+      error.message?.toLowerCase()?.includes('access denied')
     ) {
       this.luigiCoreService.navigation().navigate('/error/403');
     } else {

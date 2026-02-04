@@ -46,6 +46,7 @@ describe('DetailViewComponent', () => {
         },
         organization: {
           originClusterId: 'mwi4ti5r3vtng851',
+          name: 'org',
         },
       },
     };
