@@ -9,16 +9,17 @@ import {
   FieldDefinition,
   Resource,
 } from '@platform-mesh/portal-ui-lib/models/models';
+import { Mock } from 'vitest';
 
 describe('ValueCellComponent', () => {
   let component: ValueCellComponent;
   let fixture: ComponentFixture<ValueCellComponent>;
   let mockLuigiClient: LuigiClient;
 
-  const createMockLuigiClient = (showAlertSpy?: jest.Mock): LuigiClient =>
+  const createMockLuigiClient = (showAlertSpy?: Mock<any>): LuigiClient =>
     ({
       uxManager: () => ({
-        showAlert: showAlertSpy || jest.fn(),
+        showAlert: showAlertSpy || vi.fn(),
       }),
     }) as any;
 
@@ -314,7 +315,7 @@ describe('ValueCellComponent', () => {
       });
 
       const event = new Event('click');
-      const stopPropagationSpy = jest.spyOn(event, 'stopPropagation');
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
 
       component.toggleVisibility(event);
       fixture.detectChanges();
@@ -366,10 +367,10 @@ describe('ValueCellComponent', () => {
     });
 
     it('should copy value to clipboard when copy button is clicked', async () => {
-      const writeTextSpy = jest.fn().mockResolvedValue(undefined);
+      const writeTextSpy = vi.fn().mockResolvedValue(undefined);
       Object.assign(navigator, { clipboard: { writeText: writeTextSpy } });
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       const customLuigiClient = createMockLuigiClient(showAlertSpy);
       const { fixture } = makeComponent(
         'test-value',
@@ -400,7 +401,7 @@ describe('ValueCellComponent', () => {
       const copyButton = compiled.querySelector('ui5-icon[name="copy"]');
 
       const event = new Event('click');
-      const stopPropagationSpy = jest.spyOn(event, 'stopPropagation');
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
 
       component.copyValue(event);
       fixture.detectChanges();
@@ -828,6 +829,36 @@ describe('ValueCellComponent', () => {
       });
 
       expect(component.testId()).toBe('value-cell-spec.value');
+    });
+  });
+
+  describe('normalization helpers', () => {
+    it('normalizeBoolean should handle true, false and undefined', () => {
+      const { component } = makeComponent('true');
+      const instance = component as any;
+
+      expect(instance.normalizeBoolean('true')).toBe(true);
+      expect(instance.normalizeBoolean('false')).toBe(false);
+      expect(instance.normalizeBoolean('nope')).toBeUndefined();
+    });
+
+    it('normalizeString should handle empty, whitespace, and non-string values', () => {
+      const { component } = makeComponent('value');
+      const instance = component as any;
+
+      expect(instance.normalizeString('')).toBeUndefined();
+      expect(instance.normalizeString('   ')).toBeUndefined();
+      expect(instance.normalizeString(123)).toBeUndefined();
+      expect(instance.normalizeString('abc')).toBe('abc');
+    });
+
+    it('checkValidUrl should validate URL input', () => {
+      const { component } = makeComponent('value');
+      const instance = component as any;
+
+      expect(instance.checkValidUrl(undefined)).toBe(false);
+      expect(instance.checkValidUrl('not-a-url')).toBe(false);
+      expect(instance.checkValidUrl('https://example.com')).toBe(true);
     });
   });
 });

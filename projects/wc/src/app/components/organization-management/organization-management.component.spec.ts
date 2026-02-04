@@ -6,7 +6,6 @@ import {
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
-import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   ClientEnvironment,
@@ -17,33 +16,34 @@ import {
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
   let fixture: ComponentFixture<OrganizationManagementComponent>;
-  let resourceServiceMock: jest.Mocked<ResourceService>;
-  let i18nServiceMock: jest.Mocked<I18nService>;
-  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
-  let luigiClientMock: jest.Mocked<LuigiClient>;
+  let resourceServiceMock: MockedObject<ResourceService>;
+  let i18nServiceMock: MockedObject<I18nService>;
+  let envConfigServiceMock: MockedObject<EnvConfigService>;
+  let luigiClientMock: MockedObject<LuigiClient>;
 
   beforeEach(async () => {
     resourceServiceMock = {
-      list: jest.fn(),
-      create: jest.fn(),
+      list: vi.fn(),
+      create: vi.fn(),
     } as any;
 
     i18nServiceMock = {
       translationTable: {},
-      getTranslation: jest.fn(),
+      getTranslation: vi.fn(),
     } as any;
 
     envConfigServiceMock = {
-      getEnvConfig: jest.fn(),
+      getEnvConfig: vi.fn(),
     } as any;
 
     luigiClientMock = {
-      uxManager: jest.fn().mockReturnValue({
-        showAlert: jest.fn(),
+      uxManager: vi.fn().mockReturnValue({
+        showAlert: vi.fn(),
       }),
     } as any;
 
@@ -134,13 +134,13 @@ describe('OrganizationManagementComponent', () => {
   });
 
   it('should onboard new organization successfully', () => {
-    const mockResponse: MutationResult<void> = {
+    const mockResponse: any = {
       data: undefined,
       loading: false,
       error: undefined,
       called: true,
       client: {} as any,
-      reset: jest.fn(),
+      reset: vi.fn(),
     };
     resourceServiceMock.create.mockReturnValue(of(mockResponse));
     component.newOrganizationControl.setValue('newOrg');
@@ -288,7 +288,7 @@ describe('OrganizationManagementComponent', () => {
   });
 
   it('should handle error when reading organizations', () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const mockError = new Error('Failed to fetch organizations');
 
     resourceServiceMock.list.mockReturnValue(throwError(() => mockError));

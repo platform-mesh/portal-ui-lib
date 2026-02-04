@@ -1,24 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  ApolloFactory,
-  LogicalClusterService,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
-import { of, throwError } from 'rxjs';
+import { ApolloFactory, LogicalClusterService, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { firstValueFrom, of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe(LogicalClusterService, () => {
   let service: LogicalClusterService;
   let mockApollo: any;
   let mockApolloFactory: any;
-  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
+  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   beforeEach(() => {
     mockLuigiCoreService = mock();
     mockApollo = mock();
     mockApolloFactory = {
-      apollo: jest.fn().mockReturnValue(mockApollo),
+      apollo: vi.fn().mockReturnValue(mockApollo),
     };
 
     TestBed.configureTestingModule({
@@ -33,7 +30,7 @@ describe(LogicalClusterService, () => {
   });
 
   describe('readOrganizationReady', () => {
-    it('should return true when organization is ready', (done) => {
+    it('should return true when organization is ready', async () => {
       const logicalCluster = {
         status: { phase: 'Ready' },
       };
@@ -49,47 +46,43 @@ describe(LogicalClusterService, () => {
         }),
       );
 
-      const navigateMock = jest.fn();
+      const navigateMock = vi.fn();
       mockLuigiCoreService.navigation.mockReturnValue({
         navigate: navigateMock,
       } as any);
 
-      service
-        .read({
+      const response = await firstValueFrom(
+        service.read({
           portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
           token: 't',
-        } as any)
-        .subscribe((response) => {
-          expect(response).toEqual(logicalCluster);
-          expect(navigateMock).not.toHaveBeenCalled();
-          done();
-        });
+        } as any),
+      );
+
+      expect(response).toEqual(logicalCluster);
+      expect(navigateMock).not.toHaveBeenCalled();
     });
 
-    it('should alert and rethrow when query fails', (done) => {
+    it('should alert and rethrow when query fails', async () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service
-        .read({
+      const response = await firstValueFrom(
+        service.read({
           portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
           token: 't',
-        } as any)
-        .subscribe({
-          error: (err) => {
-            expect(err).toBe(error);
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: 'fail',
-              type: 'error',
-            });
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            done();
-          },
-        });
+        } as any),
+      );
+
+      expect(response).toThrow(error);
+      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'fail',
+        type: 'error',
+      });
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
     });
   });
 });

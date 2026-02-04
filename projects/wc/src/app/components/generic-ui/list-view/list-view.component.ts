@@ -133,6 +133,12 @@ export class ListViewComponent {
             }),
           );
         },
+        error: (error) => {
+          this.luigiCoreService.showAlert({
+            text: `Failure! Could not list resources: ${error.message}`,
+            type: 'error',
+          });
+        },
       });
   }
 

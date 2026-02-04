@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { stripTypename } from '@platform-mesh/portal-ui-lib/utils';
 
 describe('stripTypename (utils)', () => {

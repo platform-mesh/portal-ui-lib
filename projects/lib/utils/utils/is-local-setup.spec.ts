@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { isLocalSetup } from './is-local-setup';
 
 describe('isLocalSetup', () => {

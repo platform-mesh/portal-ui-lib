@@ -1,26 +1,26 @@
-import { TestBed } from '@angular/core/testing';
-import { Resource } from '@platform-mesh/portal-ui-lib/models';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of, throwError } from 'rxjs';
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
-import { query } from 'jsonpath';
+import { TestBed } from '@angular/core/testing';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
+import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
 
 describe('NodeContextProcessingServiceImpl', () => {
   let service: NodeContextProcessingServiceImpl;
-  let mockResourceService: jest.Mocked<ResourceService>;
-  let mockCrdGatewayKcpPatchResolver: jest.Mocked<CrdGatewayKcpPatchResolver>;
+  let mockResourceService: MockedObject<ResourceService>;
+  let mockCrdGatewayKcpPatchResolver: MockedObject<CrdGatewayKcpPatchResolver>;
 
   beforeEach(() => {
     mockResourceService = {
-      read: jest.fn(),
-    } as unknown as jest.Mocked<ResourceService>;
+      read: vi.fn(),
+    } as unknown as MockedObject<ResourceService>;
 
     mockCrdGatewayKcpPatchResolver = {
-      resolveCrdGatewayKcpPath: jest.fn(),
-    } as unknown as jest.Mocked<CrdGatewayKcpPatchResolver>;
+      resolveCrdGatewayKcpPath: vi.fn(),
+    } as unknown as MockedObject<CrdGatewayKcpPatchResolver>;
 
     TestBed.configureTestingModule({
       providers: [
@@ -92,7 +92,6 @@ describe('NodeContextProcessingServiceImpl', () => {
 
       expect(mockResourceService.read).not.toHaveBeenCalled();
     });
-
 
     it('should return early if kind is missing', async () => {
       const entityNode: PortalLuigiNode = {
@@ -384,7 +383,9 @@ describe('NodeContextProcessingServiceImpl', () => {
         token: 'test-token',
       } as any;
 
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       mockResourceService.read.mockReturnValue(
         throwError(() => new Error('Network error')),
       );
@@ -463,12 +464,14 @@ describe('NodeContextProcessingServiceImpl', () => {
       } as any;
 
       const err = new Error('read failed');
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       mockResourceService.read.mockReturnValue(throwError(() => err));
 
-      await expect(service.processNodeContext(entityId, entityNode, ctx)).rejects.toThrow(
-        'read failed',
-      );
+      await expect(
+        service.processNodeContext(entityId, entityNode, ctx),
+      ).rejects.toThrow('read failed');
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining(`Not able to read entity ${entityId} from`),
       );

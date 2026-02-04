@@ -1,15 +1,16 @@
+import { UserProfileConfigServiceImpl } from './user-profile-config.service';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@openmfp/portal-ui-lib';
-import { UserProfileConfigServiceImpl } from './user-profile-config.service';
+import { MockedObject } from 'vitest';
 
 describe('UserProfileConfigServiceImpl', () => {
   let service: UserProfileConfigServiceImpl;
-  let mockAuthService: jest.Mocked<AuthService>;
+  let mockAuthService: MockedObject<AuthService>;
 
   beforeEach(() => {
     const authServiceMock = {
-      getUserInfo: jest.fn(),
-    } as jest.Mocked<Partial<AuthService>>;
+      getUserInfo: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -19,23 +20,31 @@ describe('UserProfileConfigServiceImpl', () => {
     });
 
     service = TestBed.inject(UserProfileConfigServiceImpl);
-    mockAuthService = TestBed.inject(AuthService) as jest.Mocked<AuthService>;
+    mockAuthService = TestBed.inject(AuthService) as MockedObject<AuthService>;
   });
 
   describe('getProfile', () => {
     it('should use email in the profile link', async () => {
       const testEmail = 'user@example.com';
-      mockAuthService.getUserInfo.mockReturnValue({ email: testEmail, userId: '123-123-123-123' } as any);
+      mockAuthService.getUserInfo.mockReturnValue({
+        email: testEmail,
+        userId: '123-123-123-123',
+      } as any);
 
       const profile = await service.getProfile();
 
-      const profileItem = profile.items.find(item => item.label === 'PROFILE_PROFILE');
+      const profileItem = profile.items.find(
+        (item) => item.label === 'PROFILE_PROFILE',
+      );
       expect(profileItem).toBeDefined();
       expect(profileItem!.link).toBe(`/users/${testEmail}/overview`);
     });
 
     it('should return profile items with correct structure', async () => {
-      mockAuthService.getUserInfo.mockReturnValue({ email: 'test@example.com', userId: '123-123-123-123' } as any);
+      mockAuthService.getUserInfo.mockReturnValue({
+        email: 'test@example.com',
+        userId: '123-123-123-123',
+      } as any);
 
       const profile = await service.getProfile();
 

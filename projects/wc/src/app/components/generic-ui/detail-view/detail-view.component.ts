@@ -119,6 +119,12 @@ export class DetailViewComponent {
       )
       .subscribe({
         next: (result) => this.resource.set(result),
+        error: (error) => {
+          this.LuigiClient().uxManager().showAlert({
+            text: `Failed to read resource: ${error.message}`,
+            type: 'error',
+          });
+        },
       });
   }
 

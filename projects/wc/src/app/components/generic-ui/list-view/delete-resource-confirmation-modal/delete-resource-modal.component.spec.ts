@@ -7,7 +7,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 describe('DeleteResourceModalComponent', () => {
   let component: DeleteResourceModalComponent;
   let fixture: ComponentFixture<DeleteResourceModalComponent>;
-  let mockDialog: any;
 
   const resource: any = { metadata: { name: 'TestName' } };
 
@@ -15,20 +14,10 @@ describe('DeleteResourceModalComponent', () => {
     await TestBed.configureTestingModule({
       imports: [CommonModule, ReactiveFormsModule],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    })
-      .overrideComponent(DeleteResourceModalComponent, {
-        set: {
-          imports: [CommonModule, ReactiveFormsModule],
-          schemas: [CUSTOM_ELEMENTS_SCHEMA],
-        },
-      })
-      .compileComponents();
+    });
 
     fixture = TestBed.createComponent(DeleteResourceModalComponent);
     component = fixture.componentInstance;
-
-    mockDialog = { open: false };
-    (component as any).dialog = () => mockDialog;
 
     component.ngOnInit();
     fixture.detectChanges();
@@ -45,14 +34,14 @@ describe('DeleteResourceModalComponent', () => {
 
   it('should set dialog open and store innerResource', () => {
     component.open(resource);
-    expect(mockDialog.open).toBeTruthy();
+    expect(component.dialogOpen()).toBeTruthy();
     expect(component.innerResource()).toBe(resource);
   });
 
   it('should set dialog closed when closing', () => {
-    mockDialog.open = true;
+    component.open(resource);
     component.close();
-    expect(mockDialog.open).toBeFalsy();
+    expect(component.dialogOpen()).toBeFalsy();
   });
 
   it('should be invalid when empty or mismatched; valid when matches innerResource.name', () => {
@@ -78,16 +67,16 @@ describe('DeleteResourceModalComponent', () => {
 
   it('should emit the resource when deleting resource', () => {
     component.open(resource);
-    spyOn(component.resource, 'emit');
+    vi.spyOn(component.resource, 'emit');
     component.delete();
     expect(component.resource.emit).toHaveBeenCalledWith(resource);
   });
 
   it('should set value and marks touched/dirty', () => {
     const control = component.form.controls['resource'];
-    spyOn(control, 'setValue');
-    spyOn(control, 'markAsTouched');
-    spyOn(control, 'markAsDirty');
+    vi.spyOn(control, 'setValue');
+    vi.spyOn(control, 'markAsTouched');
+    vi.spyOn(control, 'markAsDirty');
 
     component.setFormControlValue(
       { target: { value: 'SomeValue' } } as any,
@@ -120,7 +109,7 @@ describe('DeleteResourceModalComponent', () => {
 
   it('should mark the control as touched', () => {
     const control = component.form.controls['resource'];
-    spyOn(control, 'markAsTouched');
+    vi.spyOn(control, 'markAsTouched');
     component.onFieldBlur('resource');
     expect(control.markAsTouched).toHaveBeenCalled();
   });
@@ -169,7 +158,6 @@ describe('DeleteResourceModalComponent', () => {
 
   it('should close dialog when Cancel button clicked', () => {
     component.open(resource);
-    mockDialog.open = true;
     fixture.detectChanges();
 
     const cancelBtn: HTMLElement = fixture.nativeElement.querySelector(
@@ -179,7 +167,7 @@ describe('DeleteResourceModalComponent', () => {
 
     cancelBtn.dispatchEvent(new Event('click'));
     fixture.detectChanges();
-    expect(mockDialog.open).toBeFalsy();
+    expect(component.dialogOpen()).toBeFalsy();
   });
 
   it('should reset control state on close (pristine, untouched, revalidated)', () => {

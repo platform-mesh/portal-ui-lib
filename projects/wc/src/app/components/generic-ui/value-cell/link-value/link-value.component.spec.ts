@@ -52,7 +52,7 @@ describe('LinkValueComponent', () => {
     const linkElement = compiled.querySelector('ui5-link');
 
     const mockEvent = {
-      stopPropagation: jest.fn(),
+      stopPropagation: vi.fn(),
     };
 
     component.stopPropagation(mockEvent as any);

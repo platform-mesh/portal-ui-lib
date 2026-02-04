@@ -1,36 +1,44 @@
-jest.mock('@ui5/webcomponents/dist/Breadcrumbs.js', () => ({}), { virtual: true });
-jest.mock('@ui5/webcomponents/dist/BreadcrumbsItem.js', () => ({}), { virtual: true });
-jest.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}), { virtual: true });
-
 import { HeaderBarConfigServiceImpl } from './header-bar-config.service';
 import { NamespaceSelectionRendererService } from './header-bar-renderers/namespace-selection-renderer.service';
 import { TestBed } from '@angular/core/testing';
 import { ConfigService } from '@openmfp/portal-ui-lib';
+import { MockedObject } from 'vitest';
+
+vi.mock('@ui5/webcomponents/dist/Breadcrumbs.js', () => ({}));
+vi.mock('@ui5/webcomponents/dist/BreadcrumbsItem.js', () => ({}));
+vi.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}));
 
 describe('HeaderBarConfigServiceImpl', () => {
   let service: HeaderBarConfigServiceImpl;
-  let mockConfigService: jest.Mocked<ConfigService>;
-  let mockNamespaceSelectionRendererService: jest.Mocked<NamespaceSelectionRendererService>;
+  let mockConfigService: MockedObject<ConfigService>;
+  let mockNamespaceSelectionRendererService: MockedObject<NamespaceSelectionRendererService>;
 
   beforeEach(() => {
     const configServiceMock = {
-      getPortalConfig: jest.fn(),
-    } as jest.Mocked<Partial<ConfigService>>;
+      getPortalConfig: vi.fn(),
+    };
     const namespaceSelectionRendererServiceMock = {
-      create: jest.fn().mockReturnValue(() => document.createElement('div')),
+      create: vi.fn().mockReturnValue(() => document.createElement('div')),
     } as any;
 
     TestBed.configureTestingModule({
       providers: [
         HeaderBarConfigServiceImpl,
         { provide: ConfigService, useValue: configServiceMock },
-        { provide: NamespaceSelectionRendererService, useValue: namespaceSelectionRendererServiceMock },
+        {
+          provide: NamespaceSelectionRendererService,
+          useValue: namespaceSelectionRendererServiceMock,
+        },
       ],
     });
 
     service = TestBed.inject(HeaderBarConfigServiceImpl);
-    mockConfigService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
-    mockNamespaceSelectionRendererService = TestBed.inject(NamespaceSelectionRendererService) as jest.Mocked<NamespaceSelectionRendererService>;
+    mockConfigService = TestBed.inject(
+      ConfigService,
+    ) as MockedObject<ConfigService>;
+    mockNamespaceSelectionRendererService = TestBed.inject(
+      NamespaceSelectionRendererService,
+    ) as MockedObject<NamespaceSelectionRendererService>;
   });
 
   it('should provide default header bar config and set renderers', async () => {
@@ -48,6 +56,8 @@ describe('HeaderBarConfigServiceImpl', () => {
     expect(Array.isArray(cfg.rightRenderers)).toBe(true);
     expect(cfg.rightRenderers.length).toBeGreaterThan(0);
 
-    expect(mockNamespaceSelectionRendererService.create).toHaveBeenCalledWith(portalConfig);
+    expect(mockNamespaceSelectionRendererService.create).toHaveBeenCalledWith(
+      portalConfig,
+    );
   });
 });

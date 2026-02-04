@@ -1,18 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  AccountInfoService,
-  ApolloFactory,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
-import { of, throwError } from 'rxjs';
+import { AccountInfoService, ApolloFactory, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { firstValueFrom, of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe(AccountInfoService, () => {
   let service: AccountInfoService;
   let mockApollo: any;
   let mockApolloFactory: any;
-  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
+  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   const namespacedNodeContext: any = {
     cluster: 'test',
@@ -30,13 +27,13 @@ describe(AccountInfoService, () => {
   beforeEach(() => {
     mockLuigiCoreService = mock();
     mockApollo = {
-      query: jest.fn(),
-      subscribe: jest.fn(),
-      mutate: jest.fn(),
+      query: vi.fn(),
+      subscribe: vi.fn(),
+      mutate: vi.fn(),
     };
 
     mockApolloFactory = {
-      apollo: jest.fn().mockReturnValue(mockApollo),
+      apollo: vi.fn().mockReturnValue(mockApollo),
     };
 
     TestBed.configureTestingModule({
@@ -51,7 +48,7 @@ describe(AccountInfoService, () => {
   });
 
   describe('read', () => {
-    it('should read account info', (done) => {
+    it('should read account info', async () => {
       const ca = 'cert-data';
       const accountInfo = {
         spec: {
@@ -74,34 +71,29 @@ describe(AccountInfoService, () => {
         }),
       );
 
-      service.read(namespacedNodeContext).subscribe((res) => {
-        expect(res.spec.oidc.clients).toStrictEqual({
-          kubectl: { clientId: 'cIdD' },
-        });
-        expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
-          namespacedNodeContext,
-        );
-        done();
+      const res = await firstValueFrom(service.read(namespacedNodeContext));
+      expect(res.spec.oidc.clients).toStrictEqual({
+        kubectl: { clientId: 'cIdD' },
       });
+      expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+        namespacedNodeContext,
+      );
     });
 
-    it('should handle read account info error', (done) => {
+    it('should handle read account info error', async () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service.read(namespacedNodeContext).subscribe({
-        error: () => {
-          expect(console.error).toHaveBeenCalledWith(
-            'Error executing GraphQL query.',
-            error,
-          );
-          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-            text: 'fail',
-            type: 'error',
-          });
-          done();
-        },
+      await firstValueFrom(service.read(namespacedNodeContext));
+
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'fail',
+        type: 'error',
       });
     });
   });

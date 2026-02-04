@@ -6,15 +6,16 @@ import {
   EnvConfigService,
 } from '@openmfp/portal-ui-lib';
 import { AccountInfoService } from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
   let service: LuigiExtendedGlobalContextConfigServiceImpl;
-  let mockAccountInfoService: jest.Mocked<AccountInfoService>;
-  let mockEnvConfigService: jest.Mocked<EnvConfigService>;
-  let mockConfigService: jest.Mocked<ConfigService>;
-  let mockAuthService: jest.Mocked<AuthService>;
+  let mockAccountInfoService: MockedObject<AccountInfoService>;
+  let mockEnvConfigService: MockedObject<EnvConfigService>;
+  let mockConfigService: MockedObject<ConfigService>;
+  let mockAuthService: MockedObject<AuthService>;
 
   beforeEach(() => {
     mockAccountInfoService = mock();
@@ -157,7 +158,7 @@ describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
     mockAuthService.getToken.mockReturnValue(mockToken);
     mockAccountInfoService.read.mockReturnValue(throwError(() => error));
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const result = await service.createLuigiExtendedGlobalContext();
 

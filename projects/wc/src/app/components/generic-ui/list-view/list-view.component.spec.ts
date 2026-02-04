@@ -14,7 +14,7 @@ describe('ListViewComponent', () => {
 
   beforeEach(() => {
     mockResourceService = {
-      list: jest.fn().mockReturnValue(
+      list: vi.fn().mockReturnValue(
         of([
           {
             metadata: { name: 'test' },
@@ -24,14 +24,14 @@ describe('ListViewComponent', () => {
           },
         ]),
       ),
-      delete: jest.fn().mockReturnValue(of({})),
-      create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
-      update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
-      read: jest.fn().mockReturnValue(of({})),
+      delete: vi.fn().mockReturnValue(of({})),
+      create: vi.fn().mockReturnValue(of({ data: { name: 'test' } })),
+      update: vi.fn().mockReturnValue(of({ data: { name: 'test' } })),
+      read: vi.fn().mockReturnValue(of({})),
     };
 
     mockLuigiCoreService = {
-      showAlert: jest.fn(),
+      showAlert: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -66,11 +66,11 @@ describe('ListViewComponent', () => {
 
     component.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     fixture.detectChanges();
@@ -92,7 +92,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should include image and ready fields when listing resources', () => {
-    const listSpy = jest.fn().mockReturnValue(of([]));
+    const listSpy = vi.fn().mockReturnValue(of([]));
     mockResourceService.list = listSpy;
 
     const readyCondition = {
@@ -121,11 +121,11 @@ describe('ListViewComponent', () => {
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     const expectedContext = newComponent.context();
@@ -165,9 +165,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should handle update from modal', () => {
-    const consoleSpy = jest
-      .spyOn(console, 'debug')
-      .mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const updated = { metadata: { name: 'x' }, spec: { a: 1 } } as any;
     component.update(updated);
     expect(consoleSpy).toHaveBeenCalled();
@@ -176,7 +174,7 @@ describe('ListViewComponent', () => {
 
   it('should navigate to resource', () => {
     const resource = { metadata: { name: 'res1' } };
-    const navSpy = jest.fn();
+    const navSpy = vi.fn();
     component.LuigiClient = (() => ({
       linkManager: () => ({
         navigate: navSpy,
@@ -205,7 +203,7 @@ describe('ListViewComponent', () => {
     })) as any;
 
     const resource = { metadata: { name: 'res1' } };
-    const navSpy = jest.fn();
+    const navSpy = vi.fn();
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
         navigate: navSpy,
@@ -229,7 +227,7 @@ describe('ListViewComponent', () => {
     })) as any;
 
     const resource = { metadata: { name: 'res1' } };
-    const navSpy = jest.fn();
+    const navSpy = vi.fn();
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
         navigate: navSpy,
@@ -241,16 +239,16 @@ describe('ListViewComponent', () => {
   });
 
   it('should open create resource modal', () => {
-    const openSpy = jest.fn();
+    const openSpy = vi.fn();
     (component as any).createModal = () => ({ open: openSpy });
     component.openCreateResourceModal();
     expect(openSpy).toHaveBeenCalledWith();
   });
 
   it('should open delete resource modal and stop event propagation', () => {
-    const event = { stopPropagation: jest.fn() } as any;
+    const event = { stopPropagation: vi.fn() } as any;
     const resource = { metadata: { name: 'to-delete' } } as any;
-    const openSpy = jest.fn();
+    const openSpy = vi.fn();
     (component as any).deleteModal = () => ({ open: openSpy });
 
     component.openDeleteResourceModal(event, resource);
@@ -260,9 +258,9 @@ describe('ListViewComponent', () => {
   });
 
   it('should open edit resource modal and stop propagation', () => {
-    const event = { stopPropagation: jest.fn() } as any;
+    const event = { stopPropagation: vi.fn() } as any;
     const resource = { metadata: { name: 'to-edit' } } as any;
-    const openSpy = jest.fn();
+    const openSpy = vi.fn();
     (component as any).createModal = () => ({ open: openSpy });
 
     mockResourceService.read.mockReturnValueOnce(of(resource));
@@ -294,11 +292,11 @@ describe('ListViewComponent', () => {
     newComponent.context = (() => mockContext) as any;
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     newFixture.detectChanges();
@@ -398,11 +396,11 @@ describe('ListViewComponent', () => {
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     newFixture.detectChanges();
@@ -445,11 +443,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -493,11 +491,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -536,11 +534,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -585,11 +583,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -635,11 +633,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -698,11 +696,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -806,17 +804,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       // Test that list() method throws error when resourceDefinition is undefined
@@ -838,17 +836,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const resource = { metadata: { name: 'test' } } as any;
@@ -872,17 +870,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const resource = { metadata: { name: 'test' } } as any;
@@ -906,17 +904,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const resource = { metadata: { name: 'test' } } as any;
@@ -931,9 +929,9 @@ describe('ListViewComponent', () => {
     });
 
     it('should handle edit resource modal with undefined resource name', () => {
-      const event = { stopPropagation: jest.fn() } as any;
+      const event = { stopPropagation: vi.fn() } as any;
       const resource = { metadata: {} } as any; // metadata.name is undefined
-      const openSpy = jest.fn();
+      const openSpy = vi.fn();
       (component as any).createModal = () => ({ open: openSpy });
 
       mockResourceService.read.mockReturnValueOnce(of(resource));
@@ -953,10 +951,10 @@ describe('ListViewComponent', () => {
 
     it('should show alert and throw error when navigating to resource with undefined name', () => {
       const resource = { metadata: {} } as any;
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       component.LuigiClient = (() => ({
         linkManager: () => ({
-          navigate: jest.fn(),
+          navigate: vi.fn(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,

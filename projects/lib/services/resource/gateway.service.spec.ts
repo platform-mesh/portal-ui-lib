@@ -8,12 +8,12 @@ describe('GatewayService', () => {
 
   beforeEach(() => {
     mockLuigiCoreService = {
-      getGlobalContext: jest.fn().mockReturnValue({
+      getGlobalContext: vi.fn().mockReturnValue({
         portalContext: {
           crdGatewayApiUrl: 'https://example.com/:org1:acc1/graphql',
         },
       }),
-      showAlert: jest.fn(),
+      showAlert: vi.fn(),
     };
 
     TestBed.configureTestingModule({

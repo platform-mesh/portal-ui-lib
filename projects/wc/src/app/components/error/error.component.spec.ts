@@ -1,39 +1,30 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  ButtonComponent,
-  IllustratedMessageComponent,
-  TitleComponent,
-} from '@ui5/webcomponents-ngx';
 import { ErrorComponent } from './error.component';
 import { ButtonConfig } from './models/error.model';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { MockedObject } from 'vitest';
 
 describe('ErrorComponent', () => {
   let component: ErrorComponent;
   let fixture: ComponentFixture<ErrorComponent>;
-  let i18nServiceMock: jest.Mocked<I18nService>;
-  let luigiCoreServiceMock: jest.Mocked<LuigiCoreService>;
+  let i18nServiceMock: MockedObject<I18nService>;
+  let luigiCoreServiceMock: MockedObject<LuigiCoreService>;
 
   beforeEach(async () => {
     i18nServiceMock = {
-      getTranslationAsync: jest.fn().mockResolvedValue('translated text'),
+      getTranslationAsync: vi.fn().mockResolvedValue('translated text'),
       translationTable: {},
     } as any;
 
     luigiCoreServiceMock = {
-      navigation: jest.fn().mockReturnValue({
-        navigate: jest.fn(),
+      navigation: vi.fn().mockReturnValue({
+        navigate: vi.fn(),
       }),
-      showAlert: jest.fn(),
+      showAlert: vi.fn(),
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [
-        ErrorComponent,
-        IllustratedMessageComponent,
-        ButtonComponent,
-        TitleComponent,
-      ],
+      imports: [ErrorComponent],
       providers: [
         { provide: I18nService, useValue: i18nServiceMock },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
@@ -50,7 +41,11 @@ describe('ErrorComponent', () => {
 
   describe('goTo', () => {
     it('should open URL in new tab', () => {
-      const windowSpy = jest.spyOn(window, 'open').mockImplementation();
+      const windowSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation((str1, str2) => {
+          return null;
+        });
       const button: ButtonConfig = { url: 'https://test.com' };
 
       component.goTo(button);
@@ -59,10 +54,10 @@ describe('ErrorComponent', () => {
 
     it('should navigate using LuigiCore when route is provided', () => {
       const button: ButtonConfig = { route: { context: 'test-route' } };
-      const navigateSpy = jest.fn();
-      jest
-        .spyOn(luigiCoreServiceMock, 'navigation')
-        .mockReturnValue({ navigate: navigateSpy });
+      const navigateSpy = vi.fn();
+      vi.spyOn(luigiCoreServiceMock, 'navigation').mockReturnValue({
+        navigate: navigateSpy,
+      });
 
       component.goTo(button);
       expect(navigateSpy).toHaveBeenCalledWith('/test-route');

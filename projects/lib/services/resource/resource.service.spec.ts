@@ -1,15 +1,16 @@
-import { ApolloFactory } from './apollo-factory';
-import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { mock } from 'jest-mock-extended';
-import { Subject, of, throwError } from 'rxjs';
+import { Subject, firstValueFrom, of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
+import { ApolloFactory } from './apollo-factory';
+import { ResourceService } from './resource.service';
 
 describe('ResourceService', () => {
   let service: ResourceService;
   let mockApollo: any;
   let mockApolloFactory: any;
-  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
+  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   const resourceDefinition: any = {
     group: 'core.k8s.io',
@@ -116,13 +117,13 @@ describe('ResourceService', () => {
   beforeEach(() => {
     mockLuigiCoreService = mock();
     mockApollo = {
-      query: jest.fn(),
-      subscribe: jest.fn(),
-      mutate: jest.fn(),
+      query: vi.fn(),
+      subscribe: vi.fn(),
+      mutate: vi.fn(),
     };
 
     mockApolloFactory = {
-      apollo: jest.fn().mockReturnValue(mockApollo),
+      apollo: vi.fn().mockReturnValue(mockApollo),
     };
 
     TestBed.configureTestingModule({
@@ -137,111 +138,108 @@ describe('ResourceService', () => {
   });
 
   describe('read', () => {
-    it('should catch gql parsing error and complete the observable', (done) => {
+    it('should catch gql parsing error and complete the observable', async () => {
       const invalidQuery =
         `query { core_k8s_io { TestKind(name: "test-name") {` as unknown as any;
 
-      service['luigiCoreService'].showAlert = jest.fn();
+      service['luigiCoreService'].showAlert = vi.fn();
 
-      service
-        .read(
-          'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          invalidQuery,
-          namespacedNodeContext,
-        )
-        .subscribe({
-          complete: () => {
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: expect.any(String),
-              type: 'error',
-            });
-            done();
-          },
-        });
+      await new Promise<void>((resolve, reject) => {
+        service
+          .read(
+            'test-name',
+            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+            invalidQuery,
+            namespacedNodeContext,
+          )
+          .subscribe({
+            complete: () => {
+              expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+                text: expect.any(String),
+                type: 'error',
+              });
+              resolve();
+            },
+            error: reject,
+          });
+      });
     });
 
-    it('should read resource using fields', (done) => {
+    it('should read resource using fields', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
         }),
       );
 
-      service
-        .read(
+      const res = await firstValueFrom(
+        service.read(
           'test-name',
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: 'test-namespace',
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(res).toEqual({ name: 'test' });
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: 'test-namespace',
+        },
+      });
     });
 
-    it('should read resource using fields with namespaced scope', (done) => {
+    it('should read resource using fields with namespaced scope', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
         }),
       );
 
-      service
-        .read(
+      const res = await firstValueFrom(
+        service.read(
           'test-name',
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: namespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(res).toEqual({ name: 'test' });
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: namespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should read resource using fields with cluster scope', (done) => {
+    it('should read resource using fields with cluster scope', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
         }),
       );
 
-      service
-        .read(
+      const res = await firstValueFrom(
+        service.read(
           'test-name',
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           ['name'],
           clusterScopeNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test-name',
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(res).toEqual({ name: 'test' });
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          name: 'test-name',
+        },
+      });
     });
 
-    it('should read resource using raw query, namespaced scope', (done) => {
+    it('should read resource using raw query, namespaced scope', async () => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test-name") { name } } }`;
       mockApollo.query.mockReturnValue(
         of({
@@ -249,27 +247,25 @@ describe('ResourceService', () => {
         }),
       );
 
-      service
-        .read(
+      const res = await firstValueFrom(
+        service.read(
           'test-name',
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: 'test-namespace',
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(res).toEqual({ name: 'test' });
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: 'test-namespace',
+        },
+      });
     });
 
-    it('should read resource using raw query, cluster scope', (done) => {
+    it('should read resource using raw query, cluster scope', async () => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test") { name } } }`;
       mockApollo.query.mockReturnValue(
         of({
@@ -277,26 +273,24 @@ describe('ResourceService', () => {
         }),
       );
 
-      service
-        .read(
+      const res = await firstValueFrom(
+        service.read(
           'test',
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           rawQuery,
           clusterScopeNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test',
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(res).toEqual({ name: 'test' });
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          name: 'test',
+        },
+      });
     });
 
-    it('should read resource using raw query with namespace', (done) => {
+    it('should read resource using raw query with namespace', async () => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test-name", namespace: "test-namespace") { name } } }`;
       mockApollo.query.mockReturnValue(
         of({
@@ -304,29 +298,27 @@ describe('ResourceService', () => {
         }),
       );
 
-      service
-        .read(
+      const res = await firstValueFrom(
+        service.read(
           'test-name',
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
-        )
-        .subscribe((res) => {
-          expect(res).toEqual({ name: 'test' });
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: namespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(res).toEqual({ name: 'test' });
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: namespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should handle resource in pending deletion state', (done) => {
+    it('should handle resource in pending deletion state', async () => {
       const rawQuery = `query { core_k8s_io { TestKind(name: "test") { name } } }`;
-      const navigateMock = jest.fn();
+      const navigateMock = vi.fn();
       mockLuigiCoreService.navigation.mockReturnValue({
         navigate: navigateMock,
       });
@@ -345,95 +337,85 @@ describe('ResourceService', () => {
         }),
       );
 
-      service
-        .read(
-          'test',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          rawQuery,
-          clusterScopeNodeContext,
-        )
-        .subscribe({
-          error: (error) => {
-            expect(navigateMock).toHaveBeenCalledWith('/error/422');
-            expect(error.message).toEqual(
-              'The resource test is pending deletion.',
-            );
-            done();
-          },
-        });
+      await expect(
+        firstValueFrom(
+          service.read(
+            'test',
+            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+            rawQuery,
+            clusterScopeNodeContext,
+          ),
+        ),
+      ).rejects.toThrow('The resource test is pending deletion.');
+      expect(navigateMock).toHaveBeenCalledWith('/error/422');
     });
 
-    it('should handle read error', (done) => {
+    it('should handle read error', async () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-      const navigateMock = jest.fn();
+      console.error = vi.fn();
+      const navigateMock = vi.fn();
       mockLuigiCoreService.navigation.mockReturnValue({
         navigate: navigateMock,
       });
 
-      service
-        .read(
-          'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          ['name'],
-          namespacedNodeContext,
-        )
-        .subscribe({
-          error: (_err) => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(navigateMock).toHaveBeenCalledWith('/error/404');
-            done();
-          },
-        });
+      await expect(
+        firstValueFrom(
+          service.read(
+            'test-name',
+            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+            ['name'],
+            namespacedNodeContext,
+          ),
+        ),
+      ).rejects.toThrow('fail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(navigateMock).toHaveBeenCalledWith('/error/404');
     });
 
-    it('should handle 403 read error', (done) => {
+    it('should handle 403 read error', async () => {
       const error = new Error('fail forbidden');
       error.message = 'Forbidden';
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-      const navigateMock = jest.fn();
+      console.error = vi.fn();
+      const navigateMock = vi.fn();
       mockLuigiCoreService.navigation.mockReturnValue({
         navigate: navigateMock,
       });
 
-      service
-        .read(
-          'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          ['name'],
-          namespacedNodeContext,
-        )
-        .subscribe({
-          error: (err) => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(navigateMock).toHaveBeenCalledWith('/error/403');
-            done();
-          },
-        });
+      await expect(
+        firstValueFrom(
+          service.read(
+            'test-name',
+            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+            ['name'],
+            namespacedNodeContext,
+          ),
+        ),
+      ).rejects.toThrow('Forbidden');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(navigateMock).toHaveBeenCalledWith('/error/403');
     });
   });
 
   describe('list', () => {
-    it('should throw error when resourceDefinition is missing', (done) => {
+    it('should throw error when resourceDefinition is missing', async () => {
       const contextWithoutDefinition: any = {
         cluster: 'test',
         namespaceId: 'test-namespace',
       };
 
-      service.list('myList', ['name'], contextWithoutDefinition).subscribe({
-        error: (err) => {
-          expect(err.message).toBe('Resource definition is required');
-          done();
-        },
-      });
+      await expect(
+        firstValueFrom(
+          service.list('myList', ['name'], contextWithoutDefinition),
+        ),
+      ).rejects.toThrow('Resource definition is required');
     });
 
     it('should throw when list query wrappers are empty', () => {
@@ -452,7 +434,7 @@ describe('ResourceService', () => {
       );
     });
 
-    it('should throw error when initialListQuery returns empty result', (done) => {
+    it('should throw error when initialListQuery returns empty result', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -461,15 +443,12 @@ describe('ResourceService', () => {
         }),
       );
 
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
-        error: (err) => {
-          expect(err.message).toBe('Resource list result not found');
-          done();
-        },
-      });
+      await expect(
+        firstValueFrom(service.list('myList', ['name'], namespacedNodeContext)),
+      ).rejects.toThrow('Resource list result not found');
     });
 
-    it('should return initial items from query via startWith', (done) => {
+    it('should return initial items from query via startWith', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -490,19 +469,16 @@ describe('ResourceService', () => {
       const subject = new Subject();
       mockApollo.subscribe.mockReturnValue(subject.asObservable());
 
-      const results: any[] = [];
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      expect(results[0]).toEqual([
+      const res = await firstValueFrom(
+        service.list('myList', ['name'], namespacedNodeContext),
+      );
+      expect(res).toEqual([
         { name: 'res1', metadata: { uid: 'uid1' } },
         { name: 'res2', metadata: { uid: 'uid2' } },
       ]);
-      done();
     });
 
-    it('should list namespaced resources', (done) => {
+    it('should list namespaced resources', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -527,22 +503,20 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('mylist', ['name'], namespacedNodeContext)
-        .subscribe((res) => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: namespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('mylist', ['name'], namespacedNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          namespace: namespacedNodeContext.namespaceId,
+          resourceVersion: '123',
+        },
+      });
     });
 
-    it('should list namespaced resources without version', (done) => {
+    it('should list namespaced resources without version', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -565,22 +539,20 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], unversionedNamespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: unversionedNamespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('myList', ['name'], unversionedNamespacedNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          namespace: unversionedNamespacedNodeContext.namespaceId,
+          resourceVersion: '123',
+        },
+      });
     });
 
-    it('should list namespaced resources without group', (done) => {
+    it('should list namespaced resources without group', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -603,22 +575,20 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], grouplessNamespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: grouplessNamespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('myList', ['name'], grouplessNamespacedNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          namespace: grouplessNamespacedNodeContext.namespaceId,
+          resourceVersion: '123',
+        },
+      });
     });
 
-    it('should list namespaced resources without group and version', (done) => {
+    it('should list namespaced resources without group and version', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -639,22 +609,24 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], grouplessUnversionedNamespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list(
+          'myList',
+          ['name'],
+          grouplessUnversionedNamespacedNodeContext,
+        ),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
+          resourceVersion: '123',
+        },
+      });
     });
 
-    it('should list cluster resources', (done) => {
+    it('should list cluster resources', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -679,19 +651,17 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], clusterScopeNodeContext)
-        .subscribe((res) => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('myList', ['name'], clusterScopeNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: { resourceVersion: '123' },
+      });
     });
 
-    it('should list cluster resources without version', (done) => {
+    it('should list cluster resources without version', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -714,19 +684,17 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], unversionedClusterScopeNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('myList', ['name'], unversionedClusterScopeNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: { resourceVersion: '123' },
+      });
     });
 
-    it('should list cluster resources without group', (done) => {
+    it('should list cluster resources without group', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -749,19 +717,17 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], grouplessClusterScopeNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('myList', ['name'], grouplessClusterScopeNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: { resourceVersion: '123' },
+      });
     });
 
-    it('should list cluster resources without group and version', (done) => {
+    it('should list cluster resources without group and version', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -782,19 +748,21 @@ describe('ResourceService', () => {
           },
         }),
       );
-      service
-        .list('myList', ['name'], grouplessUnversionedClusterScopeNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list(
+          'myList',
+          ['name'],
+          grouplessUnversionedClusterScopeNodeContext,
+        ),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: { resourceVersion: '123' },
+      });
     });
 
-    it('should list resources with namespace', (done) => {
+    it('should list resources with namespace', async () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -820,22 +788,20 @@ describe('ResourceService', () => {
         }),
       );
 
-      service
-        .list('myList', ['name'], namespacedNodeContext)
-        .subscribe((res) => {
-          expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: namespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.list('myList', ['name'], namespacedNodeContext),
+      );
+      expect(mockApollo.query).toHaveBeenCalled();
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          namespace: namespacedNodeContext.namespaceId,
+          resourceVersion: '123',
+        },
+      });
     });
 
-    it('should list namespaced resources (raw query string)', (done) => {
+    it('should list namespaced resources (raw query string)', async () => {
       const rawQuery = `
       query {
         mylist {
@@ -849,21 +815,19 @@ describe('ResourceService', () => {
         of({ data: { mylist: { mydata: [{ name: 'res2' }] } } }),
       );
 
-      service
-        .list('mylist.mydata', rawQuery, namespacedNodeContext)
-        .subscribe((res) => {
-          expect(res).toEqual([{ name: 'res2' }]);
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: namespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+      const res = await firstValueFrom(
+        service.list('mylist.mydata', rawQuery, namespacedNodeContext),
+      );
+      expect(res).toEqual([{ name: 'res2' }]);
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {
+          namespace: namespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should return empty array for raw query when path is missing', (done) => {
+    it('should return empty array for raw query when path is missing', async () => {
       const rawQuery = `
       query {
         mylist {
@@ -877,15 +841,13 @@ describe('ResourceService', () => {
         of({ data: { mylist: { mydata: [{ name: 'res2' }] } } }),
       );
 
-      service
-        .list('mylist.missing', rawQuery, namespacedNodeContext)
-        .subscribe((res) => {
-          expect(res).toEqual([]);
-          done();
-        });
+      const res = await firstValueFrom(
+        service.list('mylist.missing', rawQuery, namespacedNodeContext),
+      );
+      expect(res).toEqual([]);
     });
 
-    it('should list cluster resources (raw query string)', (done) => {
+    it('should list cluster resources (raw query string)', async () => {
       const rawQuery = `
       query {
         mylist {
@@ -897,19 +859,17 @@ describe('ResourceService', () => {
         of({ data: { mylist: [{ name: 'res2' }] } }),
       );
 
-      service
-        .list('mylist', rawQuery, clusterScopeNodeContext)
-        .subscribe((res) => {
-          expect(res).toEqual([{ name: 'res2' }]);
-          expect(mockApollo.query).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {},
-          });
-          done();
-        });
+      const res = await firstValueFrom(
+        service.list('mylist', rawQuery, clusterScopeNodeContext),
+      );
+      expect(res).toEqual([{ name: 'res2' }]);
+      expect(mockApollo.query).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: {},
+      });
     });
 
-    it('should handle list error', (done) => {
+    it('should handle list error', async () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(
         of({
@@ -926,20 +886,18 @@ describe('ResourceService', () => {
         }),
       );
       mockApollo.subscribe.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
-        error: (err) => {
-          expect(console.error).toHaveBeenCalledWith(
-            'Error executing GraphQL query.',
-            error,
-          );
-          done();
-        },
-      });
+      await expect(
+        firstValueFrom(service.list('myList', ['name'], namespacedNodeContext)),
+      ).rejects.toThrow('fail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
     });
 
-    it('should handle MODIFIED operation in subscription', (done) => {
+    it('should handle MODIFIED operation in subscription', () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -974,10 +932,9 @@ describe('ResourceService', () => {
       expect(results[1]).toEqual([
         { name: 'res1-updated', metadata: { uid: 'uid1' } },
       ]);
-      done();
     });
 
-    it('should handle DELETED operation in subscription', (done) => {
+    it('should handle DELETED operation in subscription', () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -1010,10 +967,9 @@ describe('ResourceService', () => {
       });
 
       expect(results[1]).toEqual([]);
-      done();
     });
 
-    it('should return current values when resourceResult is undefined', (done) => {
+    it('should return current values when resourceResult is undefined', () => {
       mockApollo.query.mockReturnValue(
         of({
           data: {
@@ -1043,310 +999,279 @@ describe('ResourceService', () => {
       });
 
       expect(results[1]).toEqual([{ name: 'res1', metadata: { uid: 'uid1' } }]);
-      done();
     });
 
-    it('should handle raw query list error', (done) => {
+    it('should handle raw query list error', async () => {
       const rawQuery = `query { myList { name } }`;
       const error = new Error('raw query fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service.list('myList', rawQuery, namespacedNodeContext).subscribe({
-        error: (err) => {
-          expect(console.error).toHaveBeenCalledWith(
-            'Error executing GraphQL query.',
-            error,
-          );
-          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-            text: 'raw query fail',
-            type: 'error',
-          });
-          done();
-        },
+      await expect(
+        firstValueFrom(service.list('myList', rawQuery, namespacedNodeContext)),
+      ).rejects.toThrow('raw query fail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'raw query fail',
+        type: 'error',
       });
     });
   });
 
   describe('delete', () => {
-    it('should delete resource', (done) => {
+    it('should delete resource', async () => {
       mockApollo.mutate.mockReturnValue(of({}));
-      service
-        .delete(resource, resourceDefinition, namespacedNodeContext)
-        .subscribe((res) => {
-          expect(mockApollo.mutate).toHaveBeenCalled();
-          done();
-        });
+      await firstValueFrom(
+        service.delete(resource, resourceDefinition, namespacedNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalled();
     });
 
-    it('should delete namespaced resource', (done) => {
+    it('should delete namespaced resource', async () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
-      service
-        .delete(resource, resourceDefinition, namespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: namespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.delete(resource, resourceDefinition, namespacedNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: namespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should delete namespaced resource without version', (done) => {
+    it('should delete namespaced resource without version', async () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
-      service
-        .delete(
+      await firstValueFrom(
+        service.delete(
           resource,
           unversionedResourceDefinition,
           unversionedNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: unversionedNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: unversionedNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should delete namespaced resource without group', (done) => {
+    it('should delete namespaced resource without group', async () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
-      service
-        .delete(
+      await firstValueFrom(
+        service.delete(
           resource,
           grouplessResourceDefinition,
           grouplessNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: grouplessNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: grouplessNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should delete namespaced resource without group and version', (done) => {
+    it('should delete namespaced resource without group and version', async () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
-      service
-        .delete(
+      await firstValueFrom(
+        service.delete(
           resource,
           grouplessUnversionedResourceDefinition,
           grouplessUnversionedNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            variables: {
-              name: 'test-name',
-              namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        variables: {
+          name: 'test-name',
+          namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should delete cluster resource', (done) => {
+    it('should delete cluster resource', async () => {
       mockApollo.mutate.mockReturnValue(of({}));
 
-      service
-        .delete(resource, resourceDefinition, clusterScopeNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            variables: {
-              name: 'test-name',
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.delete(resource, resourceDefinition, clusterScopeNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        variables: {
+          name: 'test-name',
+        },
+      });
     });
 
-    it('should handle delete error', (done) => {
+    it('should handle delete error', async () => {
       const error = new Error('fail');
       mockApollo.mutate.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service
-        .delete(resource, resourceDefinition, clusterScopeNodeContext)
-        .subscribe({
-          error: () => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: 'fail',
-              type: 'error',
-            });
-            done();
-          },
-        });
+      await expect(
+        firstValueFrom(
+          service.delete(resource, resourceDefinition, clusterScopeNodeContext),
+        ),
+      ).rejects.toThrow('fail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'fail',
+        type: 'error',
+      });
     });
   });
 
   describe('create', () => {
-    it('should create resource', (done) => {
+    it('should create resource', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
-      service
-        .create(resource, resourceDefinition, namespacedNodeContext)
-        .subscribe((res) => {
-          expect(mockApollo.mutate).toHaveBeenCalled();
-          done();
-        });
+      await firstValueFrom(
+        service.create(resource, resourceDefinition, namespacedNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalled();
     });
 
-    it('should create namespaced resource ', (done) => {
+    it('should create namespaced resource ', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .create(resource, resourceDefinition, namespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              object: resource,
-              namespace: namespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.create(resource, resourceDefinition, namespacedNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          object: resource,
+          namespace: namespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should create namespaced resource without version', (done) => {
+    it('should create namespaced resource without version', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .create(
+      await firstValueFrom(
+        service.create(
           resource,
           unversionedResourceDefinition,
           unversionedNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              object: resource,
-              namespace: unversionedNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          object: resource,
+          namespace: unversionedNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should create namespaced resource without group', (done) => {
+    it('should create namespaced resource without group', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .create(
+      await firstValueFrom(
+        service.create(
           resource,
           grouplessResourceDefinition,
           grouplessNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              object: resource,
-              namespace: grouplessNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          object: resource,
+          namespace: grouplessNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should create namespaced resource without group and version', (done) => {
+    it('should create namespaced resource without group and version', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .create(
+      await firstValueFrom(
+        service.create(
           resource,
           grouplessUnversionedResourceDefinition,
           grouplessUnversionedNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              object: resource,
-              namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          object: resource,
+          namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should create cluster resource ', (done) => {
+    it('should create cluster resource ', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .create(resource, resourceDefinition, clusterScopeNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              object: resource,
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.create(resource, resourceDefinition, clusterScopeNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          object: resource,
+        },
+      });
     });
 
-    it('should handle create error', (done) => {
+    it('should handle create error', async () => {
       const error = new Error('fail');
       mockApollo.mutate.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service
-        .create(resource, resourceDefinition, clusterScopeNodeContext)
-        .subscribe({
-          error: () => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: 'fail',
-              type: 'error',
-            });
-            done();
-          },
-        });
+      await expect(
+        firstValueFrom(
+          service.create(resource, resourceDefinition, clusterScopeNodeContext),
+        ),
+      ).rejects.toThrow('fail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'fail',
+        type: 'error',
+      });
     });
   });
 
   describe('update', () => {
-    it('should strip __typename recursively from update payload', (done) => {
+    it('should strip __typename recursively from update payload', async () => {
       const dirtyResource: any = {
         metadata: { name: 'test-name', __typename: 'Meta' },
         spec: {
@@ -1366,172 +1291,160 @@ describe('ResourceService', () => {
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .update(dirtyResource, resourceDefinition, namespacedNodeContext)
-        .subscribe(() => {
-          const mutateCall = mockApollo.mutate.mock.calls[0][0];
-          const passedObject = mutateCall.variables.object;
-          expect(passedObject).toEqual({
-            metadata: { name: 'test-name' },
-            spec: {
-              items: [{ key: 'a' }, { key: 'b', nested: { foo: 'bar' } }],
-              map: {
-                one: { val: 1 },
-                two: [{ x: 1 }, { y: 2 }],
-              },
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.update(
+          dirtyResource,
+          resourceDefinition,
+          namespacedNodeContext,
+        ),
+      );
+      const mutateCall = mockApollo.mutate.mock.calls[0][0];
+      const passedObject = mutateCall.variables.object;
+      expect(passedObject).toEqual({
+        metadata: { name: 'test-name' },
+        spec: {
+          items: [{ key: 'a' }, { key: 'b', nested: { foo: 'bar' } }],
+          map: {
+            one: { val: 1 },
+            two: [{ x: 1 }, { y: 2 }],
+          },
+        },
+      });
     });
-    it('should update resource', (done) => {
+    it('should update resource', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
-      service
-        .update(resource, resourceDefinition, namespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalled();
-          done();
-        });
-    });
-
-    it('should update namespaced resource', (done) => {
-      mockApollo.mutate.mockReturnValue(
-        of({ data: { __typename: 'TestKind' } }),
+      await firstValueFrom(
+        service.update(resource, resourceDefinition, namespacedNodeContext),
       );
-
-      service
-        .update(resource, resourceDefinition, namespacedNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              name: resource.metadata.name,
-              object: resource,
-              namespace: namespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+      expect(mockApollo.mutate).toHaveBeenCalled();
     });
 
-    it('should update namespaced resource without version', (done) => {
+    it('should update namespaced resource', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .update(
+      await firstValueFrom(
+        service.update(resource, resourceDefinition, namespacedNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          name: resource.metadata.name,
+          object: resource,
+          namespace: namespacedNodeContext.namespaceId,
+        },
+      });
+    });
+
+    it('should update namespaced resource without version', async () => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      await firstValueFrom(
+        service.update(
           resource,
           unversionedResourceDefinition,
           unversionedNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              name: resource.metadata.name,
-              object: resource,
-              namespace: unversionedNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          name: resource.metadata.name,
+          object: resource,
+          namespace: unversionedNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should update namespaced resource without group', (done) => {
+    it('should update namespaced resource without group', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .update(
+      await firstValueFrom(
+        service.update(
           resource,
           grouplessResourceDefinition,
           grouplessNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              name: resource.metadata.name,
-              object: resource,
-              namespace: grouplessNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          name: resource.metadata.name,
+          object: resource,
+          namespace: grouplessNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should update namespaced resource without group and version', (done) => {
+    it('should update namespaced resource without group and version', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .update(
+      await firstValueFrom(
+        service.update(
           resource,
           grouplessUnversionedResourceDefinition,
           grouplessUnversionedNamespacedNodeContext,
-        )
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              name: resource.metadata.name,
-              object: resource,
-              namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
-            },
-          });
-          done();
-        });
+        ),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          name: resource.metadata.name,
+          object: resource,
+          namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
+        },
+      });
     });
 
-    it('should update cluster resource', (done) => {
+    it('should update cluster resource', async () => {
       mockApollo.mutate.mockReturnValue(
         of({ data: { __typename: 'TestKind' } }),
       );
 
-      service
-        .update(resource, resourceDefinition, clusterScopeNodeContext)
-        .subscribe(() => {
-          expect(mockApollo.mutate).toHaveBeenCalledWith({
-            mutation: expect.anything(),
-            fetchPolicy: 'no-cache',
-            variables: {
-              name: resource.metadata.name,
-              object: resource,
-            },
-          });
-          done();
-        });
+      await firstValueFrom(
+        service.update(resource, resourceDefinition, clusterScopeNodeContext),
+      );
+      expect(mockApollo.mutate).toHaveBeenCalledWith({
+        mutation: expect.anything(),
+        fetchPolicy: 'no-cache',
+        variables: {
+          name: resource.metadata.name,
+          object: resource,
+        },
+      });
     });
 
-    it('should handle update error', (done) => {
+    it('should handle update error', async () => {
       const error = new Error('fail');
       mockApollo.mutate.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
+      console.error = vi.fn();
 
-      service
-        .update(resource, resourceDefinition, clusterScopeNodeContext)
-        .subscribe({
-          error: () => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: 'fail',
-              type: 'error',
-            });
-            done();
-          },
-        });
+      await expect(
+        firstValueFrom(
+          service.update(resource, resourceDefinition, clusterScopeNodeContext),
+        ),
+      ).rejects.toThrow('fail');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error executing GraphQL query.',
+        error,
+      );
+      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'fail',
+        type: 'error',
+      });
     });
   });
 });

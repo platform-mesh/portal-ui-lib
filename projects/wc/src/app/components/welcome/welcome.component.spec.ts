@@ -2,11 +2,12 @@ import { WelcomeComponent } from './welcome.component';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { MockedObject } from 'vitest';
 
 describe('WelcomeComponent', () => {
   let component: WelcomeComponent;
-  let i18nServiceMock: jest.Mocked<I18nService>;
-  let luigiCoreServiceMock: jest.Mocked<LuigiCoreService>;
+  let i18nServiceMock: MockedObject<I18nService>;
+  let luigiCoreServiceMock: MockedObject<LuigiCoreService>;
   const header = {
     title: 'Welcome',
     logo: 'logo.png',
@@ -15,9 +16,9 @@ describe('WelcomeComponent', () => {
 
   beforeEach(async () => {
     i18nServiceMock = {
-      fetchTranslationFile: jest.fn(),
+      fetchTranslationFile: vi.fn(),
       translationTable: { hello: 'world' },
-    } as unknown as jest.Mocked<I18nService>;
+    } as unknown as MockedObject<I18nService>;
 
     luigiCoreServiceMock = {
       config: {
@@ -25,7 +26,7 @@ describe('WelcomeComponent', () => {
           header,
         },
       },
-    } as unknown as jest.Mocked<LuigiCoreService>;
+    } as unknown as MockedObject<LuigiCoreService>;
 
     await TestBed.configureTestingModule({
       imports: [WelcomeComponent],
@@ -57,5 +58,21 @@ describe('WelcomeComponent', () => {
       translationTable: { hello: 'world' },
     });
     expect(component.header()).toEqual(header);
+  });
+
+  it('should handle missing header config', async () => {
+    component.context = signal({
+      key: 'value',
+    }) as any;
+    luigiCoreServiceMock.config = {};
+    i18nServiceMock.fetchTranslationFile.mockResolvedValue({ hello: 'world' });
+
+    await component.ngOnInit();
+
+    expect(component.header()).toBeUndefined();
+    expect(component.enhancedContext()).toEqual({
+      key: 'value',
+      translationTable: { hello: 'world' },
+    });
   });
 });

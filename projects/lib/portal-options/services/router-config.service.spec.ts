@@ -1,10 +1,11 @@
 import { CustomRoutingConfigServiceImpl } from './router-config.service';
 import { TestBed } from '@angular/core/testing';
 import { ClientEnvironment, EnvConfigService } from '@openmfp/portal-ui-lib';
+import { MockedObject } from 'vitest';
 
 describe('CustomRoutingConfigServiceImpl', () => {
   let service: CustomRoutingConfigServiceImpl;
-  let mockEnvConfigService: jest.Mocked<EnvConfigService>;
+  let mockEnvConfigService: MockedObject<EnvConfigService>;
 
   const mockClientEnvironment: ClientEnvironment = {
     baseDomain: 'test.example.com',
@@ -13,8 +14,8 @@ describe('CustomRoutingConfigServiceImpl', () => {
 
   beforeEach(() => {
     const envConfigServiceMock = {
-      getEnvConfig: jest.fn(),
-    } as jest.Mocked<Partial<EnvConfigService>>;
+      getEnvConfig: vi.fn(),
+    } as MockedObject<Partial<EnvConfigService>>;
 
     TestBed.configureTestingModule({
       providers: [
@@ -26,7 +27,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
     service = TestBed.inject(CustomRoutingConfigServiceImpl);
     mockEnvConfigService = TestBed.inject(
       EnvConfigService,
-    ) as jest.Mocked<EnvConfigService>;
+    ) as MockedObject<EnvConfigService>;
   });
 
   describe('constructor and initialization', () => {

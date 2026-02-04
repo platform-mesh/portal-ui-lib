@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { replaceDotsAndHyphensWithUnderscores } from './group-name-sanitizer';
 
 describe('replaceDotsAndHyphensWithUnderscores', () => {

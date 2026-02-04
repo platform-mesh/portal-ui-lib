@@ -1,6 +1,7 @@
 import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
+import { HttpHeaders } from '@angular/common/http';
 import {
   type ApolloClientOptions,
   ApolloLink,
@@ -10,7 +11,7 @@ import {
   Operation,
   split,
 } from '@apollo/client/core';
-import { setContext } from '@apollo/client/link/context';
+import { SetContextLink } from '@apollo/client/link/context';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { Apollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
@@ -63,15 +64,20 @@ export class ApolloFactory {
   private createApolloOptions(
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath = false,
-  ): ApolloClientOptions<any> {
-    const contextLink = setContext(() => {
+  ): ApolloClientOptions {
+    const contextLink = new SetContextLink((prevContext) => {
+      const baseHeaders =
+        prevContext.headers instanceof HttpHeaders
+          ? prevContext.headers
+          : new HttpHeaders(prevContext.headers ?? {});
+
       return {
+        ...prevContext,
         uri: () =>
           this.gatewayService.getGatewayUrl(nodeContext, readFromParentKcpPath),
-        headers: {
-          Authorization: `Bearer ${nodeContext.token}`,
-          Accept: 'charset=utf-8',
-        },
+        headers: baseHeaders
+          .set('Authorization', `Bearer ${nodeContext.token}`)
+          .set('Accept', 'charset=utf-8'),
       };
     });
 

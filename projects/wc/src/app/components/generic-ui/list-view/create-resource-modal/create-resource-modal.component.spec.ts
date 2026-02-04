@@ -7,7 +7,6 @@ import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 describe('CreateResourceModalComponent', () => {
   let component: CreateResourceModalComponent;
   let fixture: ComponentFixture<CreateResourceModalComponent>;
-  let mockDialog: any;
 
   const testFields: FieldDefinition[] = [
     { property: 'name.firstName', required: true, label: 'First Name' },
@@ -29,11 +28,6 @@ describe('CreateResourceModalComponent', () => {
     component = fixture.componentInstance;
 
     component.fields = (() => testFields) as any;
-
-    mockDialog = {
-      open: false,
-    };
-    (component as any).dialog = () => mockDialog;
 
     component.ngOnInit();
     fixture.detectChanges();
@@ -59,7 +53,7 @@ describe('CreateResourceModalComponent', () => {
 
   it('should open dialog when open method is called', () => {
     component.open();
-    expect(mockDialog.open).toBeTruthy();
+    expect(component.dialogOpen()).toBeTruthy();
   });
 
   it('should prefill and disable name/namespace in edit mode, emit updateResource', () => {
@@ -79,10 +73,10 @@ describe('CreateResourceModalComponent', () => {
       spec: { description: 'hello' },
     };
 
-    const updateSpy = spyOn(component.updateResource, 'emit');
+    const updateSpy = vi.spyOn(component.updateResource, 'emit');
 
     component.open(resource);
-    expect(mockDialog.open).toBeTruthy();
+    expect(component.dialogOpen()).toBeTruthy();
 
     expect(component.form.controls['metadata_name'].value).toBe('res1');
     expect(component.form.controls['metadata_namespace'].value).toBe('ns1');
@@ -101,11 +95,11 @@ describe('CreateResourceModalComponent', () => {
   });
 
   it('should close dialog and reset form when close method is called', () => {
-    spyOn(component.form, 'reset');
+    vi.spyOn(component.form, 'reset');
 
     component.close();
 
-    expect(mockDialog.open).toBeFalsy();
+    expect(component.dialogOpen()).toBeFalsy();
     expect(component.form.reset).toHaveBeenCalled();
   });
 
@@ -113,7 +107,7 @@ describe('CreateResourceModalComponent', () => {
     component.form.controls['name_firstName'].setValue('John');
     component.form.controls['address_city'].setValue('New York');
 
-    spyOn(component.resource, 'emit');
+    vi.spyOn(component.resource, 'emit');
 
     component.create();
 
@@ -122,14 +116,14 @@ describe('CreateResourceModalComponent', () => {
       address: { city: 'New York' },
     });
 
-    expect(mockDialog.open).toBeFalsy();
+    expect(component.dialogOpen()).toBeFalsy();
   });
 
   it('should not emit resource when form is invalid', () => {
     component.form.controls['name_firstName'].setValue('');
     component.form.controls['address_city'].setValue('New York');
 
-    spyOn(component.resource, 'emit');
+    vi.spyOn(component.resource, 'emit');
 
     component.create();
 
@@ -139,9 +133,9 @@ describe('CreateResourceModalComponent', () => {
   it('should update form control value, mark as touched and dirty on setFormControlValue', () => {
     const event = { target: { value: 'Test' } };
 
-    spyOn(component.form.controls['name_firstName'], 'setValue');
-    spyOn(component.form.controls['name_firstName'], 'markAsTouched');
-    spyOn(component.form.controls['name_firstName'], 'markAsDirty');
+    vi.spyOn(component.form.controls['name_firstName'], 'setValue');
+    vi.spyOn(component.form.controls['name_firstName'], 'markAsTouched');
+    vi.spyOn(component.form.controls['name_firstName'], 'markAsDirty');
 
     component.setFormControlValue(event, 'name_firstName');
 
@@ -178,7 +172,7 @@ describe('CreateResourceModalComponent', () => {
   });
 
   it('should mark control as touched on field blur', () => {
-    spyOn(component.form.controls['name_firstName'], 'markAsTouched');
+    vi.spyOn(component.form.controls['name_firstName'], 'markAsTouched');
 
     component.onFieldBlur('name_firstName');
 
@@ -228,10 +222,8 @@ describe('CreateResourceModalComponent', () => {
   });
 
   it('should open dialog using open function', () => {
-    mockDialog.open = false;
-
     component.open();
 
-    expect(mockDialog.open).toBeTruthy();
+    expect(component.dialogOpen()).toBeTruthy();
   });
 });

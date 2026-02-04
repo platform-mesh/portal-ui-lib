@@ -5,7 +5,7 @@ import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
 
 const mockResourceService = {
-  list: jest.fn(),
+  list: vi.fn(),
 };
 
 describe('DynamicSelectComponent', () => {

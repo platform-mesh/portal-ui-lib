@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   decodeBase64,
   encodeBase64,
@@ -6,7 +7,7 @@ import {
 import { PropertyField, Resource } from '@platform-mesh/portal-ui-lib/models';
 import jsonpath from 'jsonpath';
 
-jest.mock('jsonpath');
+vi.mock('jsonpath');
 
 describe('getResourceValueByJsonPath', () => {
   const mockResource: Resource = {
@@ -15,7 +16,7 @@ describe('getResourceValueByJsonPath', () => {
   } as any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should return undefined when no property or jsonPathExpression is provided', () => {
@@ -24,7 +25,7 @@ describe('getResourceValueByJsonPath', () => {
   });
 
   it('should return undefined and log error when property is an array', () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
     const result = getResourceValueByJsonPath(mockResource, {
       property: ['path1', 'path2'],
     });
@@ -172,10 +173,10 @@ describe('getResourceValueByJsonPath', () => {
   });
 
   it('should return original value when encode transform fails', () => {
-    jest.spyOn(global, 'btoa').mockImplementation(() => {
+    vi.spyOn(global, 'btoa').mockImplementation(() => {
       throw new Error('btoa error');
     });
-    jest.spyOn(console, 'error').mockImplementation();
+    vi.spyOn(console, 'error').mockImplementation();
 
     const mockValue = { text: 'test-value' };
     (jsonpath.query as jest.Mock).mockReturnValue([mockValue]);
@@ -187,7 +188,7 @@ describe('getResourceValueByJsonPath', () => {
 
     expect(result).toBe('test-value');
 
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should handle decode transform', () => {
@@ -286,7 +287,7 @@ describe('encodeBase64', () => {
   });
 
   it('should throw error when encoding fails', () => {
-    jest.spyOn(global, 'btoa').mockImplementation(() => {
+    vi.spyOn(global, 'btoa').mockImplementation(() => {
       throw new Error('btoa error');
     });
 
@@ -294,12 +295,12 @@ describe('encodeBase64', () => {
       'Failed to encode string to Base64',
     );
 
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should log error when encoding fails', () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    jest.spyOn(global, 'btoa').mockImplementation(() => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
+    vi.spyOn(global, 'btoa').mockImplementation(() => {
       throw new Error('btoa error');
     });
 
@@ -312,7 +313,7 @@ describe('encodeBase64', () => {
       expect.any(Error),
     );
 
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     consoleSpy.mockRestore();
   });
 });
@@ -347,7 +348,7 @@ describe('decodeBase64', () => {
   });
 
   it('should log error when decoding fails', () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
 
     try {
       decodeBase64('invalid!!!');

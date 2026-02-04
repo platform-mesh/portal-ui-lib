@@ -1,4 +1,3 @@
-import { DetailViewComponent } from './detail-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
@@ -8,17 +7,19 @@ import {
   GatewayService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
+import { DetailViewComponent } from './detail-view.component';
 
 describe('DetailViewComponent', () => {
   let component: DetailViewComponent;
   let fixture: ComponentFixture<DetailViewComponent>;
   let mockResourceService: any;
   let mockGatewayService: any;
-  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
-  let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
-  let luigiClientLinkManagerNavigate = jest.fn();
+  let envConfigServiceMock: MockedObject<EnvConfigService>;
+  let accountInfoServiceMock: MockedObject<AccountInfoService>;
+  let luigiClientLinkManagerNavigate = vi.fn();
 
   beforeEach(() => {
     envConfigServiceMock = mock();
@@ -49,12 +50,12 @@ describe('DetailViewComponent', () => {
     accountInfoServiceMock.read.mockReturnValue(of(accountInfo));
 
     mockResourceService = {
-      read: jest.fn().mockReturnValue(of({ name: 'test-resource' })),
-      readAccountInfo: jest.fn().mockReturnValue(of('mock-ca-data')),
+      read: vi.fn().mockReturnValue(of({ name: 'test-resource' })),
+      readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
     };
 
     mockGatewayService = {
-      resolveKcpPath: jest.fn().mockReturnValue('https://example.com'),
+      resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),
     };
 
     TestBed.configureTestingModule({
@@ -97,21 +98,21 @@ describe('DetailViewComponent', () => {
 
     component.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
         navigate: luigiClientLinkManagerNavigate,
-        withParams: jest.fn().mockReturnThis(),
+        withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     fixture.detectChanges();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     delete (global as any).URL.createObjectURL;
   });
 
@@ -165,19 +166,54 @@ describe('DetailViewComponent', () => {
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     newFixture.detectChanges();
 
     expect(newComponent.showDownloadKubeconfig()).toBe(true);
+  });
+
+  it('should compute showDownloadKubeconfig as false when detailView is missing', () => {
+    const newFixture = TestBed.createComponent(DetailViewComponent);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+      },
+      entity: {
+        metadata: { name: 'test-resource' },
+      },
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: vi.fn(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    expect(newComponent.showDownloadKubeconfig()).toBe(false);
   });
 
   it('should navigate to parent', () => {
@@ -211,11 +247,11 @@ describe('DetailViewComponent', () => {
 
   it('should download kubeconfig', async () => {
     const mockAnchorElement = document.createElement('a');
-    jest.spyOn(mockAnchorElement, 'click');
-    const createElementSpy = jest
+    vi.spyOn(mockAnchorElement, 'click');
+    const createElementSpy = vi
       .spyOn(document, 'createElement')
       .mockReturnValue(mockAnchorElement);
-    global.URL.createObjectURL = jest.fn().mockReturnValue('blob-url');
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob-url');
 
     envConfigServiceMock.getEnvConfig.mockResolvedValue({
       oidcIssuerUrl: 'oidcIssuerUrl',
@@ -223,13 +259,98 @@ describe('DetailViewComponent', () => {
     await component.downloadKubeConfig();
 
     expect(createElementSpy).toHaveBeenCalledWith('a');
-    expect(mockAnchorElement.href).toEqual('http://localhost/blob-url');
+    expect(mockAnchorElement.href).toEqual(
+      `${window.location.origin}/blob-url`,
+    );
     expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
     expect(mockAnchorElement.click).toHaveBeenCalled();
   });
 
+  it('should download kubeconfig when account info is missing', async () => {
+    const mockAnchorElement = document.createElement('a');
+    vi.spyOn(mockAnchorElement, 'click');
+    vi.spyOn(document, 'createElement').mockReturnValue(mockAnchorElement);
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob-url');
+    accountInfoServiceMock.read.mockReturnValueOnce(
+      of(undefined as unknown as AccountInfo),
+    );
+
+    await component.downloadKubeConfig();
+
+    expect(mockAnchorElement.href).toEqual(
+      `${window.location.origin}/blob-url`,
+    );
+    expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
+    expect(mockAnchorElement.click).toHaveBeenCalled();
+  });
+
+  it('should download kubeconfig when accountId and kcpCA are missing', async () => {
+    const mockAnchorElement = document.createElement('a');
+    vi.spyOn(mockAnchorElement, 'click');
+    vi.spyOn(document, 'createElement').mockReturnValue(mockAnchorElement);
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob-url');
+    accountInfoServiceMock.read.mockReturnValueOnce(
+      of({
+        spec: {
+          oidc: {
+            issuerUrl: 'issuer',
+            clients: { kubectl: { clientId: 'client-id' } },
+          },
+        },
+      } as AccountInfo),
+    );
+    component.context = (() => ({
+      accountId: undefined,
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      accountPath: 'account-123',
+      kcpCA: undefined,
+    })) as any;
+
+    await component.downloadKubeConfig();
+
+    expect(mockAnchorElement.href).toEqual(
+      `${window.location.origin}/blob-url`,
+    );
+    expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
+    expect(mockAnchorElement.click).toHaveBeenCalled();
+  });
+
+  it('should skip download when already downloading', async () => {
+    const accountInfoSpy = accountInfoServiceMock.read;
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL');
+
+    component.isDownloadingKubeConfig.set(true);
+    await component.downloadKubeConfig();
+
+    expect(accountInfoSpy).not.toHaveBeenCalled();
+    expect(createObjectURLSpy).not.toHaveBeenCalled();
+  });
+
+  it('should show alert when downloadKubeConfig fails', async () => {
+    const showAlertSpy = vi.fn();
+    component.LuigiClient = (() => ({
+      uxManager: () => ({ showAlert: showAlertSpy }),
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+    accountInfoServiceMock.read.mockReturnValueOnce(
+      throwError(() => new Error('boom')),
+    );
+
+    await component.downloadKubeConfig();
+
+    expect(showAlertSpy).toHaveBeenCalledWith({
+      text: 'Failed to download kubeconfig: boom',
+      type: 'error',
+    });
+  });
+
   it('should call resource service with correct parameters for account kind', () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     const newFixture = TestBed.createComponent(DetailViewComponent);
     const newComponent = newFixture.componentInstance;
 
@@ -254,14 +375,14 @@ describe('DetailViewComponent', () => {
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     newFixture.detectChanges();
@@ -276,7 +397,7 @@ describe('DetailViewComponent', () => {
   });
 
   it('should handle resource service read error', () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockResourceService.read.mockReturnValueOnce(
       throwError(() => new Error('Read failed')),
     );
@@ -304,14 +425,14 @@ describe('DetailViewComponent', () => {
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     newFixture.detectChanges();
@@ -325,12 +446,12 @@ describe('DetailViewComponent', () => {
 
     beforeEach(() => {
       mockUxManager = {
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       };
     });
 
     it('should handle undefined resourceId in readResource method', () => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
 
@@ -354,12 +475,12 @@ describe('DetailViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => mockUxManager,
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       expect(() => {
@@ -373,7 +494,7 @@ describe('DetailViewComponent', () => {
     });
 
     it('should handle undefined parentNavigationContext in navigateToParent method', () => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
 
@@ -397,12 +518,12 @@ describe('DetailViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => mockUxManager,
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -418,7 +539,7 @@ describe('DetailViewComponent', () => {
     });
 
     it('should handle empty parentNavigationContexts array in navigateToParent method', () => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
 
@@ -442,12 +563,12 @@ describe('DetailViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => mockUxManager,
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -463,7 +584,7 @@ describe('DetailViewComponent', () => {
     });
 
     it('should handle undefined resourceDefinition in getResourceDefinition method', () => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
 
@@ -479,12 +600,12 @@ describe('DetailViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => mockUxManager,
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       expect(() => {
@@ -502,18 +623,18 @@ describe('DetailViewComponent', () => {
 describe('DetailViewComponent template', () => {
   let mockResourceService: any;
   let mockGatewayService: any;
-  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
-  let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
+  let envConfigServiceMock: MockedObject<EnvConfigService>;
+  let accountInfoServiceMock: MockedObject<AccountInfoService>;
 
   beforeEach(() => {
     envConfigServiceMock = mock();
     accountInfoServiceMock = mock();
     mockResourceService = {
-      read: jest.fn().mockReturnValue(of({ name: 'test-resource' })),
-      readAccountInfo: jest.fn().mockReturnValue(of('mock-ca-data')),
+      read: vi.fn().mockReturnValue(of({ name: 'test-resource' })),
+      readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
     };
     mockGatewayService = {
-      resolveKcpPath: jest.fn().mockReturnValue('https://example.com'),
+      resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),
     };
 
     TestBed.configureTestingModule({
@@ -562,14 +683,14 @@ describe('DetailViewComponent template', () => {
 
     component.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     fixture.detectChanges();
@@ -611,17 +732,17 @@ describe('DetailViewComponent template', () => {
 
     component.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({
-        showAlert: jest.fn(),
+        showAlert: vi.fn(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
-    const downloadSpy = jest
+    const downloadSpy = vi
       .spyOn(component, 'downloadKubeConfig')
       .mockResolvedValue(undefined as any);
 

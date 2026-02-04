@@ -4,16 +4,19 @@ import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.ser
 import { TestBed } from '@angular/core/testing';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { GatewayService } from '@platform-mesh/portal-ui-lib/services/resource';
+import { MockedFunction, MockedObject } from 'vitest';
 
 describe('CrdGatewayKcpPatchResolver', () => {
   let resolver: CrdGatewayKcpPatchResolver;
-  let envConfigServiceMock: jest.Mocked<EnvConfigService>;
-  let gatewayServiceMock: { updateCrdGatewayUrlWithEntityPath: jest.Mock };
+  let envConfigServiceMock: MockedObject<EnvConfigService>;
+  let gatewayServiceMock: {
+    updateCrdGatewayUrlWithEntityPath: MockedFunction<any>;
+  };
 
   beforeEach(() => {
-    gatewayServiceMock = { updateCrdGatewayUrlWithEntityPath: jest.fn() };
+    gatewayServiceMock = { updateCrdGatewayUrlWithEntityPath: vi.fn() };
     envConfigServiceMock = {
-      getEnvConfig: jest.fn().mockResolvedValue({ idpName: 'org1' }),
+      getEnvConfig: vi.fn().mockResolvedValue({ idpName: 'org1' }),
     } as any;
 
     TestBed.configureTestingModule({

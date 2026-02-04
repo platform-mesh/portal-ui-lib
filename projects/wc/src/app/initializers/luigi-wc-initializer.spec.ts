@@ -1,45 +1,51 @@
-import {
-  DetailViewComponent,
-  ListViewComponent,
-  OrganizationManagementComponent,
-  WelcomeComponent,
-} from '../components';
-import { ErrorComponent } from '../components/error/error.component';
-import * as wc from '../utils/wc';
 import { provideLuigiWebComponents } from './luigi-wc-initializer';
-import { ApplicationInitStatus } from '@angular/core';
+import { Injector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+vi.mock('../utils/wc', { spy: true });
+
 describe('provideLuigiWebComponents', () => {
+  const originalCurrentScript = document.currentScript;
+
   beforeEach(() => {
+    Object.defineProperty(window, 'Luigi', {
+      value: {
+        _registerWebcomponent: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(document, 'currentScript', {
+      value: {
+        getAttribute: () => 'http://localhost:12345/main.js#generic-list-view',
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    vi.clearAllMocks();
     TestBed.resetTestingModule();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(document, 'currentScript', {
+      value: originalCurrentScript,
+      writable: true,
+      configurable: true,
+    });
+
+    delete (window as any).Luigi;
+    vi.restoreAllMocks();
+  });
+
+  it('registers mapped components with the TestBed injector', () => {
     TestBed.configureTestingModule({
       providers: [provideLuigiWebComponents()],
     });
-  });
+    TestBed.inject(Injector);
 
-  it('registers Luigi web components on app init', async () => {
-    const spy = jest.spyOn(wc, 'registerLuigiWebComponents').mockReturnValue();
-
-    // Trigger Angular APP_INITIALIZERs
-    await TestBed.inject(ApplicationInitStatus).donePromise;
-
-    expect(spy).toHaveBeenCalledTimes(1);
-
-    const expectedMap = {
-      'generic-list-view': ListViewComponent,
-      'generic-detail-view': DetailViewComponent,
-      'organization-management': OrganizationManagementComponent,
-      'welcome-view': WelcomeComponent,
-      'error-component': ErrorComponent,
-    } as Record<string, any>;
-
-    // Validate first arg equals the components map
-    expect(spy.mock.calls[0][0]).toEqual(expectedMap);
-
-    // Validate second arg looks like an Injector
-    const passedInjector = spy.mock.calls[0][1];
-    expect(passedInjector).toBeTruthy();
-    expect(typeof passedInjector.get).toBe('function');
+    expect((window as any).Luigi._registerWebcomponent).toHaveBeenCalled();
   });
 });

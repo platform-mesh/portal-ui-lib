@@ -7,8 +7,9 @@ import {
   LuigiCoreService,
 } from '@openmfp/portal-ui-lib';
 import { LogicalClusterService } from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
 import { of } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 async function flushMicrotasks(times = 3) {
   for (let i = 0; i < times; i++) {
@@ -17,11 +18,11 @@ async function flushMicrotasks(times = 3) {
 }
 
 describe('OrganizationReadyService', () => {
-  let mockConfigService: jest.Mocked<ConfigService>;
-  let mockEnvConfigService: jest.Mocked<EnvConfigService>;
-  let mockAuthService: jest.Mocked<AuthService>;
-  let mockLogicalClusterService: jest.Mocked<LogicalClusterService>;
-  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
+  let mockConfigService: MockedObject<ConfigService>;
+  let mockEnvConfigService: MockedObject<EnvConfigService>;
+  let mockAuthService: MockedObject<AuthService>;
+  let mockLogicalClusterService: MockedObject<LogicalClusterService>;
+  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   beforeEach(() => {
     mockConfigService = mock();
@@ -108,7 +109,7 @@ describe('OrganizationReadyService', () => {
           },
         }),
       );
-    const navigateMock = jest.fn();
+    const navigateMock = vi.fn();
     mockLuigiCoreService.navigation.mockReturnValue({
       navigate: navigateMock,
     } as any);
