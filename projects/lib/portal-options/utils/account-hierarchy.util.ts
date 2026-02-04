@@ -7,9 +7,10 @@ export function collectAccountNamesFromHierarchy(
   let currentNode: PortalLuigiNode | undefined = node;
 
   while (currentNode) {
-    const entity = currentNode.context?.entity;
-    if (entity?.metadata?.name && entity['__typename'] === 'Account') {
-      accountNames.unshift(entity.metadata.name);
+    const entityName = currentNode.context?.entityName;
+    const entityKind = currentNode.context?.entityKind;
+    if (entityName && entityKind === 'Account') {
+      accountNames.unshift(entityName);
     }
     currentNode = currentNode.parent;
   }

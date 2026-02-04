@@ -32,6 +32,9 @@ describe('DetailViewComponent', () => {
         name: 'account',
       },
       spec: {
+        account: {
+          originClusterId: 'originClusterId',
+        },
         clusterInfo: {
           ca: 'ca',
         },

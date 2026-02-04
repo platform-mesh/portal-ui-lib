@@ -1,9 +1,9 @@
-import { TestBed } from '@angular/core/testing';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeChangeHookConfigServiceImpl } from './node-change-hook-config.service';
-import { OrganizationReadyService } from './org-ready.service';
+import { TestBed } from '@angular/core/testing';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { OrganizationReadyService } from '@platform-mesh/portal-ui-lib/services';
 
 describe('NodeChangeHookConfigServiceImpl', () => {
   let service: NodeChangeHookConfigServiceImpl;
@@ -73,6 +73,8 @@ describe('NodeChangeHookConfigServiceImpl', () => {
     expect(
       mockAccountPathResolverService.resolveAccountHierarchy,
     ).toHaveBeenCalledWith(nextNode);
-    expect(mockOrganizationReadyService.checkOrganizationReady).toHaveBeenCalled();
+    expect(
+      mockOrganizationReadyService.checkOrganizationReady,
+    ).toHaveBeenCalled();
   });
 });

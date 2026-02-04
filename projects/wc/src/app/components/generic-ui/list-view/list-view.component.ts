@@ -19,6 +19,7 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
+  ErrorHandlerService,
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
@@ -44,6 +45,7 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -74,6 +76,7 @@ import {
 export class ListViewComponent {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
+  private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -119,7 +122,13 @@ export class ListViewComponent {
 
     this.resourceService
       .list(queryOperation, fields, this.context())
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error) => {
+          this.errorHandlerService.handlePostErrorNavigation(error);
+          throw error;
+        }),
+      )
       .subscribe({
         next: (result: any[]) => {
           this.resources.set(

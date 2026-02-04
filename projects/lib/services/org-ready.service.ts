@@ -1,3 +1,4 @@
+import { LogicalClusterService } from './resource';
 import { Injectable, inject } from '@angular/core';
 import {
   AuthService,
@@ -6,7 +7,6 @@ import {
   LuigiCoreService,
 } from '@openmfp/portal-ui-lib';
 import { LogicalCluster } from '@platform-mesh/portal-ui-lib/models';
-import { LogicalClusterService } from '@platform-mesh/portal-ui-lib/services';
 import { Subject, exhaustMap, filter } from 'rxjs';
 import { map } from 'rxjs/operators';
 
