@@ -36,7 +36,7 @@ describe('GatewayService', () => {
         accountId: 'entityId',
         kcpPath: ':org1:acc2',
       };
-      const result = service.getGatewayUrl(nodeContext);
+      const result = service.getGatewayUrl(nodeContext as any);
       expect(result).toBe('https://example.com/:org1:acc2/graphql');
     });
 
@@ -51,6 +51,52 @@ describe('GatewayService', () => {
       const result = service.getGatewayUrl(nodeContext as any, true);
       expect(result).toBe('https://example.com/:org1/graphql');
     });
+
+    // -----------------------------
+    // Added tests (branches coverage)
+    // -----------------------------
+
+    it('should use gatewayUrl current path when nodeContext.kcpPath is not provided', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/:org1:acc1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.getGatewayUrl(nodeContext as any);
+      expect(result).toBe('https://example.com/:org1:acc1/graphql');
+    });
+
+    it('should handle invalid gatewayUrl format (no /<kcp>/graphql match) and still replace with resolved path', () => {
+      const nodeContext = {
+        portalContext: {
+          // currentKcpPath becomes '' (no match), resolveKcpPath => '' too
+          crdGatewayApiUrl: 'https://example.com/invalid-url',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.getGatewayUrl(nodeContext as any);
+      // replace('', '') leaves string unchanged in JS
+      expect(result).toBe('https://example.com/invalid-url');
+    });
+
+    it('should slice only when parent delimiter exists, otherwise keep as-is (readFromParentKcpPath true, no colon)', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/org1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.getGatewayUrl(nodeContext as any, true);
+      // org1 has no ':' so slicing branch (lastIndex !== -1) is skipped
+      expect(result).toBe('https://example.com/org1/graphql');
+    });
   });
 
   describe('updateCrdGatewayUrlWithEntityPath', () => {
@@ -59,6 +105,27 @@ describe('GatewayService', () => {
       service.updateCrdGatewayUrlWithEntityPath(':org1:acc3');
       expect(globalContext.portalContext.crdGatewayApiUrl).toBe(
         'https://example.com/:org1:acc3/graphql',
+      );
+    });
+
+    // -----------------------------
+    // Added tests (branches coverage)
+    // -----------------------------
+
+    it('should keep url unchanged if it does not match /graphql suffix pattern', () => {
+      // IMPORTANT: return same object so we can assert mutation
+      const globalContextObj = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/:org1:acc1/api',
+        },
+      };
+      mockLuigiCoreService.getGlobalContext.mockReturnValue(globalContextObj);
+
+      service.updateCrdGatewayUrlWithEntityPath(':org1:acc9');
+
+      // regexp won't match, replace does nothing
+      expect(globalContextObj.portalContext.crdGatewayApiUrl).toBe(
+        'https://example.com/:org1:acc1/api',
       );
     });
   });
@@ -73,7 +140,7 @@ describe('GatewayService', () => {
         accountId: 'entityId',
         kcpPath: ':org1:acc2',
       };
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
       expect(result).toBe(':org1:acc2');
     });
 
@@ -85,7 +152,7 @@ describe('GatewayService', () => {
         token: 'token',
         accountId: 'entityId',
       };
-      const result = service.resolveKcpPath(nodeContext, true);
+      const result = service.resolveKcpPath(nodeContext as any, true);
       expect(result).toBe(':org1');
     });
 
@@ -97,8 +164,39 @@ describe('GatewayService', () => {
         token: 'token',
         accountId: 'entityId',
       };
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
       expect(result).toBe(':org1:acc1');
+    });
+
+    // -----------------------------
+    // Added tests (branches coverage)
+    // -----------------------------
+
+    it('should NOT slice when readFromParentKcpPath is true but no ":" present in extracted kcpPath', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/org1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+
+      const result = service.resolveKcpPath(nodeContext as any, true);
+      expect(result).toBe('org1');
+    });
+
+    it('should slice kcpPath override from context when readFromParentKcpPath is true', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/:org1:acc1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+        kcpPath: ':org1:acc2:ws',
+      };
+
+      const result = service.resolveKcpPath(nodeContext as any, true);
+      expect(result).toBe(':org1:acc2');
     });
   });
 
@@ -111,7 +209,7 @@ describe('GatewayService', () => {
         token: 'token',
         accountId: 'entityId',
       };
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
       expect(result).toBe(':org1:acc1');
     });
 
@@ -123,7 +221,7 @@ describe('GatewayService', () => {
         token: 'token',
         accountId: 'entityId',
       };
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
       expect(result).toBe('org1');
     });
 
@@ -136,7 +234,7 @@ describe('GatewayService', () => {
         accountId: 'entityId',
       };
 
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
 
       expect(result).toBe('');
     });
@@ -150,7 +248,7 @@ describe('GatewayService', () => {
         accountId: 'entityId',
       };
 
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
 
       expect(result).toBe('');
     });
@@ -164,7 +262,7 @@ describe('GatewayService', () => {
         accountId: 'entityId',
       };
 
-      const result = service.resolveKcpPath(nodeContext);
+      const result = service.resolveKcpPath(nodeContext as any);
 
       expect(result).toBe('');
     });

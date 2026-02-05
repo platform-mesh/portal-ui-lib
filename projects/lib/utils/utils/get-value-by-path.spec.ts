@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { getValueByPath } from './get-value-by-path';
 
 describe('getValueByPath', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules()
+    vi.resetAllMocks()
+  });
   const obj = {
     user: {
       id: 1,
