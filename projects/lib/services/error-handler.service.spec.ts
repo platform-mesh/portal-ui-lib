@@ -2,14 +2,15 @@ import { ErrorHandlerService } from './error-handler.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
-import { mock } from 'jest-mock-extended';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe('ErrorHandlerService', () => {
   let service: ErrorHandlerService;
-  let luigiCoreService: jest.Mocked<LuigiCoreService>;
+  let luigiCoreService: MockedObject<LuigiCoreService>;
 
   const mockNavigation = {
-    navigate: jest.fn(),
+    navigate: vi.fn(),
   };
 
   beforeEach(() => {
@@ -27,7 +28,7 @@ describe('ErrorHandlerService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('handlePostErrorNavigation', () => {

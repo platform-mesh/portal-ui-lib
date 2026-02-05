@@ -7,8 +7,9 @@ import {
   LuigiCoreService,
 } from '@openmfp/portal-ui-lib';
 import { LogicalClusterService } from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 async function flushMicrotasks(times = 3) {
   for (let i = 0; i < times; i++) {
@@ -17,11 +18,11 @@ async function flushMicrotasks(times = 3) {
 }
 
 describe('OrganizationReadyService', () => {
-  let mockConfigService: jest.Mocked<ConfigService>;
-  let mockEnvConfigService: jest.Mocked<EnvConfigService>;
-  let mockAuthService: jest.Mocked<AuthService>;
-  let mockLogicalClusterService: jest.Mocked<LogicalClusterService>;
-  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
+  let mockConfigService: MockedObject<ConfigService>;
+  let mockEnvConfigService: MockedObject<EnvConfigService>;
+  let mockAuthService: MockedObject<AuthService>;
+  let mockLogicalClusterService: MockedObject<LogicalClusterService>;
+  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   beforeEach(() => {
     mockConfigService = mock();
@@ -53,7 +54,7 @@ describe('OrganizationReadyService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should call readOrganizationReady with expected context', async () => {
@@ -112,7 +113,7 @@ describe('OrganizationReadyService', () => {
           },
         }),
       );
-    const navigateMock = jest.fn();
+    const navigateMock = vi.fn();
     mockLuigiCoreService.navigation.mockReturnValue({
       navigate: navigateMock,
     } as any);
@@ -142,7 +143,7 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should handle error in logicalClusterService.read and continue checking', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const error = new Error('API error');
 
     mockLogicalClusterService.read
@@ -169,7 +170,7 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should log error but not break check stream on read failure', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const error = new Error('Network timeout');
 
     mockLogicalClusterService.read.mockReturnValueOnce(throwError(() => error));
@@ -186,7 +187,7 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should allow subsequent checks after error', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockLogicalClusterService.read
       .mockReturnValueOnce(throwError(() => new Error('First error')))
@@ -218,8 +219,8 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should not navigate to error page when read fails', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    const navigateMock = jest.fn();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const navigateMock = vi.fn();
     mockLuigiCoreService.navigation.mockReturnValue({
       navigate: navigateMock,
     } as any);
@@ -239,7 +240,7 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should handle different error types', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const httpError = { status: 500, message: 'Internal Server Error' };
 
     mockLogicalClusterService.read.mockReturnValueOnce(
@@ -257,7 +258,7 @@ describe('OrganizationReadyService', () => {
   });
 
   it('should continue checking after multiple consecutive errors', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockLogicalClusterService.read
       .mockReturnValueOnce(throwError(() => new Error('Error 1')))
