@@ -7,13 +7,12 @@ import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Apollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
 import { parse } from 'graphql';
-import { MockedObject } from 'vitest';
+import { createClient } from 'graphql-sse';
+import { MockedFunction, MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
-const createClientMock = vi.hoisted(() => vi.fn());
-
 vi.mock('graphql-sse', () => ({
-  createClient: createClientMock,
+  createClient: vi.fn(),
 }));
 
 describe('ApolloFactory', () => {
@@ -45,10 +44,6 @@ describe('ApolloFactory', () => {
     factory = TestBed.inject(ApolloFactory);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should create an Apollo instance', () => {
     expect(factory.apollo({} as ResourceNodeContext)).toBeInstanceOf(Apollo);
   });
@@ -66,11 +61,14 @@ describe('ApolloFactory', () => {
   });
 
   it('should configure SSE client with dynamic url and auth header', () => {
+    const createClientMock = createClient as MockedFunction<
+      typeof createClient
+    >;
     createClientMock.mockClear();
     const subscribeMock = vi.fn().mockReturnValue(() => void 0);
     createClientMock.mockReturnValue({
       subscribe: subscribeMock,
-    } as unknown as ReturnType<typeof createClientMock>);
+    } as unknown as ReturnType<typeof createClient>);
 
     const nodeContext: ResourceNodeContext = {
       token: 'fake-token',
@@ -82,7 +80,7 @@ describe('ApolloFactory', () => {
 
     (factory as any).createApolloOptions(nodeContext, false);
 
-    expect(createClientMock).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledTimes(1);
     const clientOptions = createClientMock.mock.calls[0][0] as {
       url: () => string;
       headers: () => Record<string, string>;
@@ -104,11 +102,14 @@ describe('ApolloFactory', () => {
   });
 
   it('should pass readFromParentKcpPath flag to SSE url resolver', () => {
+    const createClientMock = createClient as MockedFunction<
+      typeof createClient
+    >;
     createClientMock.mockClear();
     const subscribeMock = vi.fn().mockReturnValue(() => void 0);
     createClientMock.mockReturnValue({
       subscribe: subscribeMock,
-    } as unknown as ReturnType<typeof createClientMock>);
+    } as unknown as ReturnType<typeof createClient>);
 
     const nodeContext: ResourceNodeContext = {
       token: 't',
@@ -181,10 +182,13 @@ describe('ApolloFactory', () => {
   });
 
   it('routes subscription operations without errors', () => {
+    const createClientMock = createClient as MockedFunction<
+      typeof createClient
+    >;
     createClientMock.mockClear();
     createClientMock.mockReturnValue({
       subscribe: vi.fn().mockReturnValue(() => void 0),
-    } as unknown as ReturnType<typeof createClientMock>);
+    } as unknown as ReturnType<typeof createClient>);
 
     const nodeContext = {
       token: 't',

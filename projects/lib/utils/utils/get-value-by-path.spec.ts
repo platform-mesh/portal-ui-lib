@@ -1,9 +1,5 @@
+import { describe, expect, it } from "vitest";
 import { getValueByPath } from './get-value-by-path';
-
-vi.mock('jsonpath', async () => {
-  const actual = await vi.importActual<any>('jsonpath');
-  return actual;
-});
 
 describe('getValueByPath', () => {
   const obj = {
