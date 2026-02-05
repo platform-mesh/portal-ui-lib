@@ -29,23 +29,28 @@ describe('CrdGatewayKcpPatchResolver', () => {
   it('should build kcpPath from entity metadata and organization, skipping non-Account types', async () => {
     const node: PortalLuigiNode = {
       context: {
-        entity: { metadata: { name: 'acc3' }, __typename: 'Account' },
+        entityName: 'acc3',
+        entityKind: 'Account',
       },
       parent: {
         context: {
-          entity: { metadata: { name: 'proj1' }, __typename: 'Project' },
+          entityName: 'proj1',
+          entityKind: 'Project',
         },
         parent: {
           context: {
-            entity: { metadata: { name: 'acc2' }, __typename: 'Account' },
+            entityName: 'acc2',
+            entityKind: 'Account',
           },
           parent: {
             context: {
-              entity: { metadata: { name: 'team1' }, __typename: 'Team' },
+              entityName: 'team1',
+              entityKind: 'Team',
             },
             parent: {
               context: {
-                entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+                entityName: 'acc1',
+                entityKind: 'Account',
               },
               parent: undefined,
             },
@@ -99,15 +104,18 @@ describe('CrdGatewayKcpPatchResolver', () => {
         context: {},
         parent: {
           context: {
-            entity: { metadata: { name: 'acc2' }, __typename: 'Account' },
+            entityName: 'acc2',
+            entityKind: 'Account',
           },
           parent: {
             context: {
-              entity: { metadata: { name: 'team1' }, __typename: 'Team' },
+              entityName: 'team1',
+              entityKind: 'Team',
             },
             parent: {
               context: {
-                entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+                entityName: 'acc1',
+                entityKind: 'Account',
               },
               parent: undefined,
             },

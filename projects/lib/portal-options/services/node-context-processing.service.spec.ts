@@ -1,479 +1,471 @@
-import { TestBed } from '@angular/core/testing';
-import { Resource } from '@platform-mesh/portal-ui-lib/models';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of, throwError } from 'rxjs';
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
+import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
-import { query } from 'jsonpath';
+import { TestBed } from '@angular/core/testing';
+import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
+import {
+  AccountInfoService,
+  OrganizationReadyService,
+} from '@platform-mesh/portal-ui-lib/services';
+import { mock } from 'jest-mock-extended';
+import { of, throwError } from 'rxjs';
 
 describe('NodeContextProcessingServiceImpl', () => {
   let service: NodeContextProcessingServiceImpl;
-  let mockResourceService: jest.Mocked<ResourceService>;
-  let mockCrdGatewayKcpPatchResolver: jest.Mocked<CrdGatewayKcpPatchResolver>;
+  let crdGatewayKcpPatchResolver: jest.Mocked<CrdGatewayKcpPatchResolver>;
+  let accountPathResolver: jest.Mocked<AccountPathResolverService>;
+  let accountInfoService: jest.Mocked<AccountInfoService>;
+  let organizationReadyService: jest.Mocked<OrganizationReadyService>;
+
+  const mockEntityId = 'entity-123';
+  const mockKind = 'Account';
+  const mockKcpPath = 'root:orgs:test-org:entity-123';
+  const mockAccountPath = '/test-org/entity-123';
+  const mockToken = 'test-token';
+
+  let mockEntityNode: PortalLuigiNode;
+  let mockContext: PortalNodeContext;
+
+  const mockAccountInfo: AccountInfo = {
+    spec: {
+      organization: {
+        originClusterId: 'cluster-org-1',
+        name: 'test-org',
+      },
+      clusterInfo: {
+        ca: 'certificate-data',
+      },
+      account: {
+        originClusterId: 'cluster-acc-1',
+      },
+    },
+  } as AccountInfo;
 
   beforeEach(() => {
-    mockResourceService = {
-      read: jest.fn(),
-    } as unknown as jest.Mocked<ResourceService>;
+    crdGatewayKcpPatchResolver = mock<CrdGatewayKcpPatchResolver>();
+    accountPathResolver = mock<AccountPathResolverService>();
+    accountInfoService = mock<AccountInfoService>();
+    organizationReadyService = mock<OrganizationReadyService>();
 
-    mockCrdGatewayKcpPatchResolver = {
-      resolveCrdGatewayKcpPath: jest.fn(),
-    } as unknown as jest.Mocked<CrdGatewayKcpPatchResolver>;
+    mockEntityNode = {
+      defineEntity: {
+        graphqlEntity: {
+          kind: mockKind,
+        },
+      },
+      context: {},
+    } as PortalLuigiNode;
+
+    mockContext = {
+      portalContext: {
+        crdGatewayApiUrl: 'https://api.example.com',
+      },
+      token: mockToken,
+    } as PortalNodeContext;
 
     TestBed.configureTestingModule({
       providers: [
         NodeContextProcessingServiceImpl,
-        { provide: ResourceService, useValue: mockResourceService },
         {
           provide: CrdGatewayKcpPatchResolver,
-          useValue: mockCrdGatewayKcpPatchResolver,
+          useValue: crdGatewayKcpPatchResolver,
+        },
+        { provide: AccountPathResolverService, useValue: accountPathResolver },
+        { provide: AccountInfoService, useValue: accountInfoService },
+        {
+          provide: OrganizationReadyService,
+          useValue: organizationReadyService,
         },
       ],
     });
 
     service = TestBed.inject(NodeContextProcessingServiceImpl);
+
+    crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockResolvedValue(
+      mockKcpPath,
+    );
+    accountPathResolver.resolveAccountHierarchy.mockReturnValue(
+      mockAccountPath,
+    );
+    accountInfoService.read.mockReturnValue(of(mockAccountInfo));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('processNodeContext', () => {
-    it('should call resolveCrdGatewayKcpPath and readAndStoreEntityInNodeContext', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id name }',
-            version: 'v1alpha1',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
-
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
-        },
-      } as any;
-
-      mockResourceService.read.mockReturnValue(of(mockEntity));
-
-      await service.processNodeContext(entityId, entityNode, ctx);
+    it('should return early when entityId is missing', async () => {
+      await service.processNodeContext('', mockEntityNode, mockContext);
 
       expect(
-        mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
-      ).toHaveBeenCalledWith(entityNode, entityId, 'TestKind');
-      expect(mockResourceService.read).toHaveBeenCalled();
+        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).not.toHaveBeenCalled();
+      expect(
+        accountPathResolver.resolveAccountHierarchy,
+      ).not.toHaveBeenCalled();
+      expect(accountInfoService.read).not.toHaveBeenCalled();
     });
-  });
 
-  describe('readAndStoreEntityInNodeContext', () => {
-    it('should return early if entityId is missing', async () => {
-      const entityNode: PortalLuigiNode = {
+    it('should return early when entityId is null', async () => {
+      await service.processNodeContext(
+        null as any,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(
+        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should return early when kind is missing', async () => {
+      const nodeWithoutKind: PortalLuigiNode = {
         defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id }',
-            version: 'v1alpha1',
-          },
+          graphqlEntity: {},
         },
         context: {},
       } as any;
-      const ctx: PortalNodeContext = {} as any;
 
-      await service.processNodeContext('', entityNode, ctx);
+      await service.processNodeContext(
+        mockEntityId,
+        nodeWithoutKind,
+        mockContext,
+      );
 
-      expect(mockResourceService.read).not.toHaveBeenCalled();
+      expect(
+        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).not.toHaveBeenCalled();
     });
 
-
-    it('should return early if kind is missing', async () => {
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: '',
-            query: '{ id }',
-          },
-        },
+    it('should return early when defineEntity is missing', async () => {
+      const nodeWithoutDefine: PortalLuigiNode = {
         context: {},
       } as any;
-      const ctx: PortalNodeContext = {} as any;
 
-      await service.processNodeContext('test-id', entityNode, ctx);
+      await service.processNodeContext(
+        mockEntityId,
+        nodeWithoutDefine,
+        mockContext,
+      );
 
-      expect(mockResourceService.read).not.toHaveBeenCalled();
+      expect(
+        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).not.toHaveBeenCalled();
     });
 
-    it('should return early if version is missing', async () => {
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            query: '{ id }',
-            kind: 'TestKind',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {} as any;
+    it('should call resolveCrdGatewayKcpPath with correct parameters', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
 
-      await service.processNodeContext('test-id', entityNode, ctx);
-
-      expect(mockResourceService.read).not.toHaveBeenCalled();
+      expect(
+        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).toHaveBeenCalledWith(mockEntityNode, mockEntityId, mockKind);
     });
 
-    it('should return early if queryPart is missing', async () => {
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {} as any;
+    it('should call resolveAccountHierarchy with correct parameters', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
 
-      await service.processNodeContext('test-id', entityNode, ctx);
-
-      expect(mockResourceService.read).not.toHaveBeenCalled();
-    });
-
-    it('should return early if defineEntity is missing', async () => {
-      const entityNode: PortalLuigiNode = {
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {} as any;
-
-      await service.processNodeContext('test-id', entityNode, ctx);
-
-      expect(mockResourceService.read).not.toHaveBeenCalled();
-    });
-
-    it('should build query without namespace for non-namespaced resources', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id name }',
-            version: 'v1alpha1',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-        resourceDefinition: { scope: 'Cluster' },
-      } as any;
-
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
-        },
-      } as any;
-
-      mockResourceService.read.mockReturnValue(of(mockEntity));
-
-      await service.processNodeContext(entityId, entityNode, ctx);
-
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        entityId,
-        { kind: 'TestKind', version: 'v1alpha1', group: 'test_group' },
-        ['id', 'name'],
-        {
-          resourceDefinition: ctx.resourceDefinition,
-          portalContext: {
-            crdGatewayApiUrl: ctx.portalContext.crdGatewayApiUrl,
-          },
-          token: ctx.token,
-          namespaceId: undefined,
-        },
-        false,
+      expect(accountPathResolver.resolveAccountHierarchy).toHaveBeenCalledWith(
+        mockEntityNode,
+        mockEntityId,
+        mockKind,
       );
     });
 
-    it('should build query with namespace for namespaced resources', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id name }',
-            version: 'v1alpha1',
-          },
+    it('should update context with kcpPath', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.kcpPath).toBe(mockKcpPath);
+    });
+
+    it('should update context with entityName', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.entityName).toBe(mockEntityId);
+    });
+
+    it('should update context with entityKind', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.entityKind).toBe(mockKind);
+    });
+
+    it('should update context with accountPath', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.accountPath).toBe(mockAccountPath);
+    });
+
+    it('should update entityNode context with same fields', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockEntityNode.context.kcpPath).toBe(mockKcpPath);
+      expect(mockEntityNode.context.entityName).toBe(mockEntityId);
+      expect(mockEntityNode.context.entityKind).toBe(mockKind);
+      expect(mockEntityNode.context.accountPath).toBe(mockAccountPath);
+    });
+
+    it('should call accountInfoService.read with correct parameters', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(accountInfoService.read).toHaveBeenCalledWith({
+        portalContext: {
+          crdGatewayApiUrl: 'https://api.example.com',
         },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-        resourceDefinition: { scope: 'Namespaced' },
-        namespaceId: 'test-namespace',
-      } as any;
+        token: mockToken,
+        accountId: mockEntityId,
+      });
+    });
 
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
+    it('should update context with organizationId from accountInfo', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.organizationId).toBe('cluster-org-1/test-org');
+    });
+
+    it('should update context with base64 encoded kcpCA', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      const expectedCA = btoa('certificate-data');
+      expect(mockContext.kcpCA).toBe(expectedCA);
+    });
+
+    it('should update context with entityId from accountInfo', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.entityId).toBe(`cluster-acc-1/${mockEntityId}`);
+    });
+
+    it('should not update accountInfo fields when read fails', async () => {
+      const mockContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://api.example.com',
         },
-      } as any;
+        token: mockToken,
+      } as any as PortalNodeContext;
+      accountInfoService.read.mockReturnValue(
+        throwError(() => new Error('API error')),
+      );
 
-      mockResourceService.read.mockReturnValue(of(mockEntity));
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
 
-      await service.processNodeContext(entityId, entityNode, ctx);
+      expect(mockContext.organizationId).toBeUndefined();
+      expect(mockContext.kcpCA).toBeUndefined();
+      expect(mockContext.entityId).toBeUndefined();
+    });
 
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        entityId,
-        { kind: 'TestKind', version: 'v1alpha1', group: 'test_group' },
-        ['id', 'name'],
-        {
-          resourceDefinition: ctx.resourceDefinition,
-          portalContext: {
-            crdGatewayApiUrl: ctx.portalContext.crdGatewayApiUrl,
-          },
-          token: ctx.token,
-          namespaceId: 'test-namespace',
-        },
-        false,
+    it('should update entityNode context with accountInfo fields', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockEntityNode.context.organizationId).toBe(
+        'cluster-org-1/test-org',
+      );
+      expect(mockEntityNode.context.kcpCA).toBe(btoa('certificate-data'));
+      expect(mockEntityNode.context.entityId).toBe(
+        `cluster-acc-1/${mockEntityId}`,
       );
     });
 
-    it('should handle account kind with special flag', async () => {
-      const entityId = 'test-account';
-      const entityNode: PortalLuigiNode = {
+    it('should call checkOrganizationReady when accountInfo is retrieved', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(
+        organizationReadyService.checkOrganizationReady,
+      ).toHaveBeenCalled();
+    });
+
+    it('should handle accountInfoService error silently', async () => {
+      accountInfoService.read.mockReturnValue(
+        throwError(() => new Error('API error')),
+      );
+
+      await expect(
+        service.processNodeContext(mockEntityId, mockEntityNode, mockContext),
+      ).resolves.not.toThrow();
+
+      expect(
+        organizationReadyService.checkOrganizationReady,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should handle special characters in CA certificate', async () => {
+      const specialCA = 'cert+with/special=chars';
+      const accountInfoWithSpecialCA: AccountInfo = {
+        spec: {
+          organization: {
+            originClusterId: 'cluster-org-1',
+          },
+          clusterInfo: {
+            ca: specialCA,
+          },
+          account: {
+            originClusterId: 'cluster-acc-1',
+          },
+        },
+      } as AccountInfo;
+
+      accountInfoService.read.mockReturnValue(of(accountInfoWithSpecialCA));
+
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(mockContext.kcpCA).toBe(btoa(specialCA));
+    });
+
+    it('should process all steps in sequence', async () => {
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
+      );
+
+      expect(
+        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
+      ).toHaveBeenCalled();
+      expect(accountPathResolver.resolveAccountHierarchy).toHaveBeenCalled();
+      expect(accountInfoService.read).toHaveBeenCalled();
+      expect(
+        organizationReadyService.checkOrganizationReady,
+      ).toHaveBeenCalled();
+    });
+
+    it('should handle empty entityNode context', async () => {
+      const nodeWithEmptyContext: PortalLuigiNode = {
         defineEntity: {
           graphqlEntity: {
-            group: 'test.group',
-            kind: 'Account',
-            query: '{ id name }',
-            version: 'v1alpha1',
+            kind: mockKind,
           },
         },
         context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
+      } as PortalLuigiNode;
 
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
-        },
-      } as any;
+      await service.processNodeContext(
+        mockEntityId,
+        nodeWithEmptyContext,
+        mockContext,
+      );
 
-      mockResourceService.read.mockReturnValue(of(mockEntity));
+      expect(nodeWithEmptyContext.context.kcpPath).toBe(mockKcpPath);
+    });
 
-      await service.processNodeContext(entityId, entityNode, ctx);
+    it('should preserve existing context fields', async () => {
+      const contextWithExistingFields = {
+        ...mockContext,
+        customField: 'custom-value',
+      };
 
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        entityId,
-        { kind: 'Account', version: 'v1alpha1', group: 'test_group' },
-        ['id', 'name'],
-        {
-          resourceDefinition: undefined,
-          portalContext: {
-            crdGatewayApiUrl: ctx.portalContext.crdGatewayApiUrl,
-          },
-          token: ctx.token,
-          namespaceId: undefined,
-        },
-        true,
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        contextWithExistingFields,
+      );
+
+      expect((contextWithExistingFields as any).customField).toBe(
+        'custom-value',
       );
     });
 
-    it('should update context and node when entity is successfully read', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
+    it('should handle different kind values', async () => {
+      const differentKind = 'Organization';
+      const nodeWithDifferentKind: PortalLuigiNode = {
         defineEntity: {
           graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id name }',
-            version: 'v1alpha1',
+            kind: differentKind,
           },
         },
         context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
+      } as PortalLuigiNode;
 
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
-        },
-        spec: { field: 'value' },
-      } as any;
-
-      mockResourceService.read.mockReturnValue(of(mockEntity));
-
-      await service.processNodeContext(entityId, entityNode, ctx);
-
-      expect(ctx.entity).toBe(mockEntity);
-      expect(ctx.entityId).toBe('cluster1/test-entity');
-      expect(entityNode.context!.entity).toBe(mockEntity);
-      expect(entityNode.context!.entityId).toBe('cluster1/test-entity');
-    });
-
-    it('should handle entity without kcp.io/cluster annotation', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id name }',
-            version: 'v1alpha1',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
-
-      const mockEntity: Resource = {
-        metadata: { name: 'test' },
-        spec: { field: 'value' },
-      } as any;
-
-      mockResourceService.read.mockReturnValue(of(mockEntity));
-
-      await service.processNodeContext(entityId, entityNode, ctx);
-
-      expect(ctx.entity).toBe(mockEntity);
-      expect(ctx.entityId).toBe('undefined/test-entity');
-      expect(entityNode.context!.entity).toBe(mockEntity);
-      expect(entityNode.context!.entityId).toBe('undefined/test-entity');
-    });
-
-    it('should log error and not update context when read fails', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id name }',
-            version: 'v1alpha1',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
-
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      mockResourceService.read.mockReturnValue(
-        throwError(() => new Error('Network error')),
+      await service.processNodeContext(
+        mockEntityId,
+        nodeWithDifferentKind,
+        mockContext,
       );
 
-      try {
-        await service.processNodeContext(entityId, entityNode, ctx);
-      } catch (e) {
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Not able to read entity test-entity from test_group.v1alpha1.TestKind',
-        );
-        expect(ctx.entity).toBeUndefined();
-        expect(entityNode.context!.entity).toBeUndefined();
-      }
-
-      consoleErrorSpy.mockRestore();
+      expect(mockContext.entityKind).toBe(differentKind);
     });
 
-    it('should handle dots and hyphens in group name', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test-group.with-dots',
-            kind: 'TestKind',
-            query: '{ id }',
-            version: 'v1alpha1',
-          },
+    it('should call resolveCrdGatewayKcpPath before resolveAccountHierarchy', async () => {
+      const callOrder: string[] = [];
+      crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockImplementation(
+        async () => {
+          callOrder.push('kcpPath');
+          return mockKcpPath;
         },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
-
-      const mockEntity: Resource = {
-        metadata: {
-          name: 'test',
-          annotations: { 'kcp.io/cluster': 'cluster1' },
-        },
-      } as any;
-
-      mockResourceService.read.mockReturnValue(of(mockEntity));
-
-      await service.processNodeContext(entityId, entityNode, ctx);
-
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        entityId,
-        {
-          kind: 'TestKind',
-          version: 'v1alpha1',
-          group: 'test_group_with_dots',
-        },
-        ['id'],
-        expect.any(Object),
-        false,
       );
-    });
+      accountPathResolver.resolveAccountHierarchy.mockImplementation(() => {
+        callOrder.push('accountPath');
+        return mockAccountPath;
+      });
 
-    it('should log and rethrow if read fails', async () => {
-      const entityId = 'test-entity';
-      const entityNode: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {
-            group: 'test.group',
-            kind: 'TestKind',
-            query: '{ id }',
-            version: 'v1alpha1',
-          },
-        },
-        context: {},
-      } as any;
-      const ctx: PortalNodeContext = {
-        portalContext: { crdGatewayApiUrl: 'http://test.com' },
-        token: 'test-token',
-      } as any;
-
-      const err = new Error('read failed');
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      mockResourceService.read.mockReturnValue(throwError(() => err));
-
-      await expect(service.processNodeContext(entityId, entityNode, ctx)).rejects.toThrow(
-        'read failed',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining(`Not able to read entity ${entityId} from`),
+      await service.processNodeContext(
+        mockEntityId,
+        mockEntityNode,
+        mockContext,
       );
 
-      consoleSpy.mockRestore();
+      expect(callOrder).toEqual(['kcpPath', 'accountPath']);
     });
   });
 });

@@ -23,6 +23,7 @@ import {
   ResourceListResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
+  ErrorHandlerService,
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
@@ -56,6 +57,7 @@ import {
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
 import { Subscription, tap } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -89,6 +91,7 @@ import { Subscription, tap } from 'rxjs';
 export class ListViewComponent {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
+  private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -177,6 +180,10 @@ export class ListViewComponent {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         tap(() => (this.isLoadingList = false)),
+        catchError((error) => {
+          this.errorHandlerService.handleUnauthorizedAccess(error);
+          throw error;
+        }),
       )
       .subscribe({
         next: (result: ResourceListResult) => {

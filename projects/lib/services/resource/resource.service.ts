@@ -25,7 +25,7 @@ import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
 import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
-import { catchError, map, startWith, switchMap, tap } from 'rxjs/operators';
+import { catchError, map, startWith, switchMap } from 'rxjs/operators';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -87,28 +87,6 @@ export class ResourceService {
         map((res) =>
           getValueByPath<any, any>(res.data, buildResourcePath(params, '.')),
         ),
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-
-          if (
-            error.message?.toLowerCase().includes('forbidden') ||
-            error.message?.includes('access denied')
-          ) {
-            this.luigiCoreService.navigation().navigate('/error/403');
-          } else {
-            this.luigiCoreService.navigation().navigate('/error/404');
-          }
-
-          return error;
-        }),
-        tap((resource) => {
-          if (resource?.metadata?.deletionTimestamp) {
-            const message = `The resource ${resourceId} is pending deletion.`;
-            this.luigiCoreService.navigation().navigate('/error/422');
-            throw new Error(message);
-          }
-        }),
       );
   }
 

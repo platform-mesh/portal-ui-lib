@@ -1,172 +1,243 @@
+import { kcpRootOrgsPath } from '../models/constants';
 import { LuigiExtendedGlobalContextConfigServiceImpl } from './luigi-extended-global-context-config.service';
 import { TestBed } from '@angular/core/testing';
-import {
-  AuthService,
-  ConfigService,
-  EnvConfigService,
-} from '@openmfp/portal-ui-lib';
-import { AccountInfoService } from '@platform-mesh/portal-ui-lib/services';
+import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { mock } from 'jest-mock-extended';
-import { of, throwError } from 'rxjs';
 
 describe('LuigiExtendedGlobalContextConfigServiceImpl', () => {
   let service: LuigiExtendedGlobalContextConfigServiceImpl;
-  let mockAccountInfoService: jest.Mocked<AccountInfoService>;
-  let mockEnvConfigService: jest.Mocked<EnvConfigService>;
-  let mockConfigService: jest.Mocked<ConfigService>;
-  let mockAuthService: jest.Mocked<AuthService>;
+  let envConfigService: jest.Mocked<EnvConfigService>;
 
   beforeEach(() => {
-    mockAccountInfoService = mock();
-    mockEnvConfigService = mock();
-    mockConfigService = mock();
-    mockAuthService = mock();
+    envConfigService = mock<EnvConfigService>();
 
     TestBed.configureTestingModule({
       providers: [
         LuigiExtendedGlobalContextConfigServiceImpl,
-        { provide: AccountInfoService, useValue: mockAccountInfoService },
-        { provide: EnvConfigService, useValue: mockEnvConfigService },
-        { provide: ConfigService, useValue: mockConfigService },
-        { provide: AuthService, useValue: mockAuthService },
+        { provide: EnvConfigService, useValue: envConfigService },
       ],
     });
 
     service = TestBed.inject(LuigiExtendedGlobalContextConfigServiceImpl);
   });
 
-  it('should return organizationId with the same entityId when resource is successfully read', async () => {
-    const mockPortalConfig = {
-      portalContext: {
-        crdGatewayApiUrl: 'https://api.example.com/graphql',
-      },
-    } as any;
-    const mockEnvConfig = {
-      idpName: 'test-org',
-    } as any;
-    const mockResource = {
-      metadata: {
-        annotations: {
-          'kcp.io/cluster': 'cluster-123',
-        },
-      },
-      spec: {
-        organization: {
-          originClusterId: 'originClusterId',
-        },
-      },
-    } as any;
-    const mockToken = 'mock-token';
-
-    mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
-    mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    mockAuthService.getToken.mockReturnValue(mockToken);
-    mockAccountInfoService.read.mockReturnValue(of(mockResource));
-
-    const result = await service.createLuigiExtendedGlobalContext();
-
-    expect(result).toEqual({
-      organizationId: 'originClusterId/test-org',
-      kcpCA: 'dW5kZWZpbmVk',
-      kcpPath: 'root:orgs:test-org',
-      organization: 'test-org',
-      entityId: 'originClusterId/test-org',
-      entityName: 'test-org',
-    });
-
-    expect(mockAccountInfoService.read).toHaveBeenCalledWith({
-      portalContext: {
-        crdGatewayApiUrl: 'https://api.example.com/graphql',
-      },
-      token: 'mock-token',
-      accountId: 'test-org',
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('should return empty object when cluster annotations not present', async () => {
-    const mockPortalConfig = {
-      portalContext: {
-        crdGatewayApiUrl: 'https://api.example.com/graphql',
-      },
-    } as any;
-    const mockEnvConfig = {
-      idpName: 'test-org',
-    } as any;
-    const mockResource = {
-      metadata: {},
-    } as any;
-    const mockToken = 'mock-token';
+  describe('createLuigiExtendedGlobalContext', () => {
+    it('should return empty object when idpName is welcome', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'welcome',
+      } as any);
 
-    mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
-    mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    mockAuthService.getToken.mockReturnValue(mockToken);
-    mockAccountInfoService.read.mockReturnValue(of(mockResource));
+      const result = await service.createLuigiExtendedGlobalContext();
 
-    const result = await service.createLuigiExtendedGlobalContext();
-
-    expect(result).toEqual({});
-
-    expect(mockAccountInfoService.read).toHaveBeenCalledWith({
-      portalContext: {
-        crdGatewayApiUrl: 'https://api.example.com/graphql',
-      },
-      token: 'mock-token',
-      accountId: 'test-org',
+      expect(result).toEqual({});
     });
-  });
 
-  it('should return empty object for welcome idp provider', async () => {
-    const mockPortalConfig = {
-      portalContext: {
-        crdGatewayApiUrl: 'https://api.example.com/graphql',
-      },
-    } as any;
-    const mockEnvConfig = {
-      idpName: 'welcome',
-    } as any;
-    const mockResource = {
-      metadata: {},
-    } as any;
-    const mockToken = 'mock-token';
+    it('should return context with organization when idpName is not welcome', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'test-org',
+      } as any);
 
-    mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
-    mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    mockAuthService.getToken.mockReturnValue(mockToken);
-    mockAccountInfoService.read.mockReturnValue(of(mockResource));
+      const result = await service.createLuigiExtendedGlobalContext();
 
-    const result = await service.createLuigiExtendedGlobalContext();
+      expect(result).toEqual({
+        organization: 'test-org',
+        kcpPath: `${kcpRootOrgsPath}:test-org`,
+        entityName: 'test-org',
+      });
+    });
 
-    expect(result).toEqual({});
-    expect(mockAccountInfoService.read).not.toHaveBeenCalled();
-  });
+    it('should call envConfigService.getEnvConfig', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'test-org',
+      } as any);
 
-  it('should return empty object when resource read fails', async () => {
-    const mockPortalConfig = {
-      portalContext: {
-        crdGatewayApiUrl: 'https://api.example.com/graphql',
-      },
-    } as any;
-    const mockEnvConfig = {
-      idpName: 'test-org',
-    } as any;
-    const mockToken = 'mock-token';
+      await service.createLuigiExtendedGlobalContext();
 
-    const error = new Error('API Error');
-    mockConfigService.getPortalConfig.mockResolvedValue(mockPortalConfig);
-    mockEnvConfigService.getEnvConfig.mockResolvedValue(mockEnvConfig);
-    mockAuthService.getToken.mockReturnValue(mockToken);
-    mockAccountInfoService.read.mockReturnValue(throwError(() => error));
+      expect(envConfigService.getEnvConfig).toHaveBeenCalled();
+    });
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    it('should call envConfigService.getEnvConfig only once', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'test-org',
+      } as any);
 
-    const result = await service.createLuigiExtendedGlobalContext();
+      await service.createLuigiExtendedGlobalContext();
 
-    expect(result).toEqual({});
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Failed to read entity test-org from core_platform_mesh_io',
-      error,
-    );
+      expect(envConfigService.getEnvConfig).toHaveBeenCalledTimes(1);
+    });
 
-    consoleSpy.mockRestore();
+    it('should construct kcpPath with kcpRootOrgsPath constant', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'my-organization',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.kcpPath).toBe(`${kcpRootOrgsPath}:my-organization`);
+    });
+
+    it('should set organization to idpName value', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'acme-corp',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.organization).toBe('acme-corp');
+    });
+
+    it('should set entityName to idpName value', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'enterprise-inc',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.entityName).toBe('enterprise-inc');
+    });
+
+    it('should handle idpName with special characters', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'org-name_123',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result).toEqual({
+        organization: 'org-name_123',
+        kcpPath: `${kcpRootOrgsPath}:org-name_123`,
+        entityName: 'org-name_123',
+      });
+    });
+
+    it('should handle idpName with hyphens', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'my-test-org',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.organization).toBe('my-test-org');
+      expect(result.kcpPath).toBe(`${kcpRootOrgsPath}:my-test-org`);
+      expect(result.entityName).toBe('my-test-org');
+    });
+
+    it('should handle case-sensitive idpName', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'TestOrg',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.organization).toBe('TestOrg');
+    });
+
+    it('should handle welcome with different casing', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'welcome',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result).toEqual({});
+    });
+
+    it('should not return empty object for Welcome with capital W', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'Welcome',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result).not.toEqual({});
+      expect(result.organization).toBe('Welcome');
+    });
+
+    it('should handle numeric idpName', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: '12345',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.organization).toBe('12345');
+      expect(result.kcpPath).toBe(`${kcpRootOrgsPath}:12345`);
+    });
+
+    it('should return object with all three properties for non-welcome idp', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'test-org',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(Object.keys(result)).toEqual([
+        'organization',
+        'kcpPath',
+        'entityName',
+      ]);
+    });
+
+    it('should return object with no properties for welcome idp', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'welcome',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(Object.keys(result)).toHaveLength(0);
+    });
+
+    it('should propagate error when envConfigService throws', async () => {
+      const error = new Error('Config service error');
+      envConfigService.getEnvConfig.mockRejectedValue(error);
+
+      await expect(service.createLuigiExtendedGlobalContext()).rejects.toThrow(
+        'Config service error',
+      );
+    });
+
+    it('should handle envConfig with additional properties', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: 'test-org',
+        oauthServerUrl: 'https://auth.example.com',
+        clientId: 'client123',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.organization).toBe('test-org');
+    });
+
+    it('should handle empty string idpName', async () => {
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName: '',
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result).toEqual({
+        organization: '',
+        kcpPath: `${kcpRootOrgsPath}:`,
+        entityName: '',
+      });
+    });
+
+    it('should use same idpName for all three context properties', async () => {
+      const idpName = 'consistent-org';
+      envConfigService.getEnvConfig.mockResolvedValue({
+        idpName,
+      } as any);
+
+      const result = await service.createLuigiExtendedGlobalContext();
+
+      expect(result.organization).toBe(idpName);
+      expect(result.entityName).toBe(idpName);
+      expect(result.kcpPath).toContain(idpName);
+    });
   });
 });

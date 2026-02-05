@@ -1,16 +1,14 @@
-import { TestBed } from '@angular/core/testing';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeChangeHookConfigServiceImpl } from './node-change-hook-config.service';
-import { OrganizationReadyService } from './org-ready.service';
+import { TestBed } from '@angular/core/testing';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 
 describe('NodeChangeHookConfigServiceImpl', () => {
   let service: NodeChangeHookConfigServiceImpl;
   let mockLuigiCoreService: any;
   let mockCrdGatewayKcpPatchResolver: jest.Mocked<CrdGatewayKcpPatchResolver>;
   let mockAccountPathResolverService: jest.Mocked<AccountPathResolverService>;
-  let mockOrganizationReadyService: jest.Mocked<OrganizationReadyService>;
 
   beforeEach(() => {
     mockLuigiCoreService = {
@@ -28,10 +26,6 @@ describe('NodeChangeHookConfigServiceImpl', () => {
       resolveAccountHierarchy: jest.fn(),
     } as unknown as jest.Mocked<AccountPathResolverService>;
 
-    mockOrganizationReadyService = {
-      checkOrganizationReady: jest.fn(),
-    } as unknown as jest.Mocked<OrganizationReadyService>;
-
     TestBed.configureTestingModule({
       providers: [
         NodeChangeHookConfigServiceImpl,
@@ -44,17 +38,13 @@ describe('NodeChangeHookConfigServiceImpl', () => {
           provide: AccountPathResolverService,
           useValue: mockAccountPathResolverService,
         },
-        {
-          provide: OrganizationReadyService,
-          useValue: mockOrganizationReadyService,
-        },
       ],
     });
 
     service = TestBed.inject(NodeChangeHookConfigServiceImpl);
   });
 
-  it('should navigate when initialRoute and virtualTree exist and _virtualTree does not exist', () => {
+  it('should navigate when initialRoute and virtualTree exist and _virtualTree does not exist', async () => {
     const prevNode = {} as any;
     const nextNode = {
       initialRoute: '/some/path',
@@ -62,7 +52,7 @@ describe('NodeChangeHookConfigServiceImpl', () => {
       context: {},
     } as any;
 
-    service.nodeChangeHook(prevNode, nextNode);
+    await service.nodeChangeHook(prevNode, nextNode);
 
     expect(mockLuigiCoreService.navigation().navigate).toHaveBeenCalledWith(
       '/some/path',
@@ -73,6 +63,5 @@ describe('NodeChangeHookConfigServiceImpl', () => {
     expect(
       mockAccountPathResolverService.resolveAccountHierarchy,
     ).toHaveBeenCalledWith(nextNode);
-    expect(mockOrganizationReadyService.checkOrganizationReady).toHaveBeenCalled();
   });
 });

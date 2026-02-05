@@ -79,14 +79,6 @@ describe(LogicalClusterService, () => {
         .subscribe({
           error: (err) => {
             expect(err).toBe(error);
-            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-              text: 'fail',
-              type: 'error',
-            });
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
             done();
           },
         });

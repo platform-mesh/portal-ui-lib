@@ -323,102 +323,6 @@ describe('ResourceService', () => {
           done();
         });
     });
-
-    it('should handle resource in pending deletion state', (done) => {
-      const rawQuery = `query { core_k8s_io { TestKind(name: "test") { name } } }`;
-      const navigateMock = jest.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      });
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                TestKind: {
-                  name: 'test',
-                  metadata: { deletionTimestamp: '2021-01-01T00:00:00Z' },
-                },
-              },
-            },
-          },
-        }),
-      );
-
-      service
-        .read(
-          'test',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          rawQuery,
-          clusterScopeNodeContext,
-        )
-        .subscribe({
-          error: (error) => {
-            expect(navigateMock).toHaveBeenCalledWith('/error/422');
-            expect(error.message).toEqual(
-              'The resource test is pending deletion.',
-            );
-            done();
-          },
-        });
-    });
-
-    it('should handle read error', (done) => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-      const navigateMock = jest.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      });
-
-      service
-        .read(
-          'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          ['name'],
-          namespacedNodeContext,
-        )
-        .subscribe({
-          error: (_err) => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(navigateMock).toHaveBeenCalledWith('/error/404');
-            done();
-          },
-        });
-    });
-
-    it('should handle 403 read error', (done) => {
-      const error = new Error('fail forbidden');
-      error.message = 'Forbidden';
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-      const navigateMock = jest.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      });
-
-      service
-        .read(
-          'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-          ['name'],
-          namespacedNodeContext,
-        )
-        .subscribe({
-          error: (err) => {
-            expect(console.error).toHaveBeenCalledWith(
-              'Error executing GraphQL query.',
-              error,
-            );
-            expect(navigateMock).toHaveBeenCalledWith('/error/403');
-            done();
-          },
-        });
-    });
   });
 
   describe('list', () => {
@@ -907,36 +811,6 @@ describe('ResourceService', () => {
           });
           done();
         });
-    });
-
-    it('should handle list error', (done) => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [],
-                },
-              },
-            },
-          },
-        }),
-      );
-      mockApollo.subscribe.mockReturnValue(throwError(() => error));
-      console.error = jest.fn();
-
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
-        error: (err) => {
-          expect(console.error).toHaveBeenCalledWith(
-            'Error executing GraphQL query.',
-            error,
-          );
-          done();
-        },
-      });
     });
 
     it('should handle MODIFIED operation in subscription', (done) => {

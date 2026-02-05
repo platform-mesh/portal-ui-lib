@@ -5,6 +5,7 @@ import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models/models';
 import {
   AccountInfoService,
+  ErrorHandlerService,
   GatewayService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -18,6 +19,7 @@ describe('DetailViewComponent', () => {
   let mockGatewayService: any;
   let envConfigServiceMock: jest.Mocked<EnvConfigService>;
   let accountInfoServiceMock: jest.Mocked<AccountInfoService>;
+  let errorHandlerServiceMock: jest.Mocked<ErrorHandlerService>;
   let luigiClientLinkManagerNavigate = jest.fn();
 
   beforeEach(() => {
@@ -32,6 +34,9 @@ describe('DetailViewComponent', () => {
         name: 'account',
       },
       spec: {
+        account: {
+          originClusterId: 'originClusterId',
+        },
         clusterInfo: {
           ca: 'ca',
         },
@@ -43,6 +48,7 @@ describe('DetailViewComponent', () => {
         },
         organization: {
           originClusterId: 'mwi4ti5r3vtng851',
+          name: 'org',
         },
       },
     };
@@ -56,6 +62,7 @@ describe('DetailViewComponent', () => {
     mockGatewayService = {
       resolveKcpPath: jest.fn().mockReturnValue('https://example.com'),
     };
+    errorHandlerServiceMock = mock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -63,6 +70,7 @@ describe('DetailViewComponent', () => {
         { provide: AccountInfoService, useValue: accountInfoServiceMock },
         { provide: GatewayService, useValue: mockGatewayService },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
+        { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
       ],
     }).overrideComponent(DetailViewComponent, {
       set: { template: '<div></div>' },
@@ -89,9 +97,7 @@ describe('DetailViewComponent', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -157,9 +163,7 @@ describe('DetailViewComponent', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -200,7 +204,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-      entity: { metadata: { name: 'test-resource' } },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -246,9 +250,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-      entity: {
-        metadata: { name: 'test-account' },
-      },
+      entityName: 'test-account',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -296,9 +298,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -346,9 +346,6 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-        entity: {
-          metadata: { name: undefined }, // undefined name should make resourceId() return undefined
-        },
         parentNavigationContexts: ['project'],
       })) as any;
 
@@ -372,6 +369,29 @@ describe('DetailViewComponent', () => {
       });
     });
 
+    it('should call handleResourcePendingDeletionError during readResource if resource has deletionTimestamp', () => {
+      const terminatingResource = {
+        metadata: {
+          name: 'test-resource',
+          deletionTimestamp: '2026-02-04T12:00:00Z',
+        },
+      };
+
+      mockResourceService.read.mockReturnValue(of(terminatingResource));
+
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = component.context;
+      newComponent.LuigiClient = component.LuigiClient;
+
+      newFixture.detectChanges();
+
+      expect(
+        errorHandlerServiceMock.handleResourcePendingDeletion,
+      ).toHaveBeenCalledWith(terminatingResource);
+    });
+
     it('should handle undefined parentNavigationContext in navigateToParent method', () => {
       jest.clearAllMocks();
       const newFixture = TestBed.createComponent(DetailViewComponent);
@@ -389,9 +409,7 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
+        entityName: 'test-resource',
         parentNavigationContexts: undefined, // undefined parentNavigationContexts
       })) as any;
 
@@ -434,9 +452,7 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
+        entityName: 'test-resource',
         parentNavigationContexts: [], // empty array
       })) as any;
 
@@ -471,9 +487,7 @@ describe('DetailViewComponent', () => {
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: undefined, // undefined resourceDefinition
-        entity: {
-          metadata: { name: 'test-resource' },
-        },
+        entityName: 'test-resource',
         parentNavigationContexts: ['project'],
       })) as any;
 
@@ -554,9 +568,7 @@ describe('DetailViewComponent template', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
@@ -603,9 +615,7 @@ describe('DetailViewComponent template', () => {
         },
       },
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
-      entity: {
-        metadata: { name: 'test-resource' },
-      },
+      entityName: 'test-resource',
       parentNavigationContexts: ['project'],
     })) as any;
 
