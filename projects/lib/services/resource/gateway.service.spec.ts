@@ -89,6 +89,18 @@ describe('GatewayService', () => {
       expect(result).toBe(':org1');
     });
 
+    it('should keep kcp path without delimiter when readFromParentKcpPath is true', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: 'https://example.com/org1/graphql',
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+      const result = service.resolveKcpPath(nodeContext as any, true);
+      expect(result).toBe('org1');
+    });
+
     it('should return current kcp path if no override provided', () => {
       const nodeContext = {
         portalContext: {

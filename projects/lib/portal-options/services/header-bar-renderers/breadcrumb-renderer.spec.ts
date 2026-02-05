@@ -77,4 +77,17 @@ describe('breadcrumbRenderer', () => {
 
     expect(clickSpy).not.toHaveBeenCalled();
   });
+
+  it('should render empty label when missing', () => {
+    const container = document.createElement('div');
+    const clickSpy = vi.fn();
+
+    const item = { node: {} } as any;
+    breadcrumbRenderer(container, [item], clickSpy);
+
+    const bc = getChildrenByTag(container, 'ui5-breadcrumbs')[0];
+    const items = getChildrenByTag(bc, 'ui5-breadcrumbs-item');
+
+    expect(items[0].textContent).toBe('');
+  });
 });
