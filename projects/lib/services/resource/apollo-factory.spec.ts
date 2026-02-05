@@ -1,5 +1,3 @@
-import { ApolloFactory } from './apollo-factory';
-import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { TestBed } from '@angular/core/testing';
 import { ApolloLink, InMemoryCache, execute } from '@apollo/client/core';
@@ -7,21 +5,34 @@ import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Apollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
 import { parse } from 'graphql';
-import { createClient } from 'graphql-sse';
+import type { ApolloFactory } from './apollo-factory';
+import type { GatewayService } from './gateway.service';
 import { MockedFunction, MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
+const createClientMock = vi.fn();
+
 vi.mock('graphql-sse', () => ({
-  createClient: vi.fn(),
+  createClient: createClientMock,
 }));
 
 describe('ApolloFactory', () => {
+  let ApolloFactoryClass: typeof import('./apollo-factory').ApolloFactory;
+  let GatewayServiceToken: typeof import('./gateway.service').GatewayService;
+  let createClient: typeof import('graphql-sse').createClient;
   let factory: ApolloFactory;
   let luigiCoreServiceMock: any;
   let httpLinkMock: any;
   let gatewayServiceMock: MockedObject<GatewayService>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
+    createClientMock.mockClear();
+    ({ createClient } = await import('graphql-sse'));
+    ({ GatewayService: GatewayServiceToken } = await import(
+      './gateway.service'
+    ));
+    ({ ApolloFactory: ApolloFactoryClass } = await import('./apollo-factory'));
     httpLinkMock = {
       create: vi.fn().mockReturnValue({ request: [] }),
     };
@@ -35,13 +46,13 @@ describe('ApolloFactory', () => {
     gatewayServiceMock = mock<GatewayService>();
     TestBed.configureTestingModule({
       providers: [
-        ApolloFactory,
+        ApolloFactoryClass,
         { provide: HttpLink, useValue: httpLinkMock },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
-        { provide: GatewayService, useValue: gatewayServiceMock },
+        { provide: GatewayServiceToken, useValue: gatewayServiceMock },
       ],
     });
-    factory = TestBed.inject(ApolloFactory);
+    factory = TestBed.inject(ApolloFactoryClass);
   });
 
   it('should create an Apollo instance', () => {
