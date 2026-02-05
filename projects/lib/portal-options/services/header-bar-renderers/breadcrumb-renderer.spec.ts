@@ -1,21 +1,25 @@
-jest.mock('@ui5/webcomponents/dist/Breadcrumbs.js', () => ({}), { virtual: true });
-jest.mock('@ui5/webcomponents/dist/BreadcrumbsItem.js', () => ({}), { virtual: true });
-
 import { breadcrumbRenderer } from './breadcrumb-renderer';
+
+vi.mock('@ui5/webcomponents/dist/Breadcrumbs.js', () => ({}));
+vi.mock('@ui5/webcomponents/dist/BreadcrumbsItem.js', () => ({}));
 
 function getChildrenByTag(el: Element, tag: string): Element[] {
   return Array.from(el.children).filter((c) => c.tagName.toLowerCase() === tag);
 }
 
 function dispatchItemClick(target: Element, detail: any) {
-  const ev = new CustomEvent('item-click', { bubbles: true, cancelable: true, detail } as any);
+  const ev = new CustomEvent('item-click', {
+    bubbles: true,
+    cancelable: true,
+    detail,
+  } as any);
   target.dispatchEvent(ev);
 }
 
 describe('breadcrumbRenderer', () => {
   it('should render breadcrumbs, skip hidden items, and handle click without modifiers', () => {
     const container = document.createElement('div');
-    const clickSpy = jest.fn();
+    const clickSpy = vi.fn();
 
     const visibleItem = { label: 'Visible', node: {} } as any;
     const hiddenItem = {
@@ -52,15 +56,11 @@ describe('breadcrumbRenderer', () => {
 
   it('should not handle click when modifier keys are pressed', () => {
     const container = document.createElement('div');
-    const clickSpy = jest.fn();
+    const clickSpy = vi.fn();
 
     const item = { label: 'Item', node: {} } as any;
 
-    const breadcrumbs = breadcrumbRenderer(
-      container,
-      [item],
-      clickSpy,
-    );
+    const breadcrumbs = breadcrumbRenderer(container, [item], clickSpy);
     expect(breadcrumbs).not.toBeNull();
 
     const bc = getChildrenByTag(container, 'ui5-breadcrumbs')[0];

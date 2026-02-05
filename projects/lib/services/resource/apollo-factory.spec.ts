@@ -1,7 +1,6 @@
 import { ApolloFactory } from './apollo-factory';
 import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
-import { NgZone } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ApolloLink, InMemoryCache, execute } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -21,7 +20,6 @@ describe('ApolloFactory', () => {
   let luigiCoreServiceMock: any;
   let httpLinkMock: any;
   let gatewayServiceMock: MockedObject<GatewayService>;
-  let ngZone: NgZone;
 
   beforeEach(() => {
     httpLinkMock = {
@@ -39,16 +37,11 @@ describe('ApolloFactory', () => {
       providers: [
         ApolloFactory,
         { provide: HttpLink, useValue: httpLinkMock },
-        {
-          provide: NgZone,
-          useValue: new NgZone({ enableLongStackTrace: false }),
-        },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
         { provide: GatewayService, useValue: gatewayServiceMock },
       ],
     });
     factory = TestBed.inject(ApolloFactory);
-    ngZone = TestBed.inject(NgZone);
   });
 
   it('should create an Apollo instance', () => {
@@ -181,7 +174,7 @@ describe('ApolloFactory', () => {
     const obs = execute(
       options.link,
       { query: queryDoc } as any,
-      undefined as any,
+      { client: {} } as any,
     ) as any;
     expect(obs).toBeTruthy();
     expect(typeof obs.subscribe).toBe('function');
@@ -207,7 +200,7 @@ describe('ApolloFactory', () => {
     const obs = execute(
       options.link,
       { query: subDoc } as any,
-      undefined as any,
+      { client: {} } as any,
     ) as any;
     expect(obs).toBeTruthy();
     expect(typeof obs.subscribe).toBe('function');

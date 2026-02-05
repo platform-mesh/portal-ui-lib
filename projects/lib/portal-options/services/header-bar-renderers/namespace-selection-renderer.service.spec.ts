@@ -3,8 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
+import { MockedObject } from 'vitest';
 
-jest.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}), { virtual: true });
+vi.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}));
 
 function getChildrenByTag(el: Element, tag: string): Element[] {
   return Array.from(el.children).filter((c) => c.tagName.toLowerCase() === tag);
@@ -12,22 +13,22 @@ function getChildrenByTag(el: Element, tag: string): Element[] {
 
 describe('NamespaceSelectionRendererService', () => {
   let service: NamespaceSelectionRendererService;
-  let mockResourceService: jest.Mocked<ResourceService>;
-  let mockAuthService: jest.Mocked<AuthService>;
-  let mockLuigiCoreService: jest.Mocked<LuigiCoreService>;
+  let mockResourceService: MockedObject<ResourceService>;
+  let mockAuthService: MockedObject<AuthService>;
+  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   beforeEach(() => {
     const resourceServiceMock = {
-      list: jest.fn(),
-    } as jest.Mocked<Partial<ResourceService>>;
+      list: vi.fn(),
+    } as any;
 
     const authServiceMock = {
-      getToken: jest.fn(),
-    } as jest.Mocked<Partial<AuthService>>;
+      getToken: vi.fn(),
+    };
 
     const luigiCoreServiceMock = {
-      navigation: jest.fn(),
-    } as any;
+      navigation: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -39,9 +40,13 @@ describe('NamespaceSelectionRendererService', () => {
     });
 
     service = TestBed.inject(NamespaceSelectionRendererService);
-    mockResourceService = TestBed.inject(ResourceService) as jest.Mocked<ResourceService>;
-    mockAuthService = TestBed.inject(AuthService) as jest.Mocked<AuthService>;
-    mockLuigiCoreService = TestBed.inject(LuigiCoreService) as jest.Mocked<LuigiCoreService>;
+    mockResourceService = TestBed.inject(
+      ResourceService,
+    ) as MockedObject<ResourceService>;
+    mockAuthService = TestBed.inject(AuthService) as MockedObject<AuthService>;
+    mockLuigiCoreService = TestBed.inject(
+      LuigiCoreService,
+    ) as MockedObject<LuigiCoreService>;
   });
 
   it('should render namespace combobox when namespaced node is present and navigate on change', async () => {
@@ -64,7 +69,7 @@ describe('NamespaceSelectionRendererService', () => {
       ]),
     );
 
-    const navigateMock = jest.fn();
+    const navigateMock = vi.fn();
     (mockLuigiCoreService.navigation as any).mockReturnValue({
       navigate: navigateMock,
     });
@@ -130,7 +135,7 @@ describe('NamespaceSelectionRendererService', () => {
   });
 
   it('should handle list errors gracefully and log error with no extra items added', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const portalConfig: any = {
       portalContext: { crdGatewayApiUrl: 'https://api.example.com/graphql' },

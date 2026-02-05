@@ -67,14 +67,14 @@ describe(LogicalClusterService, () => {
       mockApollo.query.mockReturnValue(throwError(() => error));
       console.error = vi.fn();
 
-      const response = await firstValueFrom(
-        service.read({
-          portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
-          token: 't',
-        } as any),
-      );
-
-      expect(response).toThrow(error);
+      await expect(
+        firstValueFrom(
+          service.read({
+            portalContext: { crdGatewayApiUrl: 'http://gw/graphql' },
+            token: 't',
+          } as any),
+        ),
+      ).rejects.toThrow('fail');
       expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
         text: 'fail',
         type: 'error',

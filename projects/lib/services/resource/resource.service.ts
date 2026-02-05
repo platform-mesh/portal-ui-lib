@@ -99,7 +99,7 @@ export class ResourceService {
             this.luigiCoreService.navigation().navigate('/error/404');
           }
 
-          return error;
+          return throwError(() => error);
         }),
         tap((resource) => {
           if (resource?.metadata?.deletionTimestamp) {
@@ -238,7 +238,7 @@ export class ResourceService {
             catchError((error) => {
               this.alertErrors(error);
               console.error('Error executing GraphQL query.', error);
-              return error;
+              return throwError(() => error);
             }),
           );
       }),
@@ -322,7 +322,7 @@ export class ResourceService {
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
-          return error;
+          return throwError(() => error);
         }),
       );
   }
@@ -375,7 +375,7 @@ export class ResourceService {
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
-          return error;
+          return throwError(() => error);
         }),
       );
   }
@@ -424,7 +424,7 @@ export class ResourceService {
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
-          return error;
+          return throwError(() => error);
         }),
       );
   }
@@ -479,7 +479,7 @@ export class ResourceService {
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
-          return error;
+          return throwError(() => error);
         }),
       );
   }

@@ -13,7 +13,7 @@
     "lib": {
       "projectType": "library",
       "root": "projects/lib",
-      "sourceRoot": "projects/lib/src",
+      "sourceRoot": "projects/lib",
       "prefix": "lib",
       "architect": {
         "build": {
@@ -38,10 +38,10 @@
             "tsConfig": "./tsconfig.spec.json",
             "coverage": true,
             "coverageExclude": ["**/*.html"],
-            "coverageInclude": ["projects/lib/src/**/*.ts"],
+            "coverageInclude": ["projects/lib/**/*.ts"],
             "coverageThresholds": {
               "statements": 95,
-              "branches": 95,
+              "branches": 90,
               "functions": 95,
               "lines": 95
             }

@@ -85,7 +85,9 @@ describe(AccountInfoService, () => {
       mockApollo.query.mockReturnValue(throwError(() => error));
       console.error = vi.fn();
 
-      await firstValueFrom(service.read(namespacedNodeContext));
+      await expect(
+        firstValueFrom(service.read(namespacedNodeContext)),
+      ).rejects.toThrow('fail');
 
       expect(console.error).toHaveBeenCalledWith(
         'Error executing GraphQL query.',

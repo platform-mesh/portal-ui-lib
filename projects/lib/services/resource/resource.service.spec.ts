@@ -1,10 +1,10 @@
-import { TestBed } from '@angular/core/testing';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { Subject, firstValueFrom, of, throwError } from 'rxjs';
-import { MockedObject } from 'vitest';
-import { mock } from 'vitest-mock-extended';
 import { ApolloFactory } from './apollo-factory';
 import { ResourceService } from './resource.service';
+import { TestBed } from '@angular/core/testing';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { Subject, firstValueFrom, lastValueFrom, of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe('ResourceService', () => {
   let service: ResourceService;
@@ -135,6 +135,10 @@ describe('ResourceService', () => {
     });
 
     service = TestBed.inject(ResourceService);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   describe('read', () => {
@@ -889,7 +893,7 @@ describe('ResourceService', () => {
       console.error = vi.fn();
 
       await expect(
-        firstValueFrom(service.list('myList', ['name'], namespacedNodeContext)),
+        lastValueFrom(service.list('myList', ['name'], namespacedNodeContext)),
       ).rejects.toThrow('fail');
       expect(console.error).toHaveBeenCalledWith(
         'Error executing GraphQL query.',
