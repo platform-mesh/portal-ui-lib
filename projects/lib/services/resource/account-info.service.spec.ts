@@ -5,14 +5,6 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
-
-
-
-
-
-
-
-
 describe(AccountInfoService, () => {
   let service: AccountInfoService;
   let mockApollo: any;
