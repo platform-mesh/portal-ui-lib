@@ -13,7 +13,8 @@
   },
   "prettier": "@openmfp/config-prettier",
   "peerDependencies": {
-    "@openmfp/portal-ui-lib": "^0.186.17"
+    "@openmfp/portal-ui-lib": "^0.186.17",
+    "@ui5/webcomponents": "2.19.0"
   },
   "files": [
     "assets/**",
