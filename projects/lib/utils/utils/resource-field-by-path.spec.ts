@@ -7,7 +7,11 @@ import { PropertyField, Resource } from '@platform-mesh/portal-ui-lib/models';
 import jsonpath from 'jsonpath';
 import { MockedFunction, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('jsonpath');
+vi.mock('jsonpath', () => ({
+  default: {
+    query: vi.fn(),
+  },
+}));
 
 describe('getResourceValueByJsonPath', () => {
   const mockResource: Resource = {
@@ -17,14 +21,6 @@ describe('getResourceValueByJsonPath', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetModules();
-    vi.resetAllMocks();
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-    vi.resetModules();
-    vi.resetAllMocks();
   });
 
   it('should return undefined when no property or jsonPathExpression is provided', () => {

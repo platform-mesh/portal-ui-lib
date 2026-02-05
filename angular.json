@@ -17,7 +17,7 @@
       "prefix": "lib",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "builder": "@angular/build:ng-packagr",
           "options": {
             "project": "projects/lib/ng-package.json"
           },
