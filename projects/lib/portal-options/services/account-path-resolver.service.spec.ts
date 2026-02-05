@@ -27,23 +27,28 @@ describe('AccountPathResolverService', () => {
   it('should build path from entity metadata, skipping non-Account types', () => {
     const node: PortalLuigiNode = {
       context: {
-        entity: { metadata: { name: 'acc3' }, __typename: 'Account' },
+        entityName: 'acc3',
+        entityKind: 'Account',
       },
       parent: {
         context: {
-          entity: { metadata: { name: 'proj1' }, __typename: 'Project' },
+          entityName: 'proj1',
+          entityKind: 'Project',
         },
         parent: {
           context: {
-            entity: { metadata: { name: 'acc2' }, __typename: 'Account' },
+            entityName: 'acc2',
+            entityKind: 'Account',
           },
           parent: {
             context: {
-              entity: { metadata: { name: 'team1' }, __typename: 'Team' },
+              entityName: 'team1',
+              entityKind: 'Team',
             },
             parent: {
               context: {
-                entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+                entityName: 'acc1',
+                entityKind: 'Account',
               },
               parent: undefined,
             },
@@ -60,7 +65,8 @@ describe('AccountPathResolverService', () => {
   it('should cache result in node context', () => {
     const node: PortalLuigiNode = {
       context: {
-        entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+        entityName: 'acc1',
+        entityKind: 'Account',
       },
       parent: undefined,
     } as any;
@@ -73,7 +79,8 @@ describe('AccountPathResolverService', () => {
   it('should return empty string for node without Account entities', () => {
     const node: PortalLuigiNode = {
       context: {
-        entity: { metadata: { name: 'proj1' }, __typename: 'Project' },
+        entityName: 'proj1',
+        entityKind: 'Project',
       },
       parent: undefined,
     } as any;
@@ -99,7 +106,8 @@ describe('AccountPathResolverService', () => {
       context: {},
       parent: {
         context: {
-          entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+          entityName: 'acc1',
+          entityKind: 'Account',
         },
         parent: undefined,
       },
@@ -115,7 +123,8 @@ describe('AccountPathResolverService', () => {
       context: {},
       parent: {
         context: {
-          entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+          entityName: 'acc1',
+          entityKind: 'Account',
         },
         parent: undefined,
       },
@@ -131,7 +140,8 @@ describe('AccountPathResolverService', () => {
       context: {},
       parent: {
         context: {
-          entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+          entityName: 'acc1',
+          entityKind: 'Account',
         },
         parent: undefined,
       },
@@ -147,15 +157,18 @@ describe('AccountPathResolverService', () => {
       context: {},
       parent: {
         context: {
-          entity: { metadata: { name: 'acc2' }, __typename: 'Account' },
+          entityName: 'acc2',
+          entityKind: 'Account',
         },
         parent: {
           context: {
-            entity: { metadata: { name: 'team1' }, __typename: 'Team' },
+            entityName: 'team1',
+            entityKind: 'Team',
           },
           parent: {
             context: {
-              entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+              entityName: 'acc1',
+              entityKind: 'Account',
             },
             parent: undefined,
           },
@@ -171,7 +184,7 @@ describe('AccountPathResolverService', () => {
   it('should handle entity without metadata', () => {
     const node: PortalLuigiNode = {
       context: {
-        entity: { __typename: 'Account' },
+        entityKind: 'Account',
       },
       parent: undefined,
     } as any;
@@ -184,7 +197,8 @@ describe('AccountPathResolverService', () => {
   it('should handle node with entity on current node and append entityId', () => {
     const node: PortalLuigiNode = {
       context: {
-        entity: { metadata: { name: 'acc1' }, __typename: 'Account' },
+        entityName: 'acc1',
+        entityKind: 'Account',
       },
       parent: undefined,
     } as any;

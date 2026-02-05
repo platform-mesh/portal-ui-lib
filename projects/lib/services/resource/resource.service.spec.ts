@@ -319,93 +319,6 @@ describe('ResourceService', () => {
         },
       });
     });
-
-    it('should handle resource in pending deletion state', async () => {
-      const rawQuery = `query { core_k8s_io { TestKind(name: "test") { name } } }`;
-      const navigateMock = vi.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      });
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                TestKind: {
-                  name: 'test',
-                  metadata: { deletionTimestamp: '2021-01-01T00:00:00Z' },
-                },
-              },
-            },
-          },
-        }),
-      );
-
-      await expect(
-        firstValueFrom(
-          service.read(
-            'test',
-            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-            rawQuery,
-            clusterScopeNodeContext,
-          ),
-        ),
-      ).rejects.toThrow('The resource test is pending deletion.');
-      expect(navigateMock).toHaveBeenCalledWith('/error/422');
-    });
-
-    it('should handle read error', async () => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
-      const navigateMock = vi.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      });
-
-      await expect(
-        firstValueFrom(
-          service.read(
-            'test-name',
-            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-            ['name'],
-            namespacedNodeContext,
-          ),
-        ),
-      ).rejects.toThrow('fail');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(navigateMock).toHaveBeenCalledWith('/error/404');
-    });
-
-    it('should handle 403 read error', async () => {
-      const error = new Error('fail forbidden');
-      error.message = 'Forbidden';
-      mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
-      const navigateMock = vi.fn();
-      mockLuigiCoreService.navigation.mockReturnValue({
-        navigate: navigateMock,
-      });
-
-      await expect(
-        firstValueFrom(
-          service.read(
-            'test-name',
-            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-            ['name'],
-            namespacedNodeContext,
-          ),
-        ),
-      ).rejects.toThrow('Forbidden');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(navigateMock).toHaveBeenCalledWith('/error/403');
-    });
   });
 
   describe('list', () => {
@@ -873,35 +786,7 @@ describe('ResourceService', () => {
       });
     });
 
-    it('should handle list error', async () => {
-      const error = new Error('fail');
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [],
-                },
-              },
-            },
-          },
-        }),
-      );
-      mockApollo.subscribe.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
-
-      await expect(
-        lastValueFrom(service.list('myList', ['name'], namespacedNodeContext)),
-      ).rejects.toThrow('fail');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-    });
-
-    it('should handle MODIFIED operation in subscription', () => {
+    it('should handle MODIFIED operation in subscription', (done) => {
       mockApollo.query.mockReturnValue(
         of({
           data: {

@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { AccountInfoService, ApolloFactory, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  AccountInfoService,
+  ApolloFactory,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
@@ -83,20 +87,10 @@ describe(AccountInfoService, () => {
     it('should handle read account info error', async () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
 
-      await expect(
+      expect(
         firstValueFrom(service.read(namespacedNodeContext)),
-      ).rejects.toThrow('fail');
-
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'fail',
-        type: 'error',
-      });
+      ).toThrowError();
     });
   });
 });

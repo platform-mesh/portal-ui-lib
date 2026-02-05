@@ -18,6 +18,7 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
+  ErrorHandlerService,
   GatewayService,
   ResourceNodeContext,
   ResourceRequestParams,
@@ -37,6 +38,7 @@ import {
 } from '@fundamental-ngx/ui5-webcomponents';
 import { DynamicPage, DynamicPageHeader, DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { firstValueFrom } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-detail-view',
@@ -61,6 +63,7 @@ export class DetailViewComponent {
   private resourceService = inject(ResourceService);
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
+  private errorHandlerService = inject(ErrorHandlerService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   LuigiClient = input.required<LuigiClient>();
@@ -71,7 +74,7 @@ export class DetailViewComponent {
   resourceFields = computed(
     () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
   );
-  resourceId = computed(() => this.context().entity?.metadata.name);
+  resourceId = computed(() => this.context().entityName);
   workspacePath = computed(() =>
     this.gatewayService.resolveKcpPath(this.context()),
   );
@@ -117,14 +120,17 @@ export class DetailViewComponent {
         this.context(),
         params.kind.toLowerCase() === 'account',
       )
+      .pipe(
+        tap((resource) => {
+          if (resource?.metadata?.deletionTimestamp) {
+            this.errorHandlerService.handleResourcePendingDeletion(resource);
+          }
+        }),
+      )
       .subscribe({
         next: (result) => this.resource.set(result),
-        error: (error) => {
-          this.LuigiClient().uxManager().showAlert({
-            text: `Failed to read resource: ${error.message}`,
-            type: 'error',
-          });
-        },
+        error: (error) =>
+          this.errorHandlerService.handleUnauthorizedAccess(error),
       });
   }
 
@@ -177,7 +183,7 @@ export class DetailViewComponent {
 
       URL.revokeObjectURL(url);
     } catch (error) {
-      this.LuigiClient()
+      void this.LuigiClient()
         .uxManager()
         .showAlert({
           text: `Failed to download kubeconfig: ${error.message}`,

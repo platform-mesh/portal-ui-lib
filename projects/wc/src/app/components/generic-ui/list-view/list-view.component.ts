@@ -36,6 +36,7 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
+  ErrorHandlerService,
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
@@ -46,6 +47,7 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -76,6 +78,7 @@ import {
 export class ListViewComponent {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
+  private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -121,7 +124,13 @@ export class ListViewComponent {
 
     this.resourceService
       .list(queryOperation, fields, this.context())
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error) => {
+          this.errorHandlerService.handleUnauthorizedAccess(error);
+          throw error;
+        }),
+      )
       .subscribe({
         next: (result: any[]) => {
           this.resources.set(

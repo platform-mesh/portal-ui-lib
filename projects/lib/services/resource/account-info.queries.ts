@@ -10,11 +10,15 @@ export const accountInfoRead = gql`
             annotations
           }
           spec {
+            account {
+              originClusterId
+            }
             clusterInfo {
               ca
             }
             organization {
               originClusterId
+              name
             }
             oidc {
               clients
