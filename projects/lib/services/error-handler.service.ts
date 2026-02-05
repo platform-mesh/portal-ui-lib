@@ -7,10 +7,7 @@ export class ErrorHandlerService {
   private luigiCoreService = inject(LuigiCoreService);
 
   handleUnauthorizedAccess(error: any) {
-    if (
-      error.message?.toLowerCase().includes('forbidden') ||
-      error.message?.toLowerCase()?.includes('access denied')
-    ) {
+    if (this.isUnauthorizedAccess(error)) {
       this.luigiCoreService.navigation().navigate('/error/403');
     } else {
       this.luigiCoreService.navigation().navigate('/error/404');
@@ -19,5 +16,12 @@ export class ErrorHandlerService {
 
   handleResourcePendingDeletion(_resource: Resource) {
     this.luigiCoreService.navigation().navigate('/error/422');
+  }
+
+  isUnauthorizedAccess(error: any): boolean {
+    return (
+      error.message?.toLowerCase().includes('forbidden') ||
+      error.message?.toLowerCase()?.includes('access denied')
+    );
   }
 }

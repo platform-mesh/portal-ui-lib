@@ -7,6 +7,7 @@ import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
+  ErrorHandlerService,
   OrganizationReadyService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { firstValueFrom } from 'rxjs';
@@ -19,6 +20,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   private accountPathResolver = inject(AccountPathResolverService);
   private accountInfoService = inject(AccountInfoService);
   private organizationReadyService = inject(OrganizationReadyService);
+  private errorHandlerService = inject(ErrorHandlerService);
 
   public async processNodeContext(
     entityId: string,
@@ -79,7 +81,11 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
 
       // we were able to ready the account info so on this kcpPath we can query for the organization ready state
       this.organizationReadyService.checkOrganizationReady();
-    } catch (e) {}
+    } catch (e) {
+      if (!this.errorHandlerService.isUnauthorizedAccess(e)) {
+        console.error('Failed to read account info', e);
+      }
+    }
   }
 
   private addFieldsToContext(

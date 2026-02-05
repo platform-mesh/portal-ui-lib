@@ -7,8 +7,8 @@ import {
   LuigiCoreService,
 } from '@openmfp/portal-ui-lib';
 import { LogicalCluster } from '@platform-mesh/portal-ui-lib/models';
-import { Subject, exhaustMap, filter } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { EMPTY, Subject, exhaustMap, filter } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class OrganizationReadyService {
@@ -37,13 +37,22 @@ export class OrganizationReadyService {
       .pipe(
         filter(() => !this.isReady),
         exhaustMap(() =>
-          this.logicalClusterService.read({
-            portalContext: {
-              crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
-            },
-            token: this.authService.getToken(),
-            accountId: idpName,
-          }),
+          this.logicalClusterService
+            .read({
+              portalContext: {
+                crdGatewayApiUrl:
+                  portalConfig.portalContext['crdGatewayApiUrl'],
+              },
+              token: this.authService.getToken(),
+              accountId: idpName,
+            })
+            .pipe(
+              catchError((error) => {
+                console.error('Org check failed', error);
+                // Return EMPTY so the exhaustMap completes without killing the check$ stream
+                return EMPTY;
+              }),
+            ),
         ),
         map((res: LogicalCluster) => {
           this.isReady = res.status.phase === 'Ready';
