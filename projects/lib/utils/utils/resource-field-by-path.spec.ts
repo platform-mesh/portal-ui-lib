@@ -17,6 +17,14 @@ describe('getResourceValueByJsonPath', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
+    vi.resetAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    vi.resetAllMocks();
   });
 
   it('should return undefined when no property or jsonPathExpression is provided', () => {
