@@ -7,13 +7,13 @@ import {
   Resource,
   ResourceDefinition,
   ResourceListResult,
-  ResourceOperationTypeMap,
   ResourcePagination,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   buildResourcePath,
   capitalize,
+  getResourceValueByJsonPath,
   getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
   stripTypename,
@@ -25,7 +25,7 @@ import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
 import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { EMPTY, Observable, throwError } from 'rxjs';
-import { catchError, map, startWith, switchMap } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
 interface ResourceResponseError extends Record<string, any> {
   message: string;
@@ -128,125 +128,59 @@ export class ResourceService {
     readFromParentKcpPath: boolean = false,
     pagination?: ResourcePagination,
   ): Observable<ResourceListResult | any> {
-    const lowerCaseOperation = operation.toLowerCase();
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const variables = {
+      ...(isNamespacedResource && {
+        namespace: { type: 'String', value: nodeContext.namespaceId },
+      }),
+      ...(pagination?.limit && {
+        limit: { type: 'Int', value: pagination?.limit },
+      }),
+      ...(pagination?.continue && {
+        continue: { type: 'String', value: pagination?.continue },
+      }),
+    };
+
+    const resourceDefinition = nodeContext.resourceDefinition;
+    if (!resourceDefinition) {
+      return throwError(() => new Error('Resource definition is required'));
+    }
     return fieldsOrRawQuery instanceof Array
       ? this.listWithFields(
-          lowerCaseOperation,
+          resourceDefinition,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
-          pagination,
+          variables,
         )
       : this.listWithRawQuery(
           operation,
           fieldsOrRawQuery,
           nodeContext,
           readFromParentKcpPath,
-          pagination,
+          variables,
         );
   }
 
-  private listWithFields(
-    operation: string,
-    fields: any[],
+  private getResourceReadyStatus(
+    resource: Resource,
     nodeContext: ResourceNodeContext,
-    readFromParentKcpPath: boolean,
-    pagination?: ResourcePagination,
-  ): Observable<ResourceListResult> {
-    const resourceDefinition = nodeContext.resourceDefinition;
-    if (!resourceDefinition) {
-      return throwError(() => new Error('Resource definition is required'));
+  ) {
+    const readyCondition = nodeContext.resourceDefinition?.readyCondition;
+    if (!readyCondition) {
+      return true;
     }
 
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
-    const variables = {
-      ...(isNamespacedResource && {
-        namespace: { type: 'String', value: nodeContext.namespaceId },
-      }),
-    };
-
-    fields.push({ metadata: ['uid'] });
-
-    return this.initialListQuery(
-      resourceDefinition,
-      fields,
-      nodeContext,
-      readFromParentKcpPath,
-      variables,
-      pagination,
-    ).pipe(
-      switchMap(
-        (
-          listQueryResult: ResourceListResult,
-        ): Observable<ResourceListResult> => {
-          const subscriptionQuery = gqlBuilder.subscription({
-            operation: operation,
-            fields: ['type', { object: fields }],
-            variables: {
-              ...variables,
-              resourceVersion: {
-                type: 'String',
-                value: listQueryResult.resourceVersion,
-              },
-            },
-          });
-
-          const result = new Map<string, Resource>(
-            listQueryResult.items.map((item) => [item.metadata.uid!, item]),
-          );
-
-          const listSubscriptionResult = (): ResourceListResult => ({
-            ...listQueryResult,
-            items: Array.from(result.values()),
-          });
-
-          return this.apolloFactory
-            .apollo(nodeContext, readFromParentKcpPath)
-            .subscribe({
-              query: gql`
-                ${subscriptionQuery.query}
-              `,
-              variables: subscriptionQuery.variables,
-            })
-            .pipe(
-              map((res: any): ResourceListResult => {
-                const resourceResult: ResourceSubscriptionResult | undefined =
-                  getValueByPath(res.data, operation);
-
-                if (!resourceResult) {
-                  return listSubscriptionResult();
-                }
-
-                const { type, object } = resourceResult;
-                if (type === ResourceOperationTypeMap.ADDED) {
-                  result.set(object.metadata.uid!, object);
-                } else if (type === ResourceOperationTypeMap.MODIFIED) {
-                  result.set(object.metadata.uid!, object);
-                } else if (type === ResourceOperationTypeMap.DELETED) {
-                  result.delete(object.metadata.uid!);
-                }
-
-                return listSubscriptionResult();
-              }),
-              startWith(listSubscriptionResult()),
-              catchError((error) => {
-                this.alertErrors(error);
-                console.error('Error executing GraphQL query.', error);
-                return throwError(() => error);
-              }),
-            );
-        },
-      ),
-    );
+    const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
+    return !!readyStatus;
   }
 
-  private initialListQuery(
+  private listWithFields(
     resourceDefinition: ResourceDefinition,
     fields: any[],
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean,
     variables: VariableOptions,
-    pagination?: ResourcePagination,
   ): Observable<ResourceListResult> {
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
@@ -256,11 +190,7 @@ export class ResourceService {
     const queryFields = [
       {
         operation: kind,
-        variables: {
-          ...variables,
-          limit: { type: 'Int', value: pagination?.limit },
-          continue: { type: 'String', value: pagination?.continue },
-        },
+        variables,
         fields: [
           'resourceVersion',
           'remainingItemCount',
@@ -295,6 +225,15 @@ export class ResourceService {
 
           return resourceListResult;
         }),
+        map((resourceListResult) => {
+          const processedResult: Resource[] = resourceListResult.items.map(
+            (resource) => ({
+              ...resource,
+              ready: this.getResourceReadyStatus(resource, nodeContext),
+            }),
+          );
+          return { ...resourceListResult, items: processedResult };
+        }),
       );
   }
 
@@ -303,15 +242,8 @@ export class ResourceService {
     rawQuery: string,
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean,
-    pagination?: ResourcePagination,
+    variables: VariableOptions,
   ): Observable<any> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
-    const variables = {
-      ...(isNamespacedResource && {
-        namespace: { type: 'String', value: nodeContext.namespaceId },
-      }),
-    };
-
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .query({
@@ -329,6 +261,55 @@ export class ResourceService {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);
           return error;
+        }),
+      );
+  }
+
+  listSubscription(
+    operation: string,
+    fields: any[],
+    nodeContext: ResourceNodeContext,
+    resourceVersion: string,
+    readFromParentKcpPath: boolean,
+  ): Observable<ResourceSubscriptionResult | undefined> {
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const variables = {
+      ...(isNamespacedResource && {
+        namespace: { type: 'String', value: nodeContext.namespaceId },
+      }),
+    };
+
+    const subscriptionQuery = gqlBuilder.subscription({
+      operation: operation,
+      fields: ['type', { object: fields }],
+      variables: {
+        ...variables,
+        resourceVersion: {
+          type: 'String',
+          value: resourceVersion,
+        },
+      },
+    });
+
+    return this.apolloFactory
+      .apollo(nodeContext, readFromParentKcpPath)
+      .subscribe({
+        query: gql`
+          ${subscriptionQuery.query}
+        `,
+        variables: subscriptionQuery.variables,
+      })
+      .pipe(
+        map((res: any): ResourceSubscriptionResult | undefined => {
+          const resource: ResourceSubscriptionResult | undefined =
+            getValueByPath(res.data, operation);
+          if (resource) {
+            resource.object = {
+              ...resource.object,
+              ready: this.getResourceReadyStatus(resource.object, nodeContext),
+            };
+          }
+          return resource;
         }),
       );
   }

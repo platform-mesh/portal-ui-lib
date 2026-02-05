@@ -21,6 +21,8 @@ import {
   FieldDefinition,
   Resource,
   ResourceListResult,
+  ResourceOperationTypeMap,
+  ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
@@ -56,8 +58,7 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { Subscription, tap } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -116,25 +117,58 @@ export class ListViewComponent {
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
 
-  totalItemsCount = signal<number>(0);
+  totalItemsCount = computed(
+    () => this.resources().length + this.remainingItemCount(),
+  );
   paginationLimit = signal<number>(5);
+  remainingItemCount = signal<number>(0);
   hasMore = signal<boolean>(false);
+  resourceVersion = signal<string | undefined>(undefined);
 
   private currentContinueToken: string | undefined = undefined;
-  private previousListSubscription: Subscription;
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
     effect(() => {
-      this.resetPagination();
       this.list();
     });
+
+    effect((onCleanup) => {
+      const version = this.resourceVersion();
+      if (!version) return;
+      const sub = this.startListSubscription(version);
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  private startListSubscription(vesrsion: string) {
+    const fields = this.getListQueryFields();
+    const resourceDefinition = this.getResourceDefinition();
+    const queryOperation = replaceDotsAndHyphensWithUnderscores(
+      buildResourcePath({
+        group: resourceDefinition.group,
+        version: resourceDefinition.version,
+        kind: resourceDefinition.plural,
+      }),
+    ) as string;
+
+    return this.resourceService
+      .listSubscription(queryOperation, fields, this.context(), vesrsion, false)
+      .subscribe({
+        next: (value) => {
+          if (!value) {
+            return;
+          }
+
+          this.mergeResourcesWithSubscriptionResult(value);
+        },
+      });
   }
 
   private resetPagination() {
     this.currentContinueToken = undefined;
-    this.totalItemsCount.set(0);
-    this.resources.set([]);
+    this.resources.update((v) => v.slice(0, this.paginationLimit() - 1));
+    this.hasMore.set(this.resources().length < this.totalItemsCount());
   }
 
   onLimitChange(event: any) {
@@ -168,11 +202,7 @@ export class ListViewComponent {
       }),
     ) as string;
 
-    if (this.previousListSubscription) {
-      this.previousListSubscription.unsubscribe();
-    }
-
-    this.previousListSubscription = this.resourceService
+    this.resourceService
       .list(queryOperation, fields, this.context(), false, {
         limit: this.paginationLimit(),
         continue: this.currentContinueToken,
@@ -187,39 +217,37 @@ export class ListViewComponent {
       )
       .subscribe({
         next: (result: ResourceListResult) => {
-          this.mergeResources(result.items);
+          this.resources.update((values) => {
+            const map = new Map(values.map((i) => [i.metadata.name, i]));
+            result.items.forEach((i) => map.set(i.metadata.name, i));
+            return [...map.values()];
+          });
+          this.resourceVersion.set(result.resourceVersion);
           this.hasMore.set(!!result.continue);
           this.currentContinueToken = result.continue;
-          this.totalItemsCount.set(
-            this.resources().length + (result.remainingItemCount || 0),
-          );
+          this.remainingItemCount.set(result.remainingItemCount || 0);
         },
       });
   }
 
-  private mergeResources(result: Resource[]) {
-    const processedResult: Resource[] = result.map((resource) => ({
-      ...resource,
-      ready: this.getResourceReadyStatus(resource),
-    }));
+  private mergeResourcesWithSubscriptionResult(
+    subscriptionResult: ResourceSubscriptionResult,
+  ) {
+    const result = new Map<string, Resource>(
+      this.resources().map((item) => [item.metadata.name!, item]),
+    );
 
-    this.resources.update((resources) => {
-      const processedResultMap = processedResult.reduce(
-        (all, item) => all.set(item.metadata.name, item),
-        new Map<string, Resource>(),
-      );
+    const { type, object } = subscriptionResult;
+    if (type === ResourceOperationTypeMap.ADDED) {
+      result.set(object.metadata.name, object);
+    } else if (type === ResourceOperationTypeMap.MODIFIED) {
+      result.has(object.metadata.name) &&
+        result.set(object.metadata.name, object);
+    } else if (type === ResourceOperationTypeMap.DELETED) {
+      result.delete(object.metadata.name);
+    }
 
-      return resources
-        .map((item) => {
-          const processedItem = processedResultMap.get(item.metadata.name);
-          if (processedItem) {
-            processedResultMap.delete(item.metadata.name);
-            return processedItem;
-          }
-          return item;
-        })
-        .concat([...processedResultMap.values()].sort());
-    });
+    this.resources.set([...result.values()]);
   }
 
   delete(resource: Resource) {
@@ -329,16 +357,6 @@ export class ListViewComponent {
     }
 
     return generateGraphQLFields(this.columns().concat(additionalFields));
-  }
-
-  private getResourceReadyStatus(resource: Resource) {
-    const readyCondition = this.readyCondition();
-    if (!readyCondition) {
-      return true;
-    }
-
-    const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
-    return !!readyStatus;
   }
 
   private getResourceDefinition() {

@@ -1,3 +1,5 @@
+import { k8sMessages } from '../../consts/k8s-messages';
+import { k8sNameValidator } from '../../validators/k8s-name-validator';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,6 +23,9 @@ import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
   Resource,
   ResourceDefinition,
+  ResourceListResult,
+  ResourceOperationTypeMap,
+  ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
@@ -28,7 +33,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
-  isLocalSetup
+  isLocalSetup,
 } from '@platform-mesh/portal-ui-lib/utils';
 import {
   ButtonComponent,
@@ -38,8 +43,8 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
-import { k8sMessages } from '../../consts/k8s-messages';
-import { k8sNameValidator } from '../../validators/k8s-name-validator';
+import { switchMap } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-organization-management',
@@ -111,22 +116,23 @@ export class OrganizationManagementComponent implements OnInit {
       },
     ]);
 
+    const ctx = {
+      ...this.context(),
+      resourceDefinition: {
+        group: 'core.platform-mesh.io',
+        version: 'v1alpha1',
+        plural: 'accounts',
+        scope: 'Cluster',
+      } as ResourceDefinition,
+    };
     const queryOperation = 'core_platform_mesh_io_v1alpha1_accounts';
     this.resourceService
-      .list(queryOperation, fields, {
-        ...this.context(),
-        resourceDefinition: {
-          group: 'core.platform-mesh.io',
-          version: 'v1alpha1',
-          plural: 'accounts',
-          scope: 'Cluster',
-        } as ResourceDefinition,
-      })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (result) => {
+      .list(queryOperation, fields, ctx)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        switchMap((result: ResourceListResult) => {
           this.organizations.set(
-            result.map((o) => ({
+            result.items.map((o) => ({
               name: o.metadata.name,
               ready:
                 o.status?.conditions?.find((c) => c.type === 'Ready')
@@ -145,11 +151,49 @@ export class OrganizationManagementComponent implements OnInit {
               ) ?? null,
             );
           }
-        },
-        error: (error) => {
+
+          return this.resourceService.listSubscription(
+            queryOperation,
+            fields,
+            ctx,
+            result.resourceVersion,
+            false,
+          );
+        }),
+        catchError((error) => {
           console.error('Error reading organizations', error);
+          throw error;
+        }),
+      )
+      .subscribe({
+        next: (value) => {
+          if (!value) {
+            return;
+          }
+
+          this.mergeResourcesWithSubscriptionResult(value);
         },
       });
+  }
+
+  private mergeResourcesWithSubscriptionResult(
+    subscriptionResult: ResourceSubscriptionResult,
+  ) {
+    const result = new Map<string, any>(
+      this.organizations().map((item) => [item.name, item]),
+    );
+
+    const { type, object } = subscriptionResult;
+    if (type === ResourceOperationTypeMap.ADDED) {
+      result.set(object.metadata.name, object);
+    } else if (type === ResourceOperationTypeMap.MODIFIED) {
+      result.has(object.metadata.name) &&
+        result.set(object.metadata.name, object);
+    } else if (type === ResourceOperationTypeMap.DELETED) {
+      result.delete(object.metadata.name);
+    }
+
+    this.organizations.set([...result.values()]);
   }
 
   onboardOrganization() {
@@ -190,13 +234,11 @@ export class OrganizationManagementComponent implements OnInit {
   }
 
   private showOnboardingSuccessMessage() {
-    if(isLocalSetup()) {
-      this.LuigiClient()
-        .uxManager()
-        .showAlert({
-          text: `A new organization is creating. Once ready you can login using your e-mail. The default password is set to 'password'.`,
-          type: 'info',
-        });
+    if (isLocalSetup()) {
+      this.LuigiClient().uxManager().showAlert({
+        text: `A new organization is creating. Once ready you can login using your e-mail. The default password is set to 'password'.`,
+        type: 'info',
+      });
     }
   }
 
