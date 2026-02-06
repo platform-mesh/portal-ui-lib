@@ -43,7 +43,7 @@ import {
   OptionComponent,
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
-import { switchMap } from 'rxjs';
+import { map, switchMap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Component({
@@ -130,28 +130,18 @@ export class OrganizationManagementComponent implements OnInit {
       .list(queryOperation, fields, ctx)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        switchMap((result: ResourceListResult) => {
+        map((result: ResourceListResult) => {
           this.organizations.set(
             result.items.map((o) => ({
               name: o.metadata.name,
-              ready:
-                o.status?.conditions?.find((c) => c.type === 'Ready')
-                  ?.status === 'True',
+              ready: !!o.ready,
             })),
           );
 
-          const organizationToSwitch = this.organizationToSwitch();
-
-          if (!organizationToSwitch) {
-            this.organizationToSwitch.set(this.organizations()[0]);
-          } else {
-            this.organizationToSwitch.set(
-              this.organizations().find(
-                (o) => o.name === organizationToSwitch.name,
-              ) ?? null,
-            );
-          }
-
+          this.refreshOrganizationToSwitch();
+          return result;
+        }),
+        switchMap((result: ResourceListResult) => {
           return this.resourceService.listSubscription(
             queryOperation,
             fields,
@@ -172,8 +162,23 @@ export class OrganizationManagementComponent implements OnInit {
           }
 
           this.mergeResourcesWithSubscriptionResult(value);
+          this.refreshOrganizationToSwitch();
         },
       });
+  }
+
+  private refreshOrganizationToSwitch() {
+    const organizationToSwitch = this.organizationToSwitch();
+
+    if (!organizationToSwitch) {
+      this.organizationToSwitch.set(this.organizations()[0]);
+    } else {
+      this.organizationToSwitch.set(
+        this.organizations().find(
+          (o) => o.name === organizationToSwitch.name,
+        ) ?? null,
+      );
+    }
   }
 
   private mergeResourcesWithSubscriptionResult(
@@ -184,11 +189,15 @@ export class OrganizationManagementComponent implements OnInit {
     );
 
     const { type, object } = subscriptionResult;
+    const subscriptionObject = {
+      name: object.metadata.name,
+      ready: object.ready,
+    };
     if (type === ResourceOperationTypeMap.ADDED) {
-      result.set(object.metadata.name, object);
+      result.set(object.metadata.name, subscriptionObject);
     } else if (type === ResourceOperationTypeMap.MODIFIED) {
       result.has(object.metadata.name) &&
-        result.set(object.metadata.name, object);
+        result.set(object.metadata.name, subscriptionObject);
     } else if (type === ResourceOperationTypeMap.DELETED) {
       result.delete(object.metadata.name);
     }

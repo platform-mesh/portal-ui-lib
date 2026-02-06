@@ -167,12 +167,14 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
   ) {
     const readyCondition = nodeContext.resourceDefinition?.readyCondition;
-    if (!readyCondition) {
-      return true;
+    if (readyCondition) {
+      return getResourceValueByJsonPath(resource, readyCondition);
     }
 
-    const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
-    return !!readyStatus;
+    return (
+      resource.status?.conditions?.find((c) => c.type === 'Ready')?.status ===
+      'True'
+    );
   }
 
   private listWithFields(
