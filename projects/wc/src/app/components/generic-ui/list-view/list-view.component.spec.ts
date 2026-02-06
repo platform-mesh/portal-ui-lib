@@ -6,7 +6,7 @@ import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import * as utils from '@platform-mesh/portal-ui-lib/utils';
 import { of, throwError } from 'rxjs';
 
-describe('ListViewComponent', () => {
+describe(ListViewComponent, () => {
   let component: ListViewComponent;
   let fixture: ComponentFixture<ListViewComponent>;
   let mockResourceService: any;

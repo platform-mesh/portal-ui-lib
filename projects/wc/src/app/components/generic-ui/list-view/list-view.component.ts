@@ -36,10 +36,6 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import '@ui5/webcomponents-icons/dist/close-command-field.js';
-import '@ui5/webcomponents-icons/dist/navigation-left-arrow.js';
-import '@ui5/webcomponents-icons/dist/navigation-right-arrow.js';
-import '@ui5/webcomponents-icons/dist/open-command-field.js';
 import {
   DynamicPageComponent,
   DynamicPageTitleComponent,
@@ -108,7 +104,7 @@ export class ListViewComponent {
   columns = computed(
     () => this.resourceDefinition()?.ui?.listView?.fields ?? [],
   );
-  viewColomns = computed(() => processFields(this.columns()));
+  viewColumns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
   imagePathProperty = computed(
     () => this.resourceDefinition()?.ui?.resourceImageProperty,

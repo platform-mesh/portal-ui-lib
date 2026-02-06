@@ -53,7 +53,7 @@
           class="image-column"
         ></ui5-table-header-cell>
       }
-      @for (column of viewColomns(); track column.property) {
+      @for (column of viewColumns(); track column.property) {
         @if (column.group) {
           <ui5-table-header-cell
             [attr.test-id]="'generic-list-header-' + column.property"
@@ -75,14 +75,16 @@
       >
     </ui5-table-header-row>
 
-    <ui5-illustrated-message
-      test-id="generic-list-view-nodata"
-      slot="noData"
-      name="NoData"
-    >
-      <span slot="title">No Resources</span>
-      <span slot="subtitle">There are currently no items to show.</span>
-    </ui5-illustrated-message>
+    @if (resourceVersion()) {
+      <ui5-illustrated-message
+        test-id="generic-list-view-nodata"
+        slot="noData"
+        name="NoData"
+      >
+        <span slot="title">No Resources</span>
+        <span slot="subtitle">There are currently no items to show.</span>
+      </ui5-illustrated-message>
+    }
 
     @for (item of resources(); let i = $index; track item.metadata.name) {
       <ui5-table-row
@@ -122,7 +124,7 @@
         }
 
         @for (
-          column of viewColomns();
+          column of viewColumns();
           let first = $first;
           track column.property
         ) {
