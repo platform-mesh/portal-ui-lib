@@ -126,14 +126,15 @@ export interface ResourceSubscriptionResult {
 }
 
 export interface ResourcePagination {
-  limit: number;
+  limit: number | undefined;
   continue: string | undefined;
-  remainingItemCount?: number;
 }
 
-export interface ResourceListResult extends ResourcePagination {
+export interface ResourceListResult {
   resourceVersion: string;
   items: Resource[];
+  continue: string | undefined;
+  remainingItemCount?: number;
 }
 
 export type KubernetesScope = 'Cluster' | 'Namespaced';

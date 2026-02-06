@@ -138,7 +138,7 @@ export class ListViewComponent {
     });
   }
 
-  private startListSubscription(vesrsion: string) {
+  private startListSubscription(version: string) {
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
     const queryOperation = replaceDotsAndHyphensWithUnderscores(
@@ -150,7 +150,7 @@ export class ListViewComponent {
     ) as string;
 
     return this.resourceService
-      .listSubscription(queryOperation, fields, this.context(), vesrsion, false)
+      .listSubscription(queryOperation, fields, this.context(), version, false)
       .subscribe({
         next: (value) => {
           if (!value) {
@@ -164,7 +164,7 @@ export class ListViewComponent {
 
   private resetPagination() {
     this.currentContinueToken = undefined;
-    this.resources.update((v) => v.slice(0, this.paginationLimit() - 1));
+    this.resources.update((v) => v.slice(0, this.paginationLimit()));
     this.hasMore.set(this.resources().length < this.totalItemsCount());
   }
 
@@ -215,7 +215,9 @@ export class ListViewComponent {
         next: (result: ResourceListResult) => {
           this.resources.update((values) => {
             const map = new Map(values.map((i) => [i.metadata.name, i]));
-            result.items.forEach((i) => map.set(i.metadata.name, i));
+            result.items.forEach((i) => {
+              map.set(i.metadata.name, i);
+            });
             return [...map.values()];
           });
           this.resourceVersion.set(result.resourceVersion);

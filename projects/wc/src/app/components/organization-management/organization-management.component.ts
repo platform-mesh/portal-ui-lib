@@ -164,6 +164,9 @@ export class OrganizationManagementComponent implements OnInit {
           this.mergeResourcesWithSubscriptionResult(value);
           this.refreshOrganizationToSwitch();
         },
+        error: (error) => {
+          console.error('Organization list subscription failed', error);
+        },
       });
   }
 

@@ -722,7 +722,7 @@ describe('ListViewComponent', () => {
       component.onLimitChange(event);
 
       expect(component.paginationLimit()).toBe(3);
-      expect(component.resources().length).toBe(2); // limit - 1
+      expect(component.resources().length).toBe(3);
       expect(component.hasMore()).toBe(true);
     });
 
