@@ -2,42 +2,44 @@ import { ListViewComponent } from './list-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  ErrorHandlerService,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import * as utils from '@platform-mesh/portal-ui-lib/utils';
+import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
 
-describe(ListViewComponent, () => {
+describe('ListViewComponent', () => {
   let component: ListViewComponent;
   let fixture: ComponentFixture<ListViewComponent>;
-  let mockResourceService: any;
+  let mockResourceService: jest.Mocked<ResourceService>;
+  let mockErrorHandlerService: jest.Mocked<ErrorHandlerService>;
   let mockLuigiCoreService: any;
 
   beforeEach(() => {
-    mockResourceService = {
-      list: jest.fn().mockReturnValue(
-        of([
-          {
-            metadata: { name: 'test' },
-            status: {
-              conditions: [{ type: 'Ready', status: 'True' }],
-            },
+    mockResourceService = mock();
+    mockResourceService.list.mockReturnValue(
+      of([
+        {
+          metadata: { name: 'test' },
+          status: {
+            conditions: [{ type: 'Ready', status: 'True' }],
           },
-        ]),
-      ),
-      delete: jest.fn().mockReturnValue(of({})),
-      create: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
-      update: jest.fn().mockReturnValue(of({ data: { name: 'test' } })),
-      read: jest.fn().mockReturnValue(of({})),
-    };
-
-    mockLuigiCoreService = {
-      showAlert: jest.fn(),
-    };
+        },
+      ]),
+    );
+    mockResourceService.delete.mockReturnValue(of({}));
+    mockResourceService.update.mockReturnValue(of({ data: { name: 'test' } }));
+    mockResourceService.read.mockReturnValue(of({} as any));
+    mockLuigiCoreService = mock();
+    mockErrorHandlerService = mock();
 
     TestBed.configureTestingModule({
       providers: [
         { provide: ResourceService, useValue: mockResourceService },
         { provide: LuigiCoreService, useValue: mockLuigiCoreService },
+        { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     }).overrideComponent(ListViewComponent, {

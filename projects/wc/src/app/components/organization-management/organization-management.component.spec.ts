@@ -16,6 +16,7 @@ import {
   NodeContext,
 } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
 
 describe('OrganizationManagementComponent', () => {
@@ -27,19 +28,9 @@ describe('OrganizationManagementComponent', () => {
   let luigiClientMock: jest.Mocked<LuigiClient>;
 
   beforeEach(async () => {
-    resourceServiceMock = {
-      list: jest.fn(),
-      create: jest.fn(),
-    } as any;
-
-    i18nServiceMock = {
-      translationTable: {},
-      getTranslation: jest.fn(),
-    } as any;
-
-    envConfigServiceMock = {
-      getEnvConfig: jest.fn(),
-    } as any;
+    resourceServiceMock = mock();
+    i18nServiceMock = mock();
+    envConfigServiceMock = mock();
 
     luigiClientMock = {
       uxManager: jest.fn().mockReturnValue({
@@ -92,16 +83,21 @@ describe('OrganizationManagementComponent', () => {
   });
 
   it('should read organizations on init', () => {
-    const mockOrganizations = [
-      {
-        metadata: { name: 'org1' },
-        status: { conditions: [{ type: 'Ready', status: 'True' }] },
-      },
-      {
-        metadata: { name: 'org2' },
-        status: { conditions: [{ type: 'Ready', status: 'False' }] },
-      },
-    ];
+    const mockOrganizations = {
+      items: [
+        {
+          metadata: { name: 'org1' },
+          ready: true,
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+        {
+          metadata: { name: 'org2' },
+          ready: false,
+          status: { conditions: [{ type: 'Ready', status: 'False' }] },
+        },
+      ],
+      resourceVersion: '123',
+    };
     const mockGlobalContext: LuigiGlobalContext = {
       portalContext: {},
       userId: 'user1',
@@ -113,6 +109,7 @@ describe('OrganizationManagementComponent', () => {
 
     component.context = (() => mockGlobalContext) as any;
     resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
+    resourceServiceMock.listSubscription.mockReturnValue(of(undefined));
 
     component.ngOnInit();
 
@@ -309,16 +306,21 @@ describe('OrganizationManagementComponent', () => {
   });
 
   it('should update existing organizationToSwitch when reading organizations', () => {
-    const mockOrganizations = [
-      {
-        metadata: { name: 'org1' },
-        status: { conditions: [{ type: 'Ready', status: 'True' }] },
-      },
-      {
-        metadata: { name: 'org2' },
-        status: { conditions: [{ type: 'Ready', status: 'True' }] },
-      },
-    ];
+    const mockOrganizations = {
+      items: [
+        {
+          metadata: { name: 'org1' },
+          ready: true,
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+        {
+          metadata: { name: 'org2' },
+          ready: true,
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+      ],
+      resourceVersion: '123',
+    };
 
     // Set an existing organization to switch
     component.organizationToSwitch.set({ name: 'org2', ready: false });
@@ -329,6 +331,7 @@ describe('OrganizationManagementComponent', () => {
     component.context = (() => mockContext) as any;
 
     resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
+    resourceServiceMock.listSubscription.mockReturnValue(of(undefined));
 
     component.readOrganizations();
 
@@ -346,12 +349,16 @@ describe('OrganizationManagementComponent', () => {
 
   describe('undefined organization handling', () => {
     it('should handle null organizationToSwitch in readOrganizations', () => {
-      const mockOrganizations = [
-        {
-          metadata: { name: 'org1' },
-          status: { conditions: [{ type: 'Ready', status: 'True' }] },
-        },
-      ];
+      const mockOrganizations = {
+        items: [
+          {
+            metadata: { name: 'org1' },
+            ready: true,
+            status: { conditions: [{ type: 'Ready', status: 'True' }] },
+          },
+        ],
+        resourceVersion: '123',
+      };
 
       // Set organizationToSwitch to null
       component.organizationToSwitch.set(null);
@@ -362,6 +369,7 @@ describe('OrganizationManagementComponent', () => {
       component.context = (() => mockContext) as any;
 
       resourceServiceMock.list.mockReturnValue(of(mockOrganizations as any));
+      resourceServiceMock.listSubscription.mockReturnValue(of(undefined));
 
       component.readOrganizations();
 
