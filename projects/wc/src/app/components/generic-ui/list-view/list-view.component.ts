@@ -122,6 +122,7 @@ export class ListViewComponent {
   resourceVersion = signal<string | undefined>(undefined);
 
   private currentContinueToken: string | undefined = undefined;
+  private isLoadingList = false;
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
@@ -181,7 +182,6 @@ export class ListViewComponent {
     this.list();
   }
 
-  private isLoadingList = false;
   list() {
     if (this.isLoadingList) {
       return;
