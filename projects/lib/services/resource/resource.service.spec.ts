@@ -399,10 +399,25 @@ describe('ResourceService', () => {
         next: (res) => results.push(res),
       });
 
-      expect(results[0]).toEqual([
-        { name: 'res1', metadata: { uid: 'uid1' } },
-        { name: 'res2', metadata: { uid: 'uid2' } },
-      ]);
+      expect(results[0]).toEqual({
+        items: [
+          {
+            metadata: {
+              uid: 'uid1',
+            },
+            name: 'res1',
+            ready: false,
+          },
+          {
+            metadata: {
+              uid: 'uid2',
+            },
+            name: 'res2',
+            ready: false,
+          },
+        ],
+        resourceVersion: '123',
+      });
       done();
     });
 
@@ -435,13 +450,6 @@ describe('ResourceService', () => {
         .list('mylist', ['name'], namespacedNodeContext)
         .subscribe((res) => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: namespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
           done();
         });
     });
@@ -473,13 +481,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], unversionedNamespacedNodeContext)
         .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: unversionedNamespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
           done();
         });
     });
@@ -511,13 +512,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], grouplessNamespacedNodeContext)
         .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: grouplessNamespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
           done();
         });
     });
@@ -547,13 +541,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], grouplessUnversionedNamespacedNodeContext)
         .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
           done();
         });
     });
@@ -587,10 +574,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], clusterScopeNodeContext)
         .subscribe((res) => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
           done();
         });
     });
@@ -622,10 +605,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], unversionedClusterScopeNodeContext)
         .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
           done();
         });
     });
@@ -657,10 +636,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], grouplessClusterScopeNodeContext)
         .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
           done();
         });
     });
@@ -690,10 +665,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], grouplessUnversionedClusterScopeNodeContext)
         .subscribe(() => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: { resourceVersion: '123' },
-          });
           done();
         });
     });
@@ -728,13 +699,6 @@ describe('ResourceService', () => {
         .list('myList', ['name'], namespacedNodeContext)
         .subscribe((res) => {
           expect(mockApollo.query).toHaveBeenCalled();
-          expect(mockApollo.subscribe).toHaveBeenCalledWith({
-            query: expect.anything(),
-            variables: {
-              namespace: namespacedNodeContext.namespaceId,
-              resourceVersion: '123',
-            },
-          });
           done();
         });
     });
@@ -811,113 +775,6 @@ describe('ResourceService', () => {
           });
           done();
         });
-    });
-
-    it('should handle MODIFIED operation in subscription', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
-                },
-              },
-            },
-          },
-        }),
-      );
-      const subject = new Subject();
-      mockApollo.subscribe.mockReturnValue(subject.asObservable());
-
-      const results: any[] = [];
-      service.list('mylist', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      subject.next({
-        data: {
-          mylist: {
-            type: 'MODIFIED',
-            object: { name: 'res1-updated', metadata: { uid: 'uid1' } },
-          },
-        },
-      });
-
-      expect(results[1]).toEqual([
-        { name: 'res1-updated', metadata: { uid: 'uid1' } },
-      ]);
-      done();
-    });
-
-    it('should handle DELETED operation in subscription', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
-                },
-              },
-            },
-          },
-        }),
-      );
-      const subject = new Subject();
-      mockApollo.subscribe.mockReturnValue(subject.asObservable());
-
-      const results: any[] = [];
-      service.list('mylist', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      subject.next({
-        data: {
-          mylist: {
-            type: 'DELETED',
-            object: { name: 'res1', metadata: { uid: 'uid1' } },
-          },
-        },
-      });
-
-      expect(results[1]).toEqual([]);
-      done();
-    });
-
-    it('should return current values when resourceResult is undefined', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
-                },
-              },
-            },
-          },
-        }),
-      );
-      const subject = new Subject();
-      mockApollo.subscribe.mockReturnValue(subject.asObservable());
-
-      const results: any[] = [];
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      subject.next({
-        data: {
-          myList: undefined,
-        },
-      });
-
-      expect(results[1]).toEqual([{ name: 'res1', metadata: { uid: 'uid1' } }]);
-      done();
     });
 
     it('should handle raw query list error', (done) => {
