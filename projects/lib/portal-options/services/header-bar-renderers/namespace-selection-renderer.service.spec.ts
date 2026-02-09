@@ -264,7 +264,7 @@ describe('NamespaceSelectionRendererService', () => {
     const cb = getChildrenByTag(container, 'ui5-combobox')[0] as HTMLElement;
 
     const ev = new Event('change');
-    Object.defineProperty(ev, 'target', { value: {} }); // value отсутствует
+    Object.defineProperty(ev, 'target', { value: {} });
     cb.dispatchEvent(ev);
 
     expect(navigateMock).not.toHaveBeenCalled();
@@ -325,7 +325,6 @@ describe('NamespaceSelectionRendererService', () => {
   it('should return null namespaceName when namespaced node is first segment (getNamespaceNodeName index === 0)', async () => {
     const origPathname = window.location.pathname;
     Object.defineProperty(window, 'location', {
-      // segments: ["workloads"] => index=0 => getNamespaceNodeName() => null
       value: { pathname: '/workloads' },
       writable: true,
     });

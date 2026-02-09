@@ -1,4 +1,4 @@
-<ui5-dialog test-id="delete-resource-dialog" [open]="dialogOpen()">
+<ui5-dialog test-id="delete-resource-dialog" [open]="dialogOpen()" (close)="close()">
   <ui5-bar slot="header" design="Header">
     <ui5-title test-id="delete-resource-dialog-title" slot="startContent">
       <ui5-icon test-id="delete-resource-dialog-alert" name="alert" design="Critical"></ui5-icon>
