@@ -22,11 +22,9 @@ describe('getValueByPath', () => {
     path: string,
   ) => R | undefined;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    vi.resetModules();
     ({ getValueByPath } = await import('./get-value-by-path'));
-  });
-
-  beforeEach(() => {
     vi.clearAllMocks();
   });
 
