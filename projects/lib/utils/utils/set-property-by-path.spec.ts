@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { setPropertyByPath } from './set-property-by-path';
 
 describe('setPropertyByPath', () => {

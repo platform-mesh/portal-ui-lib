@@ -40,8 +40,16 @@ describe('ErrorComponent', () => {
   });
 
   describe('goTo', () => {
+    let windowSpy: ReturnType<typeof vi.spyOn>;
+
+    afterEach(() => {
+      if (windowSpy) {
+        windowSpy.restore();
+      }
+    });
+
     it('should open URL in new tab', () => {
-      const windowSpy = vi
+      windowSpy = vi
         .spyOn(window, 'open')
         .mockImplementation((str1, str2) => {
           return null;

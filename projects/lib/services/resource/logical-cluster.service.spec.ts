@@ -66,10 +66,10 @@ describe(LogicalClusterService, () => {
       expect(navigateMock).not.toHaveBeenCalled();
     });
 
-    it('should alert and rethrow when query fails', async () => {
+    it('should rethrow Apollo query error', async () => {
       const error = new Error('fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await expect(
         firstValueFrom(
