@@ -84,7 +84,7 @@ describe('OrganizationManagementComponent', () => {
       resourceService.list.mockReturnValue(
         of({ items: [], resourceVersion: '1' } as any),
       );
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
 
       fixture.detectChanges();
 
@@ -111,7 +111,7 @@ describe('OrganizationManagementComponent', () => {
       };
 
       resourceService.list.mockReturnValue(of(mockOrganizations as any));
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
 
       component.readOrganizations();
 
@@ -126,7 +126,7 @@ describe('OrganizationManagementComponent', () => {
       resourceService.list.mockReturnValue(
         of({ items: [], resourceVersion: '1' } as any),
       );
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
 
       component.readOrganizations();
 
@@ -150,7 +150,7 @@ describe('OrganizationManagementComponent', () => {
       };
 
       resourceService.list.mockReturnValue(of(mockOrganizations as any));
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
       component.organizationToSwitch.set(null);
 
       component.readOrganizations();
@@ -171,7 +171,7 @@ describe('OrganizationManagementComponent', () => {
       };
 
       resourceService.list.mockReturnValue(of(mockOrganizations as any));
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
       component.organizationToSwitch.set({ name: 'org2', ready: false });
 
       component.readOrganizations();
@@ -205,11 +205,11 @@ describe('OrganizationManagementComponent', () => {
       };
 
       resourceService.list.mockReturnValue(of(mockOrganizations as any));
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
 
       component.readOrganizations();
 
-      expect(resourceService.listSubscription).toHaveBeenCalledWith(
+      expect(resourceService.resourceChangeSubscription).toHaveBeenCalledWith(
         'core_platform_mesh_io_v1alpha1_accounts',
         expect.any(Array),
         expect.any(Object),
@@ -297,7 +297,7 @@ describe('OrganizationManagementComponent', () => {
           resourceVersion: '1',
         } as any),
       );
-      resourceService.listSubscription.mockReturnValue(
+      resourceService.resourceChangeSubscription.mockReturnValue(
         of({
           type: 'ADDED',
           object: { metadata: { name: 'org2' }, ready: true },
@@ -718,7 +718,7 @@ describe('OrganizationManagementComponent', () => {
       resourceService.list.mockReturnValue(
         of({ items: [], resourceVersion: '1' } as any),
       );
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
 
       component.readOrganizations();
 
@@ -732,7 +732,7 @@ describe('OrganizationManagementComponent', () => {
           resourceVersion: '1',
         } as any),
       );
-      resourceService.listSubscription.mockReturnValue(of(undefined));
+      resourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
 
       component.readOrganizations();
 

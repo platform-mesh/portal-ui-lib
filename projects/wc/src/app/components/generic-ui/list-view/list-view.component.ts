@@ -133,12 +133,12 @@ export class ListViewComponent {
     effect((onCleanup) => {
       const version = this.resourceVersion();
       if (!version) return;
-      const sub = this.startListSubscription(version);
+      const sub = this.subscribeToResourceChange(version);
       onCleanup(() => sub.unsubscribe());
     });
   }
 
-  private startListSubscription(version: string) {
+  private subscribeToResourceChange(version: string) {
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
     const queryOperation = replaceDotsAndHyphensWithUnderscores(
@@ -150,7 +150,13 @@ export class ListViewComponent {
     ) as string;
 
     return this.resourceService
-      .listSubscription(queryOperation, fields, this.context(), version, false)
+      .resourceChangeSubscription(
+        queryOperation,
+        fields,
+        this.context(),
+        version,
+        false,
+      )
       .subscribe({
         next: (value) => {
           if (!value) {

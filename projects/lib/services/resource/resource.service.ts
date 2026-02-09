@@ -267,7 +267,7 @@ export class ResourceService {
       );
   }
 
-  listSubscription(
+  resourceChangeSubscription(
     operation: string,
     fields: any[],
     nodeContext: ResourceNodeContext,

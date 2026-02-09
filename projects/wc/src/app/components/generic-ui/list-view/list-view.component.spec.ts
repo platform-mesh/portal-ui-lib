@@ -33,7 +33,9 @@ describe('ListViewComponent', () => {
         resourceVersion: '1234567890',
       }),
     );
-    mockResourceService.listSubscription.mockReturnValue(of(undefined));
+    mockResourceService.resourceChangeSubscription.mockReturnValue(
+      of(undefined),
+    );
     mockResourceService.delete.mockReturnValue(of({}));
     mockResourceService.create.mockReturnValue(of({ data: { name: 'test' } }));
     mockResourceService.update.mockReturnValue(of({ data: { name: 'test' } }));
@@ -766,7 +768,9 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      mockResourceService.listSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ListViewComponent);
       const newComponent = newFixture.componentInstance;
@@ -814,7 +818,9 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      mockResourceService.listSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ListViewComponent);
       const newComponent = newFixture.componentInstance;
@@ -860,7 +866,9 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      mockResourceService.listSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ListViewComponent);
       const newComponent = newFixture.componentInstance;
@@ -907,7 +915,9 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      mockResourceService.listSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ListViewComponent);
       const newComponent = newFixture.componentInstance;
@@ -951,7 +961,9 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      mockResourceService.listSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ListViewComponent);
       const newComponent = newFixture.componentInstance;
@@ -995,7 +1007,9 @@ describe('ListViewComponent', () => {
         Subject<ResourceSubscriptionResult | undefined>
       > = mock();
       subscriptionSubject.subscribe.mockReturnValue(subscription);
-      mockResourceService.listSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ListViewComponent);
       const newComponent = newFixture.componentInstance;

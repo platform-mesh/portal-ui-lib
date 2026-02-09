@@ -142,7 +142,7 @@ export class OrganizationManagementComponent implements OnInit {
           return result;
         }),
         switchMap((result: ResourceListResult) => {
-          return this.resourceService.listSubscription(
+          return this.resourceService.resourceChangeSubscription(
             queryOperation,
             fields,
             ctx,

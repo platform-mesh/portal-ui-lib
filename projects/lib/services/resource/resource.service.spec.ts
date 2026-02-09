@@ -1102,7 +1102,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           namespacedNodeContext,
@@ -1129,7 +1129,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           clusterScopeNodeContext,
@@ -1155,7 +1155,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           namespacedNodeContext,
@@ -1187,7 +1187,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           clusterScopeNodeContext,
@@ -1235,7 +1235,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name', 'status'],
           contextWithReadyCondition,
@@ -1267,7 +1267,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name', 'status'],
           namespacedNodeContext,
@@ -1290,7 +1290,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           namespacedNodeContext,
@@ -1316,7 +1316,7 @@ describe('ResourceService', () => {
       );
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           namespacedNodeContext,
@@ -2150,7 +2150,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(throwError(() => error));
 
       service
-        .listSubscription(
+        .resourceChangeSubscription(
           'mySubscription',
           ['name'],
           namespacedNodeContext,
