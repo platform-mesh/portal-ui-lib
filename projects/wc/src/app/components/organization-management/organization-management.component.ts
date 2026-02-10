@@ -44,7 +44,6 @@ import {
   SelectComponent,
 } from '@ui5/webcomponents-ngx';
 import { map, switchMap } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-organization-management',
@@ -150,10 +149,6 @@ export class OrganizationManagementComponent implements OnInit {
             false,
           );
         }),
-        catchError((error) => {
-          console.error('Error reading organizations', error);
-          throw error;
-        }),
       )
       .subscribe({
         next: (value) => {
@@ -165,7 +160,7 @@ export class OrganizationManagementComponent implements OnInit {
           this.refreshOrganizationToSwitch();
         },
         error: (error) => {
-          console.error('Organization list subscription failed', error);
+          console.error('Organization list retrieval failed', error);
         },
       });
   }

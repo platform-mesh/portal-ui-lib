@@ -191,7 +191,7 @@ describe('OrganizationManagementComponent', () => {
       component.readOrganizations();
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Error reading organizations',
+        'Organization list retrieval failed',
         error,
       );
 
