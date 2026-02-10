@@ -18,6 +18,14 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import {
+  Button,
+  Icon,
+  Input,
+  Label,
+  Option,
+  Select,
+} from '@fundamental-ngx/ui5-webcomponents';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
@@ -35,14 +43,6 @@ import {
   generateGraphQLFields,
   isLocalSetup,
 } from '@platform-mesh/portal-ui-lib/utils';
-import {
-  ButtonComponent,
-  IconComponent,
-  InputComponent,
-  LabelComponent,
-  OptionComponent,
-  SelectComponent,
-} from '@ui5/webcomponents-ngx';
 import { map, switchMap } from 'rxjs';
 
 @Component({

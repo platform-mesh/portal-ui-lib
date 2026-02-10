@@ -17,8 +17,11 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Icon,
+  Option,
+  Select,
   Table,
   TableCell,
+  TableGrowing,
   TableHeaderCell,
   TableHeaderRow,
   TableRow,
@@ -53,25 +56,7 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import {
-  DynamicPageComponent,
-  DynamicPageTitleComponent,
-  IconComponent,
-  IllustratedMessageComponent,
-  OptionComponent,
-  SelectComponent,
-  TableCellComponent,
-  TableComponent,
-  TableGrowingComponent,
-  TableHeaderCellComponent,
-  TableHeaderRowComponent,
-  TableRowComponent,
-  TextComponent,
-  TitleComponent,
-  ToolbarButtonComponent,
-  ToolbarComponent,
-} from '@ui5/webcomponents-ngx';
-import { catchError, finalize } from 'rxjs/operators';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -97,9 +82,9 @@ import { catchError, finalize } from 'rxjs/operators';
     ToolbarButton,
     Toolbar,
     ValueCellComponent,
-    SelectComponent,
-    OptionComponent,
-    TableGrowingComponent,
+    Select,
+    Option,
+    TableGrowing,
   ],
 })
 export class ListViewComponent {
@@ -227,18 +212,14 @@ export class ListViewComponent {
         continue: this.currentContinueToken,
       })
       .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        catchError((error) => {
-          this.errorHandlerService.handleUnauthorizedAccess(error);
-          throw error;
-        }),
         finalize(() => (this.isLoadingList = false)),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (result: ResourceListResult) => {
           this.resources.update((values) => {
             const map = new Map(values.map((i) => [i.metadata.name, i]));
-            result.items.forEach((i) => {
+            (result.items ?? []).forEach((i) => {
               map.set(i.metadata.name, i);
             });
             return [...map.values()];
@@ -247,6 +228,9 @@ export class ListViewComponent {
           this.hasMore.set(!!result.continue);
           this.currentContinueToken = result.continue;
           this.remainingItemCount.set(result.remainingItemCount || 0);
+        },
+        error: (error) => {
+          this.errorHandlerService.handleUnauthorizedAccess(error);
         },
       });
   }

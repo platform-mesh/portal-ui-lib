@@ -2,27 +2,26 @@ import { OrganizationManagementComponent } from './organization-management.compo
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MutationResult } from '@apollo/client';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementComponent;
   let fixture: ComponentFixture<OrganizationManagementComponent>;
-  let resourceService: jest.Mocked<ResourceService>;
-  let i18nService: jest.Mocked<I18nService>;
-  let envConfigService: jest.Mocked<EnvConfigService>;
-  let luigiClient: jest.Mocked<LuigiClient>;
+  let resourceService: MockedObject<ResourceService>;
+  let i18nService: MockedObject<I18nService>;
+  let envConfigService: MockedObject<EnvConfigService>;
+  let luigiClient: MockedObject<LuigiClient>;
 
   let mockShowAlert;
   let mockUxManager;
 
   beforeEach(async () => {
-    mockShowAlert = jest.fn();
+    mockShowAlert = vi.fn();
     mockUxManager = {
       showAlert: mockShowAlert,
     };
@@ -65,7 +64,7 @@ describe('OrganizationManagementComponent', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Component Initialization', () => {
@@ -184,7 +183,9 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should handle error when reading organizations', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const error = new Error('Read failed');
 
       resourceService.list.mockReturnValue(throwError(() => error));
@@ -291,7 +292,7 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should refresh organizationToSwitch after merge', () => {
-      const spy = jest.spyOn(component as any, 'refreshOrganizationToSwitch');
+      const spy = vi.spyOn(component as any, 'refreshOrganizationToSwitch');
       resourceService.list.mockReturnValue(
         of({
           items: [{ metadata: { name: 'org1' }, ready: true }],
@@ -363,13 +364,9 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should create organization successfully', () => {
-      const mockResponse: MutationResult<void> = {
+      const mockResponse = {
         data: undefined,
-        loading: false,
         error: undefined,
-        called: true,
-        client: {} as any,
-        reset: jest.fn(),
       };
 
       resourceService.create.mockReturnValue(of(mockResponse));
@@ -445,7 +442,9 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should log resource created on success', () => {
-      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'debug')
+        .mockImplementation(() => {});
       resourceService.create.mockReturnValue(of({} as any));
 
       component.onboardOrganization();

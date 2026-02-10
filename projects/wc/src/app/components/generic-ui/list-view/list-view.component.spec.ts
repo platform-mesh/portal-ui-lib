@@ -8,14 +8,15 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import * as utils from '@platform-mesh/portal-ui-lib/utils';
-import { mock } from 'jest-mock-extended';
 import { Subject, of, throwError } from 'rxjs';
+import { MockedObject } from 'vitest';
+import { mock } from 'vitest-mock-extended';
 
 describe('ListViewComponent', () => {
   let component: ListViewComponent;
   let fixture: ComponentFixture<ListViewComponent>;
-  let mockResourceService: jest.Mocked<ResourceService>;
-  let mockErrorHandlerService: jest.Mocked<ErrorHandlerService>;
+  let mockResourceService: MockedObject<ResourceService>;
+  let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
   let mockLuigiCoreService: any;
 
   beforeEach(() => {
@@ -36,7 +37,7 @@ describe('ListViewComponent', () => {
     mockResourceService.resourceChangeSubscription.mockReturnValue(
       of(undefined),
     );
-    mockResourceService.delete.mockReturnValue(of({}));
+    mockResourceService.delete.mockReturnValue(of({ data: {} } as any));
     mockResourceService.create.mockReturnValue(of({ data: { name: 'test' } }));
     mockResourceService.update.mockReturnValue(of({ data: { name: 'test' } }));
     mockResourceService.read.mockReturnValue(of({} as any));
@@ -412,11 +413,11 @@ describe('ListViewComponent', () => {
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
-        fromContext: jest.fn().mockReturnThis(),
-        navigate: jest.fn(),
-        withParams: jest.fn().mockReturnThis(),
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
       }),
-      getNodeParams: jest.fn(),
+      getNodeParams: vi.fn(),
     })) as any;
 
     newFixture.detectChanges();
@@ -516,17 +517,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       // Test that list() method throws error when resourceDefinition is undefined
@@ -548,17 +549,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const resource = { metadata: { name: 'test' } } as any;
@@ -582,17 +583,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const resource = { metadata: { name: 'test' } } as any;
@@ -616,17 +617,17 @@ describe('ListViewComponent', () => {
         resourceDefinition: undefined,
       })) as any;
 
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const resource = { metadata: { name: 'test' } } as any;
@@ -641,9 +642,9 @@ describe('ListViewComponent', () => {
     });
 
     it('should handle edit resource modal with undefined resource name', () => {
-      const event = { stopPropagation: jest.fn() } as any;
+      const event = { stopPropagation: vi.fn() } as any;
       const resource = { metadata: {} } as any; // metadata.name is undefined
-      const openSpy = jest.fn();
+      const openSpy = vi.fn();
       (component as any).createModal = () => ({ open: openSpy });
 
       mockResourceService.read.mockReturnValueOnce(of(resource));
@@ -663,10 +664,10 @@ describe('ListViewComponent', () => {
 
     it('should show alert and throw error when navigating to resource with undefined name', () => {
       const resource = { metadata: {} } as any;
-      const showAlertSpy = jest.fn();
+      const showAlertSpy = vi.fn();
       component.LuigiClient = (() => ({
         linkManager: () => ({
-          navigate: jest.fn(),
+          navigate: vi.fn(),
         }),
         uxManager: () => ({
           showAlert: showAlertSpy,
@@ -727,7 +728,7 @@ describe('ListViewComponent', () => {
     });
 
     it('should load more resources when loadMore is called and hasMore is true', () => {
-      const listSpy = jest.spyOn(component, 'list');
+      const listSpy = vi.spyOn(component, 'list');
       component.hasMore.set(true);
 
       component.loadMore();
@@ -736,7 +737,7 @@ describe('ListViewComponent', () => {
     });
 
     it('should not load more resources when hasMore is false', () => {
-      const listSpy = jest.spyOn(component, 'list');
+      const listSpy = vi.spyOn(component, 'list');
       component.hasMore.set(false);
 
       component.loadMore();
@@ -885,11 +886,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newComponent.resources.set([
@@ -934,11 +935,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newComponent.resources.set([{ metadata: { name: 'existing' } }] as any);
@@ -980,11 +981,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       const initialResources = [{ metadata: { name: 'existing' } }] as any;
@@ -1000,8 +1001,8 @@ describe('ListViewComponent', () => {
     });
 
     it('should unsubscribe from subscription on cleanup', () => {
-      const subscription = { unsubscribe: jest.fn() } as any;
-      const subscriptionSubject: jest.Mocked<
+      const subscription = { unsubscribe: vi.fn() } as any;
+      const subscriptionSubject: MockedObject<
         Subject<ResourceSubscriptionResult | undefined>
       > = mock();
       subscriptionSubject.subscribe.mockReturnValue(subscription);
@@ -1026,11 +1027,11 @@ describe('ListViewComponent', () => {
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
         }),
-        getNodeParams: jest.fn(),
+        getNodeParams: vi.fn(),
       })) as any;
 
       newFixture.detectChanges();
@@ -1043,433 +1044,434 @@ describe('ListViewComponent', () => {
       expect(subscription.unsubscribe).toHaveBeenCalled();
     });
 
-  describe('List method', () => {
-    it('should not call list twice if already loading', () => {
-      const listSpy = jest.fn().mockReturnValue(
-        of({
-          items: [],
-          resourceVersion: '123',
-        }),
-      );
-      mockResourceService.list = listSpy;
+    describe('List method', () => {
+      it('should not call list twice if already loading', () => {
+        const listSpy = vi.fn().mockReturnValueOnce(
+          of({
+            items: [],
+            resourceVersion: '123',
+          }),
+        );
+        mockResourceService.list = listSpy;
 
-      // Manually set isLoadingList to true
-      (component as any).isLoadingList = true;
+        // Manually set isLoadingList to true
+        (component as any).isLoadingList = true;
 
-      component.list();
+        component.list();
 
-      expect(listSpy).not.toHaveBeenCalled();
-    });
-
-    it('should set hasMore to false when continue token is not present', () => {
-      mockResourceService.list.mockReturnValue(
-        of({
-          items: [{ metadata: { name: 'test' } }],
-          resourceVersion: '123',
-          continue: undefined,
-          remainingItemCount: 0,
-        }),
-      );
-
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      expect(newComponent.hasMore()).toBe(false);
-    });
-
-    it('should set hasMore to true when continue token is present', () => {
-      mockResourceService.list.mockReturnValue(
-        of({
-          items: [{ metadata: { name: 'test' } }],
-          resourceVersion: '123',
-          continue: 'next-token',
-          remainingItemCount: 5,
-        }),
-      );
-
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      expect(newComponent.hasMore()).toBe(true);
-      expect((newComponent as any).currentContinueToken).toBe('next-token');
-    });
-
-    it('should merge existing resources with new ones from list', () => {
-      const firstResponse = {
-        items: [{ metadata: { name: 'res1' }, spec: { version: 'v1' } }],
-        resourceVersion: '123',
-        continue: 'token1',
-      };
-
-      const secondResponse = {
-        items: [
-          { metadata: { name: 'res1' }, spec: { version: 'v2' } },
-          { metadata: { name: 'res2' }, spec: { version: 'v1' } },
-        ],
-        resourceVersion: '124',
-      };
-
-      let callCount = 0;
-      mockResourceService.list.mockImplementation(() => {
-        callCount++;
-        return of(callCount === 1 ? firstResponse : secondResponse);
+        expect(listSpy).not.toHaveBeenCalled();
       });
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
+      it('should set hasMore to false when continue token is not present', () => {
+        mockResourceService.list.mockReturnValue(
+          of({
+            items: [{ metadata: { name: 'test' } }],
+            resourceVersion: '123',
+            continue: undefined,
+            remainingItemCount: 0,
+          }),
+        );
 
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: { fields: [] },
+            },
           },
-        },
-      })) as any;
+        })) as any;
 
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
 
-      newFixture.detectChanges();
+        newFixture.detectChanges();
 
-      // First call creates initial resources
-      expect(newComponent.resources().length).toBe(1);
+        expect(newComponent.hasMore()).toBe(false);
+      });
 
-      // Manually trigger second list call
-      newComponent.list();
+      it('should set hasMore to true when continue token is present', () => {
+        mockResourceService.list.mockReturnValue(
+          of({
+            items: [{ metadata: { name: 'test' } }],
+            resourceVersion: '123',
+            continue: 'next-token',
+            remainingItemCount: 5,
+          }),
+        );
 
-      // Should have merged resources
-      expect(newComponent.resources().length).toBe(2);
-      const res1 = newComponent
-        .resources()
-        .find((r) => r.metadata.name === 'res1');
-      expect(res1?.spec?.version).toBe('v2'); // Updated version
-    });
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
 
-    it('should handle error and call error handler service', () => {
-      const error = new Error('Unauthorized');
-      mockResourceService.list.mockReturnValue(throwError(() => error));
-
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: { fields: [] },
+            },
           },
-        },
-      })) as any;
+        })) as any;
 
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
 
-      newFixture.detectChanges();
+        newFixture.detectChanges();
 
-      expect(
-        mockErrorHandlerService.handleUnauthorizedAccess,
-      ).toHaveBeenCalledWith(error);
-    });
+        expect(newComponent.hasMore()).toBe(true);
+        expect((newComponent as any).currentContinueToken).toBe('next-token');
+      });
 
-    it('should set remainingItemCount to 0 when not provided in response', () => {
-      mockResourceService.list.mockReturnValue(
-        of({
-          items: [{ metadata: { name: 'test' } }],
+      it('should merge existing resources with new ones from list', () => {
+        const firstResponse = {
+          items: [{ metadata: { name: 'res1' }, spec: { version: 'v1' } }],
           resourceVersion: '123',
-        }),
-      );
+          continue: 'token1',
+        };
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
+        const secondResponse = {
+          items: [
+            { metadata: { name: 'res1' }, spec: { version: 'v2' } },
+            { metadata: { name: 'res2' }, spec: { version: 'v1' } },
+          ],
+          resourceVersion: '124',
+        };
 
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
+        let callCount = 0;
+        mockResourceService.list.mockImplementation(() => {
+          callCount++;
+          return of(callCount === 1 ? firstResponse : secondResponse);
+        });
 
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
 
-      newFixture.detectChanges();
-
-      expect(newComponent.remainingItemCount()).toBe(0);
-    });
-  });
-
-  describe('Modal operations', () => {
-    it('should close delete modal after successful deletion', () => {
-      const resource = { metadata: { name: 'test' } } as any;
-      const closeSpy = jest.fn();
-      (component as any).deleteModal = () => ({ close: closeSpy });
-
-      component.delete(resource);
-
-      expect(closeSpy).toHaveBeenCalled();
-    });
-
-    it('should close create modal after successful creation', () => {
-      const resource = { metadata: { name: 'test' } } as any;
-      const closeSpy = jest.fn();
-      (component as any).createModal = () => ({ close: closeSpy });
-
-      component.create(resource);
-
-      expect(closeSpy).toHaveBeenCalled();
-    });
-
-    it('should close create modal after successful update', () => {
-      const resource = { metadata: { name: 'test' } } as any;
-      const closeSpy = jest.fn();
-      (component as any).createModal = () => ({ close: closeSpy });
-
-      component.update(resource);
-
-      expect(closeSpy).toHaveBeenCalled();
-    });
-
-    it('should handle event without stopPropagation method', () => {
-      const event = {} as any; // No stopPropagation
-      const resource = { metadata: { name: 'test' } } as any;
-      const openSpy = jest.fn();
-      (component as any).deleteModal = () => ({ open: openSpy });
-
-      // Should not throw error
-      expect(() =>
-        component.openDeleteResourceModal(event, resource),
-      ).not.toThrow();
-      expect(openSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('Computed properties', () => {
-    it('should return false for hasUiCreateViewFields when createView is undefined', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      expect(newComponent.hasUiCreateViewFields()).toBe(false);
-    });
-
-    it('should return false for hasUiCreateViewFields when fields array is empty', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          ui: {
-            createView: {
-              fields: [],
-            },
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      expect(newComponent.hasUiCreateViewFields()).toBe(false);
-    });
-
-    it('should compute viewColumns correctly', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          ui: {
-            listView: {
-              fields: [
-                { property: 'metadata.name' },
-                { property: 'spec.version' },
-              ],
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: { fields: [] },
             },
           },
-        },
-      })) as any;
+        })) as any;
 
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
 
-      newFixture.detectChanges();
+        newFixture.detectChanges();
 
-      expect(newComponent.columns().length).toBe(2);
-    });
-  });
+        // First call creates initial resources
+        expect(newComponent.resources().length).toBe(1);
 
-  describe('openEditResourceModal with createView fields', () => {
-    it('should use createView fields when opening edit modal', () => {
-      const event = { stopPropagation: jest.fn() } as any;
-      const resource = { metadata: { name: 'to-edit' } } as any;
-      const openSpy = jest.fn();
-      (component as any).createModal = () => ({ open: openSpy });
+        // Manually trigger second list call
+        newComponent.list();
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
+        // Should have merged resources
+        expect(newComponent.resources().length).toBe(2);
+        const res1 = newComponent
+          .resources()
+          .find((r) => r.metadata.name === 'res1');
+        expect(res1?.spec?.version).toBe('v2'); // Updated version
+      });
 
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            createView: {
-              fields: [
-                { property: 'metadata.name' },
-                { property: 'spec.version' },
-              ],
+      it('should handle error and call error handler service', () => {
+        const error = new Error('Unauthorized');
+        mockResourceService.list.mockReturnValue(throwError(() => error));
+
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: { fields: [] },
             },
-            listView: { fields: [] },
           },
-        },
-      })) as any;
+        })) as any;
 
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: jest.fn().mockReturnThis(),
-          navigate: jest.fn(),
-          withParams: jest.fn().mockReturnThis(),
-        }),
-        getNodeParams: jest.fn(),
-      })) as any;
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
 
-      (newComponent as any).createModal = () => ({ open: openSpy });
+        newFixture.detectChanges();
 
-      mockResourceService.read.mockReturnValueOnce(of(resource));
+        expect(
+          mockErrorHandlerService.handleUnauthorizedAccess,
+        ).toHaveBeenCalledWith(error);
+      });
 
-      newComponent.openEditResourceModal(event, resource);
+      it('should set remainingItemCount to 0 when not provided in response', () => {
+        mockResourceService.list.mockReturnValue(
+          of({
+            items: [{ metadata: { name: 'test' } }],
+            resourceVersion: '123',
+          }),
+        );
 
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        'to-edit',
-        expect.objectContaining({
-          kind: 'Cluster',
-          version: 'v1alpha1',
-          group: 'core_k8s_io',
-        }),
-        expect.any(Array),
-        expect.any(Object),
-        false,
-      );
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: { fields: [] },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.remainingItemCount()).toBe(0);
+      });
+    });
+
+    describe('Modal operations', () => {
+      it('should close delete modal after successful deletion', () => {
+        const resource = { metadata: { name: 'test' } } as any;
+        const closeSpy = vi.fn();
+        (component as any).deleteModal = () => ({ close: closeSpy });
+
+        component.delete(resource);
+
+        expect(closeSpy).toHaveBeenCalled();
+      });
+
+      it('should close create modal after successful creation', () => {
+        const resource = { metadata: { name: 'test' } } as any;
+        const closeSpy = vi.fn();
+        (component as any).createModal = () => ({ close: closeSpy });
+
+        component.create(resource);
+
+        expect(closeSpy).toHaveBeenCalled();
+      });
+
+      it('should close create modal after successful update', () => {
+        const resource = { metadata: { name: 'test' } } as any;
+        const closeSpy = vi.fn();
+        (component as any).createModal = () => ({ close: closeSpy });
+
+        component.update(resource);
+
+        expect(closeSpy).toHaveBeenCalled();
+      });
+
+      it('should handle event without stopPropagation method', () => {
+        const event = {} as any; // No stopPropagation
+        const resource = { metadata: { name: 'test' } } as any;
+        const openSpy = vi.fn();
+        (component as any).deleteModal = () => ({ open: openSpy });
+
+        // Should not throw error
+        expect(() =>
+          component.openDeleteResourceModal(event, resource),
+        ).not.toThrow();
+        expect(openSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('Computed properties', () => {
+      it('should return false for hasUiCreateViewFields when createView is undefined', () => {
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            ui: {
+              listView: { fields: [] },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.hasUiCreateViewFields()).toBe(false);
+      });
+
+      it('should return false for hasUiCreateViewFields when fields array is empty', () => {
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            ui: {
+              createView: {
+                fields: [],
+              },
+              listView: { fields: [] },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.hasUiCreateViewFields()).toBe(false);
+      });
+
+      it('should compute viewColumns correctly', () => {
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            ui: {
+              listView: {
+                fields: [
+                  { property: 'metadata.name' },
+                  { property: 'spec.version' },
+                ],
+              },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.columns().length).toBe(2);
+      });
+    });
+
+    describe('openEditResourceModal with createView fields', () => {
+      it('should use createView fields when opening edit modal', () => {
+        const event = { stopPropagation: vi.fn() } as any;
+        const resource = { metadata: { name: 'to-edit' } } as any;
+        const openSpy = vi.fn();
+        (component as any).createModal = () => ({ open: openSpy });
+
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              createView: {
+                fields: [
+                  { property: 'metadata.name' },
+                  { property: 'spec.version' },
+                ],
+              },
+              listView: { fields: [] },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        (newComponent as any).createModal = () => ({ open: openSpy });
+
+        mockResourceService.read.mockReturnValueOnce(of(resource));
+
+        newComponent.openEditResourceModal(event, resource);
+
+        expect(mockResourceService.read).toHaveBeenCalledWith(
+          'to-edit',
+          expect.objectContaining({
+            kind: 'Cluster',
+            version: 'v1alpha1',
+            group: 'core_k8s_io',
+          }),
+          expect.any(Array),
+          expect.any(Object),
+          false,
+        );
+      });
     });
   });
 });
