@@ -34,7 +34,13 @@ import {
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  FieldDefinition,
+  Resource,
+  ResourceListResult,
+  ResourceOperationTypeMap,
+  ResourceSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
   ResourceNodeContext,
@@ -47,7 +53,25 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { catchError } from 'rxjs/operators';
+import {
+  DynamicPageComponent,
+  DynamicPageTitleComponent,
+  IconComponent,
+  IllustratedMessageComponent,
+  OptionComponent,
+  SelectComponent,
+  TableCellComponent,
+  TableComponent,
+  TableGrowingComponent,
+  TableHeaderCellComponent,
+  TableHeaderRowComponent,
+  TableRowComponent,
+  TextComponent,
+  TitleComponent,
+  ToolbarButtonComponent,
+  ToolbarComponent,
+} from '@ui5/webcomponents-ngx';
+import { catchError, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -73,6 +97,9 @@ import { catchError } from 'rxjs/operators';
     ToolbarButton,
     Toolbar,
     ValueCellComponent,
+    SelectComponent,
+    OptionComponent,
+    TableGrowingComponent,
   ],
 })
 export class ListViewComponent {
@@ -94,7 +121,7 @@ export class ListViewComponent {
   columns = computed(
     () => this.resourceDefinition()?.ui?.listView?.fields ?? [],
   );
-  viewColomns = computed(() => processFields(this.columns()));
+  viewColumns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
   imagePathProperty = computed(
     () => this.resourceDefinition()?.ui?.resourceImageProperty,
@@ -103,15 +130,87 @@ export class ListViewComponent {
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
 
+  totalItemsCount = computed(
+    () => this.resources().length + this.remainingItemCount(),
+  );
+  paginationLimit = signal<number>(5);
+  remainingItemCount = signal<number>(0);
+  hasMore = signal<boolean>(false);
+  resourceVersion = signal<string | undefined>(undefined);
+
+  private currentContinueToken: string | undefined = undefined;
+  private isLoadingList = false;
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
     effect(() => {
       this.list();
     });
+
+    effect((onCleanup) => {
+      const version = this.resourceVersion();
+      if (!version) return;
+      const sub = this.subscribeToResourceChange(version);
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  private subscribeToResourceChange(version: string) {
+    const fields = this.getListQueryFields();
+    const resourceDefinition = this.getResourceDefinition();
+    const queryOperation = replaceDotsAndHyphensWithUnderscores(
+      buildResourcePath({
+        group: resourceDefinition.group,
+        version: resourceDefinition.version,
+        kind: resourceDefinition.plural,
+      }),
+    ) as string;
+
+    return this.resourceService
+      .resourceChangeSubscription(
+        queryOperation,
+        fields,
+        this.context(),
+        version,
+        false,
+      )
+      .subscribe({
+        next: (value) => {
+          if (!value) {
+            return;
+          }
+
+          this.mergeResourcesWithSubscriptionResult(value);
+        },
+      });
+  }
+
+  private resetPagination() {
+    this.currentContinueToken = undefined;
+    this.resources.update((v) => v.slice(0, this.paginationLimit()));
+    this.hasMore.set(this.resources().length < this.totalItemsCount());
+  }
+
+  onLimitChange(event: any) {
+    const newLimit = parseInt(event.detail.selectedOption.value, 10);
+    this.paginationLimit.set(newLimit);
+    this.resetPagination();
+  }
+
+  loadMore() {
+    if (!this.hasMore()) {
+      return;
+    }
+
+    this.list();
   }
 
   list() {
+    if (this.isLoadingList) {
+      return;
+    }
+    this.isLoadingList = true;
+
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
     const queryOperation = replaceDotsAndHyphensWithUnderscores(
@@ -123,32 +222,53 @@ export class ListViewComponent {
     ) as string;
 
     this.resourceService
-      .list(queryOperation, fields, this.context())
+      .list(queryOperation, fields, this.context(), false, {
+        limit: this.paginationLimit(),
+        continue: this.currentContinueToken,
+      })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError((error) => {
           this.errorHandlerService.handleUnauthorizedAccess(error);
           throw error;
         }),
+        finalize(() => (this.isLoadingList = false)),
       )
       .subscribe({
-        next: (result: any[]) => {
-          this.resources.set(
-            result.map((resource) => {
-              return {
-                ...resource,
-                ready: this.getResourceReadyStatus(resource),
-              };
-            }),
-          );
-        },
-        error: (error) => {
-          this.luigiCoreService.showAlert({
-            text: `Failure! Could not list resources: ${error.message}`,
-            type: 'error',
+        next: (result: ResourceListResult) => {
+          this.resources.update((values) => {
+            const map = new Map(values.map((i) => [i.metadata.name, i]));
+            result.items.forEach((i) => {
+              map.set(i.metadata.name, i);
+            });
+            return [...map.values()];
           });
+          this.resourceVersion.set(result.resourceVersion);
+          this.hasMore.set(!!result.continue);
+          this.currentContinueToken = result.continue;
+          this.remainingItemCount.set(result.remainingItemCount || 0);
         },
       });
+  }
+
+  private mergeResourcesWithSubscriptionResult(
+    subscriptionResult: ResourceSubscriptionResult,
+  ) {
+    const result = new Map<string, Resource>(
+      this.resources().map((item) => [item.metadata.name!, item]),
+    );
+
+    const { type, object } = subscriptionResult;
+    if (type === ResourceOperationTypeMap.ADDED) {
+      result.set(object.metadata.name, object);
+    } else if (type === ResourceOperationTypeMap.MODIFIED) {
+      result.has(object.metadata.name) &&
+        result.set(object.metadata.name, object);
+    } else if (type === ResourceOperationTypeMap.DELETED) {
+      result.delete(object.metadata.name);
+    }
+
+    this.resources.set([...result.values()]);
   }
 
   delete(resource: Resource) {
@@ -258,16 +378,6 @@ export class ListViewComponent {
     }
 
     return generateGraphQLFields(this.columns().concat(additionalFields));
-  }
-
-  private getResourceReadyStatus(resource: Resource) {
-    const readyCondition = this.readyCondition();
-    if (!readyCondition) {
-      return true;
-    }
-
-    const readyStatus = getResourceValueByJsonPath(resource, readyCondition);
-    return !!readyStatus;
   }
 
   private getResourceDefinition() {

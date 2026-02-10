@@ -36,6 +36,10 @@ describe('isLocalSetup', () => {
     window.location.hostname = 'portal.dev.local';
     expect(isLocalSetup()).toBe(true);
   });
+  it('should return true for portal.localhost', () => {
+    window.location.hostname = 'portal.localhost';
+    expect(isLocalSetup()).toBe(true);
+  });
 
   it('should return true for subdomain with portal.dev.local', () => {
     window.location.hostname = 'app.portal.dev.local';

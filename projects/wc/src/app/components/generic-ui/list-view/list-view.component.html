@@ -53,7 +53,7 @@
           class="image-column"
         ></ui5-table-header-cell>
       }
-      @for (column of viewColomns(); track column.property) {
+      @for (column of viewColumns(); track column.property) {
         @if (column.group) {
           <ui5-table-header-cell
             [attr.test-id]="'generic-list-header-' + column.property"
@@ -63,9 +63,7 @@
           >
         } @else {
           <ui5-table-header-cell
-            [attr.test-id]="
-              'generic-list-header-' + column.property
-            "
+            [attr.test-id]="'generic-list-header-' + column.property"
             >{{ column.label }}</ui5-table-header-cell
           >
         }
@@ -77,14 +75,16 @@
       >
     </ui5-table-header-row>
 
-    <ui5-illustrated-message
-      test-id="generic-list-view-nodata"
-      slot="noData"
-      name="NoData"
-    >
-      <span slot="title">No Resources</span>
-      <span slot="subtitle">There are currently no items to show.</span>
-    </ui5-illustrated-message>
+    @if (resourceVersion()) {
+      <ui5-illustrated-message
+        test-id="generic-list-view-nodata"
+        slot="noData"
+        name="NoData"
+      >
+        <span slot="title">No Resources</span>
+        <span slot="subtitle">There are currently no items to show.</span>
+      </ui5-illustrated-message>
+    }
 
     @for (item of resources(); let i = $index; track item.metadata.name) {
       <ui5-table-row
@@ -94,29 +94,37 @@
         (click)="navigateToResource(item)"
       >
         @if (readyCondition()) {
-          <ui5-table-cell [style]="{paddingLeft: '5px'}">
-          @if (!isAvailable(item)) {
-            <ui5-icon
-              [attr.test-id]="'generic-list-row-' + i + '-not-ready-icon'"
-              class="not-ready-indicator"
-              (click)="$event.stopPropagation()"
-              [showTooltip]="true"
-              accessibleName="{{ getAccessibleName(item) }}"
-              name="alert"
-              design="Critical"
-            ></ui5-icon>
-          }
+          <ui5-table-cell [style]="{ paddingLeft: '5px' }">
+            @if (!isAvailable(item)) {
+              <ui5-icon
+                [attr.test-id]="'generic-list-row-' + i + '-not-ready-icon'"
+                class="not-ready-indicator"
+                (click)="$event.stopPropagation()"
+                [showTooltip]="true"
+                accessibleName="{{ getAccessibleName(item) }}"
+                name="alert"
+                design="Critical"
+              ></ui5-icon>
+            }
           </ui5-table-cell>
         }
 
         @if (imagePathProperty(); as imagePathProperty) {
           <ui5-table-cell>
-            <img class="image-cell" [src]="getResourceValueByJsonPath(item, {jsonPathExpression: imagePathProperty})" alt="Resource image" />
+            <img
+              class="image-cell"
+              [src]="
+                getResourceValueByJsonPath(item, {
+                  jsonPathExpression: imagePathProperty,
+                })
+              "
+              alt="Resource image"
+            />
           </ui5-table-cell>
         }
 
         @for (
-          column of viewColomns();
+          column of viewColumns();
           let first = $first;
           track column.property
         ) {
@@ -142,15 +150,15 @@
                     field.property
                   "
                 >
-                @if (field.label) {
-                  <span>{{ field.label }}: </span>
-                }
-                <pm-value-cell
-                  [fieldDefinition]="field"
-                  [resource]="item"
-                  [LuigiClient]="LuigiClient()"
-                />
-              </span>
+                  @if (field.label) {
+                    <span>{{ field.label }}: </span>
+                  }
+                  <pm-value-cell
+                    [fieldDefinition]="field"
+                    [resource]="item"
+                    [LuigiClient]="LuigiClient()"
+                  />
+                </span>
                 @if (!last && column.group.delimiter) {
                   <span>{{ column.group.delimiter }}</span>
                 }
@@ -184,7 +192,59 @@
         </ui5-table-cell>
       </ui5-table-row>
     }
+
+    @if (hasMore()) {
+      <ui5-table-growing
+        id="growing"
+        mode="Button"
+        slot="features"
+        [text]="'Load more'"
+        (ui5LoadMore)="loadMore()"
+      />
+    }
   </ui5-table>
+
+  <!-- Pagination Control -->
+  <div
+    class="pagination-footer"
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-top: 1px solid var(--sapList_BorderColor);
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 1.5rem">
+      <div style="display: flex; align-items: center; gap: 0.5rem">
+        <span
+          style="color: var(--sapTextColor); font-size: var(--sapFontSmallSize)"
+          >Items per load:</span
+        >
+        <ui5-select (change)="onLimitChange($event)" style="width: 5rem">
+          <ui5-option value="5" [selected]="paginationLimit() === 5"
+            >5</ui5-option
+          >
+          <ui5-option value="10" [selected]="paginationLimit() === 10"
+            >10</ui5-option
+          >
+          <ui5-option value="50" [selected]="paginationLimit() === 50"
+            >50</ui5-option
+          >
+          <ui5-option value="100" [selected]="paginationLimit() === 100"
+            >100</ui5-option
+          >
+        </ui5-select>
+      </div>
+
+      <span
+        style="color: var(--sapTextColor); font-size: var(--sapFontSmallSize)"
+      >
+        Items loaded:
+        <b>{{ `${resources().length} / ${totalItemsCount()}` }}</b>
+      </span>
+    </div>
+  </div>
 </ui5-dynamic-page>
 
 @if (hasUiCreateViewFields()) {

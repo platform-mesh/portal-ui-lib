@@ -67,8 +67,12 @@ export interface ResourceSpec extends Record<string, any> {
   displayName?: string;
 }
 
+export interface ResourceMeta extends ObjectMeta {
+  name: string;
+}
+
 export interface Resource extends Record<string, any> {
-  metadata: ObjectMeta;
+  metadata: ResourceMeta;
   spec?: ResourceSpec;
   status?: ResourceStatus;
   __typename?: string;
@@ -121,9 +125,16 @@ export interface ResourceSubscriptionResult {
   object: Resource;
 }
 
+export interface ResourcePagination {
+  limit: number | undefined;
+  continue: string | undefined;
+}
+
 export interface ResourceListResult {
   resourceVersion: string;
   items: Resource[];
+  continue: string | undefined;
+  remainingItemCount?: number;
 }
 
 export type KubernetesScope = 'Cluster' | 'Namespaced';

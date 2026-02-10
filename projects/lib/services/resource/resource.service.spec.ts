@@ -308,16 +308,62 @@ describe('ResourceService', () => {
           { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
-        ),
+        )
+        .subscribe((res) => {
+          expect(res).toEqual({ name: 'test' });
+          expect(mockApollo.query).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: {
+              name: 'test-name',
+              namespace: namespacedNodeContext.namespaceId,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should read resource with readFromParentKcpPath set to false', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
       );
-      expect(res).toEqual({ name: 'test' });
-      expect(mockApollo.query).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {
-          name: 'test-name',
-          namespace: namespacedNodeContext.namespaceId,
-        },
-      });
+
+      service
+        .read(
+          'test-name',
+          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          ['name'],
+          namespacedNodeContext,
+          false,
+        )
+        .subscribe((res) => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+            false,
+          );
+          done();
+        });
+    });
+
+    it('should read resource without group', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: { v1: { TestKind: { name: 'test' } } },
+        }),
+      );
+
+      service
+        .read(
+          'test-name',
+          { kind: 'TestKind', version: 'v1', group: undefined },
+          ['name'],
+          grouplessNamespacedNodeContext,
+        )
+        .subscribe((res) => {
+          expect(res).toEqual({ name: 'test' });
+          done();
+        });
     });
   });
 
@@ -386,13 +432,31 @@ describe('ResourceService', () => {
       const subject = new Subject();
       mockApollo.subscribe.mockReturnValue(subject.asObservable());
 
-      const res = await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext),
-      );
-      expect(res).toEqual([
-        { name: 'res1', metadata: { uid: 'uid1' } },
-        { name: 'res2', metadata: { uid: 'uid2' } },
-      ]);
+      const results: any[] = [];
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        next: (res) => results.push(res),
+      });
+
+      expect(results[0]).toEqual({
+        items: [
+          {
+            metadata: {
+              uid: 'uid1',
+            },
+            name: 'res1',
+            ready: false,
+          },
+          {
+            metadata: {
+              uid: 'uid2',
+            },
+            name: 'res2',
+            ready: false,
+          },
+        ],
+        resourceVersion: '123',
+      });
+      done();
     });
 
     it('should list namespaced resources', async () => {
@@ -420,17 +484,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list('mylist', ['name'], namespacedNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {
-          namespace: namespacedNodeContext.namespaceId,
-          resourceVersion: '123',
-        },
-      });
+      service
+        .list('mylist', ['name'], namespacedNodeContext)
+        .subscribe((res) => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list namespaced resources without version', async () => {
@@ -456,17 +515,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list('myList', ['name'], unversionedNamespacedNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {
-          namespace: unversionedNamespacedNodeContext.namespaceId,
-          resourceVersion: '123',
-        },
-      });
+      service
+        .list('myList', ['name'], unversionedNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list namespaced resources without group', async () => {
@@ -492,17 +546,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list('myList', ['name'], grouplessNamespacedNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {
-          namespace: grouplessNamespacedNodeContext.namespaceId,
-          resourceVersion: '123',
-        },
-      });
+      service
+        .list('myList', ['name'], grouplessNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list namespaced resources without group and version', async () => {
@@ -526,21 +575,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list(
-          'myList',
-          ['name'],
-          grouplessUnversionedNamespacedNodeContext,
-        ),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {
-          namespace: grouplessUnversionedNamespacedNodeContext.namespaceId,
-          resourceVersion: '123',
-        },
-      });
+      service
+        .list('myList', ['name'], grouplessUnversionedNamespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list cluster resources', async () => {
@@ -568,14 +608,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list('myList', ['name'], clusterScopeNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: { resourceVersion: '123' },
-      });
+      service
+        .list('myList', ['name'], clusterScopeNodeContext)
+        .subscribe((res) => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list cluster resources without version', async () => {
@@ -601,14 +639,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list('myList', ['name'], unversionedClusterScopeNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: { resourceVersion: '123' },
-      });
+      service
+        .list('myList', ['name'], unversionedClusterScopeNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list cluster resources without group', async () => {
@@ -634,14 +670,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list('myList', ['name'], grouplessClusterScopeNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: { resourceVersion: '123' },
-      });
+      service
+        .list('myList', ['name'], grouplessClusterScopeNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list cluster resources without group and version', async () => {
@@ -665,18 +699,12 @@ describe('ResourceService', () => {
           },
         }),
       );
-      await firstValueFrom(
-        service.list(
-          'myList',
-          ['name'],
-          grouplessUnversionedClusterScopeNodeContext,
-        ),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: { resourceVersion: '123' },
-      });
+      service
+        .list('myList', ['name'], grouplessUnversionedClusterScopeNodeContext)
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list resources with namespace', async () => {
@@ -705,17 +733,12 @@ describe('ResourceService', () => {
         }),
       );
 
-      await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext),
-      );
-      expect(mockApollo.query).toHaveBeenCalled();
-      expect(mockApollo.subscribe).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {
-          namespace: namespacedNodeContext.namespaceId,
-          resourceVersion: '123',
-        },
-      });
+      service
+        .list('myList', ['name'], namespacedNodeContext)
+        .subscribe((res) => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
     });
 
     it('should list namespaced resources (raw query string)', async () => {
@@ -776,137 +799,527 @@ describe('ResourceService', () => {
         of({ data: { mylist: [{ name: 'res2' }] } }),
       );
 
-      const res = await firstValueFrom(
-        service.list('mylist', rawQuery, clusterScopeNodeContext),
-      );
-      expect(res).toEqual([{ name: 'res2' }]);
-      expect(mockApollo.query).toHaveBeenCalledWith({
-        query: expect.anything(),
-        variables: {},
-      });
+      service
+        .list('mylist', rawQuery, clusterScopeNodeContext)
+        .subscribe((res) => {
+          expect(res).toEqual([{ name: 'res2' }]);
+          expect(mockApollo.query).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: {},
+          });
+          done();
+        });
     });
 
-    it('should handle MODIFIED operation in subscription', (done) => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
-                },
-              },
-            },
-          },
-        }),
-      );
-      const subject = new Subject();
-      mockApollo.subscribe.mockReturnValue(subject.asObservable());
-
-      const results: any[] = [];
-      service.list('mylist', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      subject.next({
-        data: {
-          mylist: {
-            type: 'MODIFIED',
-            object: { name: 'res1-updated', metadata: { uid: 'uid1' } },
-          },
-        },
-      });
-
-      expect(results[1]).toEqual([
-        { name: 'res1-updated', metadata: { uid: 'uid1' } },
-      ]);
-    });
-
-    it('should handle DELETED operation in subscription', () => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
-                },
-              },
-            },
-          },
-        }),
-      );
-      const subject = new Subject();
-      mockApollo.subscribe.mockReturnValue(subject.asObservable());
-
-      const results: any[] = [];
-      service.list('mylist', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      subject.next({
-        data: {
-          mylist: {
-            type: 'DELETED',
-            object: { name: 'res1', metadata: { uid: 'uid1' } },
-          },
-        },
-      });
-
-      expect(results[1]).toEqual([]);
-    });
-
-    it('should return current values when resourceResult is undefined', () => {
-      mockApollo.query.mockReturnValue(
-        of({
-          data: {
-            core_k8s_io: {
-              v1: {
-                Testkinds: {
-                  resourceVersion: '123',
-                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
-                },
-              },
-            },
-          },
-        }),
-      );
-      const subject = new Subject();
-      mockApollo.subscribe.mockReturnValue(subject.asObservable());
-
-      const results: any[] = [];
-      service.list('myList', ['name'], namespacedNodeContext).subscribe({
-        next: (res) => results.push(res),
-      });
-
-      subject.next({
-        data: {
-          myList: undefined,
-        },
-      });
-
-      expect(results[1]).toEqual([{ name: 'res1', metadata: { uid: 'uid1' } }]);
-    });
-
-    it('should handle raw query list error', async () => {
+    it('should handle raw query list error', (done) => {
       const rawQuery = `query { myList { name } }`;
       const error = new Error('raw query fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
+      console.error = jest.fn();
 
-      await expect(
-        firstValueFrom(service.list('myList', rawQuery, namespacedNodeContext)),
-      ).rejects.toThrow('raw query fail');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'raw query fail',
-        type: 'error',
+      service.list('myList', rawQuery, namespacedNodeContext).subscribe({
+        error: (err) => {
+          expect(console.error).toHaveBeenCalledWith(
+            'Error executing GraphQL query.',
+            error,
+          );
+          expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+            text: 'raw query fail',
+            type: 'error',
+          });
+          done();
+        },
       });
+    });
+
+    it('should list resources with pagination limit', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                  continue: 'token-abc',
+                  remainingItemCount: 10,
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name'], namespacedNodeContext, false, {
+          limit: 5,
+          continue: undefined,
+        })
+        .subscribe((res) => {
+          expect(res.continue).toBe('token-abc');
+          expect(res.remainingItemCount).toBe(10);
+          done();
+        });
+    });
+
+    it('should list resources with pagination continue token', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name'], namespacedNodeContext, false, {
+          limit: 5,
+          continue: 'token-123',
+        })
+        .subscribe(() => {
+          expect(mockApollo.query).toHaveBeenCalled();
+          done();
+        });
+    });
+
+    it('should list resources with readFromParentKcpPath set to true', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name'], namespacedNodeContext, true)
+        .subscribe(() => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+            true,
+          );
+          done();
+        });
+    });
+
+    it('should determine ready status from custom readyCondition', (done) => {
+      const contextWithReadyCondition: any = {
+        ...namespacedNodeContext,
+        resourceDefinition: {
+          ...namespacedNodeContext.resourceDefinition,
+          readyCondition: {
+            jsonPathExpression: '$.status.ready',
+            property: 'status.ready',
+          },
+        },
+      };
+
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [
+                    {
+                      name: 'res1',
+                      metadata: { uid: 'uid1' },
+                      status: { ready: true },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name', 'status'], contextWithReadyCondition)
+        .subscribe((res) => {
+          expect(res.items[0].ready).toBe(true);
+          done();
+        });
+    });
+
+    it('should determine ready status from conditions when readyCondition is not defined', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [
+                    {
+                      name: 'res1',
+                      metadata: { uid: 'uid1' },
+                      status: {
+                        conditions: [{ type: 'Ready', status: 'True' }],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name', 'status'], namespacedNodeContext)
+        .subscribe((res) => {
+          expect(res.items[0].ready).toBe(true);
+          done();
+        });
+    });
+
+    it('should set ready to false when no Ready condition is found', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [
+                    {
+                      name: 'res1',
+                      metadata: { uid: 'uid1' },
+                      status: {
+                        conditions: [{ type: 'Other', status: 'True' }],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name', 'status'], namespacedNodeContext)
+        .subscribe((res) => {
+          expect(res.items[0].ready).toBe(false);
+          done();
+        });
+    });
+
+    it('should set ready to false when Ready condition status is not True', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [
+                    {
+                      name: 'res1',
+                      metadata: { uid: 'uid1' },
+                      status: {
+                        conditions: [{ type: 'Ready', status: 'False' }],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name', 'status'], namespacedNodeContext)
+        .subscribe((res) => {
+          expect(res.items[0].ready).toBe(false);
+          done();
+        });
+    });
+
+    it('should set ready to false when no status exists', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name'], namespacedNodeContext)
+        .subscribe((res) => {
+          expect(res.items[0].ready).toBe(false);
+          done();
+        });
+    });
+  });
+
+  describe('listSubscription', () => {
+    it('should subscribe to namespaced resource changes', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'ADDED',
+              object: { name: 'res1', metadata: { uid: 'uid1' } },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          namespacedNodeContext,
+          '123',
+          false,
+        )
+        .subscribe((res) => {
+          expect(res?.type).toBe('ADDED');
+          expect(res?.object.name).toBe('res1');
+          done();
+        });
+    });
+
+    it('should subscribe to cluster resource changes', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'MODIFIED',
+              object: { name: 'res1', metadata: { uid: 'uid1' } },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          clusterScopeNodeContext,
+          '123',
+          false,
+        )
+        .subscribe((res) => {
+          expect(res?.type).toBe('MODIFIED');
+          done();
+        });
+    });
+
+    it('should include namespace in subscription variables for namespaced resources', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'ADDED',
+              object: { name: 'res1', metadata: { uid: 'uid1' } },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          namespacedNodeContext,
+          '123',
+          false,
+        )
+        .subscribe(() => {
+          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: expect.objectContaining({
+              namespace: 'test-namespace',
+              resourceVersion: '123',
+            }),
+          });
+          done();
+        });
+    });
+
+    it('should not include namespace in subscription variables for cluster resources', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'ADDED',
+              object: { name: 'res1', metadata: { uid: 'uid1' } },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          clusterScopeNodeContext,
+          '123',
+          false,
+        )
+        .subscribe(() => {
+          expect(mockApollo.subscribe).toHaveBeenCalledWith({
+            query: expect.anything(),
+            variables: expect.objectContaining({
+              resourceVersion: '123',
+            }),
+          });
+          const callArgs = mockApollo.subscribe.mock.calls[0][0];
+          expect(callArgs.variables.namespace).toBeUndefined();
+          done();
+        });
+    });
+
+    it('should set ready status on subscription object using readyCondition', (done) => {
+      const contextWithReadyCondition: any = {
+        ...namespacedNodeContext,
+        resourceDefinition: {
+          ...namespacedNodeContext.resourceDefinition,
+          readyCondition: {
+            jsonPathExpression: '$.status.ready',
+            property: 'status.ready',
+          },
+        },
+      };
+
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'ADDED',
+              object: {
+                name: 'res1',
+                metadata: { uid: 'uid1' },
+                status: { ready: true },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name', 'status'],
+          contextWithReadyCondition,
+          '123',
+          false,
+        )
+        .subscribe((res) => {
+          expect(res?.object.ready).toBe(true);
+          done();
+        });
+    });
+
+    it('should set ready status on subscription object using conditions', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'ADDED',
+              object: {
+                name: 'res1',
+                metadata: { uid: 'uid1' },
+                status: {
+                  conditions: [{ type: 'Ready', status: 'True' }],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name', 'status'],
+          namespacedNodeContext,
+          '123',
+          false,
+        )
+        .subscribe((res) => {
+          expect(res?.object.ready).toBe(true);
+          done();
+        });
+    });
+
+    it('should return undefined when subscription result is undefined', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            someOtherField: {},
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          namespacedNodeContext,
+          '123',
+          false,
+        )
+        .subscribe((res) => {
+          expect(res).toBeUndefined();
+          done();
+        });
+    });
+
+    it('should use readFromParentKcpPath parameter', (done) => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mySubscription: {
+              type: 'ADDED',
+              object: { name: 'res1', metadata: { uid: 'uid1' } },
+            },
+          },
+        }),
+      );
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          namespacedNodeContext,
+          '123',
+          true,
+        )
+        .subscribe(() => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+            true,
+          );
+          done();
+        });
     });
   });
 
@@ -1321,19 +1734,690 @@ describe('ResourceService', () => {
       mockApollo.mutate.mockReturnValue(throwError(() => error));
       console.error = vi.fn();
 
-      await expect(
-        firstValueFrom(
-          service.update(resource, resourceDefinition, clusterScopeNodeContext),
-        ),
-      ).rejects.toThrow('fail');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'fail',
-        type: 'error',
+      service
+        .update(resource, resourceDefinition, clusterScopeNodeContext)
+        .subscribe({
+          error: () => {
+            expect(console.error).toHaveBeenCalledWith(
+              'Error executing GraphQL query.',
+              error,
+            );
+            expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+              text: 'fail',
+              type: 'error',
+            });
+            done();
+          },
+        });
+    });
+  });
+
+  // NEW TEST CASES FOR MISSING COVERAGE
+
+  describe('Private methods and edge cases', () => {
+    describe('isNamespacedResource', () => {
+      it('should return true for Namespaced scope', () => {
+        const result = service['isNamespacedResource'](namespacedNodeContext);
+        expect(result).toBe(true);
       });
+
+      it('should return false for Cluster scope', () => {
+        const result = service['isNamespacedResource'](clusterScopeNodeContext);
+        expect(result).toBe(false);
+      });
+
+      it('should handle undefined scope', () => {
+        const context: any = {
+          resourceDefinition: {},
+        };
+        const result = service['isNamespacedResource'](context);
+        expect(result).toBe(false);
+      });
+
+      it('should handle undefined resourceDefinition', () => {
+        const context: any = {};
+        const result = service['isNamespacedResource'](context);
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('normalizeGqlBuilderVariables', () => {
+      it('should convert gql-builder format to simple key-value pairs', () => {
+        const variables = {
+          name: { type: 'String!', value: 'test' },
+          namespace: { type: 'String', value: 'default' },
+          limit: { type: 'Int', value: 10 },
+        };
+
+        const result = service['normalizeGqlBuilderVariables'](variables);
+
+        expect(result).toEqual({
+          name: 'test',
+          namespace: 'default',
+          limit: 10,
+        });
+      });
+
+      it('should handle empty variables', () => {
+        const result = service['normalizeGqlBuilderVariables']({});
+        expect(result).toEqual({});
+      });
+    });
+
+    describe('calcQueryOptions', () => {
+      it('should build query options with multiple wrappers', () => {
+        const innerFields = [
+          {
+            operation: 'TestKind',
+            fields: ['name', 'namespace'],
+            variables: { name: { type: 'String!', value: 'test' } },
+          },
+        ];
+
+        const wrappers = [{ operation: 'core_k8s_io' }, { operation: 'v1' }];
+
+        const result = service['calcQueryOptions'](innerFields, wrappers);
+
+        expect(result.operation).toBe('core_k8s_io');
+        expect(result.fields).toBeDefined();
+      });
+
+      it('should handle single wrapper', () => {
+        const innerFields = [
+          {
+            operation: 'TestKind',
+            fields: ['name'],
+          },
+        ];
+
+        const wrappers = [{ operation: 'v1' }];
+
+        const result = service['calcQueryOptions'](innerFields, wrappers);
+
+        expect(result.operation).toBe('v1');
+      });
+
+      it('should handle no wrappers and return innerField as complete query', () => {
+        const innerFields = [
+          {
+            operation: 'TestKind',
+            fields: ['name'],
+          },
+        ];
+
+        const wrappers: any[] = [];
+
+        const result = service['calcQueryOptions'](innerFields, wrappers);
+
+        expect(result.operation).toBe('TestKind');
+        expect(result.fields).toEqual(['name']);
+      });
+
+      it('should throw error when no wrappers and innerFields is invalid', () => {
+        const innerFields: any[] = [];
+        const wrappers: any[] = [];
+
+        expect(() =>
+          service['calcQueryOptions'](innerFields, wrappers),
+        ).toThrow('At least one wrapper or inner fields is required');
+      });
+
+      it('should filter out wrappers without operation', () => {
+        const innerFields = [
+          {
+            operation: 'TestKind',
+            fields: ['name'],
+          },
+        ];
+
+        const wrappers = [
+          { operation: undefined },
+          { operation: 'v1' },
+          { operation: null },
+        ] as any;
+
+        const result = service['calcQueryOptions'](innerFields, wrappers);
+
+        expect(result.operation).toBe('v1');
+      });
+
+      it('should handle wrapper with variables', () => {
+        const innerFields = [
+          {
+            operation: 'TestKind',
+            fields: ['name'],
+          },
+        ];
+
+        const wrappers = [
+          { operation: 'v1', variables: { limit: { type: 'Int', value: 10 } } },
+        ];
+
+        const result = service['calcQueryOptions'](innerFields, wrappers);
+
+        expect(result.variables).toBeDefined();
+      });
+    });
+
+    describe('getResourceReadyStatus', () => {
+      it('should use readyCondition when defined', () => {
+        const contextWithReadyCondition: any = {
+          resourceDefinition: {
+            readyCondition: {
+              jsonPathExpression: '$.status.ready',
+              property: 'status.ready',
+            },
+          },
+        };
+
+        const resource: any = {
+          status: { ready: true },
+        };
+
+        const result = service['getResourceReadyStatus'](
+          resource,
+          contextWithReadyCondition,
+        );
+
+        expect(result).toBe(true);
+      });
+
+      it('should fallback to conditions when readyCondition is not defined', () => {
+        const resource: any = {
+          status: {
+            conditions: [{ type: 'Ready', status: 'True' }],
+          },
+        };
+
+        const result = service['getResourceReadyStatus'](
+          resource,
+          namespacedNodeContext,
+        );
+
+        expect(result).toBe(true);
+      });
+
+      it('should return false when Ready condition status is False', () => {
+        const resource: any = {
+          status: {
+            conditions: [{ type: 'Ready', status: 'False' }],
+          },
+        };
+
+        const result = service['getResourceReadyStatus'](
+          resource,
+          namespacedNodeContext,
+        );
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false when no conditions exist', () => {
+        const resource: any = {
+          status: {},
+        };
+
+        const result = service['getResourceReadyStatus'](
+          resource,
+          namespacedNodeContext,
+        );
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false when status is undefined', () => {
+        const resource: any = {};
+
+        const result = service['getResourceReadyStatus'](
+          resource,
+          namespacedNodeContext,
+        );
+
+        expect(result).toBe(false);
+      });
+
+      it('should handle readyCondition that returns falsy value', () => {
+        const contextWithReadyCondition: any = {
+          resourceDefinition: {
+            readyCondition: {
+              jsonPathExpression: '$.status.ready',
+              property: 'status.ready',
+            },
+          },
+        };
+
+        const resource: any = {
+          status: { ready: false },
+        };
+
+        const result = service['getResourceReadyStatus'](
+          resource,
+          contextWithReadyCondition,
+        );
+
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('resolveReadQuery', () => {
+      it('should build query from fields array', () => {
+        const params = {
+          kind: 'TestKind',
+          version: 'v1',
+          group: 'core_k8s_io',
+        };
+        const fields = ['name', 'namespace'];
+        const resourceId = 'test-id';
+        const namespace = 'test-namespace';
+
+        const result = service['resolveReadQuery'](
+          params,
+          fields,
+          resourceId,
+          namespace,
+        );
+
+        expect(result).toContain('TestKind');
+        expect(result).toContain('name');
+        expect(result).toContain('namespace');
+      });
+
+      it('should return raw query string when provided', () => {
+        const params = {
+          kind: 'TestKind',
+          version: 'v1',
+          group: 'core_k8s_io',
+        };
+        const rawQuery = 'query { TestKind { name } }';
+        const resourceId = 'test-id';
+        const namespace = undefined;
+
+        const result = service['resolveReadQuery'](
+          params,
+          rawQuery,
+          resourceId,
+          namespace,
+        );
+
+        expect(result).toBe(rawQuery);
+      });
+
+      it('should build query without namespace when namespace is undefined', () => {
+        const params = {
+          kind: 'TestKind',
+          version: 'v1',
+          group: 'core_k8s_io',
+        };
+        const fields = ['name'];
+        const resourceId = 'test-id';
+        const namespace = undefined;
+
+        const result = service['resolveReadQuery'](
+          params,
+          fields,
+          resourceId,
+          namespace,
+        );
+
+        expect(result).toContain('TestKind');
+        expect(result).not.toContain('namespace');
+      });
+    });
+  });
+
+  describe('Error handling edge cases', () => {
+    it('should handle list error with fields', (done) => {
+      const error = new Error('list failed');
+      mockApollo.query.mockReturnValue(throwError(() => error));
+
+      service.list('myList', ['name'], namespacedNodeContext).subscribe({
+        error: (err) => {
+          expect(err).toBeDefined();
+          done();
+        },
+      });
+    });
+
+    it('should handle read error', (done) => {
+      const error = new Error('read failed');
+      mockApollo.query.mockReturnValue(throwError(() => error));
+
+      service
+        .read(
+          'test-name',
+          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          ['name'],
+          namespacedNodeContext,
+        )
+        .subscribe({
+          error: (err) => {
+            expect(err).toBeDefined();
+            done();
+          },
+        });
+    });
+
+    it('should handle subscription error', (done) => {
+      const error = new Error('subscription failed');
+      mockApollo.subscribe.mockReturnValue(throwError(() => error));
+
+      service
+        .resourceChangeSubscription(
+          'mySubscription',
+          ['name'],
+          namespacedNodeContext,
+          '123',
+          false,
+        )
+        .subscribe({
+          error: (err) => {
+            expect(err).toBeDefined();
+            done();
+          },
+        });
+    });
+  });
+
+  describe('Complex pagination scenarios', () => {
+    it('should handle pagination with both limit and continue', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                  continue: 'next-token',
+                  remainingItemCount: 5,
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name'], namespacedNodeContext, false, {
+          limit: 10,
+          continue: 'prev-token',
+        })
+        .subscribe((res) => {
+          const queryCall = mockApollo.query.mock.calls[0][0];
+          expect(queryCall.variables).toEqual(
+            expect.objectContaining({
+              limit: 10,
+              continue: 'prev-token',
+            }),
+          );
+          done();
+        });
+    });
+
+    it('should not include pagination variables when not provided', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      service
+        .list('myList', ['name'], namespacedNodeContext, false, undefined)
+        .subscribe(() => {
+          const queryCall = mockApollo.query.mock.calls[0][0];
+          expect(queryCall.variables.limit).toBeUndefined();
+          expect(queryCall.variables.continue).toBeUndefined();
+          done();
+        });
+    });
+  });
+
+  describe('Apollo factory calls', () => {
+    it('should call apollo factory with correct parameters for read', (done) => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: { core_k8s_io: { v1: { TestKind: { name: 'test' } } } },
+        }),
+      );
+
+      service
+        .read(
+          'test-name',
+          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          ['name'],
+          namespacedNodeContext,
+          true,
+        )
+        .subscribe(() => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+            true,
+          );
+          done();
+        });
+    });
+
+    it('should default readFromParentKcpPath to false for delete', (done) => {
+      mockApollo.mutate.mockReturnValue(of({}));
+
+      service
+        .delete(resource, resourceDefinition, namespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+          );
+          done();
+        });
+    });
+
+    it('should default readFromParentKcpPath to false for create', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .create(resource, resourceDefinition, namespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+          );
+          done();
+        });
+    });
+
+    it('should default readFromParentKcpPath to false for update', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(resource, resourceDefinition, namespacedNodeContext)
+        .subscribe(() => {
+          expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+            namespacedNodeContext,
+          );
+          done();
+        });
+    });
+  });
+
+  describe('Delete operation variations', () => {
+    it('should delete cluster resource without version', (done) => {
+      mockApollo.mutate.mockReturnValue(of({}));
+
+      service
+        .delete(
+          resource,
+          unversionedResourceDefinition,
+          unversionedClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            variables: {
+              name: 'test-name',
+            },
+          });
+          done();
+        });
+    });
+
+    it('should delete cluster resource without group', (done) => {
+      mockApollo.mutate.mockReturnValue(of({}));
+
+      service
+        .delete(
+          resource,
+          grouplessResourceDefinition,
+          grouplessClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
+    });
+
+    it('should delete cluster resource without group and version', (done) => {
+      mockApollo.mutate.mockReturnValue(of({}));
+
+      service
+        .delete(
+          resource,
+          grouplessUnversionedResourceDefinition,
+          grouplessUnversionedClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
+    });
+  });
+
+  describe('Create operation variations', () => {
+    it('should create cluster resource without version', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .create(
+          resource,
+          unversionedResourceDefinition,
+          unversionedClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            fetchPolicy: 'no-cache',
+            variables: {
+              object: resource,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should create cluster resource without group', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .create(
+          resource,
+          grouplessResourceDefinition,
+          grouplessClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
+    });
+
+    it('should create cluster resource without group and version', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .create(
+          resource,
+          grouplessUnversionedResourceDefinition,
+          grouplessUnversionedClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
+    });
+  });
+
+  describe('Update operation variations', () => {
+    it('should update cluster resource without version', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(
+          resource,
+          unversionedResourceDefinition,
+          unversionedClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalledWith({
+            mutation: expect.anything(),
+            fetchPolicy: 'no-cache',
+            variables: {
+              name: resource.metadata.name,
+              object: resource,
+            },
+          });
+          done();
+        });
+    });
+
+    it('should update cluster resource without group', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(
+          resource,
+          grouplessResourceDefinition,
+          grouplessClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
+    });
+
+    it('should update cluster resource without group and version', (done) => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      service
+        .update(
+          resource,
+          grouplessUnversionedResourceDefinition,
+          grouplessUnversionedClusterScopeNodeContext,
+        )
+        .subscribe(() => {
+          expect(mockApollo.mutate).toHaveBeenCalled();
+          done();
+        });
     });
   });
 });
