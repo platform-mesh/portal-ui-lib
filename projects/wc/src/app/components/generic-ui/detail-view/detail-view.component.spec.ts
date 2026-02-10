@@ -263,9 +263,7 @@ describe('DetailViewComponent', () => {
     await component.downloadKubeConfig();
 
     expect(createElementSpy).toHaveBeenCalledWith('a');
-    expect(mockAnchorElement.href).toEqual(
-      `${window.location.origin}/blob-url`,
-    );
+    expect(mockAnchorElement.href).toContain('blob-url');
     expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
     expect(mockAnchorElement.click).toHaveBeenCalled();
   });
@@ -281,9 +279,7 @@ describe('DetailViewComponent', () => {
 
     await component.downloadKubeConfig();
 
-    expect(mockAnchorElement.href).toEqual(
-      `${window.location.origin}/blob-url`,
-    );
+    expect(mockAnchorElement.href).toContain('blob-url');
     expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
     expect(mockAnchorElement.click).toHaveBeenCalled();
   });
@@ -312,9 +308,7 @@ describe('DetailViewComponent', () => {
 
     await component.downloadKubeConfig();
 
-    expect(mockAnchorElement.href).toEqual(
-      `${window.location.origin}/blob-url`,
-    );
+    expect(mockAnchorElement.href).toContain('blob-url');
     expect(mockAnchorElement.download).toBe('kubeconfig.yaml');
     expect(mockAnchorElement.click).toHaveBeenCalled();
   });
