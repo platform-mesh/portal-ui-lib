@@ -1,12 +1,10 @@
 import { Injectable } from '@angular/core';
-import { NavigationRedirectStrategy } from '@openmfp/portal-ui-lib';
-
-const REDIRECT_URL_KEY = 'redirectUrl';
+import { LocalStorageKeys, NavigationRedirectStrategy } from '@openmfp/portal-ui-lib';
 
 @Injectable({ providedIn: 'root' })
 export class NavigationRedirectStrategyServiceImpl implements NavigationRedirectStrategy {
   getRedirectUrl(): string {
-    return localStorage.getItem(REDIRECT_URL_KEY) || '';
+    return localStorage.getItem(LocalStorageKeys.LAST_NAVIGATION_URL) || '';
   }
 
   saveRedirectUrl(url: string): void {
@@ -14,10 +12,10 @@ export class NavigationRedirectStrategyServiceImpl implements NavigationRedirect
       return;
     }
 
-    localStorage.setItem(REDIRECT_URL_KEY, url);
+    localStorage.setItem(LocalStorageKeys.LAST_NAVIGATION_URL, url);
   }
 
   clearRedirectUrl(): void {
-    localStorage.removeItem(REDIRECT_URL_KEY);
+    localStorage.removeItem(LocalStorageKeys.LAST_NAVIGATION_URL);
   }
 }

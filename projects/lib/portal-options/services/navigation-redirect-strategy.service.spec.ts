@@ -1,5 +1,6 @@
 import { NavigationRedirectStrategyServiceImpl } from './navigation-redirect-strategy.service';
 import { TestBed } from '@angular/core/testing';
+import { LocalStorageKeys } from '@openmfp/portal-ui-lib';
 
 const originalLocalStorage = window.localStorage;
 
@@ -46,7 +47,9 @@ describe('NavigationRedirectStrategyServiceImpl', () => {
       const result = service.getRedirectUrl();
 
       expect(result).toBe('');
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('redirectUrl');
+      expect(localStorageMock.getItem).toHaveBeenCalledWith(
+        LocalStorageKeys.LAST_NAVIGATION_URL,
+      );
     });
 
     it('should return stored redirect URL', () => {
@@ -56,7 +59,9 @@ describe('NavigationRedirectStrategyServiceImpl', () => {
       const result = service.getRedirectUrl();
 
       expect(result).toBe(url);
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('redirectUrl');
+      expect(localStorageMock.getItem).toHaveBeenCalledWith(
+        LocalStorageKeys.LAST_NAVIGATION_URL,
+      );
     });
   });
 
@@ -66,7 +71,10 @@ describe('NavigationRedirectStrategyServiceImpl', () => {
 
       service.saveRedirectUrl(url);
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('redirectUrl', url);
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        LocalStorageKeys.LAST_NAVIGATION_URL,
+        url,
+      );
     });
 
     it('should not save URL when it starts with /error', () => {
@@ -87,7 +95,7 @@ describe('NavigationRedirectStrategyServiceImpl', () => {
       service.saveRedirectUrl(url);
 
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'redirectUrl',
+        LocalStorageKeys.LAST_NAVIGATION_URL,
         url,
       );
     });
@@ -97,7 +105,9 @@ describe('NavigationRedirectStrategyServiceImpl', () => {
     it('should remove redirectUrl from localStorage', () => {
       service.clearRedirectUrl();
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('redirectUrl');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith(
+        LocalStorageKeys.LAST_NAVIGATION_URL,
+      );
     });
   });
 });
