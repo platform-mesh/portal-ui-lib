@@ -4,10 +4,6 @@ import { TestBed } from '@angular/core/testing';
 import { ConfigService } from '@openmfp/portal-ui-lib';
 import { MockedObject } from 'vitest';
 
-vi.mock('@ui5/webcomponents/dist/Breadcrumbs.js', () => ({}));
-vi.mock('@ui5/webcomponents/dist/BreadcrumbsItem.js', () => ({}));
-vi.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}));
-
 describe('HeaderBarConfigServiceImpl', () => {
   let service: HeaderBarConfigServiceImpl;
   let mockConfigService: MockedObject<ConfigService>;
