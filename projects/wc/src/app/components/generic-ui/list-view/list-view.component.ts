@@ -54,7 +54,7 @@ import {
   ToolbarButtonComponent,
   ToolbarComponent,
 } from '@ui5/webcomponents-ngx';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-list-view',
@@ -211,11 +211,11 @@ export class ListViewComponent {
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        tap(() => (this.isLoadingList = false)),
         catchError((error) => {
           this.errorHandlerService.handleUnauthorizedAccess(error);
           throw error;
         }),
+        finalize(() => (this.isLoadingList = false)),
       )
       .subscribe({
         next: (result: ResourceListResult) => {
