@@ -23,11 +23,15 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   private errorHandlerService = inject(ErrorHandlerService);
 
   public async processNodeContext(
-    entityId: string,
+    dynamicEntityId: string,
     entityNode: PortalLuigiNode,
     ctx: PortalNodeContext,
   ) {
-    const kind = entityNode.defineEntity?.graphqlEntity?.kind;
+    const kind =
+      entityNode.defineEntity?.graphqlEntity?.kind ||
+      entityNode.context.resourceDefinition?.kind;
+    const entityId =
+      dynamicEntityId || entityNode.context.resourceDefinition?.name;
 
     if (!entityId || !kind) {
       return;
@@ -90,10 +94,10 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
 
   private addFieldsToContext(
     ctx: PortalNodeContext,
-    entityId: string,
+    entityId: string | undefined,
     kcpPath: string,
     accountPath: string,
-    kind: string,
+    kind: string | undefined,
   ) {
     ctx.kcpPath = kcpPath;
     ctx.entityName = entityId;
