@@ -1,11 +1,11 @@
-import { WelcomeComponent } from './welcome.component';
+import { Welcome } from './welcome.component';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { MockedObject } from 'vitest';
 
 describe('WelcomeComponent', () => {
-  let component: WelcomeComponent;
+  let component: Welcome;
   let i18nServiceMock: MockedObject<I18nService>;
   let luigiCoreServiceMock: MockedObject<LuigiCoreService>;
   const header = {
@@ -29,14 +29,14 @@ describe('WelcomeComponent', () => {
     } as unknown as MockedObject<LuigiCoreService>;
 
     await TestBed.configureTestingModule({
-      imports: [WelcomeComponent],
+      imports: [Welcome],
       providers: [
         { provide: I18nService, useValue: i18nServiceMock },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
       ],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(WelcomeComponent);
+    const fixture = TestBed.createComponent(Welcome);
     component = fixture.componentInstance;
   });
 

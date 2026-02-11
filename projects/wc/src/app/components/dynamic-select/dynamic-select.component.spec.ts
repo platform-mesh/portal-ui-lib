@@ -1,4 +1,4 @@
-import { DynamicSelectComponent } from './dynamic-select.component';
+import { DynamicSelect } from './dynamic-select.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
@@ -9,23 +9,23 @@ const mockResourceService = {
 };
 
 describe('DynamicSelectComponent', () => {
-  let component: DynamicSelectComponent;
-  let fixture: ComponentFixture<DynamicSelectComponent>;
+  let component: DynamicSelect;
+  let fixture: ComponentFixture<DynamicSelect>;
 
   beforeEach(async () => {
     mockResourceService.list.mockReturnValue(of([]));
 
     await TestBed.configureTestingModule({
-      imports: [DynamicSelectComponent],
+      imports: [DynamicSelect],
       providers: [{ provide: ResourceService, useValue: mockResourceService }],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     })
-      .overrideComponent(DynamicSelectComponent, {
+      .overrideComponent(DynamicSelect, {
         set: { template: '' },
       })
       .compileComponents();
 
-    fixture = TestBed.createComponent(DynamicSelectComponent);
+    fixture = TestBed.createComponent(DynamicSelect);
     component = fixture.componentInstance;
   });
 

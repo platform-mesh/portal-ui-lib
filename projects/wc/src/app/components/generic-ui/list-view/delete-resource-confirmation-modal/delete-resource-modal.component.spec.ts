@@ -1,12 +1,12 @@
-import { DeleteResourceModalComponent } from './delete-resource-modal.component';
+import { DeleteResourceModal } from './delete-resource-modal.component';
 import { CommonModule } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 
 describe('DeleteResourceModalComponent', () => {
-  let component: DeleteResourceModalComponent;
-  let fixture: ComponentFixture<DeleteResourceModalComponent>;
+  let component: DeleteResourceModal;
+  let fixture: ComponentFixture<DeleteResourceModal>;
 
   const resource: any = { metadata: { name: 'TestName' } };
 
@@ -16,7 +16,7 @@ describe('DeleteResourceModalComponent', () => {
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     });
 
-    fixture = TestBed.createComponent(DeleteResourceModalComponent);
+    fixture = TestBed.createComponent(DeleteResourceModal);
     component = fixture.componentInstance;
 
     component.ngOnInit();

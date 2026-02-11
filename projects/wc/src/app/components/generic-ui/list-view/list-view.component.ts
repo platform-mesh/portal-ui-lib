@@ -1,7 +1,7 @@
 import { processFields } from '../../../utils/proccess-fields';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
-import { CreateResourceModalComponent } from './create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModalComponent } from './delete-resource-confirmation-modal/delete-resource-modal.component';
+import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModal } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -66,8 +66,8 @@ import { finalize } from 'rxjs/operators';
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CreateResourceModalComponent,
-    DeleteResourceModalComponent,
+    CreateResourceModal,
+    DeleteResourceModal,
     DynamicPage,
     DynamicPageTitle,
     Icon,
@@ -87,15 +87,15 @@ import { finalize } from 'rxjs/operators';
     TableGrowing,
   ],
 })
-export class ListViewComponent {
+export class ListView {
   private resourceService = inject(ResourceService);
   private luigiCoreService = inject(LuigiCoreService);
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
-  private createModal = viewChild<CreateResourceModalComponent>('createModal');
-  private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
+  private createModal = viewChild<CreateResourceModal>('createModal');
+  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
   heading = computed(

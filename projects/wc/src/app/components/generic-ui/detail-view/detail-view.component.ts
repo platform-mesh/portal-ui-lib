@@ -14,6 +14,18 @@ import {
   input,
   signal,
 } from '@angular/core';
+import {
+  Label,
+  Text,
+  Title,
+  Toolbar,
+  ToolbarButton,
+} from '@fundamental-ngx/ui5-webcomponents';
+import {
+  DynamicPage,
+  DynamicPageHeader,
+  DynamicPageTitle,
+} from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -29,14 +41,6 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import {
-  Label,
-  Text,
-  Title,
-  ToolbarButton,
-  Toolbar,
-} from '@fundamental-ngx/ui5-webcomponents';
-import { DynamicPage, DynamicPageHeader, DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -59,7 +63,7 @@ import { tap } from 'rxjs/operators';
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DetailViewComponent {
+export class DetailView {
   private resourceService = inject(ResourceService);
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);

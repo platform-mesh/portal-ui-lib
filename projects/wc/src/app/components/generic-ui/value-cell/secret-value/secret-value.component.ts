@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   styleUrl: './secret-value.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SecretValueComponent {
+export class SecretValue {
   value = input.required<string>();
   isVisible = input<boolean>(false);
   testId = input<string>('secret-value');

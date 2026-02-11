@@ -25,7 +25,7 @@ export type IconDesignType =
   styleUrl: './boolean-value.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BooleanValueComponent {
+export class BooleanValue {
   boolValue = input.required<boolean>();
   testId = input<string>('boolean-value-icon');
   iconDesign = computed<IconDesignType>(() => {

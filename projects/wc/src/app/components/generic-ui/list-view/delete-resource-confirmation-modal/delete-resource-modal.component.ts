@@ -1,31 +1,15 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import {
-  Bar,
-  Dialog,
-  Icon,
-  Input,
-  Text,
-  Title,
-  Toolbar,
-  ToolbarButton,
-} from '@fundamental-ngx/ui5-webcomponents';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Bar, Dialog, Icon, Input, Text, Title, Toolbar, ToolbarButton } from '@fundamental-ngx/ui5-webcomponents';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
+
+
+
+
+
+
+
 
 @Component({
   selector: 'pm-delete-resource-modal',
@@ -45,7 +29,7 @@ import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
   styleUrl: './delete-resource-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DeleteResourceModalComponent implements OnInit {
+export class DeleteResourceModal implements OnInit {
   context = input<ResourceNodeContext>();
   innerResource = signal<Resource | null>(null);
   dialogOpen = signal<boolean>(false);
