@@ -9,6 +9,7 @@ export interface PortalLuigiNode extends LuigiNode {
 }
 
 export interface PMEntityDefinition extends EntityDefinition {
+  type?: string;
   graphqlEntity?: GraphqlEntityDefinition;
 }
 
