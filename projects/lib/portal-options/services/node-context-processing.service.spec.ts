@@ -21,7 +21,7 @@ describe('NodeContextProcessingServiceImpl', () => {
   let organizationReadyService: MockedObject<OrganizationReadyService>;
 
   const mockEntityId = 'entity-123';
-  const mockKind = 'Account';
+  const mockKind = 'account';
   const mockKcpPath = 'root:orgs:test-org:entity-123';
   const mockAccountPath = '/test-org/entity-123';
   const mockToken = 'test-token';
@@ -52,9 +52,7 @@ describe('NodeContextProcessingServiceImpl', () => {
 
     mockEntityNode = {
       defineEntity: {
-        graphqlEntity: {
-          kind: mockKind,
-        },
+        type: 'account',
       },
       context: {},
     } as PortalLuigiNode;
@@ -394,9 +392,7 @@ describe('NodeContextProcessingServiceImpl', () => {
     it('should handle empty entityNode context', async () => {
       const nodeWithEmptyContext: PortalLuigiNode = {
         defineEntity: {
-          graphqlEntity: {
-            kind: mockKind,
-          },
+          type: mockKind,
         },
         context: {},
       } as PortalLuigiNode;
@@ -431,9 +427,7 @@ describe('NodeContextProcessingServiceImpl', () => {
       const differentKind = 'Organization';
       const nodeWithDifferentKind: PortalLuigiNode = {
         defineEntity: {
-          graphqlEntity: {
-            kind: differentKind,
-          },
+          type: differentKind,
         },
         context: {},
       } as PortalLuigiNode;

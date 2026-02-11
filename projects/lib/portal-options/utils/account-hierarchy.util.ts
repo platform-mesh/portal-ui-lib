@@ -9,7 +9,7 @@ export function collectAccountNamesFromHierarchy(
   while (currentNode) {
     const entityName = currentNode.context?.entityName;
     const entityKind = currentNode.context?.entityKind;
-    if (entityName && entityKind === 'account') {
+    if (entityName && entityKind?.toLowerCase() === 'account') {
       accountNames.unshift(entityName);
     }
     currentNode = currentNode.parent;
@@ -22,7 +22,7 @@ export function getInitialAccountId(
   entityId?: string,
   kind?: string,
 ): string | undefined {
-  return kind === 'account' && entityId ? entityId : undefined;
+  return kind?.toLowerCase() === 'account' && entityId ? entityId : undefined;
 }
 
 export function calculateAccountHierarchy(
