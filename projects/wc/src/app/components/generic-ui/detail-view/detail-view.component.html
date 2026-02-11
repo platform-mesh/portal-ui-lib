@@ -30,6 +30,22 @@
           (click)="downloadKubeConfig()"
         ></ui5-toolbar-button>
       }
+      @if (resource(); as resource) {
+        <ui5-toolbar-button
+          test-id="generic-detail-view-parent-button"
+          text="Edit"
+          icon="edit"
+          design="Default"
+          (click)="openEditResourceModal($event, resource)"
+        ></ui5-toolbar-button>
+        <ui5-toolbar-button
+        test-id="generic-detail-view-parent-button"
+        text="Delete"
+        icon="delete"
+        design="Negative"
+        (click)="openDeleteResourceModal($event, resource)"
+      ></ui5-toolbar-button>
+      }
     </ui5-toolbar>
   </ui5-dynamic-page-title>
 
@@ -112,3 +128,16 @@
 
   <slot></slot>
 </ui5-dynamic-page>
+
+<pm-create-resource-modal
+  #createModal
+  [fields]="resourceFields()"
+  (updateResource)="update($event)"
+  [context]="context()"
+/>
+
+<pm-delete-resource-modal
+  #deleteModal
+  (resource)="delete($event)"
+  [context]="context()"
+/>

@@ -1,4 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
+import { CreateResourceModalComponent } from '../list-view/create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModalComponent } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import {
   KubeConfigTemplateProps,
@@ -13,7 +15,20 @@ import {
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
+import {
+  Label,
+  Text,
+  Title,
+  Toolbar,
+  ToolbarButton,
+} from '@fundamental-ngx/ui5-webcomponents';
+import {
+  DynamicPage,
+  DynamicPageHeader,
+  DynamicPageTitle,
+} from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -29,14 +44,6 @@ import {
   getResourceValueByJsonPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import {
-  Label,
-  Text,
-  Title,
-  ToolbarButton,
-  Toolbar,
-} from '@fundamental-ngx/ui5-webcomponents';
-import { DynamicPage, DynamicPageHeader, DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -53,6 +60,8 @@ import { tap } from 'rxjs/operators';
     DynamicPageHeader,
     Label,
     ValueCellComponent,
+    CreateResourceModalComponent,
+    DeleteResourceModalComponent,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
@@ -65,6 +74,8 @@ export class DetailViewComponent {
   private gatewayService = inject(GatewayService);
   private errorHandlerService = inject(ErrorHandlerService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
+  private createModal = viewChild<CreateResourceModalComponent>('createModal');
+  private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -152,6 +163,87 @@ export class DetailViewComponent {
       .navigate('/');
   }
 
+  openDeleteResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+    const resourceToDelete: Resource = {
+      ...resource,
+      metadata: { name: this.getResourceId() },
+    };
+    this.deleteModal()?.open(resourceToDelete);
+  }
+
+  openEditResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+    this.createModal()?.open(resource);
+  }
+
+  delete(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+    const resourceId = this.getResourceId();
+
+    const resourceToDelete: Resource = {
+      ...resource,
+      metadata: { name: resourceId },
+    };
+
+    this.resourceService
+      .delete(
+        resourceToDelete,
+        resourceDefinition,
+        this.context(),
+        resourceDefinition.kind.toLowerCase() === 'account',
+      )
+      .subscribe({
+        next: async (_result) => {
+          this.deleteModal()?.close();
+          console.debug('Resource deleted.');
+          this.navigateToParent();
+        },
+        error: (_error) => {
+          this.LuigiClient()
+            .uxManager()
+            .showAlert({
+              text: `Failure! Could not delete resource: ${resource.metadata.name}.`,
+              type: 'error',
+            });
+        },
+      });
+  }
+
+  update(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+    const resourceId = this.getResourceId();
+    const fields = generateGraphQLFields(this.resourceFields());
+    const resourceToUpdate: Resource = {
+      ...resource,
+      metadata: { name: resourceId },
+    };
+
+    this.resourceService
+      .update(
+        resourceToUpdate,
+        resourceDefinition,
+        this.context(),
+        resourceDefinition.kind.toLowerCase() === 'account',
+        fields,
+      )
+      .subscribe({
+        next: (result: any) => {
+          this.resource.set(result);
+          this.createModal()?.close();
+          console.debug('Resource updated', result);
+        },
+        error: (_error) => {
+          this.LuigiClient()
+            .uxManager()
+            .showAlert({
+              text: `Failure! Could not update resource: ${resource.metadata.name}.`,
+              type: 'error',
+            });
+        },
+      });
+  }
+
   async downloadKubeConfig() {
     if (this.isDownloadingKubeConfig()) {
       return;
@@ -206,5 +298,19 @@ export class DetailViewComponent {
     }
 
     return resourceDefinition;
+  }
+
+  private getResourceId() {
+    const resourceId = this.resourceId();
+    if (!resourceId) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource ID is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Resource ID is not defined');
+    }
+
+    return resourceId;
   }
 }

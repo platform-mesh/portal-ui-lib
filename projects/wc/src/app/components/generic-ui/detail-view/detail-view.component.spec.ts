@@ -626,6 +626,220 @@ describe('DetailViewComponent', () => {
       });
     });
   });
+
+  describe('delete method', () => {
+    it('should call delete with readFromParentKcpPath true for Account kind', () => {
+      vi.clearAllMocks();
+      mockResourceService.delete = vi.fn().mockReturnValue(of({}));
+
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Account',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'test-account',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resource: any = { metadata: { name: 'test-account' } };
+      newComponent.delete(resource);
+
+      expect(mockResourceService.delete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { name: 'test-account' },
+        }),
+        expect.objectContaining({ kind: 'Account' }),
+        expect.any(Object),
+        true,
+      );
+    });
+
+    it('should call delete with readFromParentKcpPath false for non-Account kind', () => {
+      vi.clearAllMocks();
+      mockResourceService.delete = vi.fn().mockReturnValue(of({}));
+
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'test-cluster',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resource: any = { metadata: { name: 'test-cluster' } };
+      newComponent.delete(resource);
+
+      expect(mockResourceService.delete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { name: 'test-cluster' },
+        }),
+        expect.objectContaining({ kind: 'Cluster' }),
+        expect.any(Object),
+        false,
+      );
+    });
+  });
+
+  describe('update method', () => {
+    it('should call update with readFromParentKcpPath true for Account kind', () => {
+      vi.clearAllMocks();
+      mockResourceService.update = vi
+        .fn()
+        .mockReturnValue(of({ name: 'updated-resource' }));
+
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Account',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'test-account',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resource: any = { metadata: { name: 'test-account' } };
+      newComponent.update(resource);
+
+      expect(mockResourceService.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { name: 'test-account' },
+        }),
+        expect.objectContaining({ kind: 'Account' }),
+        expect.any(Object),
+        true,
+        [],
+      );
+    });
+
+    it('should call update with readFromParentKcpPath false for non-Account kind', () => {
+      vi.clearAllMocks();
+      mockResourceService.update = vi
+        .fn()
+        .mockReturnValue(of({ name: 'updated-resource' }));
+
+      const newFixture = TestBed.createComponent(DetailViewComponent);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'test-cluster',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const resource: any = { metadata: { name: 'test-cluster' } };
+      newComponent.update(resource);
+
+      expect(mockResourceService.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { name: 'test-cluster' },
+        }),
+        expect.objectContaining({ kind: 'Cluster' }),
+        expect.any(Object),
+        false,
+        [],
+      );
+    });
+  });
 });
 
 describe('DetailViewComponent template', () => {
