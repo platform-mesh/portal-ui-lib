@@ -1,7 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModal } from './delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -36,7 +35,6 @@ import {
   IllustratedMessage,
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   FieldDefinition,
   Resource,
@@ -47,7 +45,6 @@ import {
 import {
   ErrorHandlerService,
   ResourceNodeContext,
-  ResourceRequestParams,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
@@ -67,7 +64,6 @@ import { finalize } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CreateResourceModal,
-    DeleteResourceModal,
     DynamicPage,
     DynamicPageTitle,
     Icon,
@@ -89,13 +85,12 @@ import { finalize } from 'rxjs/operators';
 })
 export class ListView {
   private resourceService = inject(ResourceService);
-  private luigiCoreService = inject(LuigiCoreService);
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
+  private createModal = viewChild<CreateResourceModal>('createModal');
+
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
-  private createModal = viewChild<CreateResourceModal>('createModal');
-  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
   heading = computed(
@@ -255,25 +250,6 @@ export class ListView {
     this.resources.set([...result.values()]);
   }
 
-  delete(resource: Resource) {
-    const resourceDefinition = this.getResourceDefinition();
-
-    this.resourceService
-      .delete(resource, resourceDefinition, this.context())
-      .subscribe({
-        next: (_result) => {
-          this.deleteModal()?.close();
-          console.debug('Resource deleted.');
-        },
-        error: (_error) => {
-          this.luigiCoreService.showAlert({
-            text: `Failure! Could not delete resource: ${resource.metadata.name}.`,
-            type: 'error',
-          });
-        },
-      });
-  }
-
   create(resource: Resource) {
     const resourceDefinition = this.getResourceDefinition();
 
@@ -283,19 +259,6 @@ export class ListView {
         next: (result) => {
           this.createModal()?.close();
           console.debug('Resource created', result);
-        },
-      });
-  }
-
-  update(resource: Resource) {
-    const resourceDefinition = this.getResourceDefinition();
-
-    this.resourceService
-      .update(resource, resourceDefinition, this.context())
-      .subscribe({
-        next: (result) => {
-          this.createModal()?.close();
-          console.debug('Resource updated', result);
         },
       });
   }
@@ -320,32 +283,6 @@ export class ListView {
 
   openCreateResourceModal() {
     this.createModal()?.open();
-  }
-
-  openEditResourceModal(event: MouseEvent, resource: Resource) {
-    event.stopPropagation?.();
-    const resourceDefinition = this.getResourceDefinition();
-
-    const fields = generateGraphQLFields(
-      resourceDefinition.ui?.createView?.fields ?? [],
-    );
-
-    const params: ResourceRequestParams = {
-      kind: resourceDefinition.kind,
-      version: resourceDefinition.version,
-      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
-    };
-
-    this.resourceService
-      .read(resource.metadata.name ?? '', params, fields, this.context(), false)
-      .subscribe({
-        next: (result) => this.createModal()?.open(result),
-      });
-  }
-
-  openDeleteResourceModal(event: MouseEvent, resource: Resource) {
-    event.stopPropagation?.();
-    this.deleteModal()?.open(resource);
   }
 
   private getListQueryFields() {

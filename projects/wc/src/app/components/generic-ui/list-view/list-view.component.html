@@ -68,11 +68,6 @@
           >
         }
       }
-      <ui5-table-header-cell
-        test-id="generic-list-header-actions"
-        class="actions-column"
-        >Actions</ui5-table-header-cell
-      >
     </ui5-table-header-row>
 
     @if (resourceVersion()) {
@@ -176,20 +171,6 @@
             </ui5-table-cell>
           }
         }
-        <ui5-table-cell class="actions-column">
-          <ui5-icon
-            [attr.test-id]="'generic-list-row-' + i + '-edit'"
-            class="edit-item"
-            name="edit"
-            (click)="openEditResourceModal($event, item)"
-          ></ui5-icon>
-          <ui5-icon
-            [attr.test-id]="'generic-list-row-' + i + '-delete'"
-            class="delete-item"
-            name="delete"
-            (click)="openDeleteResourceModal($event, item)"
-          ></ui5-icon>
-        </ui5-table-cell>
       </ui5-table-row>
     }
 
@@ -252,13 +233,6 @@
     #createModal
     [fields]="resourceDefinition()?.ui?.createView?.fields ?? []"
     (resource)="create($event)"
-    (updateResource)="update($event)"
     [context]="context()"
   />
 }
-
-<pm-delete-resource-modal
-  #deleteModal
-  (resource)="delete($event)"
-  [context]="context()"
-/>

@@ -100,12 +100,6 @@ describe('ListViewComponent', () => {
     expect(component.resources().length).toBeGreaterThan(0);
   });
 
-  it('should not show alert when delete is called', () => {
-    const resource = { metadata: { name: 'test' } } as any;
-    component.delete(resource);
-    expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
-  });
-
   it('should include image and ready fields when listing resources', () => {
     const listSpy = vi.fn().mockReturnValue(of([]));
     mockResourceService.list = listSpy;
@@ -162,31 +156,11 @@ describe('ListViewComponent', () => {
     );
   });
 
-  it('should show alert when delete errors', () => {
-    const resource = { metadata: { name: 'bad' } } as any;
-    mockResourceService.delete.mockReturnValueOnce(
-      throwError(() => new Error('boom')),
-    );
-    component.delete(resource);
-    expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
-    const callArg = mockLuigiCoreService.showAlert.mock.calls[0][0];
-    expect(callArg.text).toContain('bad');
-    expect(callArg.type).toBe('error');
-  });
-
   it('should create a resource', () => {
     const resource = { metadata: { name: 'test' } };
 
     component.create(resource as any);
     expect(mockResourceService.create).toHaveBeenCalled();
-  });
-
-  it('should handle update from modal', () => {
-    const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-    const updated = { metadata: { name: 'x' }, spec: { a: 1 } } as any;
-    component.update(updated);
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
   });
 
   it('should navigate to resource', () => {
@@ -260,32 +234,6 @@ describe('ListViewComponent', () => {
     (component as any).createModal = () => ({ open: openSpy });
     component.openCreateResourceModal();
     expect(openSpy).toHaveBeenCalledWith();
-  });
-
-  it('should open delete resource modal and stop event propagation', () => {
-    const event = { stopPropagation: vi.fn() } as any;
-    const resource = { metadata: { name: 'to-delete' } } as any;
-    const openSpy = vi.fn();
-    (component as any).deleteModal = () => ({ open: openSpy });
-
-    component.openDeleteResourceModal(event, resource);
-
-    expect(event.stopPropagation).toHaveBeenCalled();
-    expect(openSpy).toHaveBeenCalledWith(resource);
-  });
-
-  it('should open edit resource modal and stop propagation', () => {
-    const event = { stopPropagation: vi.fn() } as any;
-    const resource = { metadata: { name: 'to-edit' } } as any;
-    const openSpy = vi.fn();
-    (component as any).createModal = () => ({ open: openSpy });
-
-    mockResourceService.read.mockReturnValueOnce(of(resource));
-
-    component.openEditResourceModal(event, resource);
-
-    expect(event.stopPropagation).toHaveBeenCalled();
-    expect(openSpy).toHaveBeenCalledWith(resource);
   });
 
   it('should check create view fields existence', () => {
@@ -540,40 +488,6 @@ describe('ListViewComponent', () => {
       });
     });
 
-    it('should show alert and throw error when resourceDefinition is undefined in delete method', () => {
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      // Set context to return undefined resourceDefinition
-      newComponent.context = (() => ({
-        resourceDefinition: undefined,
-      })) as any;
-
-      const showAlertSpy = vi.fn();
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      const resource = { metadata: { name: 'test' } } as any;
-
-      // Test that delete() method throws error when resourceDefinition is undefined
-      expect(() => newComponent.delete(resource)).toThrow(
-        'Resource definition is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource definition is not defined',
-        type: 'error',
-      });
-    });
-
     it('should show alert and throw error when resourceDefinition is undefined in create method', () => {
       const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
@@ -606,60 +520,6 @@ describe('ListViewComponent', () => {
         text: 'Resource definition is not defined',
         type: 'error',
       });
-    });
-
-    it('should show alert and throw error when resourceDefinition is undefined in update method', () => {
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      // Set context to return undefined resourceDefinition
-      newComponent.context = (() => ({
-        resourceDefinition: undefined,
-      })) as any;
-
-      const showAlertSpy = vi.fn();
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      const resource = { metadata: { name: 'test' } } as any;
-      // Test that update() method throws error when resourceDefinition is undefined
-      expect(() => newComponent.update(resource)).toThrow(
-        'Resource definition is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource definition is not defined',
-        type: 'error',
-      });
-    });
-
-    it('should handle edit resource modal with undefined resource name', () => {
-      const event = { stopPropagation: vi.fn() } as any;
-      const resource = { metadata: {} } as any; // metadata.name is undefined
-      const openSpy = vi.fn();
-      (component as any).createModal = () => ({ open: openSpy });
-
-      mockResourceService.read.mockReturnValueOnce(of(resource));
-
-      component.openEditResourceModal(event, resource);
-
-      expect(event.stopPropagation).toHaveBeenCalled();
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        '', // Should use empty string when name is undefined
-        expect.any(Object),
-        expect.any(Array),
-        expect.any(Object),
-        false,
-      );
-      expect(openSpy).toHaveBeenCalledWith(resource);
     });
 
     it('should show alert and throw error when navigating to resource with undefined name', () => {
@@ -1276,16 +1136,6 @@ describe('ListViewComponent', () => {
     });
 
     describe('Modal operations', () => {
-      it('should close delete modal after successful deletion', () => {
-        const resource = { metadata: { name: 'test' } } as any;
-        const closeSpy = vi.fn();
-        (component as any).deleteModal = () => ({ close: closeSpy });
-
-        component.delete(resource);
-
-        expect(closeSpy).toHaveBeenCalled();
-      });
-
       it('should close create modal after successful creation', () => {
         const resource = { metadata: { name: 'test' } } as any;
         const closeSpy = vi.fn();
@@ -1294,29 +1144,6 @@ describe('ListViewComponent', () => {
         component.create(resource);
 
         expect(closeSpy).toHaveBeenCalled();
-      });
-
-      it('should close create modal after successful update', () => {
-        const resource = { metadata: { name: 'test' } } as any;
-        const closeSpy = vi.fn();
-        (component as any).createModal = () => ({ close: closeSpy });
-
-        component.update(resource);
-
-        expect(closeSpy).toHaveBeenCalled();
-      });
-
-      it('should handle event without stopPropagation method', () => {
-        const event = {} as any; // No stopPropagation
-        const resource = { metadata: { name: 'test' } } as any;
-        const openSpy = vi.fn();
-        (component as any).deleteModal = () => ({ open: openSpy });
-
-        // Should not throw error
-        expect(() =>
-          component.openDeleteResourceModal(event, resource),
-        ).not.toThrow();
-        expect(openSpy).toHaveBeenCalled();
       });
     });
 
@@ -1414,63 +1241,6 @@ describe('ListViewComponent', () => {
         newFixture.detectChanges();
 
         expect(newComponent.columns().length).toBe(2);
-      });
-    });
-
-    describe('openEditResourceModal with createView fields', () => {
-      it('should use createView fields when opening edit modal', () => {
-        const event = { stopPropagation: vi.fn() } as any;
-        const resource = { metadata: { name: 'to-edit' } } as any;
-        const openSpy = vi.fn();
-        (component as any).createModal = () => ({ open: openSpy });
-
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
-            version: 'v1alpha1',
-            ui: {
-              createView: {
-                fields: [
-                  { property: 'metadata.name' },
-                  { property: 'spec.version' },
-                ],
-              },
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        (newComponent as any).createModal = () => ({ open: openSpy });
-
-        mockResourceService.read.mockReturnValueOnce(of(resource));
-
-        newComponent.openEditResourceModal(event, resource);
-
-        expect(mockResourceService.read).toHaveBeenCalledWith(
-          'to-edit',
-          expect.objectContaining({
-            kind: 'Cluster',
-            version: 'v1alpha1',
-            group: 'core_k8s_io',
-          }),
-          expect.any(Array),
-          expect.any(Object),
-          false,
-        );
       });
     });
   });
