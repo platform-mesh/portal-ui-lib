@@ -1,12 +1,12 @@
-import { ErrorComponent } from './error.component';
+import { Error } from './error.component';
 import { ButtonConfig } from './models/error.model';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { MockedObject } from 'vitest';
 
 describe('ErrorComponent', () => {
-  let component: ErrorComponent;
-  let fixture: ComponentFixture<ErrorComponent>;
+  let component: Error;
+  let fixture: ComponentFixture<Error>;
   let i18nServiceMock: MockedObject<I18nService>;
   let luigiCoreServiceMock: MockedObject<LuigiCoreService>;
 
@@ -24,14 +24,14 @@ describe('ErrorComponent', () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [ErrorComponent],
+      imports: [Error],
       providers: [
         { provide: I18nService, useValue: i18nServiceMock },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ErrorComponent);
+    fixture = TestBed.createComponent(Error);
     component = fixture.componentInstance;
   });
 

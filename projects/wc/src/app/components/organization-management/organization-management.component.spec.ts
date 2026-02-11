@@ -1,4 +1,4 @@
-import { OrganizationManagementComponent } from './organization-management.component';
+import { OrganizationManagement } from './organization-management.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -10,8 +10,8 @@ import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 describe('OrganizationManagementComponent', () => {
-  let component: OrganizationManagementComponent;
-  let fixture: ComponentFixture<OrganizationManagementComponent>;
+  let component: OrganizationManagement;
+  let fixture: ComponentFixture<OrganizationManagement>;
   let resourceService: MockedObject<ResourceService>;
   let i18nService: MockedObject<I18nService>;
   let envConfigService: MockedObject<EnvConfigService>;
@@ -35,18 +35,14 @@ describe('OrganizationManagementComponent', () => {
     i18nService.getTranslation.mockImplementation((key: string) => key);
 
     await TestBed.configureTestingModule({
-      imports: [
-        OrganizationManagementComponent,
-        FormsModule,
-        ReactiveFormsModule,
-      ],
+      imports: [OrganizationManagement, FormsModule, ReactiveFormsModule],
       providers: [
         { provide: ResourceService, useValue: resourceService },
         { provide: I18nService, useValue: i18nService },
         { provide: EnvConfigService, useValue: envConfigService },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
-    }).overrideComponent(OrganizationManagementComponent, {
+    }).overrideComponent(OrganizationManagement, {
       set: {
         template: '',
         imports: [],
@@ -54,7 +50,7 @@ describe('OrganizationManagementComponent', () => {
       },
     });
 
-    fixture = TestBed.createComponent(OrganizationManagementComponent);
+    fixture = TestBed.createComponent(OrganizationManagement);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('LuigiClient', luigiClient);

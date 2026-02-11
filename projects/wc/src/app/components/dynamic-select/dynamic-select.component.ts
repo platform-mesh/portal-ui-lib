@@ -1,22 +1,12 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Option, Select } from '@fundamental-ngx/ui5-webcomponents';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
-import { Option, Select } from '@fundamental-ngx/ui5-webcomponents';
 import { Observable, map } from 'rxjs';
 
 @Component({
@@ -26,7 +16,7 @@ import { Observable, map } from 'rxjs';
   styleUrl: './dynamic-select.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DynamicSelectComponent {
+export class DynamicSelect {
   dynamicValuesDefinition =
     input.required<NonNullable<FieldDefinition['dynamicValuesDefinition']>>();
   context = input.required<ResourceNodeContext>();

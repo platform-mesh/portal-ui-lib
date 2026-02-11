@@ -1,6 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
-import { CreateResourceModalComponent } from '../list-view/create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModalComponent } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
+import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import {
   KubeConfigTemplateProps,
@@ -60,22 +60,22 @@ import { tap } from 'rxjs/operators';
     DynamicPageHeader,
     Label,
     ValueCellComponent,
-    CreateResourceModalComponent,
-    DeleteResourceModalComponent,
+    CreateResourceModal,
+    DeleteResourceModal,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DetailViewComponent {
+export class DetailView {
   private resourceService = inject(ResourceService);
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
   private errorHandlerService = inject(ErrorHandlerService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
-  private createModal = viewChild<CreateResourceModalComponent>('createModal');
-  private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
+  private createModal = viewChild<CreateResourceModal>('createModal');
+  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();

@@ -1,13 +1,13 @@
-import { LinkValueComponent } from './link-value.component';
+import { LinkValue } from './link-value.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 describe('LinkValueComponent', () => {
-  let component: LinkValueComponent;
-  let fixture: ComponentFixture<LinkValueComponent>;
+  let component: LinkValue;
+  let fixture: ComponentFixture<LinkValue>;
 
   const makeComponent = (urlValue: string) => {
-    fixture = TestBed.createComponent(LinkValueComponent);
+    fixture = TestBed.createComponent(LinkValue);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('urlValue', urlValue);
@@ -19,7 +19,7 @@ describe('LinkValueComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [LinkValueComponent],
+      imports: [LinkValue],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
     });
   });
@@ -103,7 +103,7 @@ describe('LinkValueComponent', () => {
   });
 
   it('should accept custom testId', () => {
-    fixture = TestBed.createComponent(LinkValueComponent);
+    fixture = TestBed.createComponent(LinkValue);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('urlValue', 'https://example.com');

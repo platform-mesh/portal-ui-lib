@@ -1,4 +1,4 @@
-import { ListViewComponent } from './list-view.component';
+import { ListView } from './list-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -13,8 +13,8 @@ import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 describe('ListViewComponent', () => {
-  let component: ListViewComponent;
-  let fixture: ComponentFixture<ListViewComponent>;
+  let component: ListView;
+  let fixture: ComponentFixture<ListView>;
   let mockResourceService: MockedObject<ResourceService>;
   let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
   let mockLuigiCoreService: any;
@@ -51,7 +51,7 @@ describe('ListViewComponent', () => {
         { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    }).overrideComponent(ListViewComponent, {
+    }).overrideComponent(ListView, {
       set: {
         template: '',
         imports: [],
@@ -59,7 +59,7 @@ describe('ListViewComponent', () => {
       },
     });
 
-    fixture = TestBed.createComponent(ListViewComponent);
+    fixture = TestBed.createComponent(ListView);
     component = fixture.componentInstance;
 
     component.context = (() => ({
@@ -115,7 +115,7 @@ describe('ListViewComponent', () => {
       property: 'status.ready',
     };
 
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -203,7 +203,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should not navigate when detailView is not defined', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -232,7 +232,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should not navigate when ui is not defined', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -289,7 +289,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should check create view fields existence', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     const mockContext = {
@@ -325,7 +325,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should compute heading correctly with capitalized plural', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -347,7 +347,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should handle empty plural in heading', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -369,7 +369,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should handle single character plural in heading', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -395,7 +395,7 @@ describe('ListViewComponent', () => {
       throwError(() => new Error('List failed')),
     );
 
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -509,7 +509,7 @@ describe('ListViewComponent', () => {
 
   describe('Undefined checks', () => {
     it('should show alert and throw error when resourceDefinition is undefined in list method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       // Set context to return undefined resourceDefinition
@@ -541,7 +541,7 @@ describe('ListViewComponent', () => {
     });
 
     it('should show alert and throw error when resourceDefinition is undefined in delete method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       // Set context to return undefined resourceDefinition
@@ -575,7 +575,7 @@ describe('ListViewComponent', () => {
     });
 
     it('should show alert and throw error when resourceDefinition is undefined in create method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       // Set context to return undefined resourceDefinition
@@ -609,7 +609,7 @@ describe('ListViewComponent', () => {
     });
 
     it('should show alert and throw error when resourceDefinition is undefined in update method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       // Set context to return undefined resourceDefinition
@@ -771,7 +771,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -821,7 +821,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -869,7 +869,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -918,7 +918,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -964,7 +964,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -1010,7 +1010,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -1072,7 +1072,7 @@ describe('ListViewComponent', () => {
           }),
         );
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1111,7 +1111,7 @@ describe('ListViewComponent', () => {
           }),
         );
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1162,7 +1162,7 @@ describe('ListViewComponent', () => {
           return of(callCount === 1 ? firstResponse : secondResponse);
         });
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1206,7 +1206,7 @@ describe('ListViewComponent', () => {
         const error = new Error('Unauthorized');
         mockResourceService.list.mockReturnValue(throwError(() => error));
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1245,7 +1245,7 @@ describe('ListViewComponent', () => {
           }),
         );
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1322,7 +1322,7 @@ describe('ListViewComponent', () => {
 
     describe('Computed properties', () => {
       it('should return false for hasUiCreateViewFields when createView is undefined', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1351,7 +1351,7 @@ describe('ListViewComponent', () => {
       });
 
       it('should return false for hasUiCreateViewFields when fields array is empty', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1383,7 +1383,7 @@ describe('ListViewComponent', () => {
       });
 
       it('should compute viewColumns correctly', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1424,7 +1424,7 @@ describe('ListViewComponent', () => {
         const openSpy = vi.fn();
         (component as any).createModal = () => ({ open: openSpy });
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({

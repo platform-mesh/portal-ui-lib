@@ -1,12 +1,12 @@
-import { CreateResourceModalComponent } from './create-resource-modal.component';
+import { CreateResourceModal } from './create-resource-modal.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 describe('CreateResourceModalComponent', () => {
-  let component: CreateResourceModalComponent;
-  let fixture: ComponentFixture<CreateResourceModalComponent>;
+  let component: CreateResourceModal;
+  let fixture: ComponentFixture<CreateResourceModal>;
 
   const testFields: FieldDefinition[] = [
     { property: 'name.firstName', required: true, label: 'First Name' },
@@ -15,16 +15,16 @@ describe('CreateResourceModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ReactiveFormsModule, CreateResourceModalComponent],
+      imports: [ReactiveFormsModule, CreateResourceModal],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
       teardown: { destroyAfterEach: true },
     })
-      .overrideComponent(CreateResourceModalComponent, {
+      .overrideComponent(CreateResourceModal, {
         set: { template: '' },
       })
       .compileComponents();
 
-    fixture = TestBed.createComponent(CreateResourceModalComponent);
+    fixture = TestBed.createComponent(CreateResourceModal);
     component = fixture.componentInstance;
 
     component.fields = (() => testFields) as any;

@@ -1,6 +1,6 @@
 import { k8sMessages } from '../../../../consts/k8s-messages';
 import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
-import { DynamicSelectComponent } from '../../../dynamic-select/dynamic-select.component';
+import { DynamicSelect } from '../../../dynamic-select/dynamic-select.component';
 import { ResourceFieldNames } from './create-resource-modal.enums';
 import {
   ChangeDetectionStrategy,
@@ -50,7 +50,7 @@ import {
     Label,
     ToolbarButton,
     Toolbar,
-    DynamicSelectComponent,
+    DynamicSelect,
     Bar,
     Title,
   ],
@@ -59,7 +59,7 @@ import {
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateResourceModalComponent implements OnInit {
+export class CreateResourceModal implements OnInit {
   fields = input<FieldDefinition[]>([]);
   context = input.required<ResourceNodeContext>();
   resource = output<Resource>();
