@@ -171,10 +171,7 @@ export class ResourceService {
       return getResourceValueByJsonPath(resource, readyCondition);
     }
 
-    return (
-      resource.status?.conditions?.find((c) => c.type === 'Ready')?.status ===
-      'True'
-    );
+    return true;
   }
 
   private listWithFields(

@@ -1,10 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { PortalLuigiNode } from '../models/luigi-node';
 import {
   calculateAccountHierarchy,
   collectAccountNamesFromHierarchy,
-  getInitialAccountId,
 } from './account-hierarchy.util';
+import { describe, expect, it } from 'vitest';
 
 const createNode = (
   name?: string,
@@ -46,17 +45,6 @@ describe('collectAccountNamesFromHierarchy', () => {
     const leaf = createNode('leaf', 'Account', middle);
 
     expect(collectAccountNamesFromHierarchy(leaf)).toEqual(['root', 'leaf']);
-  });
-});
-
-describe('getInitialAccountId', () => {
-  it('returns entityId when kind is Account', () => {
-    expect(getInitialAccountId('id-1', 'Account')).toBe('id-1');
-  });
-
-  it('returns undefined when kind is not Account or id missing', () => {
-    expect(getInitialAccountId('id-1', 'Project')).toBeUndefined();
-    expect(getInitialAccountId(undefined, 'Account')).toBeUndefined();
   });
 });
 

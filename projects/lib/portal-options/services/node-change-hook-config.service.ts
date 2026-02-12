@@ -1,5 +1,4 @@
 import { PortalLuigiNode } from '../models/luigi-node';
-import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import {
@@ -11,7 +10,6 @@ import {
 export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigService {
   private luigiCoreService = inject(LuigiCoreService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
-  private accountPathResolverService = inject(AccountPathResolverService);
 
   async nodeChangeHook(prevNode: PortalLuigiNode, nextNode: PortalLuigiNode) {
     if (
@@ -23,6 +21,5 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
     }
 
     await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(nextNode);
-    this.accountPathResolverService.resolveAccountHierarchy(nextNode);
   }
 }

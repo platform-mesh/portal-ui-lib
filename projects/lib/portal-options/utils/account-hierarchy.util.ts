@@ -30,20 +30,16 @@ export function calculateAccountHierarchy(
   entityId?: string,
   kind?: string,
 ): string[] {
-  const accountNames = collectAccountNamesFromHierarchy(entityNode);
-  const initialId = getInitialAccountId(entityId, kind);
-
-  if (initialId) {
-    const defineEntityId = entityNode.defineEntity?.id;
-    if (defineEntityId?.includes('core_platform-mesh_io_account')) {
-      const deepLevel = parseInt(defineEntityId.split(':').pop() || '0');
-      if (accountNames.length >= deepLevel) {
-        accountNames.pop();
-      }
-    }
-
-    accountNames.push(initialId);
+  const initialAccountId = getInitialAccountId(entityId, kind);
+  if (entityNode.defineEntity?.contextKey && initialAccountId) {
+    entityNode.context.entityName = undefined;
+    entityNode.context.entityKind = undefined;
   }
 
+  const accountNames = collectAccountNamesFromHierarchy(entityNode);
+
+  if (initialAccountId) {
+    accountNames.push(initialAccountId);
+  }
   return accountNames;
 }
