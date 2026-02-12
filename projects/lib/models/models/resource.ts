@@ -1,5 +1,11 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
+
+
+
+
+
+
 export type TransformType =
   | 'uppercase'
   | 'lowercase'
@@ -102,13 +108,18 @@ interface UiView {
 export interface UIDefinition {
   logoUrl?: string;
   resourceImageProperty?: string;
-  listView?: UiView;
+  listView?: ListView;
   createView?: UiView;
   detailView?: DetailView;
 }
 
 export interface DetailView extends UiView {
   showDownloadKubeconfig?: boolean;
+  propertyForDescription?: string;
+}
+
+export interface ListView extends UiView {
+  description?: string;
 }
 
 export const ResourceOperationTypeMap = {

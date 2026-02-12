@@ -9,10 +9,7 @@
       test-id="generic-detail-view-subtitle"
       class="resource-title-subheading"
       slot="subheading"
-    >
-      The {{ resourceDefinition()?.singular }} for
-      {{ resource()?.spec?.displayName || resourceId() }}
-    </ui5-text>
+    >{{ description() }}</ui5-text>
 
     <ui5-toolbar
       class="resource-title-actions"

@@ -14,8 +14,20 @@ import {
   input,
   signal,
 } from '@angular/core';
+import {
+  Label,
+  Text,
+  Title,
+  Toolbar,
+  ToolbarButton,
+} from '@fundamental-ngx/ui5-webcomponents';
+import {
+  DynamicPage,
+  DynamicPageHeader,
+  DynamicPageTitle,
+} from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { Resource } from '@platform-mesh/portal-ui-lib/models';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
   ErrorHandlerService,
@@ -27,16 +39,9 @@ import {
 import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
+  getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
-import {
-  Label,
-  Text,
-  Title,
-  ToolbarButton,
-  Toolbar,
-} from '@fundamental-ngx/ui5-webcomponents';
-import { DynamicPage, DynamicPageHeader, DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -85,6 +90,7 @@ export class DetailViewComponent {
       false,
   );
   isDownloadingKubeConfig = signal(false);
+  description = computed(() => this.calcDescription());
 
   constructor() {
     effect(() => {
@@ -94,7 +100,7 @@ export class DetailViewComponent {
 
   private readResource(): void {
     const resourceDefinition = this.getResourceDefinition();
-    const fields = generateGraphQLFields(this.resourceFields());
+    const fields = this.getDetailViewQueryFields();
 
     const params: ResourceRequestParams = {
       kind: resourceDefinition.kind,
@@ -206,5 +212,37 @@ export class DetailViewComponent {
     }
 
     return resourceDefinition;
+  }
+
+  private getDetailViewQueryFields() {
+    const resourceDefinition = this.getResourceDefinition();
+    const additionalFields: FieldDefinition[] = [];
+
+    if (resourceDefinition.ui?.detailView?.propertyForDescription) {
+      additionalFields.push({
+        property: resourceDefinition.ui.detailView.propertyForDescription,
+      });
+    }
+
+    return generateGraphQLFields(
+      this.resourceFields().concat(additionalFields),
+    );
+  }
+
+  private calcDescription() {
+    const resource = this.resource();
+    const resourceDefinition = this.resourceDefinition();
+
+    if (
+      resource &&
+      resourceDefinition?.ui?.detailView?.propertyForDescription
+    ) {
+      return getValueByPath(
+        resource,
+        resourceDefinition.ui.detailView.propertyForDescription,
+      );
+    }
+
+    return `The ${resourceDefinition?.singular} for ${resource?.spec?.displayName || this.resourceId()}`;
   }
 }

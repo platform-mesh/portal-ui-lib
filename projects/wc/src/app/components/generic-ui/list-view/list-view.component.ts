@@ -111,6 +111,11 @@ export class ListViewComponent {
   imagePathProperty = computed(
     () => this.resourceDefinition()?.ui?.resourceImageProperty,
   );
+  listDescription = computed(
+    () =>
+      this.resourceDefinition()?.ui?.listView?.description ??
+      `This page displays the created ${this.resourceDefinition()?.plural} in your environment`,
+  );
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
