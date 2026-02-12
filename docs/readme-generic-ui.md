@@ -526,25 +526,10 @@ In case the detail view is an independent node provide context data:
 }
 ```
 
-## List View Pagination
-
-The list view includes built-in pagination functionality:
-
-- **Page Size Selection**: Users can select how many items to load per page (5, 10, 50, or 100 items)
-- **Load More**: When there are more items available, a "Load more" button appears at the bottom of the table
-- **Item Counter**: Displays the current number of loaded items vs total available items (e.g., "Items loaded: 10 / 50")
-- **Automatic Pagination**: The list view automatically handles pagination tokens and continues loading items as needed
-
-The pagination is controlled by the `limit` and `continue` parameters in the GraphQL query, which are automatically managed by the component.
-
 ## Defaults
 
 In case neither `"detailView"`, nor `"listView` is provided, the default values will be used. In case no `"createView"` details are provided
 there is no possibility of creating a resource.
-
-- **Detail View Description**: If `propertyForDescription` is not specified, the default description format is: `"The {singular} for {displayName || resourceId}"`
-- **List View Description**: If `listView.description` is not provided, the default description is: `"This page displays the created {plural} in your environment"`
-- **Pagination**: Default page size is 5 items per page
 
 ## Support
 
