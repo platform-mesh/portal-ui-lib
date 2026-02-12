@@ -40,8 +40,10 @@ In order to use the generic list view, you need to adjust the node’s   `conten
       - `"resourceImageProperty"`: JSONPath expression to an image URL of the given resource entity; when set, the list view renders an image column and automatically fetches this field
       - view definitions for the corresponding views
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
-          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views.
-        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure`showDownloadKubeConfig` to enable/disable download kubeconfig button. By default it false.
+          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views. Also supports `"description"` property to provide a custom description text displayed in the list view header. If not provided, a default description will be generated.
+        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure:
+          - `showDownloadKubeconfig`: enable/disable download kubeconfig button. By default it false.
+          - `propertyForDescription`: JSON path to a property that will be used as the subtitle description. If not provided, a default description will be generated.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
           there is a possibility to provide a list of values to select from. Also, it's possible to specify a GraphQL query to retrieve a dynamic list of values to select from using the `"dynamicValuesDefinition"`. You need to provide `"gqlQuery"` and `"operation"`, as well as `"key"` - a JSON path to the property that will be used as the displayed value, and `"value"` — a JSON path to the actual value.
@@ -133,6 +135,7 @@ This example demonstrates various features including:
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
                 "resourceImageProperty": "spec.image",
                 "listView": {
+                  "description": "This page displays all accounts in your environment. You can create, edit, or delete accounts as needed.",
                   "fields": [
                     {
                       "label": "Name",
@@ -185,6 +188,7 @@ This example demonstrates various features including:
                   ]
                 },
                 "detailView": {
+                  "propertyForDescription": "spec.description",
                   "fields": [
                     {
                       "label": "Description",
@@ -503,6 +507,8 @@ In case the detail view is an independent node provide context data:
       "ui": {
         "logoUrl": "https://www.kcp.io/icons/logo.svg",
         "detailView": {
+          "propertyForDescription": "spec.description",
+          "showDownloadKubeconfig": true,
           "fields": [
             {
               "label": "Description",
@@ -520,10 +526,25 @@ In case the detail view is an independent node provide context data:
 }
 ```
 
+## List View Pagination
+
+The list view includes built-in pagination functionality:
+
+- **Page Size Selection**: Users can select how many items to load per page (5, 10, 50, or 100 items)
+- **Load More**: When there are more items available, a "Load more" button appears at the bottom of the table
+- **Item Counter**: Displays the current number of loaded items vs total available items (e.g., "Items loaded: 10 / 50")
+- **Automatic Pagination**: The list view automatically handles pagination tokens and continues loading items as needed
+
+The pagination is controlled by the `limit` and `continue` parameters in the GraphQL query, which are automatically managed by the component.
+
 ## Defaults
 
 In case neither `"detailView"`, nor `"listView` is provided, the default values will be used. In case no `"createView"` details are provided
 there is no possibility of creating a resource.
+
+- **Detail View Description**: If `propertyForDescription` is not specified, the default description format is: `"The {singular} for {displayName || resourceId}"`
+- **List View Description**: If `listView.description` is not provided, the default description is: `"This page displays the created {plural} in your environment"`
+- **Pagination**: Default page size is 5 items per page
 
 ## Support
 
