@@ -51,7 +51,7 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = true,
   ): Observable<Resource> {
-    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
 
     let query: string | TypedDocumentNode<any, any> = this.resolveReadQuery(
       params,
@@ -128,7 +128,7 @@ export class ResourceService {
     readFromParentKcpPath: boolean = false,
     pagination?: ResourcePagination,
   ): Observable<ResourceListResult | any> {
-    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const variables = {
       ...(isNamespacedResource && {
         namespace: { type: 'String', value: nodeContext.namespaceId },
@@ -140,7 +140,6 @@ export class ResourceService {
         continue: { type: 'String', value: pagination?.continue },
       }),
     };
-    console.log('variables', variables);
 
     const resourceDefinition = nodeContext.resourceDefinition;
     if (!resourceDefinition) {
@@ -272,7 +271,7 @@ export class ResourceService {
     resourceVersion: string,
     readFromParentKcpPath: boolean,
   ): Observable<ResourceSubscriptionResult | undefined> {
-    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const variables = {
       ...(isNamespacedResource && {
         namespace: { type: 'String', value: nodeContext.namespaceId },
@@ -330,7 +329,7 @@ export class ResourceService {
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
-    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
     const fields = [
@@ -373,7 +372,7 @@ export class ResourceService {
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
   ) {
-    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
@@ -422,7 +421,7 @@ export class ResourceService {
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
   ) {
-    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
+    const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
@@ -472,11 +471,8 @@ export class ResourceService {
       );
   }
 
-  private shouldIncludeNamespace(nodeContext: ResourceNodeContext) {
-    return (
-      nodeContext?.resourceDefinition?.scope === 'Namespaced' &&
-      nodeContext.namespaceId !== '-all-'
-    );
+  private isNamespacedResource(nodeContext: ResourceNodeContext) {
+    return nodeContext?.resourceDefinition?.scope === 'Namespaced';
   }
 
   private normalizeGqlBuilderVariables(

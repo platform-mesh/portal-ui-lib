@@ -162,7 +162,6 @@ export class ListViewComponent {
       )
       .subscribe({
         next: (value) => {
-          console.log('value', value);
           if (!value) {
             return;
           }
@@ -251,8 +250,6 @@ export class ListViewComponent {
   private mergeResourcesWithSubscriptionResult(
     subscriptionResult: ResourceSubscriptionResult,
   ) {
-    console.log('subscriptionResult', subscriptionResult);
-    console.log('resources', this.resources());
     const result = new Map<string, Resource>(
       this.resources().map((item) => [item.metadata.name!, item]),
     );
