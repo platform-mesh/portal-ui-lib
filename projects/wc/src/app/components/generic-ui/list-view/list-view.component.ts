@@ -173,7 +173,6 @@ export class ListViewComponent {
             text: 'Error while updating list with new data. To see new updates, refresh the page.',
             type: 'error',
           });
-          throw _error;
         },
       });
   }
