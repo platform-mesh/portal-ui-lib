@@ -1,7 +1,7 @@
 import { PortalLuigiNode } from '../models/luigi-node';
 import {
   calculateAccountHierarchy,
-  collectAccountNamesFromHierarchy,
+  collectAccountNamesFromNodeHierarchy,
 } from './account-hierarchy.util';
 import { describe, expect, it } from 'vitest';
 
@@ -36,7 +36,7 @@ const createEntityNode = (
 
 describe('collectAccountNamesFromHierarchy', () => {
   it('returns empty array when node is undefined', () => {
-    expect(collectAccountNamesFromHierarchy(undefined)).toEqual([]);
+    expect(collectAccountNamesFromNodeHierarchy(undefined)).toEqual([]);
   });
 
   it('collects account names in ancestor order and skips non-accounts', () => {
@@ -44,7 +44,10 @@ describe('collectAccountNamesFromHierarchy', () => {
     const middle = createNode('service', 'Service', root);
     const leaf = createNode('leaf', 'Account', middle);
 
-    expect(collectAccountNamesFromHierarchy(leaf)).toEqual(['root', 'leaf']);
+    expect(collectAccountNamesFromNodeHierarchy(leaf)).toEqual([
+      'root',
+      'leaf',
+    ]);
   });
 });
 

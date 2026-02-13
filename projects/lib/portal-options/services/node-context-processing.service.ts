@@ -25,13 +25,11 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     entityNode: PortalLuigiNode,
     ctx: PortalNodeContext,
   ) {
-    const kind =
-      entityNode.defineEntity?.type ||
-      entityNode.defineEntity?.graphqlEntity?.kind;
+    const kind = entityNode.defineEntity?.type;
     const entityId =
       dynamicEntityId || entityNode.context.resourceDefinition?.name;
 
-    if (!entityId || !kind) {
+    if (!entityId) {
       return;
     }
 

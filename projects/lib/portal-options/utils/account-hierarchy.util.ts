@@ -1,6 +1,6 @@
 import { PortalLuigiNode } from '../models/luigi-node';
 
-export function collectAccountNamesFromHierarchy(
+export function collectAccountNamesFromNodeHierarchy(
   node: PortalLuigiNode | undefined,
 ): string[] {
   const accountNames: string[] = [];
@@ -31,12 +31,13 @@ export function calculateAccountHierarchy(
   kind?: string,
 ): string[] {
   const initialAccountId = getInitialAccountId(entityId, kind);
+  // when we are on a dynamic node and the id any kind has changed we need to reset the context data
   if (entityNode.defineEntity?.contextKey && initialAccountId) {
     entityNode.context.entityName = undefined;
     entityNode.context.entityKind = undefined;
   }
 
-  const accountNames = collectAccountNamesFromHierarchy(entityNode);
+  const accountNames = collectAccountNamesFromNodeHierarchy(entityNode);
 
   if (initialAccountId) {
     accountNames.push(initialAccountId);

@@ -10,12 +10,4 @@ export interface PortalLuigiNode extends LuigiNode {
 
 export interface PMEntityDefinition extends EntityDefinition {
   type?: string;
-  graphqlEntity?: GraphqlEntityDefinition;
-}
-
-export interface GraphqlEntityDefinition {
-  group: string;
-  kind: string;
-  query: string;
-  version: string;
 }
