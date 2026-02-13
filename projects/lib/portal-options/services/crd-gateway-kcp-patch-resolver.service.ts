@@ -8,7 +8,7 @@ import { Injectable, inject } from '@angular/core';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { GatewayService } from '@platform-mesh/portal-ui-lib/services';
 
-export interface KcpDate {
+export interface KcpData {
   kcpPath: string;
   accountPath: string | undefined;
 }
@@ -22,7 +22,7 @@ export class CrdGatewayKcpPatchResolver {
     nextNode: PortalLuigiNode,
     entityId?: string,
     kind?: string,
-  ): Promise<KcpDate> {
+  ): Promise<KcpData> {
     if (nextNode.context?.kcpPath && !getInitialAccountId(entityId, kind)) {
       this.gatewayService.updateCrdGatewayUrlWithEntityPath(
         nextNode.context.kcpPath,
