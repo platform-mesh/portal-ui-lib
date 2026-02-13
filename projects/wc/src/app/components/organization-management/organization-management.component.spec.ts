@@ -321,7 +321,7 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should set organization from event', () => {
-      const event = { selectedOption: { _state: { value: 'org2' } } };
+      const event = { detail: { selectedOption: { _state: { value: 'org2' } } } };
 
       component.setOrganizationToSwitch(event);
 
@@ -333,7 +333,7 @@ describe('OrganizationManagementComponent', () => {
 
     it('should set null when organization not found', () => {
       const event = {
-        selectedOption: { _state: { value: 'org-nonexistent' } },
+        detail: { selectedOption: { _state: { value: 'org-nonexistent' } } },
       };
 
       component.setOrganizationToSwitch(event);
@@ -342,7 +342,7 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should handle undefined value', () => {
-      const event = { selectedOption: { _state: { value: undefined } } };
+      const event = { detail: { selectedOption: { _state: { value: undefined } } } };
 
       component.setOrganizationToSwitch(event);
 
@@ -350,7 +350,7 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should handle null value', () => {
-      const event = { selectedOption: { _state: { value: null } } };
+      const event = { detail: { selectedOption: { _state: { value: null } } } };
 
       component.setOrganizationToSwitch(event);
 

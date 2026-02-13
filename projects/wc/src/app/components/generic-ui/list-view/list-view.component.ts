@@ -129,7 +129,8 @@ export class ListViewComponent {
 
   constructor() {
     effect(() => {
-      this.list();
+      this.currentContinueToken = undefined;
+      this.list(true);
     });
 
     effect((onCleanup) => {
@@ -167,6 +168,12 @@ export class ListViewComponent {
 
           this.mergeResourcesWithSubscriptionResult(value);
         },
+        error: (_error) => {
+          this.LuigiClient().uxManager().showAlert({
+            text: 'Error while updating list with new data. To see new updates, refresh the page.',
+            type: 'error',
+          });
+        },
       });
   }
 
@@ -190,7 +197,7 @@ export class ListViewComponent {
     this.list();
   }
 
-  list() {
+  list(isInitialLoad: boolean = false) {
     if (this.isLoadingList) {
       return;
     }
@@ -217,13 +224,17 @@ export class ListViewComponent {
       )
       .subscribe({
         next: (result: ResourceListResult) => {
-          this.resources.update((values) => {
-            const map = new Map(values.map((i) => [i.metadata.name, i]));
-            (result.items ?? []).forEach((i) => {
-              map.set(i.metadata.name, i);
+          if (isInitialLoad) {
+            this.resources.set(result.items ?? []);
+          } else {
+            this.resources.update((values) => {
+              const map = new Map(values.map((i) => [i.metadata.name, i]));
+              (result.items ?? []).forEach((i) => {
+                map.set(i.metadata.name, i);
+              });
+              return [...map.values()];
             });
-            return [...map.values()];
-          });
+          }
           this.resourceVersion.set(result.resourceVersion);
           this.hasMore.set(!!result.continue);
           this.currentContinueToken = result.continue;

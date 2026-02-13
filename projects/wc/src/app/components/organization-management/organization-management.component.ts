@@ -99,7 +99,7 @@ export class OrganizationManagementComponent implements OnInit {
   setOrganizationToSwitch($event: any) {
     this.organizationToSwitch.set(
       this.organizations().find(
-        (o) => o.name === $event.selectedOption._state.value,
+        (o) => o.name === $event.detail.selectedOption._state.value,
       ) ?? null,
     );
   }
