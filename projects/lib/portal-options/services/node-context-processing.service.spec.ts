@@ -1,6 +1,5 @@
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
-import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
 import { TestBed } from '@angular/core/testing';
@@ -16,12 +15,11 @@ import { mock } from 'vitest-mock-extended';
 describe('NodeContextProcessingServiceImpl', () => {
   let service: NodeContextProcessingServiceImpl;
   let crdGatewayKcpPatchResolver: MockedObject<CrdGatewayKcpPatchResolver>;
-  let accountPathResolver: MockedObject<AccountPathResolverService>;
   let accountInfoService: MockedObject<AccountInfoService>;
   let organizationReadyService: MockedObject<OrganizationReadyService>;
 
   const mockEntityId = 'entity-123';
-  const mockKind = 'Account';
+  const mockKind = 'account';
   const mockKcpPath = 'root:orgs:test-org:entity-123';
   const mockAccountPath = '/test-org/entity-123';
   const mockToken = 'test-token';
@@ -46,15 +44,12 @@ describe('NodeContextProcessingServiceImpl', () => {
 
   beforeEach(() => {
     crdGatewayKcpPatchResolver = mock<CrdGatewayKcpPatchResolver>();
-    accountPathResolver = mock<AccountPathResolverService>();
     accountInfoService = mock<AccountInfoService>();
     organizationReadyService = mock<OrganizationReadyService>();
 
     mockEntityNode = {
       defineEntity: {
-        graphqlEntity: {
-          kind: mockKind,
-        },
+        type: 'account',
       },
       context: {},
     } as PortalLuigiNode;
@@ -73,7 +68,6 @@ describe('NodeContextProcessingServiceImpl', () => {
           provide: CrdGatewayKcpPatchResolver,
           useValue: crdGatewayKcpPatchResolver,
         },
-        { provide: AccountPathResolverService, useValue: accountPathResolver },
         { provide: AccountInfoService, useValue: accountInfoService },
         {
           provide: OrganizationReadyService,
@@ -84,12 +78,10 @@ describe('NodeContextProcessingServiceImpl', () => {
 
     service = TestBed.inject(NodeContextProcessingServiceImpl);
 
-    crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockResolvedValue(
-      mockKcpPath,
-    );
-    accountPathResolver.resolveAccountHierarchy.mockReturnValue(
-      mockAccountPath,
-    );
+    crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockResolvedValue({
+      kcpPath: mockKcpPath,
+      accountPath: mockAccountPath,
+    });
     accountInfoService.read.mockReturnValue(of(mockAccountInfo));
   });
 
@@ -104,9 +96,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(
         crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
       ).not.toHaveBeenCalled();
-      expect(
-        accountPathResolver.resolveAccountHierarchy,
-      ).not.toHaveBeenCalled();
       expect(accountInfoService.read).not.toHaveBeenCalled();
     });
 
@@ -114,41 +103,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       await service.processNodeContext(
         null as any,
         mockEntityNode,
-        mockContext,
-      );
-
-      expect(
-        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
-      ).not.toHaveBeenCalled();
-    });
-
-    it('should return early when kind is missing', async () => {
-      const nodeWithoutKind: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {},
-        },
-        context: {},
-      } as any;
-
-      await service.processNodeContext(
-        mockEntityId,
-        nodeWithoutKind,
-        mockContext,
-      );
-
-      expect(
-        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
-      ).not.toHaveBeenCalled();
-    });
-
-    it('should return early when defineEntity is missing', async () => {
-      const nodeWithoutDefine: PortalLuigiNode = {
-        context: {},
-      } as any;
-
-      await service.processNodeContext(
-        mockEntityId,
-        nodeWithoutDefine,
         mockContext,
       );
 
@@ -167,20 +121,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(
         crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
       ).toHaveBeenCalledWith(mockEntityNode, mockEntityId, mockKind);
-    });
-
-    it('should call resolveAccountHierarchy with correct parameters', async () => {
-      await service.processNodeContext(
-        mockEntityId,
-        mockEntityNode,
-        mockContext,
-      );
-
-      expect(accountPathResolver.resolveAccountHierarchy).toHaveBeenCalledWith(
-        mockEntityNode,
-        mockEntityId,
-        mockKind,
-      );
     });
 
     it('should update context with kcpPath', async () => {
@@ -384,7 +324,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(
         crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
       ).toHaveBeenCalled();
-      expect(accountPathResolver.resolveAccountHierarchy).toHaveBeenCalled();
       expect(accountInfoService.read).toHaveBeenCalled();
       expect(
         organizationReadyService.checkOrganizationReady,
@@ -394,9 +333,7 @@ describe('NodeContextProcessingServiceImpl', () => {
     it('should handle empty entityNode context', async () => {
       const nodeWithEmptyContext: PortalLuigiNode = {
         defineEntity: {
-          graphqlEntity: {
-            kind: mockKind,
-          },
+          type: mockKind,
         },
         context: {},
       } as PortalLuigiNode;
@@ -431,9 +368,7 @@ describe('NodeContextProcessingServiceImpl', () => {
       const differentKind = 'Organization';
       const nodeWithDifferentKind: PortalLuigiNode = {
         defineEntity: {
-          graphqlEntity: {
-            kind: differentKind,
-          },
+          type: differentKind,
         },
         context: {},
       } as PortalLuigiNode;
@@ -445,28 +380,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       );
 
       expect(mockContext.entityKind).toBe(differentKind);
-    });
-
-    it('should call resolveCrdGatewayKcpPath before resolveAccountHierarchy', async () => {
-      const callOrder: string[] = [];
-      crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockImplementation(
-        async () => {
-          callOrder.push('kcpPath');
-          return mockKcpPath;
-        },
-      );
-      accountPathResolver.resolveAccountHierarchy.mockImplementation(() => {
-        callOrder.push('accountPath');
-        return mockAccountPath;
-      });
-
-      await service.processNodeContext(
-        mockEntityId,
-        mockEntityNode,
-        mockContext,
-      );
-
-      expect(callOrder).toEqual(['kcpPath', 'accountPath']);
     });
   });
 });

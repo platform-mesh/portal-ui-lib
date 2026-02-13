@@ -78,7 +78,7 @@ export class DetailViewComponent {
   resourceFields = computed(
     () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
   );
-  resourceId = computed(() => this.context().entityName);
+  resourceId = computed(() => this.context().resourceId);
   workspacePath = computed(() =>
     this.gatewayService.resolveKcpPath(this.context()),
   );

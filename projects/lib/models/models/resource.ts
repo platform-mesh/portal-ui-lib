@@ -89,6 +89,7 @@ export interface ResourceDefinition {
   plural: string;
   singular: string;
   kind: string;
+  name?: string;
   scope?: KubernetesScope;
   namespace?: string;
   readyCondition?: {
