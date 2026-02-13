@@ -51,7 +51,7 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = true,
   ): Observable<Resource> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
 
     let query: string | TypedDocumentNode<any, any> = this.resolveReadQuery(
       params,
@@ -128,7 +128,7 @@ export class ResourceService {
     readFromParentKcpPath: boolean = false,
     pagination?: ResourcePagination,
   ): Observable<ResourceListResult | any> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
     const variables = {
       ...(isNamespacedResource && {
         namespace: { type: 'String', value: nodeContext.namespaceId },
@@ -140,6 +140,7 @@ export class ResourceService {
         continue: { type: 'String', value: pagination?.continue },
       }),
     };
+    console.log('variables', variables);
 
     const resourceDefinition = nodeContext.resourceDefinition;
     if (!resourceDefinition) {
@@ -171,10 +172,7 @@ export class ResourceService {
       return getResourceValueByJsonPath(resource, readyCondition);
     }
 
-    return (
-      resource.status?.conditions?.find((c) => c.type === 'Ready')?.status ===
-      'True'
-    );
+    return true;
   }
 
   private listWithFields(
@@ -274,15 +272,16 @@ export class ResourceService {
     resourceVersion: string,
     readFromParentKcpPath: boolean,
   ): Observable<ResourceSubscriptionResult | undefined> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
     const variables = {
       ...(isNamespacedResource && {
         namespace: { type: 'String', value: nodeContext.namespaceId },
       }),
     };
+    const lowerCaseOperation = operation.toLowerCase();
 
     const subscriptionQuery = gqlBuilder.subscription({
-      operation: operation,
+      operation: lowerCaseOperation,
       fields: ['type', { object: fields }],
       variables: {
         ...variables,
@@ -304,7 +303,7 @@ export class ResourceService {
       .pipe(
         map((res: any): ResourceSubscriptionResult | undefined => {
           const resource: ResourceSubscriptionResult | undefined =
-            getValueByPath(res.data, operation);
+            getValueByPath(res.data, lowerCaseOperation);
           if (resource) {
             resource.object = {
               ...resource.object,
@@ -331,7 +330,7 @@ export class ResourceService {
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
     const fields = [
@@ -374,7 +373,7 @@ export class ResourceService {
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
   ) {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
@@ -423,7 +422,7 @@ export class ResourceService {
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
   ) {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespacedResource = this.shouldIncludeNamespace(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
@@ -473,8 +472,11 @@ export class ResourceService {
       );
   }
 
-  private isNamespacedResource(nodeContext: ResourceNodeContext) {
-    return nodeContext?.resourceDefinition?.scope === 'Namespaced';
+  private shouldIncludeNamespace(nodeContext: ResourceNodeContext) {
+    return (
+      nodeContext?.resourceDefinition?.scope === 'Namespaced' &&
+      nodeContext.namespaceId !== '-all-'
+    );
   }
 
   private normalizeGqlBuilderVariables(
