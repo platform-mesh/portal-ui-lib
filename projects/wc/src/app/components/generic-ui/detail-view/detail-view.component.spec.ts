@@ -637,7 +637,7 @@ describe('DetailViewComponent', () => {
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
-        resourceId: 'cluster-1',
+        resourceId: 'test-account',
         token: 'abc123',
         resourceDefinition: {
           kind: 'Account',
@@ -688,7 +688,7 @@ describe('DetailViewComponent', () => {
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
-        resourceId: 'cluster-1',
+        resourceId: 'test-cluster',
         token: 'abc123',
         resourceDefinition: {
           kind: 'Cluster',
@@ -743,7 +743,7 @@ describe('DetailViewComponent', () => {
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
-        resourceId: 'cluster-1',
+        resourceId: 'test-account',
         token: 'abc123',
         resourceDefinition: {
           kind: 'Account',
@@ -797,7 +797,7 @@ describe('DetailViewComponent', () => {
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
-        resourceId: 'cluster-1',
+        resourceId: 'test-cluster',
         token: 'abc123',
         resourceDefinition: {
           kind: 'Cluster',
