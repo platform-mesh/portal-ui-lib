@@ -43,7 +43,7 @@ describe('NodeChangeHookConfigServiceImpl', () => {
       context: {},
     } as any;
 
-    await service.nodeChangeHook(prevNode, nextNode);
+    await service.nodeChangeHook(prevNode, nextNode, {} as any);
 
     expect(mockLuigiCoreService.navigation().navigate).toHaveBeenCalledWith(
       '/some/path',

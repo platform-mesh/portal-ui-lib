@@ -4,6 +4,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   LuigiCoreService,
   NodeChangeHookConfigService,
+  NodeContext,
 } from '@openmfp/portal-ui-lib';
 
 @Injectable({ providedIn: 'root' })
@@ -11,7 +12,11 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
   private luigiCoreService = inject(LuigiCoreService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
 
-  async nodeChangeHook(prevNode: PortalLuigiNode, nextNode: PortalLuigiNode) {
+  async nodeChangeHook(
+    prevNode: PortalLuigiNode,
+    nextNode: PortalLuigiNode,
+    currentContext: NodeContext,
+  ) {
     if (
       nextNode.initialRoute &&
       nextNode.virtualTree &&
