@@ -42,7 +42,8 @@ In order to use the generic list view, you need to adjust the node’s   `conten
       - `"resourceImageProperty"`: JSONPath expression to an image URL of the given resource entity; when set, the list view renders an image column and automatically fetches this field
       - view definitions for the corresponding views
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
-          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views. Also supports `"description"` property to provide a custom description text displayed in the list view header. If not provided, a default description will be generated.
+          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views. Also supports:
+          - `"resourceDescription"`: A complete `FieldDefinition` object that will be used to render the subtitle description. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, a default description will be generated.
         - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure:
           - `showDownloadKubeconfig`: enable/disable download kubeconfig button. By default it false.
           - `resourceDescription`: A complete `FieldDefinition` object that will be used to render the subtitle description. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, a default description will be generated.
@@ -67,6 +68,7 @@ Each field definition supports the following properties:
 - `"jsonPathExpression"`: Alternative JSONPath expression for complex data access (takes precedence over `property`)
 - `"required"`: Boolean flag indicating if the field is mandatory (for create views)
 - `"values"`: Array of predefined values for selection
+- `"valie"': Static value for field
 - `"group"`: Object for grouping related fields together:
   - `"name"`: Unique identifier for the group
   - `"label"`: Display name for the group
@@ -137,7 +139,9 @@ This example demonstrates various features including:
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
                 "resourceImageProperty": "spec.image",
                 "listView": {
-                  "description": "This page displays all accounts in your environment. You can create, edit, or delete accounts as needed.",
+                  "resourceDescription": {
+                    "value": "This page displays all accounts in your environment. You can create, edit, or delete accounts as needed."
+                  },
                   "fields": [
                     {
                       "label": "Name",

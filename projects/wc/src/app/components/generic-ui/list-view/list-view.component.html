@@ -18,7 +18,15 @@
       class="title-subheading"
       slot="subheading"
     >
-      {{ listDescription() }}
+      @if (listDescriptionDefinition(); as listDescriptionDefinition) {
+        <pm-value-cell
+          [fieldDefinition]="listDescriptionDefinition"
+          [LuigiClient]="LuigiClient()"
+        />
+      } @else {
+        This page displays the created
+        {{ resourceDefinition()?.plural }} in your environment
+      }
     </ui5-text>
 
     <ui5-toolbar

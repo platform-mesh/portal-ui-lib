@@ -861,4 +861,130 @@ describe('ValueCellComponent', () => {
       expect(instance.checkValidUrl('https://example.com')).toBe(true);
     });
   });
+
+  describe('value without resource', () => {
+    it('should use fieldDefinition value when resource is not provided', () => {
+      mockLuigiClient = createMockLuigiClient();
+      fixture = TestBed.createComponent(ValueCellComponent);
+      component = fixture.componentInstance;
+
+      const field: FieldDefinition = {
+        property: 'spec.value',
+        value: 'static-value',
+      };
+
+      fixture.componentRef.setInput('fieldDefinition', field);
+      fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
+
+      fixture.detectChanges();
+
+      expect(component.value()).toBe('static-value');
+    });
+
+    it('should prioritize resource value over fieldDefinition value', () => {
+      mockLuigiClient = createMockLuigiClient();
+      fixture = TestBed.createComponent(ValueCellComponent);
+      component = fixture.componentInstance;
+
+      const resource: Resource = {
+        metadata: { name: 'test-resource' },
+        spec: { value: 'resource-value' },
+      } as any;
+
+      const field: FieldDefinition = {
+        property: 'spec.value',
+        value: 'static-value',
+      };
+
+      fixture.componentRef.setInput('resource', resource);
+      fixture.componentRef.setInput('fieldDefinition', field);
+      fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
+
+      fixture.detectChanges();
+
+      expect(component.value()).toBe('resource-value');
+    });
+
+    it('should handle fieldDefinition value with uiSettings', () => {
+      mockLuigiClient = createMockLuigiClient();
+      fixture = TestBed.createComponent(ValueCellComponent);
+      component = fixture.componentInstance;
+
+      const field: FieldDefinition = {
+        property: 'spec.value',
+        value: 'true',
+        uiSettings: { displayAs: 'boolIcon' },
+      };
+
+      fixture.componentRef.setInput('fieldDefinition', field);
+      fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
+
+      fixture.detectChanges();
+
+      expect(component.value()).toBe('true');
+      expect(component.isBoolLike()).toBe(true);
+      expect(component.boolValue()).toBe(true);
+    });
+
+    it('should handle fieldDefinition value with copy button', () => {
+      const writeTextSpy = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextSpy } });
+
+      const showAlertSpy = vi.fn();
+      const customLuigiClient = createMockLuigiClient(showAlertSpy);
+      mockLuigiClient = customLuigiClient;
+      fixture = TestBed.createComponent(ValueCellComponent);
+      component = fixture.componentInstance;
+
+      const field: FieldDefinition = {
+        property: 'spec.value',
+        value: 'copy-me',
+        uiSettings: { withCopyButton: true },
+      };
+
+      fixture.componentRef.setInput('fieldDefinition', field);
+      fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
+
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement;
+      const copyButton = compiled.querySelector('ui5-icon[name="copy"]');
+
+      const event = new Event('click');
+      copyButton.dispatchEvent(event);
+      fixture.detectChanges();
+
+      expect(writeTextSpy).toHaveBeenCalledWith('copy-me');
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Copied to clipboard',
+        type: 'success',
+        closeAfter: 2000,
+      });
+    });
+
+    it('should handle fieldDefinition value with jsonPathExpression', () => {
+      mockLuigiClient = createMockLuigiClient();
+      fixture = TestBed.createComponent(ValueCellComponent);
+      component = fixture.componentInstance;
+
+      const resource: Resource = {
+        metadata: { name: 'test-resource' },
+        spec: { nested: { value: 'nested-value' } },
+      } as any;
+
+      const field: FieldDefinition = {
+        property: 'spec.value',
+        jsonPathExpression: '$.spec.nested.value',
+        value: 'fallback-value',
+      };
+
+      fixture.componentRef.setInput('resource', resource);
+      fixture.componentRef.setInput('fieldDefinition', field);
+      fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
+
+      fixture.detectChanges();
+
+      expect(component.value()).toBe('nested-value');
+    });
+  });
 });

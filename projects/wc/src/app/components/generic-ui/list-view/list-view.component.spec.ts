@@ -2,7 +2,10 @@ import { ListViewComponent } from './list-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
+import {
+  FieldDefinition,
+  ResourceSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
   ResourceService,
@@ -1485,6 +1488,108 @@ describe('ListViewComponent', () => {
           expect.any(Object),
           false,
         );
+      });
+    });
+
+    describe('listDescriptionDefinition', () => {
+      it('should return resourceDescription when defined in listView', () => {
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        const resourceDescription: FieldDefinition = {
+          property: 'spec.description',
+          label: 'Description',
+        };
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: {
+                fields: [],
+                resourceDescription,
+              },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.listDescriptionDefinition()).toEqual(
+          resourceDescription,
+        );
+      });
+
+      it('should return undefined when resourceDescription is not defined', () => {
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {
+              listView: {
+                fields: [],
+              },
+            },
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.listDescriptionDefinition()).toBeUndefined();
+      });
+
+      it('should return undefined when listView is not defined', () => {
+        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newComponent = newFixture.componentInstance;
+
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            plural: 'clusters',
+            kind: 'Cluster',
+            group: 'core.k8s.io',
+            version: 'v1alpha1',
+            ui: {},
+          },
+        })) as any;
+
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({
+            fromContext: vi.fn().mockReturnThis(),
+            navigate: vi.fn(),
+            withParams: vi.fn().mockReturnThis(),
+          }),
+          getNodeParams: vi.fn(),
+        })) as any;
+
+        newFixture.detectChanges();
+
+        expect(newComponent.listDescriptionDefinition()).toBeUndefined();
       });
     });
   });

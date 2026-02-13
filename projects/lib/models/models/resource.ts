@@ -45,6 +45,7 @@ export interface FieldDefinition {
   jsonPathExpression?: string;
   required?: boolean;
   values?: string[];
+  value?: string;
   group?: {
     name: string;
     label?: string;
@@ -101,23 +102,19 @@ export interface ResourceDefinition {
 
 interface UiView {
   fields: FieldDefinition[];
+  resourceDescription?: FieldDefinition;
 }
 
 export interface UIDefinition {
   logoUrl?: string;
   resourceImageProperty?: string;
-  listView?: ListView;
+  listView?: UiView;
   createView?: UiView;
   detailView?: DetailView;
 }
 
 export interface DetailView extends UiView {
   showDownloadKubeconfig?: boolean;
-  resourceDescription?: FieldDefinition;
-}
-
-export interface ListView extends UiView {
-  description?: string;
 }
 
 export const ResourceOperationTypeMap = {
