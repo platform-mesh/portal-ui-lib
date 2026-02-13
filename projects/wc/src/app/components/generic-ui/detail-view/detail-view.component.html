@@ -9,7 +9,19 @@
       test-id="generic-detail-view-subtitle"
       class="resource-title-subheading"
       slot="subheading"
-    >{{ description() }}</ui5-text>
+    >
+      @if (resourceDescriptionDefinition() && resource()) {
+        <pm-value-cell
+          [fieldDefinition]="resourceDescriptionDefinition()!"
+          [resource]="resource()!"
+          [LuigiClient]="LuigiClient()"
+        ></pm-value-cell>
+      } @else {
+        {{
+          `The ${resourceDefinition()?.singular} for ${resource()?.spec?.displayName || this.resourceId()}`
+        }}
+      }
+    </ui5-text>
 
     <ui5-toolbar
       class="resource-title-actions"

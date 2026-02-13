@@ -3,9 +3,6 @@ import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
 
 
-
-
-
 export type TransformType =
   | 'uppercase'
   | 'lowercase'
@@ -115,7 +112,7 @@ export interface UIDefinition {
 
 export interface DetailView extends UiView {
   showDownloadKubeconfig?: boolean;
-  propertyForDescription?: string;
+  resourceDescription?: FieldDefinition;
 }
 
 export interface ListView extends UiView {

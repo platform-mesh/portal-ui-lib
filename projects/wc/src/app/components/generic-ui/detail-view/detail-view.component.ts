@@ -39,7 +39,6 @@ import {
 import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
-  getValueByPath,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
@@ -90,7 +89,9 @@ export class DetailViewComponent {
       false,
   );
   isDownloadingKubeConfig = signal(false);
-  description = computed(() => this.calcDescription());
+  resourceDescriptionDefinition = computed(
+    () => this.resourceDefinition()?.ui?.detailView?.resourceDescription,
+  );
 
   constructor() {
     effect(() => {
@@ -218,31 +219,14 @@ export class DetailViewComponent {
     const resourceDefinition = this.getResourceDefinition();
     const additionalFields: FieldDefinition[] = [];
 
-    if (resourceDefinition.ui?.detailView?.propertyForDescription) {
-      additionalFields.push({
-        property: resourceDefinition.ui.detailView.propertyForDescription,
-      });
+    if (resourceDefinition.ui?.detailView?.resourceDescription) {
+      additionalFields.push(
+        resourceDefinition.ui.detailView.resourceDescription,
+      );
     }
 
     return generateGraphQLFields(
       this.resourceFields().concat(additionalFields),
     );
-  }
-
-  private calcDescription() {
-    const resource = this.resource();
-    const resourceDefinition = this.resourceDefinition();
-
-    if (
-      resource &&
-      resourceDefinition?.ui?.detailView?.propertyForDescription
-    ) {
-      return getValueByPath(
-        resource,
-        resourceDefinition.ui.detailView.propertyForDescription,
-      );
-    }
-
-    return `The ${resourceDefinition?.singular} for ${resource?.spec?.displayName || this.resourceId()}`;
   }
 }

@@ -627,17 +627,13 @@ describe('DetailViewComponent', () => {
     });
   });
 
-  describe('Description calculation', () => {
-    it('should use propertyForDescription when resource and property are defined', () => {
+  describe('Resource description definition', () => {
+    it('should return resourceDescription when defined', () => {
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
 
-      const resource = {
-        metadata: { name: 'test-resource' },
-        spec: {
-          displayName: 'Test Resource',
-          description: 'Custom description from property',
-        },
+      const resourceDescription: any = {
+        property: 'spec.description',
       };
 
       newComponent.context = (() => ({
@@ -651,7 +647,7 @@ describe('DetailViewComponent', () => {
           ui: {
             detailView: {
               fields: [],
-              propertyForDescription: 'spec.description',
+              resourceDescription,
             },
           },
         },
@@ -671,109 +667,14 @@ describe('DetailViewComponent', () => {
         getNodeParams: vi.fn(),
       })) as any;
 
-      mockResourceService.read.mockReturnValueOnce(of(resource));
       newFixture.detectChanges();
 
-      expect(newComponent.description()).toBe(
-        'Custom description from property',
+      expect(newComponent.resourceDescriptionDefinition()).toEqual(
+        resourceDescription,
       );
     });
 
-    it('should use default description when propertyForDescription is not defined', () => {
-      const newFixture = TestBed.createComponent(DetailViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      const resource = {
-        metadata: { name: 'test-resource' },
-        spec: { displayName: 'Test Resource' },
-      };
-
-      newComponent.context = (() => ({
-        resourceId: 'cluster-1',
-        token: 'abc123',
-        resourceDefinition: {
-          version: 'v1alpha1',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          singular: 'cluster',
-          ui: {
-            detailView: {
-              fields: [],
-            },
-          },
-        },
-        entityName: 'test-resource',
-        parentNavigationContexts: ['project'],
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: vi.fn(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      mockResourceService.read.mockReturnValueOnce(of(resource));
-      newFixture.detectChanges();
-
-      expect(newComponent.description()).toBe(
-        'The cluster for Test Resource',
-      );
-    });
-
-    it('should use resourceId when displayName is not available', () => {
-      const newFixture = TestBed.createComponent(DetailViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      const resource = {
-        metadata: { name: 'test-resource' },
-        spec: {},
-      };
-
-      newComponent.context = (() => ({
-        resourceId: 'cluster-1',
-        token: 'abc123',
-        resourceDefinition: {
-          version: 'v1alpha1',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          singular: 'cluster',
-          ui: {
-            detailView: {
-              fields: [],
-            },
-          },
-        },
-        entityName: 'test-resource',
-        parentNavigationContexts: ['project'],
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: vi.fn(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      mockResourceService.read.mockReturnValueOnce(of(resource));
-      newFixture.detectChanges();
-
-      expect(newComponent.description()).toBe(
-        'The cluster for test-resource',
-      );
-    });
-
-    it('should use default description when resource is not loaded', () => {
+    it('should return undefined when resourceDescription is not defined', () => {
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
 
@@ -788,7 +689,6 @@ describe('DetailViewComponent', () => {
           ui: {
             detailView: {
               fields: [],
-              propertyForDescription: 'description',
             },
           },
         },
@@ -808,13 +708,12 @@ describe('DetailViewComponent', () => {
         getNodeParams: vi.fn(),
       })) as any;
 
-      mockResourceService.read.mockReturnValueOnce(of(undefined));
       newFixture.detectChanges();
 
-      expect(newComponent.description()).toBe('The cluster for test-resource');
+      expect(newComponent.resourceDescriptionDefinition()).toBeUndefined();
     });
 
-    it('should include propertyForDescription in query fields', () => {
+    it('should include resourceDescription in query fields', () => {
       vi.clearAllMocks();
       const newFixture = TestBed.createComponent(DetailViewComponent);
       const newComponent = newFixture.componentInstance;
@@ -829,7 +728,9 @@ describe('DetailViewComponent', () => {
           ui: {
             detailView: {
               fields: [{ property: 'metadata.name' }],
-              propertyForDescription: 'spec.description',
+              resourceDescription: {
+                property: 'spec.description',
+              },
             },
           },
         },
@@ -996,7 +897,7 @@ describe('DetailViewComponent template', () => {
     expect(downloadSpy).toHaveBeenCalled();
   });
 
-  it('should render description in subtitle', () => {
+  it('should render resourceDescription in subtitle when defined', () => {
     const fixture = TestBed.createComponent(DetailViewComponent);
     const component = fixture.componentInstance;
 
@@ -1023,7 +924,9 @@ describe('DetailViewComponent template', () => {
         ui: {
           detailView: {
             fields: [],
-            propertyForDescription: 'spec.description',
+            resourceDescription: {
+              property: 'spec.description',
+            },
           },
         },
       },
@@ -1051,6 +954,63 @@ describe('DetailViewComponent template', () => {
       '[test-id="generic-detail-view-subtitle"]',
     );
     expect(subtitleEl).toBeTruthy();
-    expect(subtitleEl?.textContent?.trim()).toBe('Custom description');
+    const valueCell = subtitleEl?.querySelector('pm-value-cell');
+    expect(valueCell).toBeTruthy();
+  });
+
+  it('should render default description when resourceDescription is not defined', () => {
+    const fixture = TestBed.createComponent(DetailViewComponent);
+    const component = fixture.componentInstance;
+
+    const resource = {
+      metadata: { name: 'test-resource' },
+      spec: {
+        displayName: 'Test Resource',
+      },
+    };
+
+    component.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        singular: 'cluster',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entityName: 'test-resource',
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: vi.fn(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+
+    mockResourceService.read.mockReturnValueOnce(of(resource));
+    fixture.detectChanges();
+
+    const subtitleEl = fixture.nativeElement.shadowRoot?.querySelector(
+      '[test-id="generic-detail-view-subtitle"]',
+    );
+    expect(subtitleEl).toBeTruthy();
+    expect(subtitleEl?.textContent?.trim()).toContain('The cluster for Test Resource');
   });
 });
