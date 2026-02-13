@@ -171,10 +171,7 @@ export class ResourceService {
       return getResourceValueByJsonPath(resource, readyCondition);
     }
 
-    return (
-      resource.status?.conditions?.find((c) => c.type === 'Ready')?.status ===
-      'True'
-    );
+    return true;
   }
 
   private listWithFields(
@@ -280,9 +277,10 @@ export class ResourceService {
         namespace: { type: 'String', value: nodeContext.namespaceId },
       }),
     };
+    const lowerCaseOperation = operation.toLowerCase();
 
     const subscriptionQuery = gqlBuilder.subscription({
-      operation: operation,
+      operation: lowerCaseOperation,
       fields: ['type', { object: fields }],
       variables: {
         ...variables,
@@ -304,7 +302,7 @@ export class ResourceService {
       .pipe(
         map((res: any): ResourceSubscriptionResult | undefined => {
           const resource: ResourceSubscriptionResult | undefined =
-            getValueByPath(res.data, operation);
+            getValueByPath(res.data, lowerCaseOperation);
           if (resource) {
             resource.object = {
               ...resource.object,

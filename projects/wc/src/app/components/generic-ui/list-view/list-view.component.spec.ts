@@ -631,6 +631,11 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
+      const initialResources = [{ metadata: { name: 'existing' } }] as any;
+      mockResourceService.list.mockReturnValue(
+        of({ items: initialResources, resourceVersion: '1' }),
+      );
+
       const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
@@ -654,8 +659,6 @@ describe('ListViewComponent', () => {
         }),
         getNodeParams: vi.fn(),
       })) as any;
-
-      newComponent.resources.set([{ metadata: { name: 'existing' } }] as any);
 
       newFixture.detectChanges();
 
@@ -681,52 +684,11 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      newComponent.resources.set([
+      const initialResources = [
         { metadata: { name: 'existing' }, spec: { type: 'v1' } },
-      ] as any);
-
-      newFixture.detectChanges();
-
-      // Trigger subscription with MODIFIED
-      subscriptionSubject.next({
-        type: 'MODIFIED',
-        object: { metadata: { name: 'existing' }, spec: { type: 'v2' } },
-      });
-
-      expect(newComponent.resources().length).toBe(1);
-      expect(newComponent.resources()[0]?.spec?.type).toBe('v2');
-    });
-
-    it('should handle DELETED operation in subscription', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
+      ] as any;
+      mockResourceService.list.mockReturnValue(
+        of({ items: initialResources, resourceVersion: '1' }),
       );
 
       const newFixture = TestBed.createComponent(ListView);
@@ -753,10 +715,57 @@ describe('ListViewComponent', () => {
         getNodeParams: vi.fn(),
       })) as any;
 
-      newComponent.resources.set([
+      newFixture.detectChanges();
+
+      // Trigger subscription with MODIFIED
+      subscriptionSubject.next({
+        type: 'MODIFIED',
+        object: { metadata: { name: 'existing' }, spec: { type: 'v2' } },
+      });
+
+      expect(newComponent.resources().length).toBe(1);
+      expect(newComponent.resources()[0]?.spec?.type).toBe('v2');
+    });
+
+    it('should handle DELETED operation in subscription', () => {
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
+
+      const initialResources = [
         { metadata: { name: 'to-delete' } },
         { metadata: { name: 'to-keep' } },
-      ] as any);
+      ] as any;
+      mockResourceService.list.mockReturnValue(
+        of({ items: initialResources, resourceVersion: '1' }),
+      );
+
+      const newFixture = TestBed.createComponent(ListView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
 
       newFixture.detectChanges();
 
@@ -802,9 +811,9 @@ describe('ListViewComponent', () => {
         getNodeParams: vi.fn(),
       })) as any;
 
-      newComponent.resources.set([{ metadata: { name: 'existing' } }] as any);
-
       newFixture.detectChanges();
+
+      newComponent.resources.set([{ metadata: { name: 'existing' } }] as any);
 
       // Trigger subscription with MODIFIED for non-existent resource
       subscriptionSubject.next({
@@ -820,8 +829,9 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
+      const initialResources = [{ metadata: { name: 'existing' } }] as any;
+      mockResourceService.list.mockReturnValue(
+        of({ items: initialResources, resourceVersion: '1' }),
       );
 
       const newFixture = TestBed.createComponent(ListView);
@@ -848,8 +858,54 @@ describe('ListViewComponent', () => {
         getNodeParams: vi.fn(),
       })) as any;
 
+      newFixture.detectChanges();
+
+      // Trigger subscription with MODIFIED for non-existent resource
+      subscriptionSubject.next({
+        type: 'MODIFIED',
+        object: { metadata: { name: 'non-existent' } },
+      });
+
+      expect(newComponent.resources().length).toBe(1);
+      expect(newComponent.resources()[0].metadata.name).toBe('existing');
+    });
+
+    it('should handle null/undefined subscription results', () => {
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
+
       const initialResources = [{ metadata: { name: 'existing' } }] as any;
-      newComponent.resources.set(initialResources);
+      mockResourceService.list.mockReturnValue(
+        of({ items: initialResources, resourceVersion: '1' }),
+      );
+
+      const newFixture = TestBed.createComponent(ListView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
 
       newFixture.detectChanges();
 
