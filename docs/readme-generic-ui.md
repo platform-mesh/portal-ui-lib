@@ -30,10 +30,12 @@ In order to use the generic list view, you need to adjust the node’s   `conten
       - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
       - `property`: JSON path(s) used to generate GraphQL fields to fetch the necessary data for readiness evaluation
     ```json
-    "readyCondition": {
+    {
+      "readyCondition": {
       "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
       "property": ["status.conditions.status", "status.conditions.type"]
-    },
+      }
+    }
     ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
       - `"logoUrl"`: resource type logo shown in the view header
@@ -162,7 +164,7 @@ This example demonstrates various features including:
                     },
                     {
                       "label": "Type",
-                      "property": "spec.type",
+                      "property": "spec.type"
                     },
                     {
                       "label": "Contact Info",
@@ -201,17 +203,17 @@ This example demonstrates various features including:
                         "cssRules": [
                           {
                             "if": { "condition": "equals", "value": "High" },
-                            "styles": { "color": "red" },
+                            "styles": { "color": "red" }
                           },
                           {
                             "if": { "condition": "equals", "value": "Medium" },
-                            "styles": { "color": "orange" },
+                            "styles": { "color": "orange" }
                           },
                           {
                             "if": { "condition": "equals", "value": "Low" },
                             "styles": { "color": "green" }
                           }
-                        ],
+                        ]
                       }
                     },
                     {
@@ -405,13 +407,7 @@ This example demonstrates various features including:
                           "keepSelectedForChildren": false,
                           "defineEntity": {
                               "id": "orchestrate_platform-mesh_io_httpbin",
-                              "contextKey": "httpbinId",
-                              "graphqlEntity": {
-                                  "group": "orchestrate_platform-mesh_io",
-                                  "version": "v1alpha1",
-                                  "kind": "HttpBin",
-                                  "query": "{ metadata { name } }"
-                              }
+                              "contextKey": "httpbinId"
                           },
                           "context": {
                               "accountId": ":accountId",

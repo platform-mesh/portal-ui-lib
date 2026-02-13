@@ -1,10 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { PortalLuigiNode } from '../models/luigi-node';
 import {
   calculateAccountHierarchy,
-  collectAccountNamesFromHierarchy,
-  getInitialAccountId,
+  collectAccountNamesFromNodeHierarchy,
 } from './account-hierarchy.util';
+import { describe, expect, it } from 'vitest';
 
 const createNode = (
   name?: string,
@@ -37,7 +36,7 @@ const createEntityNode = (
 
 describe('collectAccountNamesFromHierarchy', () => {
   it('returns empty array when node is undefined', () => {
-    expect(collectAccountNamesFromHierarchy(undefined)).toEqual([]);
+    expect(collectAccountNamesFromNodeHierarchy(undefined)).toEqual([]);
   });
 
   it('collects account names in ancestor order and skips non-accounts', () => {
@@ -45,18 +44,10 @@ describe('collectAccountNamesFromHierarchy', () => {
     const middle = createNode('service', 'Service', root);
     const leaf = createNode('leaf', 'Account', middle);
 
-    expect(collectAccountNamesFromHierarchy(leaf)).toEqual(['root', 'leaf']);
-  });
-});
-
-describe('getInitialAccountId', () => {
-  it('returns entityId when kind is Account', () => {
-    expect(getInitialAccountId('id-1', 'Account')).toBe('id-1');
-  });
-
-  it('returns undefined when kind is not Account or id missing', () => {
-    expect(getInitialAccountId('id-1', 'Project')).toBeUndefined();
-    expect(getInitialAccountId(undefined, 'Account')).toBeUndefined();
+    expect(collectAccountNamesFromNodeHierarchy(leaf)).toEqual([
+      'root',
+      'leaf',
+    ]);
   });
 });
 
@@ -68,17 +59,6 @@ describe('calculateAccountHierarchy', () => {
       'root',
       'child',
     ]);
-  });
-
-  it('replaces last account name when deep level matches length', () => {
-    const entityNode = createEntityNode(
-      ['root', 'child'],
-      'core_platform-mesh_io_account:2',
-    );
-
-    expect(
-      calculateAccountHierarchy(entityNode, 'account-id', 'Account'),
-    ).toEqual(['root', 'account-id']);
   });
 
   it('appends initial id when hierarchy shorter than deep level', () => {

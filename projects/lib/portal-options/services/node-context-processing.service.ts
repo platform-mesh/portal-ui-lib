@@ -1,6 +1,5 @@
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
-import { AccountPathResolverService } from './account-path-resolver.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
@@ -17,34 +16,29 @@ import { firstValueFrom } from 'rxjs';
 })
 export class NodeContextProcessingServiceImpl implements NodeContextProcessingService {
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
-  private accountPathResolver = inject(AccountPathResolverService);
   private accountInfoService = inject(AccountInfoService);
   private organizationReadyService = inject(OrganizationReadyService);
   private errorHandlerService = inject(ErrorHandlerService);
 
   public async processNodeContext(
-    entityId: string,
+    dynamicEntityId: string,
     entityNode: PortalLuigiNode,
     ctx: PortalNodeContext,
   ) {
-    const kind = entityNode.defineEntity?.graphqlEntity?.kind;
+    const kind = entityNode.defineEntity?.type;
+    const entityId =
+      dynamicEntityId || entityNode.context.resourceDefinition?.name;
 
-    if (!entityId || !kind) {
+    if (!entityId) {
       return;
     }
 
-    const kcpPath =
+    const { kcpPath, accountPath } =
       await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(
         entityNode,
         entityId,
         kind,
       );
-
-    const accountPath = this.accountPathResolver.resolveAccountHierarchy(
-      entityNode,
-      entityId,
-      kind,
-    );
 
     // update the current already calculated by Luigi context for a node
     this.addFieldsToContext(ctx, entityId, kcpPath, accountPath, kind);
@@ -90,10 +84,10 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
 
   private addFieldsToContext(
     ctx: PortalNodeContext,
-    entityId: string,
+    entityId: string | undefined,
     kcpPath: string,
-    accountPath: string,
-    kind: string,
+    accountPath: string | undefined,
+    kind: string | undefined,
   ) {
     ctx.kcpPath = kcpPath;
     ctx.entityName = entityId;
