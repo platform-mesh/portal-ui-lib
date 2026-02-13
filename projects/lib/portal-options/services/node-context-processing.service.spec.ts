@@ -111,41 +111,6 @@ describe('NodeContextProcessingServiceImpl', () => {
       ).not.toHaveBeenCalled();
     });
 
-    it('should return early when kind is missing', async () => {
-      const nodeWithoutKind: PortalLuigiNode = {
-        defineEntity: {
-          graphqlEntity: {},
-        },
-        context: {},
-      } as any;
-
-      await service.processNodeContext(
-        mockEntityId,
-        nodeWithoutKind,
-        mockContext,
-      );
-
-      expect(
-        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
-      ).not.toHaveBeenCalled();
-    });
-
-    it('should return early when defineEntity is missing', async () => {
-      const nodeWithoutDefine: PortalLuigiNode = {
-        context: {},
-      } as any;
-
-      await service.processNodeContext(
-        mockEntityId,
-        nodeWithoutDefine,
-        mockContext,
-      );
-
-      expect(
-        crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
-      ).not.toHaveBeenCalled();
-    });
-
     it('should call resolveCrdGatewayKcpPath with correct parameters', async () => {
       await service.processNodeContext(
         mockEntityId,

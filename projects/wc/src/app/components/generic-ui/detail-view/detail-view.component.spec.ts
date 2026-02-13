@@ -191,6 +191,7 @@ describe('DetailViewComponent', () => {
 
     newComponent.context = (() => ({
       entityName: 'cluster-1',
+      resourceId: 'cluster-1',
       token: 'abc123',
       resourceDefinition: {
         version: 'v1alpha1',
@@ -353,7 +354,7 @@ describe('DetailViewComponent', () => {
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
-      resourceId: 'cluster-1',
+      resourceId: 'test-account',
       token: 'abc123',
       resourceDefinition: {
         kind: 'Account',

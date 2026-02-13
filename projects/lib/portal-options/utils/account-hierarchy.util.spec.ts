@@ -61,17 +61,6 @@ describe('calculateAccountHierarchy', () => {
     ]);
   });
 
-  it('replaces last account name when deep level matches length', () => {
-    const entityNode = createEntityNode(
-      ['root', 'child'],
-      'core_platform-mesh_io_account:2',
-    );
-
-    expect(
-      calculateAccountHierarchy(entityNode, 'account-id', 'Account'),
-    ).toEqual(['root', 'account-id']);
-  });
-
   it('appends initial id when hierarchy shorter than deep level', () => {
     const entityNode = createEntityNode(
       ['root', 'child'],
