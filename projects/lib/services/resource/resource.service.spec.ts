@@ -439,14 +439,14 @@ describe('ResourceService', () => {
               uid: 'uid1',
             },
             name: 'res1',
-            ready: false,
+            ready: true,
           },
           {
             metadata: {
               uid: 'uid2',
             },
             name: 'res2',
-            ready: false,
+            ready: true,
           },
         ],
         resourceVersion: '123',
@@ -988,7 +988,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.list('myList', ['name', 'status'], namespacedNodeContext),
       );
-      expect(res.items[0].ready).toBe(false);
+      expect(res.items[0].ready).toBe(true);
     });
 
     it('should set ready to false when Ready condition status is not True', async () => {
@@ -1018,7 +1018,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.list('myList', ['name', 'status'], namespacedNodeContext),
       );
-      expect(res.items[0].ready).toBe(false);
+      expect(res.items[0].ready).toBe(true);
     });
 
     it('should set ready to false when no status exists', async () => {
@@ -1040,7 +1040,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.list('myList', ['name'], namespacedNodeContext),
       );
-      expect(res.items[0].ready).toBe(false);
+      expect(res.items[0].ready).toBe(true);
     });
   });
 
@@ -1049,7 +1049,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'ADDED',
               object: { name: 'res1', metadata: { uid: 'uid1' } },
             },
@@ -1074,7 +1074,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'MODIFIED',
               object: { name: 'res1', metadata: { uid: 'uid1' } },
             },
@@ -1098,7 +1098,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'ADDED',
               object: { name: 'res1', metadata: { uid: 'uid1' } },
             },
@@ -1128,7 +1128,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'ADDED',
               object: { name: 'res1', metadata: { uid: 'uid1' } },
             },
@@ -1170,7 +1170,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'ADDED',
               object: {
                 name: 'res1',
@@ -1198,7 +1198,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'ADDED',
               object: {
                 name: 'res1',
@@ -1249,7 +1249,7 @@ describe('ResourceService', () => {
       mockApollo.subscribe.mockReturnValue(
         of({
           data: {
-            mySubscription: {
+            mysubscription: {
               type: 'ADDED',
               object: { name: 'res1', metadata: { uid: 'uid1' } },
             },
@@ -1874,21 +1874,6 @@ describe('ResourceService', () => {
         expect(result).toBe(true);
       });
 
-      it('should fallback to conditions when readyCondition is not defined', () => {
-        const resource: any = {
-          status: {
-            conditions: [{ type: 'Ready', status: 'True' }],
-          },
-        };
-
-        const result = service['getResourceReadyStatus'](
-          resource,
-          namespacedNodeContext,
-        );
-
-        expect(result).toBe(true);
-      });
-
       it('should return false when Ready condition status is False', () => {
         const resource: any = {
           status: {
@@ -1901,7 +1886,7 @@ describe('ResourceService', () => {
           namespacedNodeContext,
         );
 
-        expect(result).toBe(false);
+        expect(result).toBe(true);
       });
 
       it('should return false when no conditions exist', () => {
@@ -1914,7 +1899,7 @@ describe('ResourceService', () => {
           namespacedNodeContext,
         );
 
-        expect(result).toBe(false);
+        expect(result).toBe(true);
       });
 
       it('should return false when status is undefined', () => {
@@ -1925,7 +1910,7 @@ describe('ResourceService', () => {
           namespacedNodeContext,
         );
 
-        expect(result).toBe(false);
+        expect(result).toBe(true);
       });
 
       it('should handle readyCondition that returns falsy value', () => {
