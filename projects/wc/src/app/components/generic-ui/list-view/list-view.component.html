@@ -47,12 +47,6 @@
           class="not-ready-indicator"
         ></ui5-table-header-cell>
       }
-      @if (imagePathProperty()) {
-        <ui5-table-header-cell
-          width="88px"
-          class="image-column"
-        ></ui5-table-header-cell>
-      }
       @for (column of viewColumns(); track column.property) {
         @if (column.group) {
           <ui5-table-header-cell
@@ -106,20 +100,6 @@
                 design="Critical"
               ></ui5-icon>
             }
-          </ui5-table-cell>
-        }
-
-        @if (imagePathProperty(); as imagePathProperty) {
-          <ui5-table-cell>
-            <img
-              class="image-cell"
-              [src]="
-                getResourceValueByJsonPath(item, {
-                  jsonPathExpression: imagePathProperty,
-                })
-              "
-              alt="Resource image"
-            />
           </ui5-table-cell>
         }
 

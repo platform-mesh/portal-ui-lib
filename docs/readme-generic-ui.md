@@ -39,7 +39,6 @@ In order to use the generic list view, you need to adjust the node’s   `conten
     ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
       - `"logoUrl"`: resource type logo shown in the view header
-      - `"resourceImageProperty"`: JSONPath expression to an image URL of the given resource entity; when set, the list view renders an image column and automatically fetches this field
       - view definitions for the corresponding views
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
           the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views.
@@ -77,6 +76,7 @@ Each field definition supports the following properties:
     - `'boolIcon'`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
     - `'link'`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
     - `'tooltip'`: Render an icon with a tooltip; tooltip text is the field value
+    - `'img'`: Render an image with the provided url read from the resource property
   - `"tooltipIcon"`: UI5 icon name to use with `displayAs: "tooltip"` (defaults to `hint`) Don't forget to import picked icon to you portal from ui5 lib
   - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
   - `"cssCustomization"`: Inline styles applied to the rendered value (partial `CSSStyleDeclaration`, e.g. `backgroundColor`, `fontWeight`)
@@ -136,6 +136,12 @@ This example demonstrates various features including:
                 "resourceImageProperty": "spec.image",
                 "listView": {
                   "fields": [
+                    {
+                      "property": "metadata.imgUrl",
+                      "uiSettings": {
+                        "displayAs": "img"
+                      }
+                    },
                     {
                       "label": "Name",
                       "property": "metadata.name"

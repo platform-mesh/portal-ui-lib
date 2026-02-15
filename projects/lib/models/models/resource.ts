@@ -14,7 +14,7 @@ export interface PropertyField {
 
 export interface UiSettings {
   labelDisplay?: boolean;
-  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip';
+  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip' | 'img';
   tooltipIcon?: string;
   withCopyButton?: boolean;
   cssCustomization?: Partial<CSSStyleDeclaration>;
@@ -102,7 +102,6 @@ interface UiView {
 
 export interface UIDefinition {
   logoUrl?: string;
-  resourceImageProperty?: string;
   listView?: UiView;
   createView?: UiView;
   detailView?: DetailView;
