@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   FieldDefinition,
+  ResourceDefinition,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -109,9 +110,8 @@ describe('ListViewComponent', () => {
     expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
   });
 
-  it('should include image and ready fields when listing resources', () => {
-    const listSpy = vi.fn().mockReturnValue(of([]));
-    mockResourceService.list = listSpy;
+  it('should include ready fields when listing resources', () => {
+    mockResourceService.list = vi.fn().mockReturnValue(of([]));
 
     const readyCondition = {
       jsonPathExpression: '$.status.ready',
@@ -129,12 +129,11 @@ describe('ListViewComponent', () => {
         version: 'v1alpha1',
         readyCondition,
         ui: {
-          resourceImageProperty: 'spec.image',
           listView: {
             fields: [{ property: 'metadata.name' }],
           },
         },
-      },
+      } as ResourceDefinition,
     })) as any;
 
     newComponent.LuigiClient = (() => ({
@@ -152,11 +151,10 @@ describe('ListViewComponent', () => {
 
     const expectedFields = utils.generateGraphQLFields([
       { property: 'metadata.name' },
-      { property: 'spec.image' },
       readyCondition,
     ]);
 
-    expect(listSpy).toHaveBeenCalledWith(
+    expect(mockResourceService.list).toHaveBeenCalledWith(
       'core_k8s_io_v1alpha1_clusters',
       expectedFields,
       expectedContext,

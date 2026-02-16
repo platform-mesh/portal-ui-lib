@@ -108,9 +108,6 @@ export class ListViewComponent {
   );
   viewColumns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
-  imagePathProperty = computed(
-    () => this.resourceDefinition()?.ui?.resourceImageProperty,
-  );
   listDescriptionDefinition = computed(
     () => this.resourceDefinition()?.ui?.listView?.resourceDescription,
   );
@@ -364,11 +361,6 @@ export class ListViewComponent {
 
   private getListQueryFields() {
     const additionalFields: FieldDefinition[] = [];
-
-    const imagePathProperty = this.imagePathProperty();
-    if (imagePathProperty) {
-      additionalFields.push({ property: imagePathProperty });
-    }
 
     const readyCondition = this.readyCondition();
     if (readyCondition) {
