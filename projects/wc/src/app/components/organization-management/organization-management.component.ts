@@ -133,7 +133,7 @@ export class OrganizationManagementView implements OnInit {
           this.organizations.set(
             result.items.map((o) => ({
               name: o.metadata.name,
-              ready: !!o.ready,
+              ready: this.isOrganizationReady(o),
             })),
           );
 
@@ -165,6 +165,13 @@ export class OrganizationManagementView implements OnInit {
       });
   }
 
+  private isOrganizationReady(organization: Resource) {
+    return !!(
+      organization.status?.conditions?.find((c) => c.type === 'Ready')
+        ?.status === 'True'
+    );
+  }
+
   private refreshOrganizationToSwitch() {
     const organizationToSwitch = this.organizationToSwitch();
 
@@ -189,7 +196,7 @@ export class OrganizationManagementView implements OnInit {
     const { type, object } = subscriptionResult;
     const subscriptionObject = {
       name: object.metadata.name,
-      ready: object.ready,
+      ready: this.isOrganizationReady(object),
     };
     if (type === ResourceOperationTypeMap.ADDED) {
       result.set(object.metadata.name, subscriptionObject);
