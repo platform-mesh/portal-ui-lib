@@ -103,6 +103,7 @@ export interface ResourceDefinition {
 interface UiView {
   fields: FieldDefinition[];
   resourceDescription?: FieldDefinition;
+  resourceTitle?: FieldDefinition;
 }
 
 export interface UIDefinition {

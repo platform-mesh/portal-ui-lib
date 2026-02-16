@@ -2,7 +2,15 @@
   <ui5-dynamic-page-title slot="titleArea">
     <ui5-title slot="heading">
       <div test-id="generic-detail-view-title" class="resource-title">
-        {{ resource()?.spec?.displayName || resourceId() }}
+        @if (resourceTitleDefinition(); as resourceTitleDefinition) {
+          <pm-value-cell
+            [fieldDefinition]="resourceTitleDefinition"
+            [resource]="resource()"
+            [LuigiClient]="LuigiClient()"
+          />
+        } @else {
+          {{ resource()?.spec?.displayName || resourceId() }}
+        }
       </div>
     </ui5-title>
     <ui5-text
@@ -10,10 +18,10 @@
       class="resource-title-subheading"
       slot="subheading"
     >
-      @if (resourceDescriptionDefinition() && resource()) {
+      @if (resourceDescriptionDefinition(); as resourceDescriptionDefinition) {
         <pm-value-cell
-          [fieldDefinition]="resourceDescriptionDefinition()!"
-          [resource]="resource()!"
+          [fieldDefinition]="resourceDescriptionDefinition"
+          [resource]="resource()"
           [LuigiClient]="LuigiClient()"
         ></pm-value-cell>
       } @else {

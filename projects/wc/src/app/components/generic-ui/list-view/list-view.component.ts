@@ -98,7 +98,10 @@ export class ListViewComponent {
   private deleteModal = viewChild<DeleteResourceModalComponent>('deleteModal');
 
   resources = signal<Resource[]>([]);
-  heading = computed(
+  resourceTitleDefinition = computed(
+    () => this.resourceDefinition()?.ui?.listView?.resourceTitle,
+  );
+  defaultHeading = computed(
     () =>
       `${this.resourceDefinition()?.plural.charAt(0).toUpperCase()}${this.resourceDefinition()?.plural.slice(1)}`,
   );

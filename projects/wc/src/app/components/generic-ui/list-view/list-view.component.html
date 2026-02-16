@@ -2,7 +2,16 @@
   <ui5-dynamic-page-title slot="titleArea">
     <ui5-title slot="heading">
       <div class="title-logo">
-        <div test-id="generic-list-view-title">{{ heading() }}</div>
+        <div test-id="generic-list-view-title">
+          @if (resourceTitleDefinition(); as resourceTitleDefinition) {
+            <pm-value-cell
+              [fieldDefinition]="resourceTitleDefinition"
+              [LuigiClient]="LuigiClient()"
+            />
+          } @else {
+            {{ defaultHeading() }}
+          }
+        </div>
         @if (resourceDefinition()?.ui?.logoUrl) {
           <img
             test-id="generic-list-view-logo"

@@ -344,7 +344,7 @@ describe('ListViewComponent', () => {
 
     newFixture.detectChanges();
 
-    expect(newComponent.heading()).toBe('Clusters');
+    expect(newComponent.defaultHeading()).toBe('Clusters');
   });
 
   it('should handle empty plural in heading', () => {
@@ -366,7 +366,7 @@ describe('ListViewComponent', () => {
 
     newFixture.detectChanges();
 
-    expect(newComponent.heading()).toBe('');
+    expect(newComponent.defaultHeading()).toBe('');
   });
 
   it('should handle single character plural in heading', () => {
@@ -388,7 +388,7 @@ describe('ListViewComponent', () => {
 
     newFixture.detectChanges();
 
-    expect(newComponent.heading()).toBe('A');
+    expect(newComponent.defaultHeading()).toBe('A');
   });
 
   it('should handle resource service list error', () => {

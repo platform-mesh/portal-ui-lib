@@ -89,6 +89,9 @@ export class DetailViewComponent {
       false,
   );
   isDownloadingKubeConfig = signal(false);
+  resourceTitleDefinition = computed(
+    () => this.resourceDefinition()?.ui?.detailView?.resourceTitle,
+  );
   resourceDescriptionDefinition = computed(
     () => this.resourceDefinition()?.ui?.detailView?.resourceDescription,
   );
