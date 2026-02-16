@@ -141,7 +141,12 @@ describe('OrganizationManagementComponent', () => {
 
     it('should set first organization as organizationToSwitch when null', () => {
       const mockOrganizations = {
-        items: [{ metadata: { name: 'org1' }, ready: true }],
+        items: [
+          {
+            metadata: { name: 'org1' },
+            status: { conditions: [{ type: 'Ready', status: 'True' }] },
+          },
+        ],
         resourceVersion: '123',
       };
 
@@ -160,8 +165,14 @@ describe('OrganizationManagementComponent', () => {
     it('should update existing organizationToSwitch', () => {
       const mockOrganizations = {
         items: [
-          { metadata: { name: 'org1' }, ready: false },
-          { metadata: { name: 'org2' }, ready: true },
+          {
+            metadata: { name: 'org1' },
+            status: { conditions: [{ type: 'Ready', status: 'False' }] },
+          },
+          {
+            metadata: { name: 'org2' },
+            status: { conditions: [{ type: 'Ready', status: 'True' }] },
+          },
         ],
         resourceVersion: '123',
       };
@@ -228,7 +239,10 @@ describe('OrganizationManagementComponent', () => {
     it('should add new organization on ADDED event', () => {
       const subscriptionResult = {
         type: 'ADDED' as const,
-        object: { metadata: { name: 'org3' }, ready: true },
+        object: {
+          metadata: { name: 'org3' },
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
       };
 
       component['mergeResourcesWithSubscriptionResult'](
@@ -244,7 +258,10 @@ describe('OrganizationManagementComponent', () => {
     it('should update existing organization on MODIFIED event', () => {
       const subscriptionResult = {
         type: 'MODIFIED' as const,
-        object: { metadata: { name: 'org2' }, ready: true },
+        object: {
+          metadata: { name: 'org2' },
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
       };
 
       component['mergeResourcesWithSubscriptionResult'](
