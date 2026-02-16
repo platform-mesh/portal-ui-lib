@@ -1,4 +1,4 @@
-import { ListViewComponent } from './list-view.component';
+import { ListView } from './list-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -17,8 +17,8 @@ import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 describe('ListViewComponent', () => {
-  let component: ListViewComponent;
-  let fixture: ComponentFixture<ListViewComponent>;
+  let component: ListView;
+  let fixture: ComponentFixture<ListView>;
   let mockResourceService: MockedObject<ResourceService>;
   let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
   let mockLuigiCoreService: any;
@@ -55,7 +55,7 @@ describe('ListViewComponent', () => {
         { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    }).overrideComponent(ListViewComponent, {
+    }).overrideComponent(ListView, {
       set: {
         template: '',
         imports: [],
@@ -63,7 +63,7 @@ describe('ListViewComponent', () => {
       },
     });
 
-    fixture = TestBed.createComponent(ListViewComponent);
+    fixture = TestBed.createComponent(ListView);
     component = fixture.componentInstance;
 
     component.context = (() => ({
@@ -104,12 +104,6 @@ describe('ListViewComponent', () => {
     expect(component.resources().length).toBeGreaterThan(0);
   });
 
-  it('should not show alert when delete is called', () => {
-    const resource = { metadata: { name: 'test' } } as any;
-    component.delete(resource);
-    expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
-  });
-
   it('should include ready fields when listing resources', () => {
     mockResourceService.list = vi.fn().mockReturnValue(of([]));
 
@@ -118,7 +112,7 @@ describe('ListViewComponent', () => {
       property: 'status.ready',
     };
 
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -163,31 +157,11 @@ describe('ListViewComponent', () => {
     );
   });
 
-  it('should show alert when delete errors', () => {
-    const resource = { metadata: { name: 'bad' } } as any;
-    mockResourceService.delete.mockReturnValueOnce(
-      throwError(() => new Error('boom')),
-    );
-    component.delete(resource);
-    expect(mockLuigiCoreService.showAlert).toHaveBeenCalled();
-    const callArg = mockLuigiCoreService.showAlert.mock.calls[0][0];
-    expect(callArg.text).toContain('bad');
-    expect(callArg.type).toBe('error');
-  });
-
   it('should create a resource', () => {
     const resource = { metadata: { name: 'test' } };
 
     component.create(resource as any);
     expect(mockResourceService.create).toHaveBeenCalled();
-  });
-
-  it('should handle update from modal', () => {
-    const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-    const updated = { metadata: { name: 'x' }, spec: { a: 1 } } as any;
-    component.update(updated);
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
   });
 
   it('should navigate to resource', () => {
@@ -204,7 +178,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should not navigate when detailView is not defined', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -233,7 +207,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should not navigate when ui is not defined', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -263,34 +237,8 @@ describe('ListViewComponent', () => {
     expect(openSpy).toHaveBeenCalledWith();
   });
 
-  it('should open delete resource modal and stop event propagation', () => {
-    const event = { stopPropagation: vi.fn() } as any;
-    const resource = { metadata: { name: 'to-delete' } } as any;
-    const openSpy = vi.fn();
-    (component as any).deleteModal = () => ({ open: openSpy });
-
-    component.openDeleteResourceModal(event, resource);
-
-    expect(event.stopPropagation).toHaveBeenCalled();
-    expect(openSpy).toHaveBeenCalledWith(resource);
-  });
-
-  it('should open edit resource modal and stop propagation', () => {
-    const event = { stopPropagation: vi.fn() } as any;
-    const resource = { metadata: { name: 'to-edit' } } as any;
-    const openSpy = vi.fn();
-    (component as any).createModal = () => ({ open: openSpy });
-
-    mockResourceService.read.mockReturnValueOnce(of(resource));
-
-    component.openEditResourceModal(event, resource);
-
-    expect(event.stopPropagation).toHaveBeenCalled();
-    expect(openSpy).toHaveBeenCalledWith(resource);
-  });
-
   it('should check create view fields existence', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     const mockContext = {
@@ -326,7 +274,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should compute heading correctly with capitalized plural', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -348,7 +296,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should handle empty plural in heading', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -370,7 +318,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should handle single character plural in heading', () => {
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -396,7 +344,7 @@ describe('ListViewComponent', () => {
       throwError(() => new Error('List failed')),
     );
 
-    const newFixture = TestBed.createComponent(ListViewComponent);
+    const newFixture = TestBed.createComponent(ListView);
     const newComponent = newFixture.componentInstance;
 
     newComponent.context = (() => ({
@@ -510,7 +458,7 @@ describe('ListViewComponent', () => {
 
   describe('Undefined checks', () => {
     it('should show alert and throw error when resourceDefinition is undefined in list method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       // Set context to return undefined resourceDefinition
@@ -541,42 +489,8 @@ describe('ListViewComponent', () => {
       });
     });
 
-    it('should show alert and throw error when resourceDefinition is undefined in delete method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      // Set context to return undefined resourceDefinition
-      newComponent.context = (() => ({
-        resourceDefinition: undefined,
-      })) as any;
-
-      const showAlertSpy = vi.fn();
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      const resource = { metadata: { name: 'test' } } as any;
-
-      // Test that delete() method throws error when resourceDefinition is undefined
-      expect(() => newComponent.delete(resource)).toThrow(
-        'Resource definition is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource definition is not defined',
-        type: 'error',
-      });
-    });
-
     it('should show alert and throw error when resourceDefinition is undefined in create method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       // Set context to return undefined resourceDefinition
@@ -607,60 +521,6 @@ describe('ListViewComponent', () => {
         text: 'Resource definition is not defined',
         type: 'error',
       });
-    });
-
-    it('should show alert and throw error when resourceDefinition is undefined in update method', () => {
-      const newFixture = TestBed.createComponent(ListViewComponent);
-      const newComponent = newFixture.componentInstance;
-
-      // Set context to return undefined resourceDefinition
-      newComponent.context = (() => ({
-        resourceDefinition: undefined,
-      })) as any;
-
-      const showAlertSpy = vi.fn();
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      const resource = { metadata: { name: 'test' } } as any;
-      // Test that update() method throws error when resourceDefinition is undefined
-      expect(() => newComponent.update(resource)).toThrow(
-        'Resource definition is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource definition is not defined',
-        type: 'error',
-      });
-    });
-
-    it('should handle edit resource modal with undefined resource name', () => {
-      const event = { stopPropagation: vi.fn() } as any;
-      const resource = { metadata: {} } as any; // metadata.name is undefined
-      const openSpy = vi.fn();
-      (component as any).createModal = () => ({ open: openSpy });
-
-      mockResourceService.read.mockReturnValueOnce(of(resource));
-
-      component.openEditResourceModal(event, resource);
-
-      expect(event.stopPropagation).toHaveBeenCalled();
-      expect(mockResourceService.read).toHaveBeenCalledWith(
-        '', // Should use empty string when name is undefined
-        expect.any(Object),
-        expect.any(Array),
-        expect.any(Object),
-        false,
-      );
-      expect(openSpy).toHaveBeenCalledWith(resource);
     });
 
     it('should show alert and throw error when navigating to resource with undefined name', () => {
@@ -777,7 +637,7 @@ describe('ListViewComponent', () => {
         of({ items: initialResources, resourceVersion: '1' }),
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -832,7 +692,7 @@ describe('ListViewComponent', () => {
         of({ items: initialResources, resourceVersion: '1' }),
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -884,7 +744,7 @@ describe('ListViewComponent', () => {
         of({ items: initialResources, resourceVersion: '1' }),
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -928,12 +788,54 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
+      const newFixture = TestBed.createComponent(ListView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          plural: 'clusters',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          version: 'v1alpha1',
+          ui: {
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      newComponent.resources.set([{ metadata: { name: 'existing' } }] as any);
+
+      // Trigger subscription with MODIFIED for non-existent resource
+      subscriptionSubject.next({
+        type: 'MODIFIED',
+        object: { metadata: { name: 'non-existent' } },
+      });
+
+      expect(newComponent.resources().length).toBe(1);
+      expect(newComponent.resources()[0].metadata.name).toBe('existing');
+    });
+
+    it('should handle null/undefined subscription results', () => {
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
       const initialResources = [{ metadata: { name: 'existing' } }] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -982,7 +884,7 @@ describe('ListViewComponent', () => {
         of({ items: initialResources, resourceVersion: '1' }),
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -1025,7 +927,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const newFixture = TestBed.createComponent(ListViewComponent);
+      const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
 
       newComponent.context = (() => ({
@@ -1087,7 +989,7 @@ describe('ListViewComponent', () => {
           }),
         );
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1126,7 +1028,7 @@ describe('ListViewComponent', () => {
           }),
         );
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1177,7 +1079,7 @@ describe('ListViewComponent', () => {
           return of(callCount === 1 ? firstResponse : secondResponse);
         });
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1221,7 +1123,7 @@ describe('ListViewComponent', () => {
         const error = new Error('Unauthorized');
         mockResourceService.list.mockReturnValue(throwError(() => error));
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1260,7 +1162,7 @@ describe('ListViewComponent', () => {
           }),
         );
 
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1291,16 +1193,6 @@ describe('ListViewComponent', () => {
     });
 
     describe('Modal operations', () => {
-      it('should close delete modal after successful deletion', () => {
-        const resource = { metadata: { name: 'test' } } as any;
-        const closeSpy = vi.fn();
-        (component as any).deleteModal = () => ({ close: closeSpy });
-
-        component.delete(resource);
-
-        expect(closeSpy).toHaveBeenCalled();
-      });
-
       it('should close create modal after successful creation', () => {
         const resource = { metadata: { name: 'test' } } as any;
         const closeSpy = vi.fn();
@@ -1310,34 +1202,11 @@ describe('ListViewComponent', () => {
 
         expect(closeSpy).toHaveBeenCalled();
       });
-
-      it('should close create modal after successful update', () => {
-        const resource = { metadata: { name: 'test' } } as any;
-        const closeSpy = vi.fn();
-        (component as any).createModal = () => ({ close: closeSpy });
-
-        component.update(resource);
-
-        expect(closeSpy).toHaveBeenCalled();
-      });
-
-      it('should handle event without stopPropagation method', () => {
-        const event = {} as any; // No stopPropagation
-        const resource = { metadata: { name: 'test' } } as any;
-        const openSpy = vi.fn();
-        (component as any).deleteModal = () => ({ open: openSpy });
-
-        // Should not throw error
-        expect(() =>
-          component.openDeleteResourceModal(event, resource),
-        ).not.toThrow();
-        expect(openSpy).toHaveBeenCalled();
-      });
     });
 
     describe('Computed properties', () => {
       it('should return false for hasUiCreateViewFields when createView is undefined', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1366,7 +1235,7 @@ describe('ListViewComponent', () => {
       });
 
       it('should return false for hasUiCreateViewFields when fields array is empty', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1398,7 +1267,7 @@ describe('ListViewComponent', () => {
       });
 
       it('should compute viewColumns correctly', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
+        const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
 
         newComponent.context = (() => ({
@@ -1429,165 +1298,6 @@ describe('ListViewComponent', () => {
         newFixture.detectChanges();
 
         expect(newComponent.columns().length).toBe(2);
-      });
-    });
-
-    describe('openEditResourceModal with createView fields', () => {
-      it('should use createView fields when opening edit modal', () => {
-        const event = { stopPropagation: vi.fn() } as any;
-        const resource = { metadata: { name: 'to-edit' } } as any;
-        const openSpy = vi.fn();
-        (component as any).createModal = () => ({ open: openSpy });
-
-        const newFixture = TestBed.createComponent(ListViewComponent);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
-            version: 'v1alpha1',
-            ui: {
-              createView: {
-                fields: [
-                  { property: 'metadata.name' },
-                  { property: 'spec.version' },
-                ],
-              },
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        (newComponent as any).createModal = () => ({ open: openSpy });
-
-        mockResourceService.read.mockReturnValueOnce(of(resource));
-
-        newComponent.openEditResourceModal(event, resource);
-
-        expect(mockResourceService.read).toHaveBeenCalledWith(
-          'to-edit',
-          expect.objectContaining({
-            kind: 'Cluster',
-            version: 'v1alpha1',
-            group: 'core_k8s_io',
-          }),
-          expect.any(Array),
-          expect.any(Object),
-          false,
-        );
-      });
-    });
-
-    describe('listDescriptionDefinition', () => {
-      it('should return resourceDescription when defined in listView', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
-        const newComponent = newFixture.componentInstance;
-
-        const resourceDescription: FieldDefinition = {
-          property: 'spec.description',
-          label: 'Description',
-        };
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
-            version: 'v1alpha1',
-            ui: {
-              listView: {
-                fields: [],
-                resourceDescription,
-              },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.listDescriptionDefinition()).toEqual(
-          resourceDescription,
-        );
-      });
-
-      it('should return undefined when resourceDescription is not defined', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
-            version: 'v1alpha1',
-            ui: {
-              listView: {
-                fields: [],
-              },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.listDescriptionDefinition()).toBeUndefined();
-      });
-
-      it('should return undefined when listView is not defined', () => {
-        const newFixture = TestBed.createComponent(ListViewComponent);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
-            version: 'v1alpha1',
-            ui: {},
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.listDescriptionDefinition()).toBeUndefined();
       });
     });
   });

@@ -1,7 +1,7 @@
 import { evaluateCssRules } from '../../../utils/cssRules.engine';
-import { BooleanValueComponent } from './boolean-value/boolean-value.component';
-import { LinkValueComponent } from './link-value/link-value.component';
-import { SecretValueComponent } from './secret-value/secret-value.component';
+import { BooleanValue } from './boolean-value/boolean-value.component';
+import { LinkValue } from './link-value/link-value.component';
+import { SecretValue } from './secret-value/secret-value.component';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   ChangeDetectionStrategy,
@@ -18,12 +18,7 @@ import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils/u
 
 @Component({
   selector: 'pm-value-cell',
-  imports: [
-    Icon,
-    BooleanValueComponent,
-    LinkValueComponent,
-    SecretValueComponent,
-  ],
+  imports: [Icon, BooleanValue, LinkValue, SecretValue],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './value-cell.component.html',
   styleUrls: ['./value-cell.component.scss'],

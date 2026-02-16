@@ -1,4 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
+import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import {
   KubeConfigTemplateProps,
@@ -13,6 +15,7 @@ import {
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   Label,
@@ -57,18 +60,22 @@ import { tap } from 'rxjs/operators';
     DynamicPageHeader,
     Label,
     ValueCellComponent,
+    CreateResourceModal,
+    DeleteResourceModal,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DetailViewComponent {
+export class DetailView {
   private resourceService = inject(ResourceService);
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
   private errorHandlerService = inject(ErrorHandlerService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
+  private createModal = viewChild<CreateResourceModal>('createModal');
+  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -162,6 +169,87 @@ export class DetailViewComponent {
       .navigate('/');
   }
 
+  openDeleteResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+    const resourceToDelete: Resource = {
+      ...resource,
+      metadata: { name: this.getResourceId() },
+    };
+    this.deleteModal()?.open(resourceToDelete);
+  }
+
+  openEditResourceModal(event: MouseEvent, resource: Resource) {
+    event.stopPropagation?.();
+    this.createModal()?.open(resource);
+  }
+
+  delete(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+    const resourceId = this.getResourceId();
+
+    const resourceToDelete: Resource = {
+      ...resource,
+      metadata: { name: resourceId },
+    };
+
+    this.resourceService
+      .delete(
+        resourceToDelete,
+        resourceDefinition,
+        this.context(),
+        resourceDefinition.kind.toLowerCase() === 'account',
+      )
+      .subscribe({
+        next: async (_result) => {
+          this.deleteModal()?.close();
+          console.debug('Resource deleted.');
+          this.navigateToParent();
+        },
+        error: (_error) => {
+          this.LuigiClient()
+            .uxManager()
+            .showAlert({
+              text: `Failure! Could not delete resource: ${resource.metadata.name}.`,
+              type: 'error',
+            });
+        },
+      });
+  }
+
+  update(resource: Resource) {
+    const resourceDefinition = this.getResourceDefinition();
+    const resourceId = this.getResourceId();
+    const fields = generateGraphQLFields(this.resourceFields());
+    const resourceToUpdate: Resource = {
+      ...resource,
+      metadata: { name: resourceId },
+    };
+
+    this.resourceService
+      .update(
+        resourceToUpdate,
+        resourceDefinition,
+        this.context(),
+        resourceDefinition.kind.toLowerCase() === 'account',
+        fields,
+      )
+      .subscribe({
+        next: (result: any) => {
+          this.resource.set(result);
+          this.createModal()?.close();
+          console.debug('Resource updated', result);
+        },
+        error: (_error) => {
+          this.LuigiClient()
+            .uxManager()
+            .showAlert({
+              text: `Failure! Could not update resource: ${resource.metadata.name}.`,
+              type: 'error',
+            });
+        },
+      });
+  }
+
   async downloadKubeConfig() {
     if (this.isDownloadingKubeConfig()) {
       return;
@@ -231,5 +319,19 @@ export class DetailViewComponent {
     return generateGraphQLFields(
       this.resourceFields().concat(additionalFields),
     );
+  }
+
+  private getResourceId() {
+    const resourceId = this.resourceId();
+    if (!resourceId) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource ID is not defined',
+        type: 'error',
+      });
+
+      throw new Error('Resource ID is not defined');
+    }
+
+    return resourceId;
   }
 }

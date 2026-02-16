@@ -4,16 +4,16 @@ import {
   ICON_NAME_NEGATIVE,
   ICON_NAME_POSITIVE,
 } from './boolean-cell.constants';
-import { BooleanValueComponent } from './boolean-value.component';
+import { BooleanValue } from './boolean-value.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 describe('BooleanValueComponent', () => {
-  let component: BooleanValueComponent;
-  let fixture: ComponentFixture<BooleanValueComponent>;
+  let component: BooleanValue;
+  let fixture: ComponentFixture<BooleanValue>;
 
   const makeComponent = (boolValue: boolean) => {
-    fixture = TestBed.createComponent(BooleanValueComponent);
+    fixture = TestBed.createComponent(BooleanValue);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('boolValue', boolValue);
@@ -25,8 +25,8 @@ describe('BooleanValueComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [BooleanValueComponent],
-    }).overrideComponent(BooleanValueComponent, {
+      imports: [BooleanValue],
+    }).overrideComponent(BooleanValue, {
       set: {
         imports: [],
         schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -106,7 +106,7 @@ describe('BooleanValueComponent', () => {
   });
 
   it('should accept custom testId', () => {
-    fixture = TestBed.createComponent(BooleanValueComponent);
+    fixture = TestBed.createComponent(BooleanValue);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('boolValue', true);

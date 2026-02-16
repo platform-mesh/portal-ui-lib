@@ -1,12 +1,12 @@
-import { SecretValueComponent } from './secret-value.component';
+import { SecretValue } from './secret-value.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 describe('SecretValueComponent', () => {
-  let component: SecretValueComponent;
-  let fixture: ComponentFixture<SecretValueComponent>;
+  let component: SecretValue;
+  let fixture: ComponentFixture<SecretValue>;
 
   const makeComponent = (value: string) => {
-    fixture = TestBed.createComponent(SecretValueComponent);
+    fixture = TestBed.createComponent(SecretValue);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('value', value);
@@ -18,7 +18,7 @@ describe('SecretValueComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [SecretValueComponent],
+      imports: [SecretValue],
       schemas: [],
     });
   });
@@ -175,7 +175,7 @@ describe('SecretValueComponent', () => {
   });
 
   it('should accept custom testId', () => {
-    fixture = TestBed.createComponent(SecretValueComponent);
+    fixture = TestBed.createComponent(SecretValue);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('value', 'test-secret');

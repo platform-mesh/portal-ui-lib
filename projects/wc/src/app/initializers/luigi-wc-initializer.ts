@@ -1,10 +1,10 @@
 import {
-  DetailViewComponent,
-  ListViewComponent,
-  OrganizationManagementComponent,
-  WelcomeComponent,
+  DetailView,
+  ListView,
+  OrganizationManagementView,
+  WelcomeView,
 } from '../components';
-import { ErrorComponent } from '../components/error/error.component';
+import { ErrorView } from '../components/error/error.component';
 import { registerLuigiWebComponents } from '../utils/wc';
 import { Injector, inject, provideAppInitializer } from '@angular/core';
 
@@ -13,11 +13,11 @@ export const provideLuigiWebComponents = () =>
     const injector = inject(Injector);
     registerLuigiWebComponents(
       {
-        'generic-list-view': ListViewComponent,
-        'generic-detail-view': DetailViewComponent,
-        'organization-management': OrganizationManagementComponent,
-        'welcome-view': WelcomeComponent,
-        'error-component': ErrorComponent,
+        'generic-list-view': ListView,
+        'generic-detail-view': DetailView,
+        'organization-management': OrganizationManagementView,
+        'welcome-view': WelcomeView,
+        'error-component': ErrorView,
       },
       injector,
     );

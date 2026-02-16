@@ -1,3 +1,4 @@
+import { ButtonConfig, ErrorConfig } from './models/error.model';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,17 +8,13 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { Button, Title } from '@fundamental-ngx/ui5-webcomponents';
+import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/tnt/NoApplications.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/tnt/UnsuccessfulAuth.js';
-import {
-  Button,
-  Title,
-} from '@fundamental-ngx/ui5-webcomponents';
-import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori';
-import { ButtonConfig, ErrorConfig } from './models/error.model';
 
 @Component({
   selector: 'pm-error',
@@ -27,7 +24,7 @@ import { ButtonConfig, ErrorConfig } from './models/error.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IllustratedMessage, Button, Title],
 })
-export class ErrorComponent implements OnInit {
+export class ErrorView implements OnInit {
   private i18nService = inject(I18nService);
   private luigiCoreService = inject(LuigiCoreService);
 

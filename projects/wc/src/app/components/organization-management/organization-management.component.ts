@@ -63,7 +63,7 @@ import { map, switchMap } from 'rxjs';
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrganizationManagementComponent implements OnInit {
+export class OrganizationManagementView implements OnInit {
   private i18nService = inject(I18nService);
   private resourceService = inject(ResourceService);
   private envConfigService = inject(EnvConfigService);

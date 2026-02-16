@@ -2138,6 +2138,7 @@ describe('ResourceService', () => {
       );
       expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
         namespacedNodeContext,
+        false,
       );
     });
 
@@ -2164,6 +2165,43 @@ describe('ResourceService', () => {
       );
       expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
         namespacedNodeContext,
+        false,
+      );
+    });
+
+    it('should use readFromParentKcpPath parameter for delete', async () => {
+      mockApollo.mutate.mockReturnValue(of({}));
+
+      await firstValueFrom(
+        service.delete(
+          resource,
+          resourceDefinition,
+          namespacedNodeContext,
+          true,
+        ),
+      );
+      expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+        namespacedNodeContext,
+        true,
+      );
+    });
+
+    it('should use readFromParentKcpPath parameter for update', async () => {
+      mockApollo.mutate.mockReturnValue(
+        of({ data: { __typename: 'TestKind' } }),
+      );
+
+      await firstValueFrom(
+        service.update(
+          resource,
+          resourceDefinition,
+          namespacedNodeContext,
+          true,
+        ),
+      );
+      expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+        namespacedNodeContext,
+        true,
       );
     });
   });

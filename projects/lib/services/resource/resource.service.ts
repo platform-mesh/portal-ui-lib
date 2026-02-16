@@ -325,6 +325,7 @@ export class ResourceService {
     resource: Resource,
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
+    readFromParentKcpPath: boolean = false,
   ) {
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
@@ -351,7 +352,7 @@ export class ResourceService {
     const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
-      .apollo(nodeContext)
+      .apollo(nodeContext, readFromParentKcpPath)
       .mutate<void>({
         mutation: gql`
           ${mutation.query}
@@ -420,6 +421,8 @@ export class ResourceService {
     resource: Resource,
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
+    readFromParentKcpPath: boolean = false,
+    fields: any[] = ['__typename'],
   ) {
     const isNamespacedResource = this.isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
@@ -444,7 +447,7 @@ export class ResourceService {
             value: cleanResource,
           },
         },
-        fields: ['__typename'],
+        fields: fields,
       },
     ];
     const queryOptions = this.calcQueryOptions(mutationFields, [
@@ -454,7 +457,7 @@ export class ResourceService {
     const mutation = gqlBuilder.mutation(queryOptions);
 
     return this.apolloFactory
-      .apollo(nodeContext)
+      .apollo(nodeContext, readFromParentKcpPath)
       .mutate({
         mutation: gql`
           ${mutation.query}
@@ -463,6 +466,12 @@ export class ResourceService {
         variables: mutation.variables,
       })
       .pipe(
+        map((res: any) =>
+          getValueByPath(
+            res.data,
+            buildResourcePath({ group, kind: `update${kind}`, version }, '.'),
+          ),
+        ),
         catchError((error) => {
           this.alertErrors(error);
           console.error('Error executing GraphQL query.', error);

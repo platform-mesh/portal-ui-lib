@@ -1,6 +1,6 @@
-import { BooleanValueComponent } from './boolean-value/boolean-value.component';
-import { LinkValueComponent } from './link-value/link-value.component';
-import { SecretValueComponent } from './secret-value/secret-value.component';
+import { BooleanValue } from './boolean-value/boolean-value.component';
+import { LinkValue } from './link-value/link-value.component';
+import { SecretValue } from './secret-value/secret-value.component';
 import { ValueCellComponent } from './value-cell.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -56,11 +56,7 @@ describe('ValueCellComponent', () => {
       imports: [ValueCellComponent],
     }).overrideComponent(ValueCellComponent, {
       set: {
-        imports: [
-          BooleanValueComponent,
-          LinkValueComponent,
-          SecretValueComponent,
-        ],
+        imports: [BooleanValue, LinkValue, SecretValue],
         schemas: [CUSTOM_ELEMENTS_SCHEMA],
       },
     });
