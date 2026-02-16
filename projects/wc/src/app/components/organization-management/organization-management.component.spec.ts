@@ -1,4 +1,4 @@
-import { OrganizationManagement } from './organization-management.component';
+import { OrganizationManagementView } from './organization-management.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -10,8 +10,8 @@ import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 describe('OrganizationManagementComponent', () => {
-  let component: OrganizationManagement;
-  let fixture: ComponentFixture<OrganizationManagement>;
+  let component: OrganizationManagementView;
+  let fixture: ComponentFixture<OrganizationManagementView>;
   let resourceService: MockedObject<ResourceService>;
   let i18nService: MockedObject<I18nService>;
   let envConfigService: MockedObject<EnvConfigService>;
@@ -35,14 +35,14 @@ describe('OrganizationManagementComponent', () => {
     i18nService.getTranslation.mockImplementation((key: string) => key);
 
     await TestBed.configureTestingModule({
-      imports: [OrganizationManagement, FormsModule, ReactiveFormsModule],
+      imports: [OrganizationManagementView, FormsModule, ReactiveFormsModule],
       providers: [
         { provide: ResourceService, useValue: resourceService },
         { provide: I18nService, useValue: i18nService },
         { provide: EnvConfigService, useValue: envConfigService },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
-    }).overrideComponent(OrganizationManagement, {
+    }).overrideComponent(OrganizationManagementView, {
       set: {
         template: '',
         imports: [],
@@ -50,7 +50,7 @@ describe('OrganizationManagementComponent', () => {
       },
     });
 
-    fixture = TestBed.createComponent(OrganizationManagement);
+    fixture = TestBed.createComponent(OrganizationManagementView);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput('LuigiClient', luigiClient);
@@ -317,7 +317,9 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should set organization from event', () => {
-      const event = { detail: { selectedOption: { _state: { value: 'org2' } } } };
+      const event = {
+        detail: { selectedOption: { _state: { value: 'org2' } } },
+      };
 
       component.setOrganizationToSwitch(event);
 
@@ -338,7 +340,9 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should handle undefined value', () => {
-      const event = { detail: { selectedOption: { _state: { value: undefined } } } };
+      const event = {
+        detail: { selectedOption: { _state: { value: undefined } } },
+      };
 
       component.setOrganizationToSwitch(event);
 

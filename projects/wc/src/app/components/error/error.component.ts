@@ -24,7 +24,7 @@ import '@ui5/webcomponents-fiori/dist/illustrations/tnt/UnsuccessfulAuth.js';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IllustratedMessage, Button, Title],
 })
-export class Error implements OnInit {
+export class ErrorView implements OnInit {
   private i18nService = inject(I18nService);
   private luigiCoreService = inject(LuigiCoreService);
 

@@ -1,4 +1,4 @@
-import { OrganizationManagement } from '../organization-management/organization-management.component';
+import { OrganizationManagementView } from '../organization-management/organization-management.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,7 +31,7 @@ interface Header {
       }
     </div>
   `,
-  imports: [OrganizationManagement],
+  imports: [OrganizationManagementView],
   styles: [
     `
       .center-container {
@@ -54,7 +54,7 @@ interface Header {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Welcome implements OnInit {
+export class WelcomeView implements OnInit {
   private i18nService = inject(I18nService);
   private luigiCoreService = inject(LuigiCoreService);
 
