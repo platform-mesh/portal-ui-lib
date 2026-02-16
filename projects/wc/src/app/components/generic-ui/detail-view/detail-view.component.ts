@@ -316,6 +316,10 @@ export class DetailView {
       );
     }
 
+    if (resourceDefinition.ui?.detailView?.resourceTitle) {
+      additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
+    }
+
     return generateGraphQLFields(
       this.resourceFields().concat(additionalFields),
     );

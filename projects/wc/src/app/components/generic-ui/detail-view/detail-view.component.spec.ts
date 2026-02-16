@@ -58,6 +58,8 @@ describe('DetailViewComponent', () => {
     mockResourceService = {
       read: vi.fn().mockReturnValue(of({ name: 'test-resource' })),
       readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
+      delete: vi.fn().mockReturnValue(of({})),
+      update: vi.fn().mockReturnValue(of({})),
     };
 
     mockGatewayService = {
@@ -224,6 +226,312 @@ describe('DetailViewComponent', () => {
   it('should navigate to parent', () => {
     component.navigateToParent();
     expect(luigiClientLinkManagerNavigate).toHaveBeenCalledWith('/');
+  });
+
+  describe('Modal operations', () => {
+    it('should open delete resource modal', () => {
+      const mockDeleteModal = {
+        open: vi.fn(),
+      };
+      (component as any).deleteModal = () => mockDeleteModal;
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+      const event = new MouseEvent('click');
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      component.openDeleteResourceModal(event, resource);
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+      expect(mockDeleteModal.open).toHaveBeenCalledWith({
+        ...resource,
+        metadata: { name: 'cluster-1' },
+      });
+    });
+
+    it('should open edit resource modal', () => {
+      const mockCreateModal = {
+        open: vi.fn(),
+      };
+      (component as any).createModal = () => mockCreateModal;
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+      const event = new MouseEvent('click');
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      component.openEditResourceModal(event, resource);
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+      expect(mockCreateModal.open).toHaveBeenCalledWith(resource);
+    });
+
+    it('should delete resource successfully', () => {
+      const mockDeleteModal = {
+        close: vi.fn(),
+      };
+      (component as any).deleteModal = () => mockDeleteModal;
+      mockResourceService.delete = vi.fn().mockReturnValue(of({}));
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+
+      component.delete(resource);
+
+      expect(mockResourceService.delete).toHaveBeenCalledWith(
+        {
+          ...resource,
+          metadata: { name: 'cluster-1' },
+        },
+        expect.any(Object),
+        expect.any(Object),
+        false,
+      );
+    });
+
+    it('should navigate to parent after successful delete', () => {
+      const mockDeleteModal = {
+        close: vi.fn(),
+      };
+      (component as any).deleteModal = () => mockDeleteModal;
+      mockResourceService.delete = vi.fn().mockReturnValue(of({}));
+      const navigateSpy = vi.spyOn(component, 'navigateToParent');
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+
+      component.delete(resource);
+
+      expect(mockDeleteModal.close).toHaveBeenCalled();
+      expect(navigateSpy).toHaveBeenCalled();
+    });
+
+    it('should handle delete error', () => {
+      const showAlertSpy = vi.fn();
+      component.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      mockResourceService.delete = vi
+        .fn()
+        .mockReturnValue(throwError(() => new Error('Delete failed')));
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+
+      component.delete(resource);
+
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Failure! Could not delete resource: test-resource.',
+        type: 'error',
+      });
+    });
+
+    it('should delete account resource with account flag', () => {
+      const mockDeleteModal = {
+        close: vi.fn(),
+      };
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'account-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Account',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'account-1',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = component.LuigiClient;
+      (newComponent as any).deleteModal = () => mockDeleteModal;
+      mockResourceService.delete = vi.fn().mockReturnValue(of({}));
+
+      newFixture.detectChanges();
+
+      const resource: any = {
+        metadata: { name: 'account-1' },
+      };
+
+      newComponent.delete(resource);
+
+      expect(mockResourceService.delete).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+        expect.any(Object),
+        true,
+      );
+    });
+
+    it('should update resource successfully', () => {
+      const mockCreateModal = {
+        close: vi.fn(),
+      };
+      (component as any).createModal = () => mockCreateModal;
+      const updatedResource = { metadata: { name: 'cluster-1' }, spec: {} };
+      mockResourceService.update = vi.fn().mockReturnValue(of(updatedResource));
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+
+      component.update(resource);
+
+      expect(mockResourceService.update).toHaveBeenCalled();
+      expect(component.resource()).toEqual(updatedResource);
+      expect(mockCreateModal.close).toHaveBeenCalled();
+    });
+
+    it('should handle update error', () => {
+      const showAlertSpy = vi.fn();
+      component.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      mockResourceService.update = vi
+        .fn()
+        .mockReturnValue(throwError(() => new Error('Update failed')));
+
+      const resource: any = {
+        metadata: { name: 'test-resource' },
+      };
+
+      component.update(resource);
+
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Failure! Could not update resource: test-resource.',
+        type: 'error',
+      });
+    });
+
+    it('should update account resource with account flag', () => {
+      const mockCreateModal = {
+        close: vi.fn(),
+      };
+      const updateSpy = vi.fn().mockReturnValue(of({}));
+      mockResourceService.update = updateSpy;
+
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'account-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Account',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [{ property: 'spec.name' }],
+            },
+          },
+        },
+        entityName: 'account-1',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = component.LuigiClient;
+      (newComponent as any).createModal = () => mockCreateModal;
+
+      newFixture.detectChanges();
+
+      const resource: any = {
+        metadata: { name: 'account-1' },
+      };
+
+      newComponent.update(resource);
+
+      expect(updateSpy).toHaveBeenCalled();
+      const callArgs = updateSpy.mock.calls[0];
+      expect(callArgs[3]).toBe(true);
+      expect(callArgs.length).toBe(5);
+    });
+  });
+
+  describe('getResourceId', () => {
+    it('should return resourceId when defined', () => {
+      const resourceId = (component as any).getResourceId();
+      expect(resourceId).toBe('cluster-1');
+    });
+
+    it('should throw error and show alert when resourceId is undefined', () => {
+      const showAlertSpy = vi.fn();
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      const mockReadResource = vi.fn();
+      (newComponent as any).readResource = mockReadResource;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: showAlertSpy,
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newComponent.context = (() => ({
+        resourceId: undefined,
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(() => {
+        (newComponent as any).getResourceId();
+      }).toThrow('Resource ID is not defined');
+
+      expect(showAlertSpy).toHaveBeenCalledWith({
+        text: 'Resource ID is not defined',
+        type: 'error',
+      });
+    });
   });
 
   it('should have namespaceId in context when provided', () => {
@@ -761,6 +1069,189 @@ describe('DetailViewComponent', () => {
       expect(fieldsStr).toContain('description');
     });
   });
+
+  describe('Resource title definition', () => {
+    it('should return resourceTitle when defined', () => {
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      const resourceTitle: any = {
+        property: 'spec.displayName',
+      };
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          singular: 'cluster',
+          ui: {
+            detailView: {
+              fields: [],
+              resourceTitle,
+            },
+          },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(newComponent.resourceTitleDefinition()).toEqual(resourceTitle);
+    });
+
+    it('should return undefined when resourceTitle is not defined', () => {
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          singular: 'cluster',
+          ui: {
+            detailView: {
+              fields: [],
+            },
+          },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(newComponent.resourceTitleDefinition()).toBeUndefined();
+    });
+
+    it('should include resourceTitle in query fields', () => {
+      vi.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [{ property: 'metadata.name' }],
+              resourceTitle: {
+                property: 'spec.displayName',
+              },
+            },
+          },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(mockResourceService.read).toHaveBeenCalled();
+      const readCall = mockResourceService.read.mock.calls[0];
+      const fieldsArg = readCall[2];
+      const fieldsStr = JSON.stringify(fieldsArg);
+      expect(fieldsStr).toContain('spec');
+      expect(fieldsStr).toContain('displayName');
+    });
+
+    it('should include both resourceTitle and resourceDescription in query fields', () => {
+      vi.clearAllMocks();
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          kind: 'Cluster',
+          group: 'core.k8s.io',
+          ui: {
+            detailView: {
+              fields: [{ property: 'metadata.name' }],
+              resourceTitle: {
+                property: 'spec.displayName',
+              },
+              resourceDescription: {
+                property: 'spec.description',
+              },
+            },
+          },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+          withParams: vi.fn().mockReturnThis(),
+        }),
+        uxManager: () => ({
+          showAlert: vi.fn(),
+        }),
+        getNodeParams: vi.fn(),
+      })) as any;
+
+      newFixture.detectChanges();
+
+      expect(mockResourceService.read).toHaveBeenCalled();
+      const readCall = mockResourceService.read.mock.calls[0];
+      const fieldsArg = readCall[2];
+      const fieldsStr = JSON.stringify(fieldsArg);
+      expect(fieldsStr).toContain('spec');
+      expect(fieldsStr).toContain('displayName');
+      expect(fieldsStr).toContain('description');
+    });
+  });
 });
 
 describe('DetailViewComponent template', () => {
@@ -896,6 +1387,122 @@ describe('DetailViewComponent template', () => {
     await fixture.whenStable();
 
     expect(downloadSpy).toHaveBeenCalled();
+  });
+
+  it('should render resourceTitle in title when defined', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+
+    const resource = {
+      metadata: { name: 'test-resource' },
+      spec: {
+        displayName: 'Test Resource',
+      },
+    };
+
+    component.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        singular: 'cluster',
+        ui: {
+          detailView: {
+            fields: [],
+            resourceTitle: {
+              property: 'spec.displayName',
+            },
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entityName: 'test-resource',
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: vi.fn(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+
+    mockResourceService.read.mockReturnValueOnce(of(resource));
+    fixture.detectChanges();
+
+    const titleEl = fixture.nativeElement.shadowRoot?.querySelector(
+      '[test-id="generic-detail-view-title"]',
+    );
+    expect(titleEl).toBeTruthy();
+    const valueCell = titleEl?.querySelector('pm-value-cell');
+    expect(valueCell).toBeTruthy();
+  });
+
+  it('should render default title when resourceTitle is not defined', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+
+    const resource = {
+      metadata: { name: 'test-resource' },
+      spec: {
+        displayName: 'Test Resource',
+      },
+    };
+
+    component.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        singular: 'cluster',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entityName: 'test-resource',
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: vi.fn(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+
+    mockResourceService.read.mockReturnValueOnce(of(resource));
+    fixture.detectChanges();
+
+    const titleEl = fixture.nativeElement.shadowRoot?.querySelector(
+      '[test-id="generic-detail-view-title"]',
+    );
+    expect(titleEl).toBeTruthy();
+    expect(titleEl?.textContent?.trim()).toContain('Test Resource');
   });
 
   it('should render resourceDescription in subtitle when defined', () => {

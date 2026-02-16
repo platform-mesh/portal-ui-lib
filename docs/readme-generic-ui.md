@@ -42,9 +42,11 @@ In order to use the generic list view, you need to adjust the node’s   `conten
       - view definitions for the corresponding views
         - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
           the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views. Also supports:
+          - `"resourceTitle"`: A complete `FieldDefinition` object that will be used to render the title. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, a default title will be generated from the plural form of the resource.
           - `"resourceDescription"`: A complete `FieldDefinition` object that will be used to render the subtitle description. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, a default description will be generated.
         - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure:
           - `showDownloadKubeconfig`: enable/disable download kubeconfig button. By default it false.
+          - `resourceTitle`: A complete `FieldDefinition` object that will be used to render the title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, a default title will be generated from the resource ID or display name.
           - `resourceDescription`: A complete `FieldDefinition` object that will be used to render the subtitle description. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, a default description will be generated.
         - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
           indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
@@ -139,6 +141,9 @@ This example demonstrates various features including:
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
                 "resourceImageProperty": "spec.image",
                 "listView": {
+                  "resourceTitle": {
+                    "value": "Accounts"
+                  },
                   "resourceDescription": {
                     "value": "This page displays all accounts in your environment. You can create, edit, or delete accounts as needed."
                   },
@@ -200,6 +205,9 @@ This example demonstrates various features including:
                   ]
                 },
                 "detailView": {
+                  "resourceTitle": {
+                    "property": "spec.displayName"
+                  },
                   "resourceDescription": {
                     "property": "spec.description"
                   },
@@ -515,6 +523,9 @@ In case the detail view is an independent node provide context data:
       "ui": {
         "logoUrl": "https://www.kcp.io/icons/logo.svg",
         "detailView": {
+          "resourceTitle": {
+            "property": "spec.displayName"
+          },
           "resourceDescription": {
             "property": "spec.description"
           },

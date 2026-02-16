@@ -61,7 +61,10 @@ export class ValueCellComponent {
   private getValue() {
     const resource = this.resource();
     if (resource) {
-      return getResourceValueByJsonPath(resource, this.fieldDefinition());
+      return (
+        getResourceValueByJsonPath(resource, this.fieldDefinition()) ??
+        this.fieldDefinition().value
+      );
     }
 
     return this.fieldDefinition().value;
