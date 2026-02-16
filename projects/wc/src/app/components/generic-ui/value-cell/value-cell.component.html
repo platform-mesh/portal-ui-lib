@@ -1,28 +1,32 @@
 @let displayType = displayAs();
-<span [attr.test-id]="testId()" [class.label-value]="labelDisplay()" [style]="cssStyles()">
+<span
+  [attr.test-id]="testId()"
+  [class.label-value]="labelDisplay()"
+  [style]="cssStyles()"
+>
   @if (displayType === 'secret') {
     <span class="secret-value-container">
       <pm-secret-value
-      [testId]="testId() + '-secret'"
-      [value]="value()"
-      [isVisible]="isVisible()"
+        [testId]="testId() + '-secret'"
+        [value]="value()"
+        [isVisible]="isVisible()"
       ></pm-secret-value>
       <ui5-icon
-      [attr.test-id]="testId() + '-secret-toggle'"
-      class="toggle-icon"
-      [name]="isVisible() ? 'hide' : 'show'"
-      (click)="toggleVisibility($event)"
+        [attr.test-id]="testId() + '-secret-toggle'"
+        class="toggle-icon"
+        [name]="isVisible() ? 'hide' : 'show'"
+        (click)="toggleVisibility($event)"
       ></ui5-icon>
     </span>
   } @else if (displayType === 'boolIcon' && isBoolLike()) {
     <pm-boolean-value
-    [testId]="testId() + '-boolean'"
-    [boolValue]="boolValue()!"
+      [testId]="testId() + '-boolean'"
+      [boolValue]="boolValue()!"
     ></pm-boolean-value>
   } @else if (displayType === 'link' && isUrlValue()) {
     <pm-link-value
-    [testId]="testId() + '-link'"
-    [urlValue]="stringValue()!"
+      [testId]="testId() + '-link'"
+      [urlValue]="stringValue()!"
     ></pm-link-value>
   } @else if (displayType === 'tooltip') {
     <ui5-icon
@@ -31,6 +35,8 @@
       [accessibleName]="stringValue()!"
       [attr.test-id]="testId() + '-tooltip'"
     />
+  } @else if (displayType === 'img' && value()) {
+    <img class="image-cell" [src]="value()" alt="Resource image" />
   } @else {
     {{ value() }}
   }

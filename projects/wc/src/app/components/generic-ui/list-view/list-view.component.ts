@@ -103,9 +103,6 @@ export class ListView {
   );
   viewColumns = computed(() => processFields(this.columns()));
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
-  imagePathProperty = computed(
-    () => this.resourceDefinition()?.ui?.resourceImageProperty,
-  );
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
@@ -298,11 +295,6 @@ export class ListView {
 
   private getListQueryFields() {
     const additionalFields: FieldDefinition[] = [];
-
-    const imagePathProperty = this.imagePathProperty();
-    if (imagePathProperty) {
-      additionalFields.push({ property: imagePathProperty });
-    }
 
     const readyCondition = this.readyCondition();
     if (readyCondition) {
