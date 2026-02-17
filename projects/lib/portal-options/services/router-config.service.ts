@@ -1,9 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  ClientEnvironment,
-  EnvConfigService,
-  RoutingConfigService,
-} from '@openmfp/portal-ui-lib';
+import { ClientEnvironment, EnvConfigService, RoutingConfigService } from '@openmfp/portal-ui-lib';
 
 @Injectable()
 export class CustomRoutingConfigServiceImpl implements RoutingConfigService {
@@ -20,6 +16,7 @@ export class CustomRoutingConfigServiceImpl implements RoutingConfigService {
 
   getRoutingConfig(): any {
     return {
+      preserveQueryParams: true,
       pageNotFoundHandler: () => {
         if (!this.envConfig?.baseDomain) {
           return this.redirectTo('error/404');

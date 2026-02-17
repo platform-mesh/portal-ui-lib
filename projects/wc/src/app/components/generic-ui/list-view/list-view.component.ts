@@ -1,4 +1,5 @@
 import { processFields } from '../../../utils/proccess-fields';
+import { addSearchParams } from '../../../utils/set-search-params';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
 import {
@@ -35,6 +36,7 @@ import {
   IllustratedMessage,
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   FieldDefinition,
   Resource,
@@ -51,6 +53,7 @@ import {
   buildResourcePath,
   generateGraphQLFields,
   getResourceValueByJsonPath,
+  isNamespacedResource,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { finalize } from 'rxjs/operators';
@@ -88,6 +91,7 @@ export class ListView {
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   private createModal = viewChild<CreateResourceModal>('createModal');
+  private luigiCoreService = inject(LuigiCoreService);
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -123,6 +127,7 @@ export class ListView {
 
   private currentContinueToken: string | undefined = undefined;
   private isLoadingList = false;
+  private isNamespaced = computed(() => isNamespacedResource(this.context()));
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
@@ -292,6 +297,9 @@ export class ListView {
       throw new Error('Resource name is not defined');
     }
 
+    addSearchParams({
+      namespace: resource.metadata.namespace,
+    });
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
@@ -305,6 +313,12 @@ export class ListView {
     const readyCondition = this.readyCondition();
     if (readyCondition) {
       additionalFields.push(readyCondition);
+    }
+
+    if (this.isNamespaced()) {
+      additionalFields.push({
+        property: 'metadata.namespace',
+      });
     }
 
     return generateGraphQLFields(this.columns().concat(additionalFields));
