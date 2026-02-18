@@ -13,6 +13,9 @@ describe(AccountInfoService, () => {
 
   const namespacedNodeContext: any = {
     cluster: 'test',
+    portalContext: { crdGatewayApiUrl: 'https://api.example.com/graphql' },
+    token: 'token-1',
+    kcpPath: 'root:orgs:test',
     namespaceId: 'test-namespace',
     resourceDefinition: {
       group: 'core.k8s.io',
@@ -87,6 +90,107 @@ describe(AccountInfoService, () => {
       await expect(
         firstValueFrom(service.read(namespacedNodeContext)),
       ).rejects.toThrowError(error);
+    });
+
+    it('should cache reads by context key', async () => {
+      const accountInfo = {
+        spec: {
+          clusterInfo: { ca: 'cert-data' },
+          oidc: {
+            issuerUrl: 'issuer',
+            clients: '{ "kubectl": { "clientId": "cIdD" } }',
+          },
+        },
+      };
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_platform_mesh_io: {
+              v1alpha1: {
+                AccountInfo: accountInfo,
+              },
+            },
+          },
+        }),
+      );
+
+      await firstValueFrom(service.read(namespacedNodeContext));
+      await firstValueFrom(service.read(namespacedNodeContext));
+
+      expect(mockApollo.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('should create separate cache entries for different keys', async () => {
+      const accountInfo = {
+        spec: {
+          clusterInfo: { ca: 'cert-data' },
+          oidc: {
+            issuerUrl: 'issuer',
+            clients: '{ "kubectl": { "clientId": "cIdD" } }',
+          },
+        },
+      };
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_platform_mesh_io: {
+              v1alpha1: {
+                AccountInfo: accountInfo,
+              },
+            },
+          },
+        }),
+      );
+
+      await firstValueFrom(service.read(namespacedNodeContext));
+      await firstValueFrom(
+        service.read({
+          ...namespacedNodeContext,
+          kcpPath: 'root:orgs:another',
+        }),
+      );
+
+      expect(mockApollo.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('should invalidate cache after error and retry next call', async () => {
+      const error = new Error('temporary fail');
+      const accountInfo = {
+        spec: {
+          clusterInfo: { ca: 'cert-data' },
+          oidc: {
+            issuerUrl: 'issuer',
+            clients: '{ "kubectl": { "clientId": "cIdD" } }',
+          },
+        },
+      };
+      mockApollo.query
+        .mockReturnValueOnce(throwError(() => error))
+        .mockReturnValueOnce(
+          of({
+            data: {
+              core_platform_mesh_io: {
+                v1alpha1: {
+                  AccountInfo: accountInfo,
+                },
+              },
+            },
+          }),
+        );
+
+      await expect(
+        firstValueFrom(service.read(namespacedNodeContext)),
+      ).rejects.toThrowError(error);
+
+      await expect(
+        firstValueFrom(service.read(namespacedNodeContext)),
+      ).resolves.toMatchObject({
+        spec: {
+          oidc: { clients: { kubectl: { clientId: 'cIdD' } } },
+        },
+      });
+
+      expect(mockApollo.query).toHaveBeenCalledTimes(2);
     });
   });
 });
