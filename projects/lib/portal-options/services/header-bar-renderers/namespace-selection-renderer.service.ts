@@ -10,6 +10,7 @@ import {
   FieldDefinition,
   Resource,
   ResourceDefinition,
+  ResourceListResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
@@ -18,21 +19,19 @@ import {
 import {
   generateGraphQLFields,
   isNamespacedResource,
+  mergeListWithSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/utils';
 import '@ui5/webcomponents/dist/ComboBox.js';
-import { Observable, of } from 'rxjs';
-import { map, shareReplay } from 'rxjs/operators';
-
-
-
-
-
-
-
-
-
-
-
+import { Observable, Subject, defer, of } from 'rxjs';
+import {
+  catchError,
+  retry,
+  scan,
+  shareReplay,
+  startWith,
+  switchMap,
+  takeUntil,
+} from 'rxjs/operators';
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -43,7 +42,11 @@ const defaultColumns: FieldDefinition[] = [
 
 @Injectable({ providedIn: 'root' })
 export class NamespaceSelectionRendererService {
-  private namespaceResources$?: Observable<Resource[]>;
+  private namespaceResourcesCache?: {
+    key: string;
+    value$: Observable<Resource[]>;
+    stop$: Subject<void>;
+  };
 
   private resourceService = inject(ResourceService);
   private authService = inject(AuthService);
@@ -62,6 +65,7 @@ export class NamespaceSelectionRendererService {
       const namespace = this.luigiCoreService
         .routing()
         .getSearchParams().namespace;
+      const kcpPath = lastNode?.context?.kcpPath;
 
       if (lastNode?.context && !isNamespacedResource(lastNode.context)) {
         return containerElement;
@@ -69,7 +73,7 @@ export class NamespaceSelectionRendererService {
 
       const ui5combobox = this.createCombobox(containerElement);
 
-      this.addComboboxItems(portalConfig, ui5combobox, namespace);
+      this.addComboboxItems(portalConfig, ui5combobox, namespace, kcpPath);
 
       ui5combobox.addEventListener('change', (event: any) => {
         const value = (event?.target as any)?.value.trim() ?? '';
@@ -92,38 +96,71 @@ export class NamespaceSelectionRendererService {
     portalConfig: PortalConfig,
     ui5combobox: HTMLElement,
     namespace: string | null,
+    kcpPath?: string,
   ) {
-    if (!this.namespaceResources$) {
-      this.namespaceResources$ = this.getNamespaceResources(portalConfig).pipe(
-        shareReplay(1),
-        takeUntilDestroyed(this.destroyRef),
-      );
+    this.getNamespaceResourcesCached(portalConfig, kcpPath).subscribe(
+      (resources) => {
+        this.syncComboboxItems(ui5combobox, resources);
+        this.setSelectedValue(ui5combobox, resources, namespace);
+      },
+    );
+  }
+
+  private getNamespaceResourcesCached(
+    portalConfig: PortalConfig,
+    kcpPath?: string,
+  ): Observable<Resource[]> {
+    const cacheKey = this.getNamespaceResourcesCacheKey(portalConfig, kcpPath);
+    if (this.namespaceResourcesCache?.key === cacheKey) {
+      return this.namespaceResourcesCache.value$;
     }
 
-    this.namespaceResources$.subscribe((resources) => {
-      resources.forEach((resource) => {
-        const name = resource.metadata?.name;
-        if (!name) {
-          return;
-        }
-        const existingItem = Array.from(ui5combobox.children).find(
-          (child) => (child as Element).getAttribute('text') === name,
-        );
+    if (this.namespaceResourcesCache) {
+      this.namespaceResourcesCache.stop$.next();
+      this.namespaceResourcesCache.stop$.complete();
+      this.namespaceResourcesCache = undefined;
+    }
 
-        if (existingItem) {
-          return;
-        }
-        const resourceOption = document.createElement('ui5-cb-item');
-        resourceOption.setAttribute('text', name);
-        ui5combobox.appendChild(resourceOption);
-      });
+    const stop$ = new Subject<void>();
+    const value$ = this.getNamespaceResources(
+      portalConfig,
+      kcpPath,
+      stop$,
+    ).pipe(shareReplay(1), takeUntilDestroyed(this.destroyRef));
+    this.namespaceResourcesCache = {
+      key: cacheKey,
+      value$,
+      stop$,
+    };
 
-      const allOption = document.createElement('ui5-cb-item');
-      allOption.setAttribute('text', '-all-');
-      ui5combobox.appendChild(allOption);
+    return value$;
+  }
 
-      this.setSelectedValue(ui5combobox, resources, namespace);
+  private getNamespaceResourcesCacheKey(
+    portalConfig: PortalConfig,
+    kcpPath?: string,
+  ): string {
+    const crdGatewayApiUrl =
+      portalConfig.portalContext['crdGatewayApiUrl'] ?? '';
+    return `${crdGatewayApiUrl}|${kcpPath ?? ''}|${this.authService.getToken()}`;
+  }
+
+  private syncComboboxItems(ui5combobox: HTMLElement, resources: Resource[]) {
+    ui5combobox.replaceChildren();
+
+    resources.forEach((resource) => {
+      const name = resource.metadata?.name;
+      if (!name) {
+        return;
+      }
+      const resourceOption = document.createElement('ui5-cb-item');
+      resourceOption.setAttribute('text', name);
+      ui5combobox.appendChild(resourceOption);
     });
+
+    const allOption = document.createElement('ui5-cb-item');
+    allOption.setAttribute('text', '-all-');
+    ui5combobox.appendChild(allOption);
   }
 
   private setSelectedValue(
@@ -153,28 +190,54 @@ export class NamespaceSelectionRendererService {
 
   private getNamespaceResources(
     portalConfig: PortalConfig,
+    kcpPath: string | undefined,
+    stop$: Subject<void>,
   ): Observable<Resource[]> {
     const operation = 'v1_namespaces';
     const fields = generateGraphQLFields(defaultColumns);
+    const context = {
+      portalContext: {
+        crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
+      },
+      resourceDefinition: {
+        version: 'v1',
+        plural: 'namespaces',
+        scope: 'Cluster',
+      } as ResourceDefinition,
+      kcpPath,
+      token: this.authService.getToken(),
+    } as ResourceNodeContext;
 
-    try {
-      return this.resourceService
-        .list(operation, fields, {
-          portalContext: {
-            crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
-          },
-          resourceDefinition: {
-            version: 'v1',
-            plural: 'namespaces',
-            scope: 'Cluster',
-          } as ResourceDefinition,
-          token: this.authService.getToken(),
-        } as ResourceNodeContext)
-        .pipe(map((resources) => resources.items));
-    } catch (e) {
-      console.error(`Failed to read entities from ${operation}`, e);
-      return of([]);
-    }
+    return defer(() => this.resourceService.list(operation, fields, context)).pipe(
+      retry(3),
+      takeUntil(stop$),
+      switchMap((result: ResourceListResult) =>
+        this.resourceService
+          .resourceChangeSubscription(
+            operation,
+            fields,
+            context,
+            result.resourceVersion,
+            false,
+          )
+          .pipe(
+            startWith(undefined),
+            scan(
+              (resources, subscriptionResult) =>
+                mergeListWithSubscriptionResult(resources, subscriptionResult, {
+                  getItemKey: (resource) => resource.metadata?.name,
+                  mapSubscriptionObjectToItem: (object) => object,
+                }),
+              result.items,
+            ),
+            takeUntil(stop$),
+          ),
+      ),
+      catchError((error) => {
+        console.error(`Failed to read entities from ${operation}`, error);
+        return of([]);
+      }),
+    );
   }
 
   private changeNamespace(value: string): void {

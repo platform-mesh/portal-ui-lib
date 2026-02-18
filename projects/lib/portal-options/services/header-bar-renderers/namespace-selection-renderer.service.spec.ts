@@ -1,8 +1,9 @@
 import { NamespaceSelectionRendererService } from './namespace-selection-renderer.service';
 import { TestBed } from '@angular/core/testing';
 import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { ResourceOperationTypeMap } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of } from 'rxjs';
+import { Subject, defer, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 
 vi.mock('@ui5/webcomponents/dist/ComboBox.js', () => ({}));
@@ -27,6 +28,7 @@ describe('NamespaceSelectionRendererService', () => {
 
     const resourceServiceMock = {
       list: vi.fn(),
+      resourceChangeSubscription: vi.fn(() => of(undefined)),
     } as any;
 
     const authServiceMock = {
@@ -64,6 +66,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
       of({
+        resourceVersion: '1',
         items: [
           { metadata: { name: 'ns1' } },
           { metadata: { name: 'ns2' } },
@@ -123,6 +126,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
       of({
+        resourceVersion: '1',
         items: [
           { metadata: { name: 'ns1' } },
           { metadata: { name: 'ns2' } },
@@ -156,7 +160,7 @@ describe('NamespaceSelectionRendererService', () => {
     searchParams.namespace = 'ns1';
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
-      of({ items: [{ metadata: { name: 'ns1' } }] } as any),
+      of({ resourceVersion: '1', items: [{ metadata: { name: 'ns1' } }] } as any),
     );
 
     const renderer = service.create({ portalContext: {} } as any);
@@ -187,7 +191,7 @@ describe('NamespaceSelectionRendererService', () => {
     searchParams.namespace = 'ns1';
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
-      of({ items: [{ metadata: { name: 'ns1' } }] } as any),
+      of({ resourceVersion: '1', items: [{ metadata: { name: 'ns1' } }] } as any),
     );
 
     const renderer = service.create({ portalContext: {} } as any);
@@ -218,6 +222,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
       of({
+        resourceVersion: '1',
         items: [{ metadata: { name: 'ns1' } }],
       } as any),
     );
@@ -254,6 +259,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
       of({
+        resourceVersion: '1',
         items: [{ metadata: { name: 'ns1' } }],
       } as any),
     );
@@ -305,6 +311,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
       of({
+        resourceVersion: '1',
         items: [{ metadata: { name: 'ns1' } }],
       } as any),
     );
@@ -322,6 +329,155 @@ describe('NamespaceSelectionRendererService', () => {
     renderer(document.createElement('div'), nodeItems, () => {});
 
     expect(mockResourceService.list).toHaveBeenCalledTimes(1);
+    expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalledTimes(1);
     expect(mockLuigiCoreService.routing).toHaveBeenCalled();
+  });
+
+  it('should update combobox items on namespace subscription changes', () => {
+    const changes$ = new Subject<any>();
+    mockAuthService.getToken.mockReturnValue('token');
+    mockResourceService.list.mockReturnValue(
+      of({
+        resourceVersion: '1',
+        items: [{ metadata: { name: 'ns1' } }],
+      } as any),
+    );
+    mockResourceService.resourceChangeSubscription.mockReturnValue(
+      changes$.asObservable(),
+    );
+
+    const renderer = service.create({ portalContext: {} } as any);
+    const container = document.createElement('div');
+    const nodeItems = [
+      {
+        node: {
+          context: { resourceDefinition: { scope: 'Namespaced' } },
+        },
+      },
+    ] as any;
+
+    renderer(container, nodeItems, () => {});
+    const combobox = getChildrenByTag(container, 'ui5-combobox')[0];
+
+    changes$.next({
+      type: ResourceOperationTypeMap.ADDED,
+      object: { metadata: { name: 'ns2' } },
+    });
+
+    const itemsAfterAdd = getChildrenByTag(combobox, 'ui5-cb-item').map((item) =>
+      item.getAttribute('text'),
+    );
+    expect(itemsAfterAdd).toEqual(['ns1', 'ns2', '-all-']);
+
+    changes$.next({
+      type: ResourceOperationTypeMap.DELETED,
+      object: { metadata: { name: 'ns1' } },
+    });
+
+    const itemsAfterDelete = getChildrenByTag(combobox, 'ui5-cb-item').map(
+      (item) => item.getAttribute('text'),
+    );
+    expect(itemsAfterDelete).toEqual(['ns2', '-all-']);
+  });
+
+  it('should retry first namespace list request up to three times', () => {
+    mockAuthService.getToken.mockReturnValue('token');
+    let attempts = 0;
+    mockResourceService.list.mockReturnValue(
+      defer(() => {
+        attempts += 1;
+        if (attempts < 4) {
+          return throwError(() => new Error('temporary list failure'));
+        }
+        return of({
+          resourceVersion: '1',
+          items: [{ metadata: { name: 'ns1' } }],
+        } as any);
+      }),
+    );
+
+    const renderer = service.create({ portalContext: {} } as any);
+    const container = document.createElement('div');
+    const nodeItems = [
+      {
+        node: {
+          context: { resourceDefinition: { scope: 'Namespaced' } },
+        },
+      },
+    ] as any;
+
+    renderer(container, nodeItems, () => {});
+
+    const combobox = getChildrenByTag(container, 'ui5-combobox')[0];
+    const items = getChildrenByTag(combobox, 'ui5-cb-item').map((item) =>
+      item.getAttribute('text'),
+    );
+
+    expect(attempts).toBe(4);
+    expect(items).toEqual(['ns1', '-all-']);
+  });
+
+  it('should invalidate cache and unsubscribe old updates when kcpPath changes', () => {
+    const oldChanges$ = new Subject<any>();
+    const newChanges$ = new Subject<any>();
+    mockAuthService.getToken.mockReturnValue('token');
+    mockResourceService.list
+      .mockReturnValueOnce(
+        of({
+          resourceVersion: '1',
+          items: [{ metadata: { name: 'old-ns' } }],
+        } as any),
+      )
+      .mockReturnValueOnce(
+        of({
+          resourceVersion: '2',
+          items: [{ metadata: { name: 'new-ns' } }],
+        } as any),
+      );
+    mockResourceService.resourceChangeSubscription
+      .mockReturnValueOnce(oldChanges$.asObservable())
+      .mockReturnValueOnce(newChanges$.asObservable());
+
+    const renderer = service.create({ portalContext: {} } as any);
+    const firstContainer = document.createElement('div');
+    renderer(
+      firstContainer,
+      [
+        {
+          node: {
+            context: {
+              kcpPath: 'root:orgs:first',
+              resourceDefinition: { scope: 'Namespaced' },
+            },
+          },
+        },
+      ] as any,
+      () => {},
+    );
+
+    const secondContainer = document.createElement('div');
+    renderer(
+      secondContainer,
+      [
+        {
+          node: {
+            context: {
+              kcpPath: 'root:orgs:second',
+              resourceDefinition: { scope: 'Namespaced' },
+            },
+          },
+        },
+      ] as any,
+      () => {},
+    );
+
+    expect(mockResourceService.list).toHaveBeenCalledTimes(2);
+    expect(oldChanges$.observed).toBe(false);
+
+    const secondCombobox = getChildrenByTag(secondContainer, 'ui5-combobox')[0];
+    const secondItems = getChildrenByTag(secondCombobox, 'ui5-cb-item').map(
+      (item) => item.getAttribute('text'),
+    );
+    expect(secondItems).toEqual(['new-ns', '-all-']);
   });
 });

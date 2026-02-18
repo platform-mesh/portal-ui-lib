@@ -41,7 +41,6 @@ import {
   FieldDefinition,
   Resource,
   ResourceListResult,
-  ResourceOperationTypeMap,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -54,6 +53,7 @@ import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
   isNamespacedResource,
+  mergeListWithSubscriptionResult,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { finalize } from 'rxjs/operators';
@@ -252,21 +252,12 @@ export class ListView {
   private mergeResourcesWithSubscriptionResult(
     subscriptionResult: ResourceSubscriptionResult,
   ) {
-    const result = new Map<string, Resource>(
-      this.resources().map((item) => [item.metadata.name!, item]),
+    this.resources.set(
+      mergeListWithSubscriptionResult(this.resources(), subscriptionResult, {
+        getItemKey: (item) => item.metadata?.name,
+        mapSubscriptionObjectToItem: (object) => object,
+      }),
     );
-
-    const { type, object } = subscriptionResult;
-    if (type === ResourceOperationTypeMap.ADDED) {
-      result.set(object.metadata.name, object);
-    } else if (type === ResourceOperationTypeMap.MODIFIED) {
-      result.has(object.metadata.name) &&
-        result.set(object.metadata.name, object);
-    } else if (type === ResourceOperationTypeMap.DELETED) {
-      result.delete(object.metadata.name);
-    }
-
-    this.resources.set([...result.values()]);
   }
 
   create(resource: Resource) {
