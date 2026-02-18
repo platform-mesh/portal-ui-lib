@@ -1,23 +1,27 @@
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthService, LuigiCoreService, LuigiNode, PortalConfig } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource, ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields, isNamespacedResource } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  AuthService,
+  LuigiCoreService,
+  LuigiNode,
+  PortalConfig,
+} from '@openmfp/portal-ui-lib';
+import {
+  FieldDefinition,
+  Resource,
+  ResourceDefinition,
+} from '@platform-mesh/portal-ui-lib/models';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  isNamespacedResource,
+} from '@platform-mesh/portal-ui-lib/utils';
 import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, of } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -60,12 +64,6 @@ export class NamespaceSelectionRendererService {
         .getSearchParams().namespace;
 
       if (lastNode?.context && !isNamespacedResource(lastNode.context)) {
-        if (namespace) {
-          this.luigiCoreService
-            .routing()
-            .addSearchParams({ namespace: undefined });
-        }
-
         return containerElement;
       }
 

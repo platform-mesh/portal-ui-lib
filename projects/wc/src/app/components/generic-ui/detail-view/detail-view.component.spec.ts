@@ -228,6 +228,50 @@ describe('DetailViewComponent', () => {
     expect(luigiClientLinkManagerNavigate).toHaveBeenCalledWith('/');
   });
 
+  it('should navigate to first parent navigation context', () => {
+    const fromContextSpy = vi.fn().mockReturnThis();
+    const navigateSpy = vi.fn();
+
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: fromContextSpy,
+        navigate: navigateSpy,
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({
+        showAlert: vi.fn(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+
+    component.context = (() => ({
+      resourceId: 'cluster-1',
+      token: 'abc123',
+      accountPath: 'account-123',
+      accountId: 'account-123',
+      organization: 'org-123',
+      kcpCA: 'kcp-ca-data',
+      resourceDefinition: {
+        version: 'v1alpha1',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+      portalContext: { kcpWorkspaceUrl: 'https://example.com' },
+      entityName: 'test-resource',
+      parentNavigationContexts: ['organizations', 'projects'],
+    })) as any;
+
+    component.navigateToParent();
+
+    expect(fromContextSpy).toHaveBeenCalledWith('organizations');
+    expect(navigateSpy).toHaveBeenCalledWith('/');
+  });
+
   describe('Modal operations', () => {
     it('should open delete resource modal', () => {
       const mockDeleteModal = {

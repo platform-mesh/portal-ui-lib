@@ -1,5 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { ClientEnvironment, EnvConfigService, RoutingConfigService } from '@openmfp/portal-ui-lib';
+import {
+  ClientEnvironment,
+  EnvConfigService,
+  RoutingConfigService,
+} from '@openmfp/portal-ui-lib';
 
 @Injectable()
 export class CustomRoutingConfigServiceImpl implements RoutingConfigService {
