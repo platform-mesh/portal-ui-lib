@@ -20,17 +20,15 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import {
-  Bar,
-  Dialog,
-  Input,
-  Label,
-  Option,
-  Select,
-  Title,
-  Toolbar,
-  ToolbarButton,
-} from '@fundamental-ngx/ui5-webcomponents';
+import { Bar } from '@fundamental-ngx/ui5-webcomponents/bar';
+import { Dialog } from '@fundamental-ngx/ui5-webcomponents/dialog';
+import { Input } from '@fundamental-ngx/ui5-webcomponents/input';
+import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
+import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
+import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
+import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
+import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
+import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import {

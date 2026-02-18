@@ -11,7 +11,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { Icon } from '@fundamental-ngx/ui5-webcomponents';
+import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
 
 export type IconDesignType =
   | typeof ICON_DESIGN_POSITIVE

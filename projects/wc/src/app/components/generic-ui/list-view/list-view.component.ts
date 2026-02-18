@@ -14,26 +14,22 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  Icon,
-  Option,
-  Select,
-  Table,
-  TableCell,
-  TableGrowing,
-  TableHeaderCell,
-  TableHeaderRow,
-  TableRow,
-  Text,
-  Title,
-  Toolbar,
-  ToolbarButton,
-} from '@fundamental-ngx/ui5-webcomponents';
-import {
-  DynamicPage,
-  DynamicPageTitle,
-  IllustratedMessage,
-} from '@fundamental-ngx/ui5-webcomponents-fiori';
+import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
+import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
+import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
+import { Table } from '@fundamental-ngx/ui5-webcomponents/table';
+import { TableCell } from '@fundamental-ngx/ui5-webcomponents/table-cell';
+import { TableGrowing } from '@fundamental-ngx/ui5-webcomponents/table-growing';
+import { TableHeaderCell } from '@fundamental-ngx/ui5-webcomponents/table-header-cell';
+import { TableHeaderRow } from '@fundamental-ngx/ui5-webcomponents/table-header-row';
+import { TableRow } from '@fundamental-ngx/ui5-webcomponents/table-row';
+import { Text } from '@fundamental-ngx/ui5-webcomponents/text';
+import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
+import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
+import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
+import { DynamicPage } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page';
+import { DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page-title';
+import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   FieldDefinition,

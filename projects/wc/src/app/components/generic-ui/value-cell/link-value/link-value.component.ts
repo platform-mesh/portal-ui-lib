@@ -1,9 +1,10 @@
-import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { Link } from '@fundamental-ngx/ui5-webcomponents';
-
-
-
-
+import {
+  CUSTOM_ELEMENTS_SCHEMA,
+  ChangeDetectionStrategy,
+  Component,
+  input,
+} from '@angular/core';
+import { Link } from '@fundamental-ngx/ui5-webcomponents/link';
 
 @Component({
   selector: 'pm-link-value',
