@@ -15,7 +15,7 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
     return [
       {
         pathSegment: 'error',
-        order: '1000',
+        order: 1000,
         hideFromNav: true,
         showBreadcrumbs: false,
         context: {} as PortalNodeContext,

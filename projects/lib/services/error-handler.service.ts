@@ -26,8 +26,8 @@ export class ErrorHandlerService {
 
   isUnauthorizedAccess(error: any): boolean {
     return (
-      error.message?.toLowerCase().includes('forbidden') ||
-      error.message?.toLowerCase()?.includes('access denied')
+      !!error.message?.toLowerCase().includes('forbidden') ||
+      !!error.message?.toLowerCase()?.includes('access denied')
     );
   }
 }
