@@ -18,14 +18,12 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  Button,
-  Icon,
-  Input,
-  Label,
-  Option,
-  Select,
-} from '@fundamental-ngx/ui5-webcomponents';
+import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
+import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
+import { Input } from '@fundamental-ngx/ui5-webcomponents/input';
+import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
+import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
+import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
 import {
