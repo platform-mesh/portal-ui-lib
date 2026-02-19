@@ -239,7 +239,7 @@ export class ListView {
           this.remainingItemCount.set(result.remainingItemCount || 0);
         },
         error: (error) => {
-          this.errorHandlerService.handleUnauthorizedAccess(error);
+          this.errorHandlerService.handleError(error);
         },
       });
   }

@@ -1,8 +1,5 @@
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
-
-
-
 export type TransformType =
   | 'uppercase'
   | 'lowercase'

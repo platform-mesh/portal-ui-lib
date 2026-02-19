@@ -3,7 +3,6 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
-  FieldDefinition,
   ResourceDefinition,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
@@ -1149,9 +1148,7 @@ describe('ListViewComponent', () => {
 
         newFixture.detectChanges();
 
-        expect(
-          mockErrorHandlerService.handleUnauthorizedAccess,
-        ).toHaveBeenCalledWith(error);
+        expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
       });
 
       it('should set remainingItemCount to 0 when not provided in response', () => {

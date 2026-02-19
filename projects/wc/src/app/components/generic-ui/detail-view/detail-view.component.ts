@@ -146,8 +146,7 @@ export class DetailView {
       )
       .subscribe({
         next: (result) => this.resource.set(result),
-        error: (error) =>
-          this.errorHandlerService.handleUnauthorizedAccess(error),
+        error: (error) => this.errorHandlerService.handleError(error),
       });
   }
 

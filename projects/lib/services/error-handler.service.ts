@@ -6,11 +6,17 @@ import { Resource } from '@platform-mesh/portal-ui-lib/models';
 export class ErrorHandlerService {
   private luigiCoreService = inject(LuigiCoreService);
 
-  handleUnauthorizedAccess(error: any) {
+  handleError(error: any) {
     if (this.isUnauthorizedAccess(error)) {
       this.luigiCoreService.navigation().navigate('/error/403');
     } else {
-      this.luigiCoreService.navigation().navigate('/error/404');
+      const message =
+        error?.message || error.errors?.map((e) => e.message).join('\n');
+      this.luigiCoreService.showAlert({
+        text: message || 'An unknown error occurred',
+        type: 'error',
+      });
+      console.error(error);
     }
   }
 
