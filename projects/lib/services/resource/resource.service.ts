@@ -24,7 +24,7 @@ import Fields from 'gql-query-builder/build/Fields';
 import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
 import NestedField from 'gql-query-builder/build/NestedField';
 import VariableOptions from 'gql-query-builder/build/VariableOptions';
-import { EMPTY, Observable, throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 interface ResourceResponseError extends Record<string, any> {
@@ -60,17 +60,7 @@ export class ResourceService {
       isNamespacedResource ? nodeContext.namespaceId : undefined,
     );
 
-    try {
-      query = gql`
-        ${query}
-      `;
-    } catch (error) {
-      this.luigiCoreService.showAlert({
-        text: `Could not read a resource: ${resourceId}. Wrong read query: <br/><br/> ${query}`,
-        type: 'error',
-      });
-      return EMPTY;
-    }
+    query = this.parseGQLQuery(query);
 
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
@@ -203,13 +193,12 @@ export class ResourceService {
       { operation: version },
     ]);
     const listQuery = gqlBuilder.query(queryOptions);
+    const query = this.parseGQLQuery(listQuery.query);
 
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .query({
-        query: gql`
-          ${listQuery.query}
-        `,
+        query,
         variables: listQuery.variables,
       })
       .pipe(
@@ -243,12 +232,11 @@ export class ResourceService {
     readFromParentKcpPath: boolean,
     variables: VariableOptions,
   ): Observable<any> {
+    const query = this.parseGQLQuery(rawQuery);
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .query({
-        query: gql`
-          ${rawQuery}
-        `,
+        query,
         variables: this.normalizeGqlBuilderVariables(variables),
       })
       .pipe(
@@ -291,12 +279,12 @@ export class ResourceService {
       },
     });
 
+    const query = this.parseGQLQuery(subscriptionQuery.query);
+
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .subscribe({
-        query: gql`
-          ${subscriptionQuery.query}
-        `,
+        query,
         variables: subscriptionQuery.variables,
       })
       .pipe(
@@ -350,13 +338,12 @@ export class ResourceService {
       { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
+    const query = this.parseGQLQuery(mutation.query);
 
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .mutate<void>({
-        mutation: gql`
-          ${mutation.query}
-        `,
+        mutation: query,
         variables: mutation.variables,
       })
       .pipe(
@@ -398,13 +385,12 @@ export class ResourceService {
       { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
+    const query = this.parseGQLQuery(mutation.query);
 
     return this.apolloFactory
       .apollo(nodeContext)
       .mutate({
-        mutation: gql`
-          ${mutation.query}
-        `,
+        mutation: query,
         fetchPolicy: 'no-cache',
         variables: mutation.variables,
       })
@@ -455,13 +441,12 @@ export class ResourceService {
       { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
+    const query = this.parseGQLQuery(mutation.query);
 
     return this.apolloFactory
       .apollo(nodeContext, readFromParentKcpPath)
       .mutate({
-        mutation: gql`
-          ${mutation.query}
-        `,
+        mutation: query,
         fetchPolicy: 'no-cache',
         variables: mutation.variables,
       })
@@ -532,5 +517,19 @@ export class ResourceService {
       fields,
       variables: nextWrapper.variables,
     };
+  }
+
+  private parseGQLQuery(query: string) {
+    try {
+      return gql`
+        ${query}
+      `;
+    } catch (error) {
+      this.luigiCoreService.showAlert({
+        text: `Could not parse gql query: <br/><br/> ${query} <br/><br/> ${error.message}`,
+        type: 'error',
+      });
+      throw error;
+    }
   }
 }
