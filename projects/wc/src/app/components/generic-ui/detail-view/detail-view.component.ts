@@ -6,6 +6,7 @@ import {
   KubeConfigTemplateProps,
   kubeConfigTemplate,
 } from './kubeconfig-template';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,14 +18,14 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { DynamicPage } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page';
+import { DynamicPageHeader } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page-header';
+import { DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page-title';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
 import { Text } from '@fundamental-ngx/ui5-webcomponents/text';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
-import { DynamicPage } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page';
-import { DynamicPageHeader } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page-header';
-import { DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page-title';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -58,6 +59,7 @@ import { tap } from 'rxjs/operators';
     ValueCellComponent,
     CreateResourceModal,
     DeleteResourceModal,
+    NgTemplateOutlet,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
