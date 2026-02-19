@@ -1,34 +1,28 @@
 <ui5-dynamic-page test-id="generic-detail-view">
   <ui5-dynamic-page-title slot="titleArea">
-    <ui5-title slot="heading">
-      <div test-id="generic-detail-view-title" class="resource-title">
-        @if (resourceTitleDefinition(); as resourceTitleDefinition) {
-          <pm-value-cell
-            [fieldDefinition]="resourceTitleDefinition"
-            [resource]="resource()"
-            [LuigiClient]="LuigiClient()"
-          />
-        } @else {
-          {{ resource()?.spec?.displayName || resourceId() }}
-        }
-      </div>
+    <ui5-title
+      test-id="generic-detail-view-title"
+      class="resource-title"
+      slot="heading"
+    >
+      <ng-container *ngTemplateOutlet="resourceTitle"></ng-container>
     </ui5-title>
+    <div class="resource-title-snapped-container" slot="snappedHeading">
+      <ng-container *ngTemplateOutlet="resourceLogo"></ng-container>
+      <ui5-title>
+        <ng-container *ngTemplateOutlet="resourceTitle"></ng-container>
+      </ui5-title>
+    </div>
+
     <ui5-text
       test-id="generic-detail-view-subtitle"
       class="resource-title-subheading"
       slot="subheading"
     >
-      @if (resourceDescriptionDefinition(); as resourceDescriptionDefinition) {
-        <pm-value-cell
-          [fieldDefinition]="resourceDescriptionDefinition"
-          [resource]="resource()"
-          [LuigiClient]="LuigiClient()"
-        ></pm-value-cell>
-      } @else {
-        {{
-          `The ${resourceDefinition()?.singular} for ${resource()?.spec?.displayName || this.resourceId()}`
-        }}
-      }
+      <ng-container *ngTemplateOutlet="resourceDescription"></ng-container>
+    </ui5-text>
+    <ui5-text class="resource-title-subheading" slot="snappedSubheading">
+      <ng-container *ngTemplateOutlet="resourceDescription"></ng-container>
     </ui5-text>
 
     <ui5-toolbar
@@ -56,26 +50,19 @@
           (click)="openEditResourceModal($event, resource)"
         ></ui5-toolbar-button>
         <ui5-toolbar-button
-        test-id="generic-detail-view-parent-button"
-        text="Delete"
-        icon="delete"
-        design="Negative"
-        (click)="openDeleteResourceModal($event, resource)"
-      ></ui5-toolbar-button>
+          test-id="generic-detail-view-parent-button"
+          text="Delete"
+          icon="delete"
+          design="Negative"
+          (click)="openDeleteResourceModal($event, resource)"
+        ></ui5-toolbar-button>
       }
     </ui5-toolbar>
   </ui5-dynamic-page-title>
 
   <ui5-dynamic-page-header slot="headerArea">
     <div class="resource-info">
-      @if (resourceDefinition()?.ui?.logoUrl) {
-        <img
-          test-id="generic-detail-view-logo"
-          class="resource-logo"
-          src="{{ resourceDefinition()?.ui?.logoUrl }}"
-          alt="Logo"
-        />
-      }
+      <ng-container *ngTemplateOutlet="resourceLogo"></ng-container>
       <div class="resource-info-cell">
         <ui5-label>Workspace Path</ui5-label>
         <p test-id="generic-detail-view-workspace-path">
@@ -158,3 +145,38 @@
   (resource)="delete($event)"
   [context]="context()"
 />
+
+<ng-template #resourceTitle>
+  @if (resourceTitleDefinition(); as resourceTitleDefinition) {
+    <pm-value-cell
+      [fieldDefinition]="resourceTitleDefinition"
+      [resource]="resource()"
+      [LuigiClient]="LuigiClient()"
+    />
+  } @else {
+    {{ resource()?.spec?.displayName || resourceId() }}
+  }
+</ng-template>
+<ng-template #resourceDescription>
+  @if (resourceDescriptionDefinition(); as resourceDescriptionDefinition) {
+    <pm-value-cell
+      [fieldDefinition]="resourceDescriptionDefinition"
+      [resource]="resource()"
+      [LuigiClient]="LuigiClient()"
+    ></pm-value-cell>
+  } @else {
+    {{
+      `The ${resourceDefinition()?.singular} for ${resource()?.spec?.displayName || this.resourceId()}`
+    }}
+  }
+</ng-template>
+<ng-template #resourceLogo>
+  @if (resourceDefinition()?.ui?.logoUrl) {
+    <img
+      test-id="generic-detail-view-logo"
+      class="resource-logo"
+      src="{{ resourceDefinition()?.ui?.logoUrl }}"
+      alt="Logo"
+    />
+  }
+</ng-template>
