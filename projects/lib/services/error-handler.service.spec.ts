@@ -16,6 +16,7 @@ describe('ErrorHandlerService', () => {
   beforeEach(() => {
     luigiCoreService = mock<LuigiCoreService>();
     luigiCoreService.navigation.mockReturnValue(mockNavigation as any);
+    luigiCoreService.showAlert = vi.fn();
 
     TestBed.configureTestingModule({
       providers: [
@@ -31,157 +32,220 @@ describe('ErrorHandlerService', () => {
     vi.clearAllMocks();
   });
 
-  describe('handlePostErrorNavigation', () => {
+  describe('handleError', () => {
     it('should navigate to 403 when error message contains forbidden', () => {
       const error = { message: 'Access is forbidden' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should navigate to 403 when error message contains Forbidden with capital F', () => {
       const error = { message: 'Forbidden resource' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should navigate to 403 when error message contains FORBIDDEN in uppercase', () => {
       const error = { message: 'FORBIDDEN' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should navigate to 403 when error message contains access denied', () => {
       const error = { message: 'access denied to resource' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should navigate to 403 when error message contains Access Denied with capitals', () => {
       const error = { message: 'Access Denied' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 when error message does not contain forbidden or access denied', () => {
+    it('should show alert when error message does not contain forbidden or access denied', () => {
       const error = { message: 'Resource not found' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Resource not found',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 when error message is empty string', () => {
+    it('should show alert with default message when error message is empty string', () => {
       const error = { message: '' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'An unknown error occurred',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 when error message is undefined', () => {
+    it('should show alert with default message when error message is undefined', () => {
       const error = { message: undefined } as any;
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'An unknown error occurred',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 when error message is null', () => {
+    it('should show alert with default message when error message is null', () => {
       const error = { message: null } as any;
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'An unknown error occurred',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
-    it('should call luigiCoreService.navigation', () => {
+    it('should show alert when received error with message', () => {
       const error = { message: 'Some error' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(luigiCoreService.navigation).toHaveBeenCalled();
+      expect(luigiCoreService.showAlert).toHaveBeenCalled();
     });
 
-    it('should call navigation.navigate exactly once', () => {
+    it('should show alert exactly once for non-403 errors', () => {
       const error = { message: 'Some error' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledTimes(1);
+      expect(luigiCoreService.showAlert).toHaveBeenCalledTimes(1);
     });
 
     it('should handle error with both forbidden and access denied', () => {
       const error = { message: 'Access denied: forbidden resource' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 for generic error messages', () => {
+    it('should show alert for generic error messages', () => {
       const error = { message: 'Internal server error' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Internal server error',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 for validation errors', () => {
+    it('should show alert for validation errors', () => {
       const error = { message: 'Invalid input provided' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Invalid input provided',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
     it('should handle error message with forbidden in the middle', () => {
       const error = { message: 'This action is forbidden for you' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should handle error message with access denied at the end', () => {
       const error = { message: 'You do not have access denied' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should be case-insensitive for forbidden check', () => {
       const error = { message: 'fOrBiDdEn' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should handle error with special characters', () => {
       const error = { message: 'Error: 403 - Access Denied!' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 404 when message contains similar but different words', () => {
+    it('should show alert when message contains similar but different words', () => {
       const error = { message: 'forbid access' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/404');
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'forbid access',
+        type: 'error',
+      });
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors array and join messages', () => {
+      const error = {
+        errors: [{ message: 'Error 1' }, { message: 'Error 2' }],
+      };
+
+      service.handleError(error);
+
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Error 1\nError 2',
+        type: 'error',
+      });
+    });
+
+    it('should console.error the error for non-403 cases', () => {
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const error = { message: 'Some error' };
+
+      service.handleError(error);
+
+      expect(consoleSpy).toHaveBeenCalledWith(error);
+      consoleSpy.mockRestore();
     });
   });
 
@@ -200,8 +264,8 @@ describe('ErrorHandlerService', () => {
     });
 
     it('should call luigiCoreService.navigation', () => {
-      (service.handleResourcePendingDeletion(mockResource),
-        expect(luigiCoreService.navigation).toHaveBeenCalled());
+      service.handleResourcePendingDeletion(mockResource);
+      expect(luigiCoreService.navigation).toHaveBeenCalled();
     });
 
     it('should call navigation.navigate with exactly /error/422', () => {
@@ -222,7 +286,7 @@ describe('ErrorHandlerService', () => {
         },
       } as Resource;
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
       const firstCallCount = mockNavigation.navigate.mock.calls.length;
 
       service.handleResourcePendingDeletion(resource);
@@ -231,12 +295,39 @@ describe('ErrorHandlerService', () => {
       expect(secondCallCount).toBe(firstCallCount + 1);
     });
 
-    it('should call luigiCoreService.navigation for each error handling', () => {
+    it('should show alert for non-403 errors', () => {
       const error = { message: 'test error' };
 
-      service.handleUnauthorizedAccess(error);
+      service.handleError(error);
 
-      expect(luigiCoreService.navigation).toHaveBeenCalledTimes(1);
+      expect(luigiCoreService.showAlert).toHaveBeenCalledTimes(1);
+      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isUnauthorizedAccess', () => {
+    it('should return true when message contains forbidden', () => {
+      const error = { message: 'Access is forbidden' };
+
+      expect(service.isUnauthorizedAccess(error)).toBe(true);
+    });
+
+    it('should return true when message contains access denied', () => {
+      const error = { message: 'access denied' };
+
+      expect(service.isUnauthorizedAccess(error)).toBe(true);
+    });
+
+    it('should return false for other errors', () => {
+      const error = { message: 'Not found' };
+
+      expect(service.isUnauthorizedAccess(error)).toBe(false);
+    });
+
+    it('should handle undefined message', () => {
+      const error = { message: undefined };
+
+      expect(service.isUnauthorizedAccess(error)).toBe(false);
     });
   });
 });

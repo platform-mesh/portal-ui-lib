@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Option, Select } from '@fundamental-ngx/ui5-webcomponents';
+import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
+import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
