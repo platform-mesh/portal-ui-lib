@@ -11,7 +11,7 @@ export class ErrorHandlerService {
       this.luigiCoreService.navigation().navigate('/error/403');
     } else {
       const message =
-        error?.message || error.errors?.map((e) => e.message).join('\n');
+        error?.message || error?.errors?.map((e) => e.message).join('\n');
       this.luigiCoreService.showAlert({
         text: message || 'An unknown error occurred',
         type: 'error',
@@ -26,8 +26,8 @@ export class ErrorHandlerService {
 
   isUnauthorizedAccess(error: any): boolean {
     return (
-      !!error.message?.toLowerCase().includes('forbidden') ||
-      !!error.message?.toLowerCase()?.includes('access denied')
+      !!error?.message?.toLowerCase().includes('forbidden') ||
+      !!error?.message?.toLowerCase()?.includes('access denied')
     );
   }
 }

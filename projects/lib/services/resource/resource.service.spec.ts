@@ -1,10 +1,10 @@
+import { ApolloFactory } from './apollo-factory';
+import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import { ApolloFactory } from './apollo-factory';
-import { ResourceService } from './resource.service';
 
 describe('ResourceService', () => {
   let service: ResourceService;
@@ -148,25 +148,20 @@ describe('ResourceService', () => {
 
       service['luigiCoreService'].showAlert = vi.fn();
 
-      await new Promise<void>((resolve, reject) => {
-        service
-          .read(
-            'test-name',
-            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
-            invalidQuery,
-            namespacedNodeContext,
-          )
-          .subscribe({
-            complete: () => {
-              expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-                text: expect.any(String),
-                type: 'error',
-              });
-              resolve();
-            },
-            error: reject,
-          });
-      });
+      try {
+        service.read(
+          'test-name',
+          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          invalidQuery,
+          namespacedNodeContext,
+        );
+        assert.fail();
+      } catch (e) {
+        expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
+          text: expect.any(String),
+          type: 'error',
+        });
+      }
     });
 
     it('should read resource using fields', async () => {
@@ -1686,11 +1681,7 @@ describe('ResourceService', () => {
 
       await expect(
         firstValueFrom(
-          service.update(
-            resource,
-            resourceDefinition,
-            clusterScopeNodeContext,
-          ),
+          service.update(resource, resourceDefinition, clusterScopeNodeContext),
         ),
       ).rejects.toThrow();
       expect(console.error).toHaveBeenCalledWith(
@@ -2008,9 +1999,7 @@ describe('ResourceService', () => {
       mockApollo.query.mockReturnValue(throwError(() => error));
 
       await expect(
-        firstValueFrom(
-          service.list('myList', ['name'], namespacedNodeContext),
-        ),
+        firstValueFrom(service.list('myList', ['name'], namespacedNodeContext)),
       ).rejects.toThrow('list failed');
     });
 
@@ -2099,7 +2088,13 @@ describe('ResourceService', () => {
       );
 
       await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext, false, undefined),
+        service.list(
+          'myList',
+          ['name'],
+          namespacedNodeContext,
+          false,
+          undefined,
+        ),
       );
       const queryCall = mockApollo.query.mock.calls[0][0];
       expect(queryCall.variables.limit).toBeUndefined();

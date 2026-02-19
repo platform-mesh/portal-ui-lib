@@ -126,7 +126,7 @@ describe('ErrorHandlerService', () => {
       expect(mockNavigation.navigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate to 403 and not show alert for access denied errors', () => {
+    it('should show alert when received error with message', () => {
       const error = { message: 'Some error' };
 
       service.handleError(error);
@@ -225,10 +225,7 @@ describe('ErrorHandlerService', () => {
 
     it('should handle errors array and join messages', () => {
       const error = {
-        errors: [
-          { message: 'Error 1' },
-          { message: 'Error 2' }
-        ]
+        errors: [{ message: 'Error 1' }, { message: 'Error 2' }],
       };
 
       service.handleError(error);
@@ -240,7 +237,9 @@ describe('ErrorHandlerService', () => {
     });
 
     it('should console.error the error for non-403 cases', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const error = { message: 'Some error' };
 
       service.handleError(error);
