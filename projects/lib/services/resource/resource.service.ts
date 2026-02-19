@@ -185,7 +185,7 @@ export class ResourceService {
       resourceDefinition.group,
     );
     const version = resourceDefinition.version;
-    const kind = capitalize(resourceDefinition.plural + 'error');
+    const kind = capitalize(resourceDefinition.plural);
     const queryFields = [
       {
         operation: kind,
