@@ -14,7 +14,7 @@ export class AccountInfoService {
   private readCache = new Map<string, Observable<AccountInfo>>();
 
   read(nodeContext: ResourceNodeContext): Observable<AccountInfo> {
-    const cacheKey = `${nodeContext.portalContext.crdGatewayApiUrl}|${nodeContext.kcpPath ?? ''}|${nodeContext.token}`;
+    const cacheKey = nodeContext.kcpPath ?? '';
     const cachedRead = this.readCache.get(cacheKey);
     if (cachedRead) {
       return cachedRead;

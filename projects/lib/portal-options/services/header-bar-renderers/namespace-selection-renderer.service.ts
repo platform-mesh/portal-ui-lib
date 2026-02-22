@@ -110,7 +110,7 @@ export class NamespaceSelectionRendererService {
     portalConfig: PortalConfig,
     kcpPath?: string,
   ): Observable<Resource[]> {
-    const cacheKey = this.getNamespaceResourcesCacheKey(portalConfig, kcpPath);
+    const cacheKey = this.getNamespaceResourcesCacheKey(kcpPath);
     if (this.namespaceResourcesCache?.key === cacheKey) {
       return this.namespaceResourcesCache.value$;
     }
@@ -136,13 +136,8 @@ export class NamespaceSelectionRendererService {
     return value$;
   }
 
-  private getNamespaceResourcesCacheKey(
-    portalConfig: PortalConfig,
-    kcpPath?: string,
-  ): string {
-    const crdGatewayApiUrl =
-      portalConfig.portalContext['crdGatewayApiUrl'] ?? '';
-    return `${crdGatewayApiUrl}|${kcpPath ?? ''}|${this.authService.getToken()}`;
+  private getNamespaceResourcesCacheKey(kcpPath?: string): string {
+    return kcpPath ?? '';
   }
 
   private syncComboboxItems(ui5combobox: HTMLElement, resources: Resource[]) {
