@@ -14,11 +14,35 @@ export interface PropertyField {
 
 export interface UiSettings {
   labelDisplay?: boolean;
-  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip' | 'img';
+  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip' | 'img' | 'button';
+  buttonSettings?: ButtonSettings;
   tooltipIcon?: string;
   withCopyButton?: boolean;
   cssCustomization?: Partial<CSSStyleDeclaration>;
   cssRules?: CssRule[];
+}
+
+export interface ButtonSettings {
+  text?: string;
+  icon?: string;
+  endIcon?: string;
+  design?:
+    | 'Default'
+    | 'Positive'
+    | 'Negative'
+    | 'Transparent'
+    | 'Emphasized'
+    | 'Attention';
+  tooltip?: string;
+  action: 'openInModal' | 'navigate';
+  modalSettings?: ModalSettings;
+}
+
+export interface ModalSettings {
+  title?: string;
+  size?: 'fullscreen' | 'l' | 'm' | 's'; // ze of the modal
+  width?: string; //updates the width of the modal. Allowed units are 'px', '%', 'rem', 'em', 'vh' and 'vw
+  height?: string; //updates the height of the modal. Allowed units are 'px', '%', 'rem', 'em', 'vh' and 'vw
 }
 
 export type CssRuleCondition =
@@ -98,6 +122,7 @@ export interface ResourceDefinition {
 }
 
 interface UiView {
+  actions: FieldDefinition[];
   fields: FieldDefinition[];
   resourceDescription?: FieldDefinition;
   resourceTitle?: FieldDefinition;
