@@ -305,7 +305,9 @@ export class DetailView {
 
   private getDetailViewQueryFields() {
     const resourceDefinition = this.getResourceDefinition();
-    const additionalFields: FieldDefinition[] = [];
+    const additionalFields: FieldDefinition[] = [
+      { property: 'metadata.deletionTimestamp' },
+    ];
 
     if (resourceDefinition.ui?.detailView?.resourceDescription) {
       additionalFields.push(

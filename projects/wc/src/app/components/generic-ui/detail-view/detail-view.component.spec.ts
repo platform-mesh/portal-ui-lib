@@ -692,13 +692,21 @@ describe('DetailViewComponent', () => {
 
     newFixture.detectChanges();
 
-    expect(mockResourceService.read).toHaveBeenCalledWith(
-      'test-account',
-      { kind: 'Account', group: 'core_k8s_io', version: 'v1alpha1' },
-      [],
-      expect.any(Object),
-      true,
-    );
+    expect(mockResourceService.read).toHaveBeenCalled();
+    const readCall = mockResourceService.read.mock.calls[0];
+    const fieldsArg = readCall[2];
+    const fieldsStr = JSON.stringify(fieldsArg);
+
+    expect(readCall[0]).toBe('test-account');
+    expect(readCall[1]).toEqual({
+      kind: 'Account',
+      group: 'core_k8s_io',
+      version: 'v1alpha1',
+    });
+    expect(fieldsStr).toContain('metadata');
+    expect(fieldsStr).toContain('deletionTimestamp');
+    expect(readCall[3]).toEqual(expect.any(Object));
+    expect(readCall[4]).toBe(true);
   });
 
   it('should handle resource service read error', () => {
@@ -1067,6 +1075,8 @@ describe('DetailViewComponent', () => {
       const fieldsStr = JSON.stringify(fieldsArg);
       expect(fieldsStr).toContain('spec');
       expect(fieldsStr).toContain('description');
+      expect(fieldsStr).toContain('metadata');
+      expect(fieldsStr).toContain('deletionTimestamp');
     });
   });
 
@@ -1199,6 +1209,8 @@ describe('DetailViewComponent', () => {
       const fieldsStr = JSON.stringify(fieldsArg);
       expect(fieldsStr).toContain('spec');
       expect(fieldsStr).toContain('displayName');
+      expect(fieldsStr).toContain('metadata');
+      expect(fieldsStr).toContain('deletionTimestamp');
     });
 
     it('should include both resourceTitle and resourceDescription in query fields', () => {
@@ -1250,6 +1262,8 @@ describe('DetailViewComponent', () => {
       expect(fieldsStr).toContain('spec');
       expect(fieldsStr).toContain('displayName');
       expect(fieldsStr).toContain('description');
+      expect(fieldsStr).toContain('metadata');
+      expect(fieldsStr).toContain('deletionTimestamp');
     });
   });
 });
