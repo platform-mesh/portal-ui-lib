@@ -101,7 +101,7 @@ Each field definition supports the following properties:
     - `"endIcon"`: UI5 icon name to display at the end of the button
     - `"design"`: Button design variant (options: `"Default"`, `"Positive"`, `"Negative"`, `"Transparent"`, `"Emphasized"`, `"Attention"`)
     - `"tooltip"`: Tooltip text shown on hover
-    - `"action"`: Action to perform when button is clicked (options: `"openInModal"`, `"navigate"`)
+    - `"action"`: Action to perform when button is clicked (options: `"openInModal"`, `"navigate"`), the url used is taken from the field specified `property` or static `value`
     - `"modalSettings"`: Configuration for modal when `action: "openInModal"`:
       - `"title"`: Modal title
       - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
@@ -225,6 +225,46 @@ This example demonstrates various features including:
                         "label": "Contact Information",
                         "delimiter": " | "
                       }
+                    },
+                    {
+                      "value": "/home/members",
+                      "group": {
+                        "label": "Actions",
+                        "name": "actions",
+                        "multiline": false
+                      },
+                      "uiSettings": {
+                        "displayAs": "button",
+                        "buttonSettings": {
+                          "text": "Now",
+                          "endIcon": "download-from-cloud",
+                          "design": "Emphasized",
+                          "tooltip": "It is about time!",
+                          "action": "openInModal",
+                          "modalSettings": {
+                            "title": "Time is precious",
+                            "size": "l"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "property": "metadata.annotations.actionURL",
+                      "group": {
+                        "label": "Actions",
+                        "name": "actions",
+                        "multiline": false
+                      },
+                      "uiSettings": {
+                        "displayAs": "button",
+                        "buttonSettings": {
+                          "text": "Download",
+                          "icon": "delete",
+                          "design": "Default",
+                          "tooltip": "Hello there!",
+                          "action": "navigate"
+                        }
+                      }
                     }
                   ]
                 },
@@ -235,6 +275,23 @@ This example demonstrates various features including:
                   "resourceDescription": {
                     "property": "spec.description"
                   },
+                  "actions": [{
+                    "value": "/accounts/namesapces",
+                    "uiSettings": {
+                      "displayAs": "button",
+                      "buttonSettings": {
+                        "text": "Now",
+                        "endIcon": "download-from-cloud",
+                        "design": "Emphasized",
+                        "tooltip": "It is about time!",
+                        "action": "openInModal",
+                        "modalSettings": {
+                          "title": "Time is precious",
+                          "size": "m"
+                        }
+                      }
+                    }
+                  }],
                   "fields": [
                     {
                       "label": "Description",
