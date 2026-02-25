@@ -1,5 +1,4 @@
 import { executeButtonAction } from '../../../utils/field-helper';
-import { processFields } from '../../../utils/proccess-fields';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { NgTemplateOutlet } from '@angular/common';
@@ -49,11 +48,6 @@ export class GenericView {
   defaultDescription = input<string>();
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
-  resourceFields = computed(
-    () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
-  );
-  resourceId = computed(() => this.context().resourceId);
-  viewFields = computed(() => processFields(this.resourceFields()));
   resourceTitleDefinition = computed(
     () => this.resourceDefinition()?.ui?.detailView?.resourceTitle,
   );

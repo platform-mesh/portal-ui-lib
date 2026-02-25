@@ -1,13 +1,12 @@
 import * as fieldHelper from '../../../utils/field-helper';
-import * as processFieldsUtil from '../../../utils/proccess-fields';
 import { GenericView } from './generic-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   Resource,
   ResourceDefinition,
+  UIDefinition,
 } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('GenericView', () => {
   let component: GenericView;
@@ -24,16 +23,15 @@ describe('GenericView', () => {
     mockResourceDefinition = {
       ui: {
         detailView: {
-          fields: [
-            { name: 'field1', type: 'text' },
-            { name: 'field2', type: 'text' },
-          ],
+          fields: [{ property: 'field1' }, { property: 'field2' }],
           resourceTitle: 'title',
           resourceDescription: 'description',
-          actions: [{ name: 'action1' }],
+          actions: [
+            { property: 'action1', uiSettings: { displayAs: 'button' } },
+          ],
         },
-      },
-    } as any;
+      } as UIDefinition,
+    } as ResourceDefinition;
 
     mockContext = {
       resourceDefinition: mockResourceDefinition,
@@ -59,38 +57,6 @@ describe('GenericView', () => {
       expect(component.resourceDefinition()).toEqual(mockResourceDefinition);
     });
 
-    it('should compute resourceFields from resourceDefinition', () => {
-      expect(component.resourceFields()).toEqual([
-        { name: 'field1', type: 'text' },
-        { name: 'field2', type: 'text' },
-      ]);
-    });
-
-    it('should return empty array when resourceDefinition has no fields', () => {
-      const emptyContext = {
-        resourceDefinition: { ui: { detailView: {} } } as any,
-        resourceId: 'test-id',
-      } as ResourceNodeContext;
-      fixture.componentRef.setInput('context', emptyContext);
-      expect(component.resourceFields()).toEqual([]);
-    });
-
-    it('should compute resourceId from context', () => {
-      expect(component.resourceId()).toBe('test-id');
-    });
-
-    it('should compute viewFields by processing resourceFields', () => {
-      const mockProcessedFields = [{ processed: true }];
-      vi.spyOn(processFieldsUtil, 'processFields').mockReturnValue(
-        mockProcessedFields as any,
-      );
-      expect(component.viewFields()).toEqual(mockProcessedFields);
-      expect(processFieldsUtil.processFields).toHaveBeenCalledWith([
-        { name: 'field1', type: 'text' },
-        { name: 'field2', type: 'text' },
-      ]);
-    });
-
     it('should compute resourceTitleDefinition from resourceDefinition', () => {
       expect(component.resourceTitleDefinition()).toBe('title');
     });
@@ -100,7 +66,9 @@ describe('GenericView', () => {
     });
 
     it('should compute viewActions from resourceDefinition', () => {
-      expect(component.viewActions()).toEqual([{ name: 'action1' }]);
+      expect(component.viewActions()).toEqual([
+        { property: 'action1', uiSettings: { displayAs: 'button' } },
+      ]);
     });
 
     it('should return empty array when resourceDefinition has no actions', () => {
