@@ -39,18 +39,29 @@ In order to use the generic list view, you need to adjust the node’s   `conten
     ```
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
       - `"logoUrl"`: resource type logo shown in the view header
-      - view definitions for the corresponding views
-        - `"listView"`: contains `"fields"` definitions that will be translated to the columns of the table list view, `"label"` corresponds to
-          the column name, whereas `"property"` is a json path of the property of a resource to be read. Fields can be grouped together using the `"group"` property to display related information in a single column. `"uiSettings"` allows you to customize how field values are rendered (format, actions, and styling) in both list and detail views. Also supports:
-          - `"resourceTitle"`: A complete `FieldDefinition` object that will be used to render the title. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, a default title will be generated from the plural form of the resource.
-          - `"resourceDescription"`: A complete `FieldDefinition` object that will be used to render the subtitle description. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, a default description will be generated.
-        - `"detailView"`: similarly describes the fields which are to show up on the detailed view. Supports field grouping for compact display of related data. Also you can configure:
-          - `showDownloadKubeconfig`: enable/disable download kubeconfig button. By default it false.
-          - `resourceTitle`: A complete `FieldDefinition` object that will be used to render the title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, a default title will be generated from the resource ID or display name.
-          - `resourceDescription`: A complete `FieldDefinition` object that will be used to render the subtitle description. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, a default description will be generated.
-        - `"createView`: section additionally provides possibility to add the `"required"` flag to the filed definition,
-          indicating that the field needs to be provided while creating an instance of that resource, with the `"values": ["account"]`
-          there is a possibility to provide a list of values to select from. Also, it's possible to specify a GraphQL query to retrieve a dynamic list of values to select from using the `"dynamicValuesDefinition"`. You need to provide `"gqlQuery"` and `"operation"`, as well as `"key"` - a JSON path to the property that will be used as the displayed value, and `"value"` — a JSON path to the actual value.
+      - view definitions for the corresponding views:
+
+#### List View Configuration
+
+- `"listView"`: Defines how resources are displayed in table format
+  - `"fields"`: Array of `FieldDefinition` objects defining table columns. Each field's `"label"` becomes the column header, and `"property"` is a JSON path to the resource property. Fields can be grouped using the `"group"` property to display related information in a single column. The `"uiSettings"` property allows customization of rendering (format, actions, styling).
+  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the table toolbar or row actions. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
+  - `"resourceTitle"`: A `FieldDefinition` object for rendering the view title. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, defaults to the plural form of the resource.
+  - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition features. If not provided, a default description is generated.
+
+#### Detail View Configuration
+
+- `"detailView"`: Defines how a page view for individual resource is displayed
+  - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for compact display of related data.
+  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the detail view header. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
+  - `"showDownloadKubeconfig"`: Boolean to enable/disable download kubeconfig button (default: `false`).
+  - `"resourceTitle"`: A `FieldDefinition` object for rendering the resource title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, defaults to the resource ID or display name.
+  - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition properties. If not provided, a default description is generated.
+
+#### Create View Configuration
+
+- `"createView"`: Defines the form for creating/updating resources
+  - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value).
 
 #### Field Definition Properties
 
@@ -78,11 +89,24 @@ Each field definition supports the following properties:
 - `"uiSettings"`: Object for configuring UI-specific display settings:
   - `"labelDisplay"`: Boolean flag for applying the default emphasized style to the value
   - `"displayAs"`: Controls how the value is displayed (if nothing is provided the plain text is displayed):
-    - `'secret'`: Render value as a secret with show/hide toggle
-    - `'boolIcon'`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
-    - `'link'`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
-    - `'tooltip'`: Render an icon with a tooltip; tooltip text is the field value
-    - `'img'`: Render an image with the provided url read from the resource property
+    - `"secret"`: Render value as a secret with show/hide toggle
+    - `"boolIcon"`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
+    - `"link"`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
+    - `"tooltip"`: Render an icon with a tooltip; tooltip text is the field value
+    - `"img"`: Render an image with the provided url read from the resource property
+    - `"button"`: Render a button with the settings provided in the `buttonSettings` object
+  - `"buttonSettings"`: Object for configuring button UI display settings (used when `displayAs: "button"`):
+    - `"text"`: Button label text
+    - `"icon"`: UI5 icon name to display at the start of the button
+    - `"endIcon"`: UI5 icon name to display at the end of the button
+    - `"design"`: Button design variant (options: `"Default"`, `"Positive"`, `"Negative"`, `"Transparent"`, `"Emphasized"`, `"Attention"`)
+    - `"tooltip"`: Tooltip text shown on hover
+    - `"action"`: Action to perform when button is clicked (options: `"openInModal"`, `"navigate"`)
+    - `"modalSettings"`: Configuration for modal when `action: "openInModal"`:
+      - `"title"`: Modal title
+      - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
+      - `"width"`: Custom modal width (allowed units: `"px"`, `"%"`, `"rem"`, `"em"`, `"vh"`, `"vw"`)
+      - `"height"`: Custom modal height (allowed units: `"px"`, `"%"`, `"rem"`, `"em"`, `"vh"`, `"vw"`)
   - `"tooltipIcon"`: UI5 icon name to use with `displayAs: "tooltip"` (defaults to `hint`) Don't forget to import picked icon to you portal from ui5 lib
   - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
   - `"cssCustomization"`: Inline styles applied to the rendered value (partial `CSSStyleDeclaration`, e.g. `backgroundColor`, `fontWeight`)

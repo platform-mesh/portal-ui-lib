@@ -60,8 +60,10 @@ export class GenericView {
   resourceDescriptionDefinition = computed(
     () => this.resourceDefinition()?.ui?.detailView?.resourceDescription,
   );
-  viewActions = computed(
-    () => this.resourceDefinition()?.ui?.detailView?.actions ?? [],
+  viewActions = computed(() =>
+    (this.resourceDefinition()?.ui?.detailView?.actions ?? []).filter(
+      (a) => a.uiSettings?.displayAs === 'button',
+    ),
   );
 
   buttonAction(event: any, field: FieldDefinition) {
