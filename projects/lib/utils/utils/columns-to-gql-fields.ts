@@ -12,7 +12,7 @@ export const generateGraphQLFields = (uiFields: FieldDefinition[]): any[] => {
   return graphQLFields;
 };
 
-const generate = (root: string, fields: any = []) => {
+const generate = (root: string | undefined, fields: any = []) => {
   if (!root) {
     return [];
   }

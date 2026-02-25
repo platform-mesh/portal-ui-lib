@@ -1,4 +1,8 @@
 import { evaluateCssRules } from '../../../utils/cssRules.engine';
+import {
+  executeButtonAction,
+  getFieldValue,
+} from '../../../utils/field-helper';
 import { BooleanValue } from './boolean-value/boolean-value.component';
 import { LinkValue } from './link-value/link-value.component';
 import { SecretValue } from './secret-value/secret-value.component';
@@ -10,15 +14,15 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
 import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models/models';
 import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
-import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils/utils';
 
 @Component({
   selector: 'pm-value-cell',
-  imports: [Icon, BooleanValue, LinkValue, SecretValue],
+  imports: [Icon, BooleanValue, LinkValue, SecretValue, Button],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './value-cell.component.html',
   styleUrls: ['./value-cell.component.scss'],
@@ -59,15 +63,7 @@ export class ValueCellComponent {
   }
 
   private getValue() {
-    const resource = this.resource();
-    if (resource) {
-      return (
-        getResourceValueByJsonPath(resource, this.fieldDefinition()) ??
-        this.fieldDefinition().value
-      );
-    }
-
-    return this.fieldDefinition().value;
+    return getFieldValue(this.fieldDefinition(), this.resource());
   }
 
   private normalizeBoolean(value: unknown): boolean | undefined {
@@ -110,5 +106,14 @@ export class ValueCellComponent {
       type: 'success',
       closeAfter: 2000,
     });
+  }
+
+  protected buttonAction(event: any) {
+    event.stopPropagation();
+    executeButtonAction(
+      this.LuigiClient(),
+      this.fieldDefinition(),
+      this.resource(),
+    );
   }
 }

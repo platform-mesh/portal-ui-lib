@@ -61,7 +61,7 @@ export interface CssRule {
 
 export interface FieldDefinition {
   label?: string;
-  property: string | string[];
+  property?: string | string[];
   propertyField?: PropertyField;
   jsonPathExpression?: string;
   required?: boolean;

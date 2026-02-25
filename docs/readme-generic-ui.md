@@ -69,7 +69,7 @@ Each field definition supports the following properties:
 - `"jsonPathExpression"`: Alternative JSONPath expression for complex data access (takes precedence over `property`)
 - `"required"`: Boolean flag indicating if the field is mandatory (for create views)
 - `"values"`: Array of predefined values for selection
-- `"value"': Static value for field
+- `"value"`: Static value for field
 - `"group"`: Object for grouping related fields together:
   - `"name"`: Unique identifier for the group
   - `"label"`: Display name for the group

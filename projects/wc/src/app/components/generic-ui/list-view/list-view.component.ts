@@ -1,4 +1,5 @@
 import { processFields } from '../../../utils/proccess-fields';
+import { GenericView } from '../generic-view/generic-view.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
 import {
@@ -14,6 +15,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
 import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
 import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
 import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
@@ -23,13 +25,7 @@ import { TableGrowing } from '@fundamental-ngx/ui5-webcomponents/table-growing';
 import { TableHeaderCell } from '@fundamental-ngx/ui5-webcomponents/table-header-cell';
 import { TableHeaderRow } from '@fundamental-ngx/ui5-webcomponents/table-header-row';
 import { TableRow } from '@fundamental-ngx/ui5-webcomponents/table-row';
-import { Text } from '@fundamental-ngx/ui5-webcomponents/text';
-import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
-import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
-import { DynamicPage } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page';
-import { DynamicPageTitle } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page-title';
-import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   FieldDefinition,
@@ -60,8 +56,6 @@ import { finalize } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CreateResourceModal,
-    DynamicPage,
-    DynamicPageTitle,
     Icon,
     IllustratedMessage,
     Table,
@@ -69,14 +63,12 @@ import { finalize } from 'rxjs/operators';
     TableHeaderCell,
     TableHeaderRow,
     TableRow,
-    Text,
-    Title,
     ToolbarButton,
-    Toolbar,
     ValueCellComponent,
     Select,
     Option,
     TableGrowing,
+    GenericView,
   ],
 })
 export class ListView {
@@ -92,9 +84,15 @@ export class ListView {
   resourceTitleDefinition = computed(
     () => this.resourceDefinition()?.ui?.listView?.resourceTitle,
   );
-  defaultHeading = computed(
+  defaultTitle = computed(
     () =>
       `${this.resourceDefinition()?.plural.charAt(0).toUpperCase()}${this.resourceDefinition()?.plural.slice(1)}`,
+  );
+
+  defaultDescription = computed(
+    () =>
+      `This page displays the created
+        ${this.resourceDefinition()?.plural} in your environment`,
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(

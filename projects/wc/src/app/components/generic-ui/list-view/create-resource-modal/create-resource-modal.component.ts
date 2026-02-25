@@ -122,7 +122,7 @@ export class CreateResourceModal implements OnInit {
   }
 
   sanitizePropertyName(field: FieldDefinition) {
-    const property: string | string[] = field.property;
+    const property: string | string[] = field.property || '';
     if (property instanceof Array) {
       throw new Error('Wrong property type, array not supported');
     }

@@ -37,6 +37,16 @@
     />
   } @else if (displayType === 'img' && value()) {
     <img class="image-cell" [src]="value()" alt="Resource image" />
+  } @else if (displayType === 'button') {
+    @let buttonSettings = fieldDefinition()?.uiSettings?.buttonSettings;
+    <ui5-button
+      [icon]="buttonSettings?.icon"
+      [endIcon]="buttonSettings?.endIcon"
+      [design]="buttonSettings?.design"
+      [tooltip]="buttonSettings?.tooltip"
+      (click)="buttonAction($event)"
+      >{{ buttonSettings?.text }}</ui5-button
+    >&nbsp;
   } @else {
     {{ value() }}
   }
