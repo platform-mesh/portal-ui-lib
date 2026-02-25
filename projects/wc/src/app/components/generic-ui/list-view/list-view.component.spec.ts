@@ -43,7 +43,6 @@ describe('ListViewComponent', () => {
     mockResourceService.delete.mockReturnValue(of({ data: {} } as any));
     mockResourceService.create.mockReturnValue(of({ data: { name: 'test' } }));
     mockResourceService.update.mockReturnValue(of({ data: { name: 'test' } }));
-    mockResourceService.read.mockReturnValue(of({} as any));
     mockLuigiCoreService = mock();
     mockErrorHandlerService = mock();
 
