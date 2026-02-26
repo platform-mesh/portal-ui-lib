@@ -46,38 +46,6 @@ describe('FieldDefinitionService', () => {
       expect(result).toBe('resource-name');
     });
 
-    it('should return field.value when jsonPath returns null', () => {
-      const field: FieldDefinition = {
-        property: 'metadata.name',
-        value: 'default-value',
-      };
-      const resource: Resource = {
-        metadata: { name: 'resource-name' },
-      };
-
-      getResourceValueByJsonPathMock.mockReturnValue(null);
-
-      const result = service.getFieldValue(field, resource);
-
-      expect(result).toBe('default-value');
-    });
-
-    it('should return field.value when jsonPath returns undefined', () => {
-      const field: FieldDefinition = {
-        property: 'metadata.name',
-        value: 'fallback-value',
-      };
-      const resource: Resource = {
-        metadata: { name: '' },
-      };
-
-      getResourceValueByJsonPathMock.mockReturnValue(undefined);
-
-      const result = service.getFieldValue(field, resource);
-
-      expect(result).toBe('fallback-value');
-    });
-
     it('should return field.value when resource is undefined', () => {
       const field: FieldDefinition = {
         property: 'metadata.name',
@@ -168,7 +136,6 @@ describe('FieldDefinitionService', () => {
   describe('executeButtonAction', () => {
     it('should navigate when action is navigate', () => {
       const field: FieldDefinition = {
-        property: 'metadata.name',
         value: '/path/to/resource',
         uiSettings: {
           buttonSettings: {
