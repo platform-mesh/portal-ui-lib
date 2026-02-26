@@ -41,14 +41,8 @@ describe('FieldDefinitionService', () => {
         metadata: { name: 'resource-name' },
       };
 
-      getResourceValueByJsonPathMock.mockReturnValue('resource-name');
-
       const result = service.getFieldValue(field, resource);
 
-      expect(getResourceValueByJsonPathMock).toHaveBeenCalledWith(
-        resource,
-        field,
-      );
       expect(result).toBe('resource-name');
     });
 
