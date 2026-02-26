@@ -87,6 +87,7 @@ export class NamespaceSelectionRendererService {
   private createCombobox(containerElement: HTMLElement) {
     const ui5combobox = document.createElement('ui5-combobox');
     ui5combobox.setAttribute('placeholder', 'Namespaces');
+    ui5combobox.setAttribute('data-testid', 'namespace-selection-combobox');
     containerElement.appendChild(ui5combobox);
 
     return ui5combobox;
@@ -150,11 +151,19 @@ export class NamespaceSelectionRendererService {
       }
       const resourceOption = document.createElement('ui5-cb-item');
       resourceOption.setAttribute('text', name);
+      resourceOption.setAttribute(
+        'data-testid',
+        `namespace-selection-combobox-item-${name}`,
+      );
       ui5combobox.appendChild(resourceOption);
     });
 
     const allOption = document.createElement('ui5-cb-item');
     allOption.setAttribute('text', '-all-');
+    allOption.setAttribute(
+      'data-testid',
+      'namespace-selection-combobox-item-all',
+    );
     ui5combobox.appendChild(allOption);
   }
 
@@ -203,7 +212,9 @@ export class NamespaceSelectionRendererService {
       token: this.authService.getToken(),
     } as ResourceNodeContext;
 
-    return defer(() => this.resourceService.list(operation, fields, context)).pipe(
+    return defer(() =>
+      this.resourceService.list(operation, fields, context),
+    ).pipe(
       retry(3),
       takeUntil(stop$),
       switchMap((result: ResourceListResult) =>
