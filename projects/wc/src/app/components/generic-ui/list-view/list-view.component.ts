@@ -1,6 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
-import { GenericView } from '../generic-view/generic-view.component';
 import { addSearchParams } from '../../../utils/set-search-params';
+import { GenericView } from '../generic-view/generic-view.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
 import {
@@ -28,7 +28,6 @@ import { TableHeaderRow } from '@fundamental-ngx/ui5-webcomponents/table-header-
 import { TableRow } from '@fundamental-ngx/ui5-webcomponents/table-row';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   FieldDefinition,
   Resource,
@@ -79,7 +78,6 @@ export class ListView {
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   private createModal = viewChild<CreateResourceModal>('createModal');
-  private luigiCoreService = inject(LuigiCoreService);
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -89,11 +87,9 @@ export class ListView {
     () =>
       `${this.resourceDefinition()?.plural.charAt(0).toUpperCase()}${this.resourceDefinition()?.plural.slice(1)}`,
   );
-
   defaultDescription = computed(
     () =>
-      `This page displays the created
-        ${this.resourceDefinition()?.plural} in your environment`,
+      `This page displays the created ${this.resourceDefinition()?.plural} in your environment`,
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(

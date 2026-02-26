@@ -70,6 +70,14 @@ export class DetailView {
   resource = signal<Resource | undefined>(undefined);
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
+  defaultTitle = computed(
+    () => this.resource()?.spec?.displayName || this.resourceId(),
+  );
+  defaultDescription = computed(
+    () =>
+      `The ${this.resourceDefinition()?.singular} for ${this.resource()?.spec?.displayName || this.resourceId()}`,
+  );
+
   resourceFields = computed(
     () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
   );

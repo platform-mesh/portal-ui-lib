@@ -2,10 +2,8 @@
   [context]="context()"
   [LuigiClient]="LuigiClient()"
   [resource]="resource()"
-  [defaultTitle]="resource()?.spec?.displayName || resourceId()"
-  [defaultDescription]="
-    `The ${resourceDefinition()?.singular} for ${resource()?.spec?.displayName || this.resourceId()}`
-  "
+  [defaultTitle]="defaultTitle()"
+  [defaultDescription]="defaultDescription()"
 >
   <ng-content header-actions>
     @if (showDownloadKubeconfig()) {
@@ -20,14 +18,14 @@
     }
     @if (resource(); as resource) {
       <ui5-toolbar-button
-        test-id="generic-detail-view-parent-button"
+        test-id="generic-detail-view-edit-button"
         text="Edit"
         icon="edit"
         design="Default"
         (click)="openEditResourceModal($event, resource)"
       />
       <ui5-toolbar-button
-        test-id="generic-detail-view-parent-button"
+        test-id="generic-detail-view-delete-button"
         text="Delete"
         icon="delete"
         design="Negative"

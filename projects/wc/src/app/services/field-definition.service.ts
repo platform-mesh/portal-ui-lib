@@ -21,14 +21,25 @@ export class FieldDefinitionService {
     const buttonSettings = field.uiSettings?.buttonSettings;
     const path = this.getFieldValue(field, resource);
 
-    switch (buttonSettings?.action) {
+    if (!buttonSettings?.action) {
+      throw Error(
+        `Missing button action for field "${field.label ?? (typeof field.property === 'string' ? field.property : 'unknown')}"`,
+      );
+    }
+    if (typeof path !== 'string' || path.trim() === '') {
+      throw Error(
+        `Missing or invalid button path for field "${field.label ?? (typeof field.property === 'string' ? field.property : 'unknown')}"`,
+      );
+    }
+
+    switch (buttonSettings.action) {
       case 'navigate':
         luigiClient.linkManager().navigate(path);
         break;
       case 'openInModal':
         luigiClient
           .linkManager()
-          .openAsModal(path, buttonSettings?.modalSettings);
+          .openAsModal(path, buttonSettings.modalSettings);
         break;
       default:
         throw Error(
