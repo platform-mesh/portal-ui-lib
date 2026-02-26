@@ -15,6 +15,7 @@ import {
   capitalize,
   getResourceValueByJsonPath,
   getValueByPath,
+  isNamespacedResource,
   replaceDotsAndHyphensWithUnderscores,
   stripTypename,
 } from '@platform-mesh/portal-ui-lib/utils';
@@ -51,13 +52,14 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = true,
   ): Observable<Resource> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespaced = isNamespacedResource(nodeContext);
+    const namespace = this.getNamespace(nodeContext);
 
     let query: string | TypedDocumentNode<any, any> = this.resolveReadQuery(
       params,
       fieldsOrRawQuery,
       resourceId,
-      isNamespacedResource ? nodeContext.namespaceId : undefined,
+      isNamespaced ? namespace : undefined,
     );
 
     query = this.parseGQLQuery(query);
@@ -68,8 +70,8 @@ export class ResourceService {
         query,
         variables: {
           name: resourceId,
-          ...(isNamespacedResource && {
-            namespace: nodeContext.namespaceId,
+          ...(isNamespaced && {
+            namespace: namespace,
           }),
         },
       })
@@ -118,10 +120,10 @@ export class ResourceService {
     readFromParentKcpPath: boolean = false,
     pagination?: ResourcePagination,
   ): Observable<ResourceListResult | any> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespaced = isNamespacedResource(nodeContext);
     const variables = {
-      ...(isNamespacedResource && {
-        namespace: { type: 'String', value: nodeContext.namespaceId },
+      ...(isNamespaced && {
+        namespace: { type: 'String', value: this.getNamespace(nodeContext) },
       }),
       ...(pagination?.limit && {
         limit: { type: 'Int', value: pagination?.limit },
@@ -259,10 +261,10 @@ export class ResourceService {
     resourceVersion: string,
     readFromParentKcpPath: boolean,
   ): Observable<ResourceSubscriptionResult | undefined> {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespaced = isNamespacedResource(nodeContext);
     const variables = {
-      ...(isNamespacedResource && {
-        namespace: { type: 'String', value: nodeContext.namespaceId },
+      ...(isNamespaced && {
+        namespace: { type: 'String', value: this.getNamespace(nodeContext) },
       }),
     };
     const lowerCaseOperation = operation.toLowerCase();
@@ -318,7 +320,7 @@ export class ResourceService {
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespaced = isNamespacedResource(nodeContext);
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
     const fields = [
@@ -326,8 +328,11 @@ export class ResourceService {
         operation: `delete${kind}`,
         variables: {
           name: { type: 'String!', value: resource.metadata.name },
-          ...(isNamespacedResource && {
-            namespace: { type: 'String', value: nodeContext.namespaceId },
+          ...(isNamespaced && {
+            namespace: {
+              type: 'String',
+              value: this.getNamespace(nodeContext),
+            },
           }),
         },
         fields: [],
@@ -360,19 +365,19 @@ export class ResourceService {
     resourceDefinition: ResourceDefinition,
     nodeContext: ResourceNodeContext,
   ) {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespaced = isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
     const version = resourceDefinition.version;
     const kind = resourceDefinition.kind;
-    const namespace = nodeContext.namespaceId;
+    const namespace = this.getNamespace(nodeContext);
 
     const mutationFields: any[] = [
       {
         operation: `create${kind}`,
         variables: {
-          ...(isNamespacedResource && {
+          ...(isNamespaced && {
             namespace: { type: 'String', value: namespace },
           }),
           object: { type: `${kind}Input!`, value: resource },
@@ -410,13 +415,13 @@ export class ResourceService {
     readFromParentKcpPath: boolean = false,
     fields: any[] = ['__typename'],
   ) {
-    const isNamespacedResource = this.isNamespacedResource(nodeContext);
+    const isNamespaced = isNamespacedResource(nodeContext);
     const group = replaceDotsAndHyphensWithUnderscores(
       resourceDefinition.group,
     );
     const kind = resourceDefinition.kind;
     const version = resourceDefinition.version;
-    const namespace = nodeContext.namespaceId;
+    const namespace = this.getNamespace(nodeContext);
 
     const cleanResource = stripTypename(resource);
 
@@ -424,7 +429,7 @@ export class ResourceService {
       {
         operation: `update${kind}`,
         variables: {
-          ...(isNamespacedResource && {
+          ...(isNamespaced && {
             namespace: { type: 'String', value: namespace },
           }),
           name: { type: 'String!', value: resource.metadata.name },
@@ -465,8 +470,18 @@ export class ResourceService {
       );
   }
 
-  private isNamespacedResource(nodeContext: ResourceNodeContext) {
-    return nodeContext?.resourceDefinition?.scope === 'Namespaced';
+  private getNamespace(nodeContext: ResourceNodeContext): string | undefined {
+    if (nodeContext.namespaceId) {
+      return nodeContext.namespaceId;
+    }
+
+    const namespace = this.luigiCoreService.routing().getSearchParams().namespace;
+
+    if (namespace) {
+      return namespace === '-all-' ? undefined : namespace;
+    }
+
+    return undefined;
   }
 
   private normalizeGqlBuilderVariables(

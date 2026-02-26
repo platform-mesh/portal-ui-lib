@@ -134,7 +134,8 @@ export class DetailView {
 
   navigateToParent() {
     const parentNavigationContext =
-      this.context().parentNavigationContexts?.at(-1);
+      this.context().parentNavigationContexts?.at(0);
+
     if (!parentNavigationContext) {
       this.LuigiClient().uxManager().showAlert({
         text: 'Parent navigation context is not defined',

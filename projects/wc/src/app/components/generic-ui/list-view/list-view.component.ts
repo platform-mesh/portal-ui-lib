@@ -1,5 +1,6 @@
 import { processFields } from '../../../utils/proccess-fields';
 import { GenericView } from '../generic-view/generic-view.component';
+import { addSearchParams } from '../../../utils/set-search-params';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
 import {
@@ -27,11 +28,11 @@ import { TableHeaderRow } from '@fundamental-ngx/ui5-webcomponents/table-header-
 import { TableRow } from '@fundamental-ngx/ui5-webcomponents/table-row';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   FieldDefinition,
   Resource,
   ResourceListResult,
-  ResourceOperationTypeMap,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -43,6 +44,8 @@ import {
   buildResourcePath,
   generateGraphQLFields,
   getResourceValueByJsonPath,
+  isNamespacedResource,
+  mergeListWithSubscriptionResult,
   replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { finalize } from 'rxjs/operators';
@@ -76,6 +79,7 @@ export class ListView {
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
   private createModal = viewChild<CreateResourceModal>('createModal');
+  private luigiCoreService = inject(LuigiCoreService);
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -111,6 +115,7 @@ export class ListView {
 
   private currentContinueToken: string | undefined = undefined;
   private isLoadingList = false;
+  private isNamespaced = computed(() => isNamespacedResource(this.context()));
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
 
   constructor() {
@@ -235,21 +240,12 @@ export class ListView {
   private mergeResourcesWithSubscriptionResult(
     subscriptionResult: ResourceSubscriptionResult,
   ) {
-    const result = new Map<string, Resource>(
-      this.resources().map((item) => [item.metadata.name!, item]),
+    this.resources.set(
+      mergeListWithSubscriptionResult(this.resources(), subscriptionResult, {
+        getItemKey: (item) => item.metadata?.name,
+        mapSubscriptionObjectToItem: (object) => object,
+      }),
     );
-
-    const { type, object } = subscriptionResult;
-    if (type === ResourceOperationTypeMap.ADDED) {
-      result.set(object.metadata.name, object);
-    } else if (type === ResourceOperationTypeMap.MODIFIED) {
-      result.has(object.metadata.name) &&
-        result.set(object.metadata.name, object);
-    } else if (type === ResourceOperationTypeMap.DELETED) {
-      result.delete(object.metadata.name);
-    }
-
-    this.resources.set([...result.values()]);
   }
 
   create(resource: Resource) {
@@ -280,6 +276,9 @@ export class ListView {
       throw new Error('Resource name is not defined');
     }
 
+    addSearchParams({
+      namespace: resource.metadata.namespace,
+    });
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
@@ -293,6 +292,12 @@ export class ListView {
     const readyCondition = this.readyCondition();
     if (readyCondition) {
       additionalFields.push(readyCondition);
+    }
+
+    if (this.isNamespaced()) {
+      additionalFields.push({
+        property: 'metadata.namespace',
+      });
     }
 
     return generateGraphQLFields(this.columns().concat(additionalFields));

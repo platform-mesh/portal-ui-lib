@@ -3,17 +3,24 @@ import { ApolloFactory } from './apollo-factory';
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map, shareReplay } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AccountInfoService {
   private apolloFactory = inject(ApolloFactory);
+  private readCache = new Map<string, Observable<AccountInfo>>();
 
   read(nodeContext: ResourceNodeContext): Observable<AccountInfo> {
-    return this.apolloFactory
+    const cacheKey = nodeContext.kcpPath ?? '';
+    const cachedRead = this.readCache.get(cacheKey);
+    if (cachedRead) {
+      return cachedRead;
+    }
+
+    const request$ = this.apolloFactory
       .apollo(nodeContext)
       .query<AccountInfo>({
         query: accountInfoRead,
@@ -34,6 +41,14 @@ export class AccountInfoService {
             },
           };
         }),
+        shareReplay(1),
+        catchError((error) => {
+          this.readCache.delete(cacheKey);
+          return throwError(() => error);
+        }),
       );
+
+    this.readCache.set(cacheKey, request$);
+    return request$;
   }
 }

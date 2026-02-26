@@ -30,7 +30,6 @@ import {
   Resource,
   ResourceDefinition,
   ResourceListResult,
-  ResourceOperationTypeMap,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -40,6 +39,7 @@ import {
 import {
   generateGraphQLFields,
   isLocalSetup,
+  mergeListWithSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { map, switchMap } from 'rxjs';
 
@@ -187,25 +187,19 @@ export class OrganizationManagementView implements OnInit {
   private mergeResourcesWithSubscriptionResult(
     subscriptionResult: ResourceSubscriptionResult,
   ) {
-    const result = new Map<string, any>(
-      this.organizations().map((item) => [item.name, item]),
+    this.organizations.set(
+      mergeListWithSubscriptionResult(
+        this.organizations(),
+        subscriptionResult,
+        {
+          getItemKey: (item) => item.name,
+          mapSubscriptionObjectToItem: (object) => ({
+            name: object.metadata.name,
+            ready: this.isOrganizationReady(object),
+          }),
+        },
+      ),
     );
-
-    const { type, object } = subscriptionResult;
-    const subscriptionObject = {
-      name: object.metadata.name,
-      ready: this.isOrganizationReady(object),
-    };
-    if (type === ResourceOperationTypeMap.ADDED) {
-      result.set(object.metadata.name, subscriptionObject);
-    } else if (type === ResourceOperationTypeMap.MODIFIED) {
-      result.has(object.metadata.name) &&
-        result.set(object.metadata.name, subscriptionObject);
-    } else if (type === ResourceOperationTypeMap.DELETED) {
-      result.delete(object.metadata.name);
-    }
-
-    this.organizations.set([...result.values()]);
   }
 
   onboardOrganization() {

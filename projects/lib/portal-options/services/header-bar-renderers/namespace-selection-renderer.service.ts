@@ -6,12 +6,32 @@ import {
   LuigiNode,
   PortalConfig,
 } from '@openmfp/portal-ui-lib';
-import { FieldDefinition, Resource, ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
-import { ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { generateGraphQLFields } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  FieldDefinition,
+  Resource,
+  ResourceDefinition,
+  ResourceListResult,
+} from '@platform-mesh/portal-ui-lib/models';
+import {
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  generateGraphQLFields,
+  isNamespacedResource,
+  mergeListWithSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/utils';
 import '@ui5/webcomponents/dist/ComboBox.js';
-import { Observable, of } from 'rxjs';
-import { shareReplay } from 'rxjs/operators';
+import { Observable, Subject, defer, of } from 'rxjs';
+import {
+  catchError,
+  retry,
+  scan,
+  shareReplay,
+  startWith,
+  switchMap,
+  takeUntil,
+} from 'rxjs/operators';
 
 const defaultColumns: FieldDefinition[] = [
   {
@@ -22,7 +42,11 @@ const defaultColumns: FieldDefinition[] = [
 
 @Injectable({ providedIn: 'root' })
 export class NamespaceSelectionRendererService {
-  private namespaceResources$?: Observable<Resource[]>;
+  private namespaceResourcesCache?: {
+    key: string;
+    value$: Observable<Resource[]>;
+    stop$: Subject<void>;
+  };
 
   private resourceService = inject(ResourceService);
   private authService = inject(AuthService);
@@ -30,44 +54,40 @@ export class NamespaceSelectionRendererService {
   private destroyRef = inject(DestroyRef);
 
   public create(portalConfig: PortalConfig) {
-    return (containerElement: HTMLElement, nodeItems: any[], _clickHandler: any) => {
+    return (
+      containerElement: HTMLElement,
+      nodeItems: any[],
+      _clickHandler: any,
+    ) => {
       containerElement.style.paddingBottom = '0.5rem';
 
       const lastNode = nodeItems.at(-1)?.node as LuigiNode | undefined;
+      const namespace = this.luigiCoreService
+        .routing()
+        .getSearchParams().namespace;
+      const kcpPath = lastNode?.context?.kcpPath;
 
-      if (!this.isNamespacedNode(lastNode)) {
+      if (lastNode?.context && !isNamespacedResource(lastNode.context)) {
         return containerElement;
       }
 
       const ui5combobox = this.createCombobox(containerElement);
-      const namespaceName = this.getNamespaceNodeName(lastNode);
-      this.addComboboxItems(portalConfig, ui5combobox, namespaceName);
+
+      this.addComboboxItems(portalConfig, ui5combobox, namespace, kcpPath);
 
       ui5combobox.addEventListener('change', (event: any) => {
-        const value = (event?.target as any)?.value ?? '';
-        const selected = (value || '').trim();
-        this.replacePathSegment(namespaceName, selected);
+        const value = (event?.target as any)?.value.trim() ?? '';
+        this.changeNamespace(value);
       });
 
       return ui5combobox as HTMLElement;
     };
   }
 
-  private isNamespacedNode(node: LuigiNode | undefined) {
-    return node?.context?.resourceDefinition?.scope === 'Namespaced';
-  }
-
-  private getNamespaceNodeName(node?: LuigiNode) {
-    const namespacedNodeName = node?.navigationContext || '';
-    const segments = window.location.pathname.split('/').filter(Boolean);
-    const index = segments.indexOf(namespacedNodeName);
-
-    return index > 0 ? segments[index - 1] : null;
-  }
-
   private createCombobox(containerElement: HTMLElement) {
     const ui5combobox = document.createElement('ui5-combobox');
     ui5combobox.setAttribute('placeholder', 'Namespaces');
+    ui5combobox.setAttribute('data-testid', 'namespace-selection-combobox');
     containerElement.appendChild(ui5combobox);
 
     return ui5combobox;
@@ -76,76 +96,169 @@ export class NamespaceSelectionRendererService {
   private addComboboxItems(
     portalConfig: PortalConfig,
     ui5combobox: HTMLElement,
-    namespaceName: string | null,
+    namespace: string | null,
+    kcpPath?: string,
   ) {
-    if (!this.namespaceResources$) {
-      this.namespaceResources$ = this.getNamespaceResources(portalConfig).pipe(
-        shareReplay(1),
-        takeUntilDestroyed(this.destroyRef),
-      );
+    this.getNamespaceResourcesCached(portalConfig, kcpPath).subscribe(
+      (resources) => {
+        this.syncComboboxItems(ui5combobox, resources);
+        this.setSelectedValue(ui5combobox, resources, namespace);
+      },
+    );
+  }
+
+  private getNamespaceResourcesCached(
+    portalConfig: PortalConfig,
+    kcpPath?: string,
+  ): Observable<Resource[]> {
+    const cacheKey = this.getNamespaceResourcesCacheKey(kcpPath);
+    if (this.namespaceResourcesCache?.key === cacheKey) {
+      return this.namespaceResourcesCache.value$;
     }
 
-    this.namespaceResources$.subscribe((resources) => {
-      resources.forEach((resource) => {
-        const name = resource.metadata?.name;
-        if (!name) {
-          return;
-        }
-        const existingItem = Array.from(ui5combobox.children).find(
-          (child) => (child as Element).getAttribute('text') === name,
-        );
+    if (this.namespaceResourcesCache) {
+      this.namespaceResourcesCache.stop$.next();
+      this.namespaceResourcesCache.stop$.complete();
+      this.namespaceResourcesCache = undefined;
+    }
 
-        if (existingItem) {
-          return;
-        }
-        const resourceOption = document.createElement('ui5-cb-item');
-        resourceOption.setAttribute('text', name);
-        if (name === namespaceName) {
-          ui5combobox.setAttribute('value', name);
-        }
-        ui5combobox.appendChild(resourceOption);
-      });
+    const stop$ = new Subject<void>();
+    const value$ = this.getNamespaceResources(
+      portalConfig,
+      kcpPath,
+      stop$,
+    ).pipe(shareReplay(1), takeUntilDestroyed(this.destroyRef));
+    this.namespaceResourcesCache = {
+      key: cacheKey,
+      value$,
+      stop$,
+    };
+
+    return value$;
+  }
+
+  private getNamespaceResourcesCacheKey(kcpPath?: string): string {
+    return kcpPath ?? '';
+  }
+
+  private syncComboboxItems(ui5combobox: HTMLElement, resources: Resource[]) {
+    ui5combobox.replaceChildren();
+
+    resources.forEach((resource) => {
+      const name = resource.metadata?.name;
+      if (!name) {
+        return;
+      }
+      const resourceOption = document.createElement('ui5-cb-item');
+      resourceOption.setAttribute('text', name);
+      resourceOption.setAttribute(
+        'data-testid',
+        `namespace-selection-combobox-item-${name}`,
+      );
+      ui5combobox.appendChild(resourceOption);
     });
+
+    const allOption = document.createElement('ui5-cb-item');
+    allOption.setAttribute('text', '-all-');
+    allOption.setAttribute(
+      'data-testid',
+      'namespace-selection-combobox-item-all',
+    );
+    ui5combobox.appendChild(allOption);
+  }
+
+  private setSelectedValue(
+    ui5combobox: HTMLElement,
+    resources: Resource[],
+    namespace: string | null,
+  ) {
+    const currentNamespace = this.luigiCoreService
+      .routing()
+      .getSearchParams().namespace;
+
+    if (currentNamespace) {
+      ui5combobox.setAttribute('value', currentNamespace);
+      return;
+    }
+
+    if (
+      namespace &&
+      resources.find((resource) => resource.metadata?.name === namespace)
+    ) {
+      ui5combobox.setAttribute('value', namespace);
+    } else {
+      ui5combobox.setAttribute('value', '-all-');
+      this.changeNamespace('-all-');
+    }
   }
 
   private getNamespaceResources(
     portalConfig: PortalConfig,
+    kcpPath: string | undefined,
+    stop$: Subject<void>,
   ): Observable<Resource[]> {
     const operation = 'v1_namespaces';
     const fields = generateGraphQLFields(defaultColumns);
+    const context = {
+      portalContext: {
+        crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
+      },
+      resourceDefinition: {
+        version: 'v1',
+        plural: 'namespaces',
+        scope: 'Cluster',
+      } as ResourceDefinition,
+      kcpPath,
+      token: this.authService.getToken(),
+    } as ResourceNodeContext;
 
-    try {
-      return this.resourceService.list(operation, fields, {
-        portalContext: {
-          crdGatewayApiUrl: portalConfig.portalContext['crdGatewayApiUrl'],
-        },
-        resourceDefinition: {
-          version: 'v1',
-          plural: 'namespaces',
-          scope: 'Cluster',
-        } as ResourceDefinition,
-        token: this.authService.getToken(),
-      } as ResourceNodeContext);
-    } catch (e) {
-      console.error(`Failed to read entities from ${operation}`, e);
-      return of([]);
-    }
+    return defer(() =>
+      this.resourceService.list(operation, fields, context),
+    ).pipe(
+      retry(3),
+      takeUntil(stop$),
+      switchMap((result: ResourceListResult) =>
+        this.resourceService
+          .resourceChangeSubscription(
+            operation,
+            fields,
+            context,
+            result.resourceVersion,
+            false,
+          )
+          .pipe(
+            startWith(undefined),
+            scan(
+              (resources, subscriptionResult) =>
+                mergeListWithSubscriptionResult(resources, subscriptionResult, {
+                  getItemKey: (resource) => resource.metadata?.name,
+                  mapSubscriptionObjectToItem: (object) => object,
+                }),
+              result.items,
+            ),
+            takeUntil(stop$),
+          ),
+      ),
+      catchError((error) => {
+        console.error(`Failed to read entities from ${operation}`, error);
+        return of([]);
+      }),
+    );
   }
 
-  private replacePathSegment(name: string | null, newValue: string): void {
-    if (!name || !newValue) {
+  private changeNamespace(value: string): void {
+    if (!value) {
       return;
     }
-    const segments = window.location.pathname.split('/').filter(Boolean);
-    const index = segments.indexOf(name);
 
-    if (index !== -1) {
-      segments[index] = newValue;
-      const newPath = `/${segments.join('/')}`;
+    const oldValue = this.luigiCoreService
+      .routing()
+      .getSearchParams().namespace;
 
-      this.luigiCoreService.navigation().navigate(newPath);
-    } else {
-      console.warn(`Segment "${name}" not found in path.`);
+    if (oldValue === value) {
+      return;
     }
+
+    this.luigiCoreService.routing().addSearchParams({ namespace: value });
   }
 }

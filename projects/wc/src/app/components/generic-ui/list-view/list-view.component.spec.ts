@@ -155,6 +155,44 @@ describe('ListViewComponent', () => {
     );
   });
 
+  it('should include metadata.namespace in query fields for namespaced resources', () => {
+    mockResourceService.list = vi.fn().mockReturnValue(of([]));
+
+    const newFixture = TestBed.createComponent(ListView);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        version: 'v1alpha1',
+        scope: 'Namespaced',
+        ui: {
+          listView: {
+            fields: [{ property: 'metadata.name' }],
+          },
+        },
+      } as ResourceDefinition,
+    })) as any;
+
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      getNodeParams: vi.fn(),
+    })) as any;
+
+    newFixture.detectChanges();
+
+    const fields = mockResourceService.list.mock.calls.at(-1)?.[1];
+    const fieldsAsString = JSON.stringify(fields);
+    expect(fieldsAsString).toContain('metadata');
+    expect(fieldsAsString).toContain('namespace');
+  });
+
   it('should create a resource', () => {
     const resource = { metadata: { name: 'test' } };
 
@@ -163,8 +201,14 @@ describe('ListViewComponent', () => {
   });
 
   it('should navigate to resource', () => {
-    const resource = { metadata: { name: 'res1' } };
+    const resource = { metadata: { name: 'res1', namespace: 'test-namespace' } };
     const navSpy = vi.fn();
+    const addSearchParamsSpy = vi.fn();
+    (window as any).Luigi = {
+      routing: () => ({
+        addSearchParams: addSearchParamsSpy,
+      }),
+    };
     component.LuigiClient = (() => ({
       linkManager: () => ({
         navigate: navSpy,
@@ -172,6 +216,9 @@ describe('ListViewComponent', () => {
     })) as any;
 
     component.navigateToResource(resource as any);
+    expect(addSearchParamsSpy).toHaveBeenCalledWith({
+      namespace: 'test-namespace',
+    });
     expect(navSpy).toHaveBeenCalledWith('res1');
   });
 

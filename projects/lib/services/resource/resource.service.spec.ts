@@ -1698,29 +1698,36 @@ describe('ResourceService', () => {
   // NEW TEST CASES FOR MISSING COVERAGE
 
   describe('Private methods and edge cases', () => {
-    describe('isNamespacedResource', () => {
-      it('should return true for Namespaced scope', () => {
-        const result = service['isNamespacedResource'](namespacedNodeContext);
-        expect(result).toBe(true);
+    describe('getNamespace', () => {
+      it('should return namespaceId when present in context', () => {
+        const result = service['getNamespace'](namespacedNodeContext);
+        expect(result).toBe('test-namespace');
       });
 
-      it('should return false for Cluster scope', () => {
-        const result = service['isNamespacedResource'](clusterScopeNodeContext);
-        expect(result).toBe(false);
+      it('should return namespace from search params when namespaceId is missing', () => {
+        service['luigiCoreService'].routing = vi.fn(() => ({
+          getSearchParams: () => ({ namespace: 'search-namespace' }),
+        }));
+
+        const result = service['getNamespace']({
+          ...namespacedNodeContext,
+          namespaceId: undefined,
+        });
+
+        expect(result).toBe('search-namespace');
       });
 
-      it('should handle undefined scope', () => {
-        const context: any = {
-          resourceDefinition: {},
-        };
-        const result = service['isNamespacedResource'](context);
-        expect(result).toBe(false);
-      });
+      it('should return undefined when namespace is -all- in search params', () => {
+        service['luigiCoreService'].routing = vi.fn(() => ({
+          getSearchParams: () => ({ namespace: '-all-' }),
+        }));
 
-      it('should handle undefined resourceDefinition', () => {
-        const context: any = {};
-        const result = service['isNamespacedResource'](context);
-        expect(result).toBe(false);
+        const result = service['getNamespace']({
+          ...namespacedNodeContext,
+          namespaceId: undefined,
+        });
+
+        expect(result).toBeUndefined();
       });
     });
 
