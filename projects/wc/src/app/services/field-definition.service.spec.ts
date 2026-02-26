@@ -46,6 +46,20 @@ describe('FieldDefinitionService', () => {
       expect(result).toBe('resource-name');
     });
 
+    it('should return according to indicated property', () => {
+      const field: FieldDefinition = {
+        property: 'metadata.name',
+        value: 'fallback-value',
+      };
+      const resource: Resource = {
+        metadata: { name: '' },
+      };
+
+      const result = service.getFieldValue(field, resource);
+
+      expect(result).toBe('');
+    });
+
     it('should return field.value when resource is undefined', () => {
       const field: FieldDefinition = {
         property: 'metadata.name',
@@ -247,6 +261,156 @@ describe('FieldDefinitionService', () => {
       );
     });
 
+    it('should throw error when buttonSettings is missing', () => {
+      const field: FieldDefinition = {
+        value: '/path',
+        label: 'Test Button',
+        uiSettings: {},
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "Test Button"');
+    });
+
+    it('should throw error when action is missing', () => {
+      const field: FieldDefinition = {
+        value: '/path',
+        property: 'metadata.link',
+        uiSettings: {
+          buttonSettings: {} as any,
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "metadata.link"');
+    });
+
+    it('should throw error when action is undefined', () => {
+      const field: FieldDefinition = {
+        value: '/path',
+        label: 'My Button',
+        uiSettings: {
+          buttonSettings: {
+            action: undefined as any,
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "My Button"');
+    });
+
+    it('should throw error when action is null', () => {
+      const field: FieldDefinition = {
+        value: '/path',
+        property: 'spec.action',
+        uiSettings: {
+          buttonSettings: {
+            action: null as any,
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "spec.action"');
+    });
+
+    it('should throw error when uiSettings is undefined', () => {
+      const field: FieldDefinition = {
+        value: '/path',
+        label: 'Test',
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "Test"');
+    });
+
+    it('should throw error when path is empty string', () => {
+      const field: FieldDefinition = {
+        value: '',
+        label: 'Empty Path Button',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow(
+        'Missing or invalid button path for field "Empty Path Button"',
+      );
+    });
+
+    it('should throw error when path is whitespace only', () => {
+      const field: FieldDefinition = {
+        value: '   ',
+        property: 'metadata.path',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing or invalid button path for field "metadata.path"');
+    });
+
+    it('should throw error when path is not a string', () => {
+      const field: FieldDefinition = {
+        value: 123 as any,
+        label: 'Numeric Path',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing or invalid button path for field "Numeric Path"');
+    });
+
+    it('should throw error when path is undefined', () => {
+      const field: FieldDefinition = {
+        property: 'metadata.link',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing or invalid button path for field "metadata.link"');
+    });
+
+    it('should throw error when path is null', () => {
+      const field: FieldDefinition = {
+        value: null as any,
+        label: 'Null Path',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing or invalid button path for field "Null Path"');
+    });
+
     it('should throw error for unsupported action', () => {
       const field: FieldDefinition = {
         value: '/some/path',
@@ -262,7 +426,7 @@ describe('FieldDefinitionService', () => {
       }).toThrow('Unsupported action: unsupportedAction');
     });
 
-    it('should throw error with field declaration when action is unsupported', () => {
+    it('should throw error with field declaration for unsupported action', () => {
       const field: FieldDefinition = {
         property: 'test',
         value: '/path',
@@ -278,7 +442,30 @@ describe('FieldDefinitionService', () => {
       }).toThrow(/in field declaration:/);
     });
 
-    it('should throw error when buttonSettings is undefined', () => {
+    it('should use label in error message when available', () => {
+      const field: FieldDefinition = {
+        label: 'My Custom Label',
+        property: 'metadata.name',
+        uiSettings: {},
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "My Custom Label"');
+    });
+
+    it('should use property in error message when label is missing', () => {
+      const field: FieldDefinition = {
+        property: 'spec.buttonPath',
+        uiSettings: {},
+      };
+
+      expect(() => {
+        service.executeButtonAction(mockLuigiClient, field, undefined);
+      }).toThrow('Missing button action for field "spec.buttonPath"');
+    });
+
+    it('should use unknown in error message when both label and property are missing', () => {
       const field: FieldDefinition = {
         value: '/path',
         uiSettings: {},
@@ -286,37 +473,23 @@ describe('FieldDefinitionService', () => {
 
       expect(() => {
         service.executeButtonAction(mockLuigiClient, field, undefined);
-      }).toThrow('Unsupported action: undefined');
+      }).toThrow('Missing button action for field "unknown"');
     });
 
-    it('should throw error when uiSettings is undefined', () => {
+    it('should use unknown in error message when property is array', () => {
       const field: FieldDefinition = {
-        value: '/path',
+        property: ['metadata', 'name'],
+        uiSettings: {},
       };
 
       expect(() => {
         service.executeButtonAction(mockLuigiClient, field, undefined);
-      }).toThrow('Unsupported action: undefined');
+      }).toThrow('Missing button action for field "unknown"');
     });
 
-    it('should throw error when action is null', () => {
+    it('should navigate with valid path', () => {
       const field: FieldDefinition = {
-        value: '/path',
-        uiSettings: {
-          buttonSettings: {
-            action: null as any,
-          },
-        },
-      };
-
-      expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
-      }).toThrow('Unsupported action: null');
-    });
-
-    it('should navigate with empty string path', () => {
-      const field: FieldDefinition = {
-        value: '',
+        value: '/valid/path',
         uiSettings: {
           buttonSettings: {
             action: 'navigate',
@@ -326,32 +499,7 @@ describe('FieldDefinitionService', () => {
 
       service.executeButtonAction(mockLuigiClient, field, undefined);
 
-      expect(mockLinkManager.navigate).toHaveBeenCalledWith('');
-    });
-
-    it('should navigate with complex path from resource', () => {
-      const field: FieldDefinition = {
-        property: 'spec.links.external',
-        uiSettings: {
-          buttonSettings: {
-            action: 'navigate',
-          },
-        },
-      };
-      const resource: Resource = {
-        metadata: { name: 'test' },
-        spec: { links: { external: '/complex/path/to/resource' } } as any,
-      };
-
-      getResourceValueByJsonPathMock.mockReturnValue(
-        '/complex/path/to/resource',
-      );
-
-      service.executeButtonAction(mockLuigiClient, field, resource);
-
-      expect(mockLinkManager.navigate).toHaveBeenCalledWith(
-        '/complex/path/to/resource',
-      );
+      expect(mockLinkManager.navigate).toHaveBeenCalledWith('/valid/path');
     });
 
     it('should call linkManager once per action', () => {
@@ -395,7 +543,7 @@ describe('FieldDefinitionService', () => {
       expect(mockLinkManager.navigate).toHaveBeenNthCalledWith(2, '/path2');
     });
 
-    it('should use fallback value when jsonPath returns null for navigate', () => {
+    it('should use fallback value when jsonPath returns null', () => {
       const field: FieldDefinition = {
         property: 'metadata.link',
         value: '/fallback/path',
@@ -416,7 +564,7 @@ describe('FieldDefinitionService', () => {
       expect(mockLinkManager.navigate).toHaveBeenCalledWith('/fallback/path');
     });
 
-    it('should include field JSON in error message', () => {
+    it('should include field JSON in unsupported action error message', () => {
       const field: FieldDefinition = {
         property: 'test.property',
         value: '/path',
