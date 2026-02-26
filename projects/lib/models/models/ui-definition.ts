@@ -81,8 +81,8 @@ export interface FieldDefinition {
 }
 
 interface UiView {
-  actions: FieldDefinition[];
-  fields: FieldDefinition[];
+  actions?: FieldDefinition[];
+  fields?: FieldDefinition[];
   resourceDescription?: FieldDefinition;
   resourceTitle?: FieldDefinition;
 }

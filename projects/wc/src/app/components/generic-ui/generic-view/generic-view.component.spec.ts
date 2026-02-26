@@ -1,7 +1,8 @@
-import * as fieldHelper from '../../../utils/field-helper';
+import { FieldDefinitionService } from '../../../services/field-definition.service';
 import { GenericView } from './generic-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
+  FieldDefinition,
   Resource,
   ResourceDefinition,
   UIDefinition,
@@ -14,21 +15,28 @@ describe('GenericView', () => {
   let mockLuigiClient: any;
   let mockContext: ResourceNodeContext;
   let mockResourceDefinition: ResourceDefinition;
+  let mockFieldDefinitionService: any;
 
   beforeEach(async () => {
     mockLuigiClient = {
       linkManager: vi.fn(),
     };
 
+    mockFieldDefinitionService = {
+      executeButtonAction: vi.fn(),
+    };
+
     mockResourceDefinition = {
       ui: {
         detailView: {
-          fields: [{ property: 'field1' }, { property: 'field2' }],
-          resourceTitle: 'title',
-          resourceDescription: 'description',
+          fields: [],
           actions: [
             { property: 'action1', uiSettings: { displayAs: 'button' } },
+            { property: 'action2', uiSettings: { displayAs: 'link' } },
+            { property: 'action3', uiSettings: { displayAs: 'button' } },
           ],
+          resourceTitle: 'title',
+          resourceDescription: 'description',
         },
       } as UIDefinition,
     } as ResourceDefinition;
@@ -40,6 +48,12 @@ describe('GenericView', () => {
 
     await TestBed.configureTestingModule({
       imports: [GenericView],
+      providers: [
+        {
+          provide: FieldDefinitionService,
+          useValue: mockFieldDefinitionService,
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(GenericView);
@@ -65,9 +79,10 @@ describe('GenericView', () => {
       expect(component.resourceDescriptionDefinition()).toBe('description');
     });
 
-    it('should compute viewActions from resourceDefinition', () => {
+    it('should compute viewActions filtering only button actions', () => {
       expect(component.viewActions()).toEqual([
         { property: 'action1', uiSettings: { displayAs: 'button' } },
+        { property: 'action3', uiSettings: { displayAs: 'button' } },
       ]);
     });
 
@@ -79,47 +94,63 @@ describe('GenericView', () => {
       fixture.componentRef.setInput('context', noActionsContext);
       expect(component.viewActions()).toEqual([]);
     });
+
+    it('should return empty array when resourceDefinition has no button actions', () => {
+      const noButtonActionsContext = {
+        resourceDefinition: {
+          ui: {
+            detailView: {
+              actions: [
+                { property: 'action1', uiSettings: { displayAs: 'link' } },
+              ],
+            },
+          },
+        } as any,
+        resourceId: 'test-id',
+      } as ResourceNodeContext;
+      fixture.componentRef.setInput('context', noButtonActionsContext);
+      expect(component.viewActions()).toEqual([]);
+    });
   });
 
   describe('buttonAction', () => {
     it('should stop event propagation', () => {
       const mockEvent = { stopPropagation: vi.fn() };
-      const mockField = { name: 'testField' } as any;
-      vi.spyOn(fieldHelper, 'executeButtonAction').mockImplementation(() => {});
+      const mockField = {
+        property: 'testField',
+        uiSettings: {
+          displayAs: 'button',
+          buttonSettings: { action: 'navigate' },
+        },
+      } as FieldDefinition;
 
       component.buttonAction(mockEvent, mockField);
 
       expect(mockEvent.stopPropagation).toHaveBeenCalled();
     });
 
-    it('should call executeButtonAction with correct parameters', () => {
+    it('should call fieldDefinitionService.executeButtonAction with correct parameters', () => {
       const mockEvent = { stopPropagation: vi.fn() };
-      const mockField = { name: 'testField' } as any;
+      const mockField = { property: 'testField' } as FieldDefinition;
       const mockResource = { metadata: { name: 'resource-1' } } as Resource;
-      vi.spyOn(fieldHelper, 'executeButtonAction').mockImplementation(() => {});
 
       fixture.componentRef.setInput('resource', mockResource);
       component.buttonAction(mockEvent, mockField);
 
-      expect(fieldHelper.executeButtonAction).toHaveBeenCalledWith(
-        mockLuigiClient,
-        mockField,
-        mockResource,
-      );
+      expect(
+        mockFieldDefinitionService.executeButtonAction,
+      ).toHaveBeenCalledWith(mockLuigiClient, mockField, mockResource);
     });
 
-    it('should call executeButtonAction with undefined resource when not set', () => {
+    it('should call fieldDefinitionService.executeButtonAction with undefined resource when not set', () => {
       const mockEvent = { stopPropagation: vi.fn() };
-      const mockField = { name: 'testField' } as any;
-      vi.spyOn(fieldHelper, 'executeButtonAction').mockImplementation(() => {});
+      const mockField = { property: 'testField' } as FieldDefinition;
 
       component.buttonAction(mockEvent, mockField);
 
-      expect(fieldHelper.executeButtonAction).toHaveBeenCalledWith(
-        mockLuigiClient,
-        mockField,
-        undefined,
-      );
+      expect(
+        mockFieldDefinitionService.executeButtonAction,
+      ).toHaveBeenCalledWith(mockLuigiClient, mockField, undefined);
     });
   });
 
@@ -141,6 +172,13 @@ describe('GenericView', () => {
       const mockResource = { metadata: { name: 'test-resource' } } as Resource;
       fixture.componentRef.setInput('resource', mockResource);
       expect(component.resource()).toEqual(mockResource);
+    });
+  });
+
+  describe('injected services', () => {
+    it('should inject FieldDefinitionService', () => {
+      expect(component.fieldDefinitionService).toBeDefined();
+      expect(component.fieldDefinitionService).toBe(mockFieldDefinitionService);
     });
   });
 });

@@ -1,8 +1,5 @@
+import { FieldDefinitionService } from '../../../services/field-definition.service';
 import { evaluateCssRules } from '../../../utils/cssRules.engine';
-import {
-  executeButtonAction,
-  getFieldValue,
-} from '../../../utils/field-helper';
 import { BooleanValue } from './boolean-value/boolean-value.component';
 import { LinkValue } from './link-value/link-value.component';
 import { SecretValue } from './secret-value/secret-value.component';
@@ -11,6 +8,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   signal,
 } from '@angular/core';
@@ -32,6 +30,7 @@ export class ValueCellComponent {
   fieldDefinition = input.required<FieldDefinition>();
   resource = input<Resource>();
   LuigiClient = input.required<LuigiClient>();
+  fieldDefinitionService = inject(FieldDefinitionService);
 
   value = computed(() => this.getValue());
 
@@ -63,7 +62,10 @@ export class ValueCellComponent {
   }
 
   private getValue() {
-    return getFieldValue(this.fieldDefinition(), this.resource());
+    return this.fieldDefinitionService.getFieldValue(
+      this.fieldDefinition(),
+      this.resource(),
+    );
   }
 
   private normalizeBoolean(value: unknown): boolean | undefined {
@@ -110,7 +112,7 @@ export class ValueCellComponent {
 
   protected buttonAction(event: any) {
     event.stopPropagation();
-    executeButtonAction(
+    this.fieldDefinitionService.executeButtonAction(
       this.LuigiClient(),
       this.fieldDefinition(),
       this.resource(),
