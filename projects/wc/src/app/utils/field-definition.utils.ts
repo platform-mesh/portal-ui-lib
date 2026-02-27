@@ -27,13 +27,13 @@ export function executeButtonAction(
     );
   }
 
-  const synitzedPath = path.trim();
-
-  if (typeof path !== 'string' || synitzedPath === '') {
+  if (typeof path !== 'string' || path.trim() === '') {
     throw Error(
       `Missing or invalid button path for field "${field.label ?? (typeof field.property === 'string' ? field.property : 'unknown')}"`,
     );
   }
+
+  const synitzedPath = path?.trim();
 
   switch (buttonSettings.action) {
     case 'navigate':
