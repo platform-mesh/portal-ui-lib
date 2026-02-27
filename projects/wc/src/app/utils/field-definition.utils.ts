@@ -33,7 +33,7 @@ export function executeButtonAction(
     );
   }
 
-  const synitzedPath = path?.trim();
+  const synitzedPath = path.trim();
 
   switch (buttonSettings.action) {
     case 'navigate':
