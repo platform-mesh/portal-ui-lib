@@ -1,5 +1,4 @@
-import { FieldDefinitionService } from './field-definition.service';
-import { TestBed } from '@angular/core/testing';
+import { executeButtonAction, getFieldValue } from './field-definition.utils';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 
 const getResourceValueByJsonPathMock = vi.fn();
@@ -8,8 +7,7 @@ vi.mock('@platform-mesh/portal-ui-lib/utils', () => ({
   getResourceValueByJsonPath: getResourceValueByJsonPathMock,
 }));
 
-describe('FieldDefinitionService', () => {
-  let service: FieldDefinitionService;
+describe('field-definition.utils', () => {
   let mockLuigiClient: any;
   let mockLinkManager: any;
 
@@ -23,11 +21,6 @@ describe('FieldDefinitionService', () => {
       linkManager: vi.fn().mockReturnValue(mockLinkManager),
     } as any;
 
-    TestBed.configureTestingModule({
-      providers: [FieldDefinitionService],
-    });
-
-    service = TestBed.inject(FieldDefinitionService);
     vi.clearAllMocks();
   });
 
@@ -41,7 +34,7 @@ describe('FieldDefinitionService', () => {
         metadata: { name: 'resource-name' },
       };
 
-      const result = service.getFieldValue(field, resource);
+      const result = getFieldValue(field, resource);
 
       expect(result).toBe('resource-name');
     });
@@ -55,7 +48,7 @@ describe('FieldDefinitionService', () => {
         metadata: { name: '' },
       };
 
-      const result = service.getFieldValue(field, resource);
+      const result = getFieldValue(field, resource);
 
       expect(result).toBe('');
     });
@@ -66,7 +59,7 @@ describe('FieldDefinitionService', () => {
         value: 'static-value',
       };
 
-      const result = service.getFieldValue(field, undefined);
+      const result = getFieldValue(field, undefined);
 
       expect(result).toBe('static-value');
       expect(getResourceValueByJsonPathMock).not.toHaveBeenCalled();
@@ -78,7 +71,7 @@ describe('FieldDefinitionService', () => {
         value: 'static-value',
       };
 
-      const result = service.getFieldValue(field, null as any);
+      const result = getFieldValue(field, null as any);
 
       expect(result).toBe('static-value');
       expect(getResourceValueByJsonPathMock).not.toHaveBeenCalled();
@@ -89,7 +82,7 @@ describe('FieldDefinitionService', () => {
         property: 'metadata.name',
       };
 
-      const result = service.getFieldValue(field, undefined);
+      const result = getFieldValue(field, undefined);
 
       expect(result).toBeUndefined();
     });
@@ -100,7 +93,7 @@ describe('FieldDefinitionService', () => {
         value: '',
       };
 
-      const result = service.getFieldValue(field, undefined);
+      const result = getFieldValue(field, undefined);
 
       expect(result).toBe('');
     });
@@ -117,7 +110,7 @@ describe('FieldDefinitionService', () => {
 
       getResourceValueByJsonPathMock.mockReturnValue(false);
 
-      const result = service.getFieldValue(field, resource);
+      const result = getFieldValue(field, resource);
 
       expect(result).toBe(false);
     });
@@ -129,7 +122,7 @@ describe('FieldDefinitionService', () => {
         value: complexValue as any,
       };
 
-      const result = service.getFieldValue(field, undefined);
+      const result = getFieldValue(field, undefined);
 
       expect(result).toEqual(complexValue);
     });
@@ -141,7 +134,7 @@ describe('FieldDefinitionService', () => {
         value: arrayValue as any,
       };
 
-      const result = service.getFieldValue(field, undefined);
+      const result = getFieldValue(field, undefined);
 
       expect(result).toEqual(arrayValue);
     });
@@ -163,7 +156,7 @@ describe('FieldDefinitionService', () => {
 
       getResourceValueByJsonPathMock.mockReturnValue('/path/to/resource');
 
-      service.executeButtonAction(mockLuigiClient, field, resource);
+      executeButtonAction(mockLuigiClient, field, resource);
 
       expect(mockLuigiClient.linkManager).toHaveBeenCalled();
       expect(mockLinkManager.navigate).toHaveBeenCalledWith(
@@ -182,7 +175,7 @@ describe('FieldDefinitionService', () => {
         },
       };
 
-      service.executeButtonAction(mockLuigiClient, field, undefined);
+      executeButtonAction(mockLuigiClient, field, undefined);
 
       expect(mockLinkManager.navigate).toHaveBeenCalledWith('/static/path');
     });
@@ -208,7 +201,7 @@ describe('FieldDefinitionService', () => {
 
       getResourceValueByJsonPathMock.mockReturnValue('/modal/path');
 
-      service.executeButtonAction(mockLuigiClient, field, resource);
+      executeButtonAction(mockLuigiClient, field, resource);
 
       expect(mockLuigiClient.linkManager).toHaveBeenCalled();
       expect(mockLinkManager.openAsModal).toHaveBeenCalledWith('/modal/path', {
@@ -233,7 +226,7 @@ describe('FieldDefinitionService', () => {
         },
       };
 
-      service.executeButtonAction(mockLuigiClient, field, undefined);
+      executeButtonAction(mockLuigiClient, field, undefined);
 
       expect(mockLinkManager.openAsModal).toHaveBeenCalledWith('/modal/path', {
         title: 'Full Modal',
@@ -253,7 +246,7 @@ describe('FieldDefinitionService', () => {
         },
       };
 
-      service.executeButtonAction(mockLuigiClient, field, undefined);
+      executeButtonAction(mockLuigiClient, field, undefined);
 
       expect(mockLinkManager.openAsModal).toHaveBeenCalledWith(
         '/modal/path',
@@ -269,7 +262,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "Test Button"');
     });
 
@@ -283,7 +276,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "metadata.link"');
     });
 
@@ -299,7 +292,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "My Button"');
     });
 
@@ -315,7 +308,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "spec.action"');
     });
 
@@ -326,7 +319,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "Test"');
     });
 
@@ -342,7 +335,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow(
         'Missing or invalid button path for field "Empty Path Button"',
       );
@@ -360,7 +353,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing or invalid button path for field "metadata.path"');
     });
 
@@ -376,7 +369,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing or invalid button path for field "Numeric Path"');
     });
 
@@ -391,7 +384,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing or invalid button path for field "metadata.link"');
     });
 
@@ -407,7 +400,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing or invalid button path for field "Null Path"');
     });
 
@@ -422,7 +415,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Unsupported action: unsupportedAction');
     });
 
@@ -438,7 +431,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow(/in field declaration:/);
     });
 
@@ -450,7 +443,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "My Custom Label"');
     });
 
@@ -461,7 +454,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "spec.buttonPath"');
     });
 
@@ -472,7 +465,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "unknown"');
     });
 
@@ -483,7 +476,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow('Missing button action for field "unknown"');
     });
 
@@ -497,7 +490,7 @@ describe('FieldDefinitionService', () => {
         },
       };
 
-      service.executeButtonAction(mockLuigiClient, field, undefined);
+      executeButtonAction(mockLuigiClient, field, undefined);
 
       expect(mockLinkManager.navigate).toHaveBeenCalledWith('/valid/path');
     });
@@ -512,7 +505,7 @@ describe('FieldDefinitionService', () => {
         },
       };
 
-      service.executeButtonAction(mockLuigiClient, field, undefined);
+      executeButtonAction(mockLuigiClient, field, undefined);
 
       expect(mockLuigiClient.linkManager).toHaveBeenCalledTimes(1);
     });
@@ -535,8 +528,8 @@ describe('FieldDefinitionService', () => {
         },
       };
 
-      service.executeButtonAction(mockLuigiClient, field1, undefined);
-      service.executeButtonAction(mockLuigiClient, field2, undefined);
+      executeButtonAction(mockLuigiClient, field1, undefined);
+      executeButtonAction(mockLuigiClient, field2, undefined);
 
       expect(mockLinkManager.navigate).toHaveBeenCalledTimes(2);
       expect(mockLinkManager.navigate).toHaveBeenNthCalledWith(1, '/path1');
@@ -559,7 +552,7 @@ describe('FieldDefinitionService', () => {
 
       getResourceValueByJsonPathMock.mockReturnValue(null);
 
-      service.executeButtonAction(mockLuigiClient, field, resource);
+      executeButtonAction(mockLuigiClient, field, resource);
 
       expect(mockLinkManager.navigate).toHaveBeenCalledWith('/fallback/path');
     });
@@ -577,7 +570,7 @@ describe('FieldDefinitionService', () => {
       };
 
       expect(() => {
-        service.executeButtonAction(mockLuigiClient, field, undefined);
+        executeButtonAction(mockLuigiClient, field, undefined);
       }).toThrow(/"property":"test.property"/);
     });
   });

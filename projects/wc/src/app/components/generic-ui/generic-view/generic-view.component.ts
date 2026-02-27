@@ -1,4 +1,4 @@
-import { FieldDefinitionService } from '../../../services/field-definition.service';
+import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import { NgTemplateOutlet } from '@angular/common';
@@ -7,7 +7,6 @@ import {
   Component,
   ViewEncapsulation,
   computed,
-  inject,
   input,
 } from '@angular/core';
 import { DynamicPage } from '@fundamental-ngx/ui5-webcomponents-fiori/dynamic-page';
@@ -47,7 +46,6 @@ export class GenericView {
   resource = input<Resource>();
   defaultTitle = input<string>();
   defaultDescription = input<string>();
-  fieldDefinitionService = inject(FieldDefinitionService);
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   resourceTitleDefinition = computed(
@@ -64,10 +62,6 @@ export class GenericView {
 
   buttonAction(event: any, field: FieldDefinition) {
     event.stopPropagation();
-    this.fieldDefinitionService.executeButtonAction(
-      this.LuigiClient(),
-      field,
-      this.resource(),
-    );
+    executeButtonAction(this.LuigiClient(), field, this.resource());
   }
 }
