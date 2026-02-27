@@ -201,7 +201,9 @@ describe('ListViewComponent', () => {
   });
 
   it('should navigate to resource', () => {
-    const resource = { metadata: { name: 'res1', namespace: 'test-namespace' } };
+    const resource = {
+      metadata: { name: 'res1', namespace: 'test-namespace' },
+    };
     const navSpy = vi.fn();
     const addSearchParamsSpy = vi.fn();
     (window as any).Luigi = {
@@ -317,72 +319,6 @@ describe('ListViewComponent', () => {
     );
     expect(newComponent.hasUiCreateViewFields()).toBe(true);
   });
-
-  // it('should compute heading correctly with capitalized plural', () => {
-  //   const newFixture = TestBed.createComponent(ListView);
-  //   const newComponent = newFixture.componentInstance;
-  //
-  //   newComponent.context = (() => ({
-  //     resourceDefinition: {
-  //       plural: 'clusters',
-  //       kind: 'Cluster',
-  //       group: 'core.k8s.io',
-  //       ui: {
-  //         listView: {
-  //           fields: [],
-  //         },
-  //       },
-  //     },
-  //   })) as any;
-  //
-  //   newFixture.detectChanges();
-  //
-  //   expect(newComponent.defaultHeading()).toBe('Clusters');
-  // });
-  //
-  // it('should handle empty plural in heading', () => {
-  //   const newFixture = TestBed.createComponent(ListView);
-  //   const newComponent = newFixture.componentInstance;
-  //
-  //   newComponent.context = (() => ({
-  //     resourceDefinition: {
-  //       plural: '',
-  //       kind: 'Cluster',
-  //       group: 'core.k8s.io',
-  //       ui: {
-  //         listView: {
-  //           fields: [],
-  //         },
-  //       },
-  //     },
-  //   })) as any;
-  //
-  //   newFixture.detectChanges();
-  //
-  //   expect(newComponent.defaultHeading()).toBe('');
-  // });
-  //
-  // it('should handle single character plural in heading', () => {
-  //   const newFixture = TestBed.createComponent(ListView);
-  //   const newComponent = newFixture.componentInstance;
-  //
-  //   newComponent.context = (() => ({
-  //     resourceDefinition: {
-  //       plural: 'a',
-  //       kind: 'Cluster',
-  //       group: 'core.k8s.io',
-  //       ui: {
-  //         listView: {
-  //           fields: [],
-  //         },
-  //       },
-  //     },
-  //   })) as any;
-  //
-  //   newFixture.detectChanges();
-  //
-  //   expect(newComponent.defaultHeading()).toBe('A');
-  // });
 
   it('should handle resource service list error', () => {
     mockResourceService.list.mockReturnValueOnce(
