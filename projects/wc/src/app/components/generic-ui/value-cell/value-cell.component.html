@@ -38,7 +38,7 @@
   } @else if (displayType === 'img' && value()) {
     <img class="image-cell" [src]="value()" alt="Resource image" />
   } @else if (displayType === 'button') {
-    @let buttonSettings = fieldDefinition()?.uiSettings?.buttonSettings;
+    @let buttonSettings = uiSettings()?.buttonSettings;
     <ui5-button
       [icon]="buttonSettings?.icon"
       [endIcon]="buttonSettings?.endIcon"
