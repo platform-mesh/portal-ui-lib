@@ -26,7 +26,10 @@ export function executeButtonAction(
       `Missing button action for field "${field.label ?? (typeof field.property === 'string' ? field.property : 'unknown')}"`,
     );
   }
-  if (typeof path !== 'string' || path.trim() === '') {
+
+  const synitzedPath = path.trim();
+
+  if (typeof path !== 'string' || synitzedPath === '') {
     throw Error(
       `Missing or invalid button path for field "${field.label ?? (typeof field.property === 'string' ? field.property : 'unknown')}"`,
     );
@@ -34,10 +37,10 @@ export function executeButtonAction(
 
   switch (buttonSettings.action) {
     case 'navigate':
-      luigiClient.linkManager().navigate(path);
+      luigiClient.linkManager().navigate(synitzedPath);
       break;
     case 'openInModal':
-      luigiClient.linkManager().openAsModal(path, buttonSettings.modalSettings);
+      luigiClient.linkManager().openAsModal(synitzedPath, buttonSettings.modalSettings);
       break;
     default:
       throw Error(
