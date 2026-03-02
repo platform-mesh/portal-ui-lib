@@ -1,4 +1,4 @@
-import { processFields } from '../../../utils/proccess-fields';
+import { processGroupFields } from '../../../utils/proccess-fields';
 import { GenericView } from '../generic-view/generic-view.component';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
@@ -85,7 +85,7 @@ export class DetailView {
   workspacePath = computed(() =>
     this.gatewayService.resolveKcpPath(this.context()),
   );
-  viewFields = computed(() => processFields(this.resourceFields()));
+  viewFields = computed(() => processGroupFields(this.resourceFields()));
   showDownloadKubeconfig = computed(
     () =>
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??

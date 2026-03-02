@@ -16,7 +16,6 @@ import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
 import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models/models';
-import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
 
 @Component({
   selector: 'pm-value-cell',
@@ -28,7 +27,7 @@ import { Resource } from '@platform-mesh/portal-ui-lib/models/models/resource';
 })
 export class ValueCellComponent {
   fieldDefinition = input.required<FieldDefinition>();
-  resource = input<Resource>();
+  resource = input<any>();
   LuigiClient = input.required<LuigiClient>();
   fieldDefinitionService = inject(FieldDefinitionService);
 
@@ -118,4 +117,6 @@ export class ValueCellComponent {
       this.resource(),
     );
   }
+
+  protected readonly JSON = JSON;
 }

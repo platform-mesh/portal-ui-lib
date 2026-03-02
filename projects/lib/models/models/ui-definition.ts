@@ -12,12 +12,35 @@ export interface PropertyField {
 
 export interface UiSettings {
   labelDisplay?: boolean;
-  displayAs?: 'secret' | 'boolIcon' | 'link' | 'tooltip' | 'img' | 'button';
+  displayAs?:
+    | 'secret'
+    | 'boolIcon'
+    | 'link'
+    | 'tooltip'
+    | 'alert'
+    | 'img'
+    | 'button'
+    | 'icon';
   buttonSettings?: ButtonSettings;
+  iconSettings?: IconSettings;
   tooltipIcon?: string;
   withCopyButton?: boolean;
   cssCustomization?: Partial<CSSStyleDeclaration>;
   cssRules?: CssRule[];
+}
+
+export interface IconSettings {
+  name: string;
+  design?:
+    | 'Contrast'
+    | 'Critical'
+    | 'Default'
+    | 'Information'
+    | 'Negative'
+    | 'Neutral'
+    | 'NonInteractive'
+    | 'Positive';
+  tooltip?: string;
 }
 
 export interface ButtonSettings {
@@ -80,7 +103,12 @@ export interface FieldDefinition {
   };
 }
 
-interface UiView {
+export interface UIResource extends Record<string, any> {
+  isAvailable: boolean;
+  accessibleName: string;
+}
+
+export interface UiView {
   actions?: FieldDefinition[];
   fields?: FieldDefinition[];
   resourceDescription?: FieldDefinition;

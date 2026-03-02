@@ -216,15 +216,33 @@ export class ResourceService {
           return resourceListResult;
         }),
         map((resourceListResult) => {
-          const processedResult: Resource[] = resourceListResult.items.map(
-            (resource) => ({
+          const processedResult: Resource[] = resourceListResult.items
+            .map((resource) => ({
               ...resource,
               ready: this.getResourceReadyStatus(resource, nodeContext),
-            }),
-          );
+            }))
+            .map((r) => ({
+              ...r,
+              isAvailable: this.isAvailable(r),
+              accessibleName: this.getAccessibleName(r),
+            }));
           return { ...resourceListResult, items: processedResult };
         }),
       );
+  }
+
+  isAvailable(item: Resource) {
+    return item.ready && !item.metadata.deletionTimestamp;
+  }
+
+  getAccessibleName(item: Resource): string {
+    if (item.metadata.deletionTimestamp) {
+      return 'Resource is pending deletion';
+    } else if (!item.ready) {
+      return 'Resource is not ready';
+    }
+
+    return '';
   }
 
   private listWithRawQuery(
@@ -294,10 +312,14 @@ export class ResourceService {
           const resource: ResourceSubscriptionResult | undefined =
             getValueByPath(res.data, lowerCaseOperation);
           if (resource) {
-            resource.object = {
-              ...resource.object,
-              ready: this.getResourceReadyStatus(resource.object, nodeContext),
-            };
+            resource.object.ready = this.getResourceReadyStatus(
+              resource.object,
+              nodeContext,
+            );
+            resource.object.isAvailable = this.isAvailable(resource.object);
+            resource.object.accessibleName = this.getAccessibleName(
+              resource.object,
+            );
           }
           return resource;
         }),
@@ -475,7 +497,9 @@ export class ResourceService {
       return nodeContext.namespaceId;
     }
 
-    const namespace = this.luigiCoreService.routing().getSearchParams().namespace;
+    const namespace = this.luigiCoreService
+      .routing()
+      .getSearchParams().namespace;
 
     if (namespace) {
       return namespace === '-all-' ? undefined : namespace;

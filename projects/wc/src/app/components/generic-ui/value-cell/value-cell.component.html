@@ -35,6 +35,18 @@
       [accessibleName]="stringValue()!"
       [attr.test-id]="testId() + '-tooltip'"
     />
+  } @else if (displayType === 'alert') {
+    @if (!value()) {
+      @let iconSettings = uiSettings()?.iconSettings;
+      <ui5-icon
+        name="alert"
+        design="Critical"
+        [attr.test-id]="testId() + '-icon'"
+        [showTooltip]="true"
+        accessibleName="{{ resource().accessibleName }}"
+        (click)="$event.stopPropagation()"
+      />
+    }
   } @else if (displayType === 'img' && value()) {
     <img class="image-cell" [src]="value()" alt="Resource image" />
   } @else if (displayType === 'button') {

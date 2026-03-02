@@ -9,7 +9,7 @@ export type ProcessedFieldDefinition = Omit<FieldDefinition, 'group'> & {
   group?: ProcessedGroup;
 };
 
-export const processFields = (
+export const processGroupFields = (
   fields: FieldDefinition[],
 ): ProcessedFieldDefinition[] => {
   return combineGroupFields(fields);

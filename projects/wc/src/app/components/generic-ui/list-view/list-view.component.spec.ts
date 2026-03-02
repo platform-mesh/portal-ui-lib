@@ -530,13 +530,7 @@ describe('ListViewComponent', () => {
 
   describe('Pagination', () => {
     it('should update pagination limit when onLimitChange is called', () => {
-      const event = {
-        detail: {
-          selectedOption: {
-            value: '10',
-          },
-        },
-      };
+      const event = 10;
 
       component.onLimitChange(event);
 
@@ -554,13 +548,7 @@ describe('ListViewComponent', () => {
       ] as any);
       component.remainingItemCount.set(10);
 
-      const event = {
-        detail: {
-          selectedOption: {
-            value: '3',
-          },
-        },
-      };
+      const event = 3;
 
       component.onLimitChange(event);
 

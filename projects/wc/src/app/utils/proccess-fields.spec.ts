@@ -1,10 +1,10 @@
-import { processFields } from './proccess-fields';
+import { processGroupFields } from './proccess-fields';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 describe('proccess-fields', () => {
   describe('processFields', () => {
     it('should return empty array when input is empty', () => {
-      const result = processFields([]);
+      const result = processGroupFields([]);
       expect(result).toEqual([]);
     });
 
@@ -20,7 +20,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
       expect(result).toEqual(fields);
     });
 
@@ -52,7 +52,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -106,7 +106,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(2);
 
@@ -170,7 +170,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(3);
 
@@ -234,7 +234,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(1);
       expect(result[0].group?.fields).toEqual([
@@ -272,7 +272,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(1);
       expect(result[0].group?.fields).toEqual([
@@ -301,7 +301,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
@@ -340,7 +340,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
@@ -390,7 +390,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -483,7 +483,7 @@ describe('proccess-fields', () => {
         },
       ];
 
-      const result = processFields(fields);
+      const result = processGroupFields(fields);
 
       expect(result).toHaveLength(4);
 

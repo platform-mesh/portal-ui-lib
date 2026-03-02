@@ -52,7 +52,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 #### Detail View Configuration
 
 - `"detailView"`: Defines how a page view for individual resource is displayed
-  - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for compact display of related data.
+  - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for a compact display of related data.
   - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the detail view header. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
   - `"showDownloadKubeconfig"`: Boolean to enable/disable download kubeconfig button (default: `false`).
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the resource title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, defaults to the resource ID or display name.
