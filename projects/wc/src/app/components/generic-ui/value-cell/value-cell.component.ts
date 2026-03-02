@@ -1,5 +1,8 @@
-import { FieldDefinitionService } from '../../../services/field-definition.service';
 import { evaluateCssRules } from '../../../utils/cssRules.engine';
+import {
+  executeButtonAction,
+  getFieldValue,
+} from '../../../utils/field-definition.utils';
 import { BooleanValue } from './boolean-value/boolean-value.component';
 import { LinkValue } from './link-value/link-value.component';
 import { SecretValue } from './secret-value/secret-value.component';
@@ -8,7 +11,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  inject,
   input,
   signal,
 } from '@angular/core';
@@ -29,9 +31,10 @@ export class ValueCellComponent {
   fieldDefinition = input.required<FieldDefinition>();
   resource = input<any>();
   LuigiClient = input.required<LuigiClient>();
-  fieldDefinitionService = inject(FieldDefinitionService);
 
-  value = computed(() => this.getValue());
+  value = computed(() =>
+    getFieldValue(this.fieldDefinition(), this.resource()),
+  );
 
   uiSettings = computed(() => this.fieldDefinition().uiSettings);
   displayAs = computed(() => this.uiSettings()?.displayAs);
@@ -58,13 +61,6 @@ export class ValueCellComponent {
   toggleVisibility(e: Event): void {
     e.stopPropagation();
     this.isVisible.set(!this.isVisible());
-  }
-
-  private getValue() {
-    return this.fieldDefinitionService.getFieldValue(
-      this.fieldDefinition(),
-      this.resource(),
-    );
   }
 
   private normalizeBoolean(value: unknown): boolean | undefined {
@@ -111,7 +107,7 @@ export class ValueCellComponent {
 
   protected buttonAction(event: any) {
     event.stopPropagation();
-    this.fieldDefinitionService.executeButtonAction(
+    executeButtonAction(
       this.LuigiClient(),
       this.fieldDefinition(),
       this.resource(),

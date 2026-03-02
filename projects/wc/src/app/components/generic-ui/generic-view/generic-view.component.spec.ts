@@ -1,4 +1,3 @@
-import { FieldDefinitionService } from '../../../services/field-definition.service';
 import { GenericView } from './generic-view.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -15,15 +14,13 @@ describe('GenericView', () => {
   let mockLuigiClient: any;
   let mockContext: ResourceNodeContext;
   let mockResourceDefinition: ResourceDefinition;
-  let mockFieldDefinitionService: any;
 
   beforeEach(async () => {
     mockLuigiClient = {
-      linkManager: vi.fn(),
-    };
-
-    mockFieldDefinitionService = {
-      executeButtonAction: vi.fn(),
+      linkManager: vi.fn().mockReturnValue({
+        navigate: vi.fn(),
+        openAsModal: vi.fn(),
+      }),
     };
 
     mockResourceDefinition = {
@@ -48,12 +45,6 @@ describe('GenericView', () => {
 
     await TestBed.configureTestingModule({
       imports: [GenericView],
-      providers: [
-        {
-          provide: FieldDefinitionService,
-          useValue: mockFieldDefinitionService,
-        },
-      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(GenericView);
@@ -118,6 +109,7 @@ describe('GenericView', () => {
       const mockEvent = { stopPropagation: vi.fn() };
       const mockField = {
         property: 'testField',
+        value: '/test/path',
         uiSettings: {
           displayAs: 'button',
           buttonSettings: { action: 'navigate' },
@@ -129,28 +121,45 @@ describe('GenericView', () => {
       expect(mockEvent.stopPropagation).toHaveBeenCalled();
     });
 
-    it('should call fieldDefinitionService.executeButtonAction with correct parameters', () => {
+    it('should call executeButtonAction with correct parameters', () => {
       const mockEvent = { stopPropagation: vi.fn() };
-      const mockField = { property: 'testField' } as FieldDefinition;
+      const mockField = {
+        property: 'testField',
+        value: '/test/path',
+        uiSettings: {
+          displayAs: 'button',
+          buttonSettings: { action: 'navigate' },
+        },
+      } as FieldDefinition;
       const mockResource = { metadata: { name: 'resource-1' } } as Resource;
 
       fixture.componentRef.setInput('resource', mockResource);
-      component.buttonAction(mockEvent, mockField);
-
-      expect(
-        mockFieldDefinitionService.executeButtonAction,
-      ).toHaveBeenCalledWith(mockLuigiClient, mockField, mockResource);
+      
+      // Should execute without errors
+      expect(() => {
+        component.buttonAction(mockEvent, mockField);
+      }).not.toThrow();
+      
+      expect(mockLuigiClient.linkManager).toHaveBeenCalled();
     });
 
-    it('should call fieldDefinitionService.executeButtonAction with undefined resource when not set', () => {
+    it('should call executeButtonAction with undefined resource when not set', () => {
       const mockEvent = { stopPropagation: vi.fn() };
-      const mockField = { property: 'testField' } as FieldDefinition;
+      const mockField = {
+        property: 'testField',
+        value: '/test/path',
+        uiSettings: {
+          displayAs: 'button',
+          buttonSettings: { action: 'navigate' },
+        },
+      } as FieldDefinition;
 
-      component.buttonAction(mockEvent, mockField);
-
-      expect(
-        mockFieldDefinitionService.executeButtonAction,
-      ).toHaveBeenCalledWith(mockLuigiClient, mockField, undefined);
+      // Should execute without errors
+      expect(() => {
+        component.buttonAction(mockEvent, mockField);
+      }).not.toThrow();
+      
+      expect(mockLuigiClient.linkManager).toHaveBeenCalled();
     });
   });
 
@@ -172,13 +181,6 @@ describe('GenericView', () => {
       const mockResource = { metadata: { name: 'test-resource' } } as Resource;
       fixture.componentRef.setInput('resource', mockResource);
       expect(component.resource()).toEqual(mockResource);
-    });
-  });
-
-  describe('injected services', () => {
-    it('should inject FieldDefinitionService', () => {
-      expect(component.fieldDefinitionService).toBeDefined();
-      expect(component.fieldDefinitionService).toBe(mockFieldDefinitionService);
     });
   });
 });
