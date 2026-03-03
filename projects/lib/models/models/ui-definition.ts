@@ -19,8 +19,7 @@ export interface UiSettings {
     | 'tooltip'
     | 'alert'
     | 'img'
-    | 'button'
-    | 'icon';
+    | 'button';
   buttonSettings?: ButtonSettings;
   tooltipIcon?: string;
   withCopyButton?: boolean;
