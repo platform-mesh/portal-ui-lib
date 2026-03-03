@@ -142,7 +142,13 @@ describe('ListViewComponent', () => {
     newFixture.detectChanges();
 
     const expectedFields = utils.generateGraphQLFields([
+      {
+        property: 'status.ready',
+      },
       { property: 'metadata.name' },
+      {
+        property: 'metadata.deletionTimestamp',
+      },
       readyCondition,
     ]);
 
