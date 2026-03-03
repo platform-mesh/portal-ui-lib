@@ -1,22 +1,22 @@
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 
-export function getFieldValue(
+export function getFieldValue<T>(
   field: FieldDefinition,
-  resource: Resource | undefined,
+  resource: T | undefined,
 ) {
   if (resource) {
-    return getResourceValueByJsonPath(resource, field) ?? field.value;
+    return getResourceValueByJsonPath<T>(resource, field) ?? field.value;
   }
 
   return field.value;
 }
 
-export function executeButtonAction(
+export function executeButtonAction<T>(
   luigiClient: LuigiClient,
   field: FieldDefinition,
-  resource: Resource | undefined,
+  resource: T | undefined,
 ) {
   const buttonSettings = field.uiSettings?.buttonSettings;
   const path = getFieldValue(field, resource);
@@ -40,7 +40,9 @@ export function executeButtonAction(
       luigiClient.linkManager().navigate(synitzedPath);
       break;
     case 'openInModal':
-      luigiClient.linkManager().openAsModal(synitzedPath, buttonSettings.modalSettings);
+      luigiClient
+        .linkManager()
+        .openAsModal(synitzedPath, buttonSettings.modalSettings);
       break;
     default:
       throw Error(

@@ -31,6 +31,7 @@ describe('field-definition.utils', () => {
         value: 'default-value',
       };
       const resource: Resource = {
+        id: 'resource-name',
         metadata: { name: 'resource-name' },
       };
 
@@ -104,6 +105,7 @@ describe('field-definition.utils', () => {
         value: 'default',
       };
       const resource: Resource = {
+        id: 'test',
         metadata: { name: 'test' },
         spec: { enabled: false } as any,
       };
@@ -151,6 +153,7 @@ describe('field-definition.utils', () => {
         },
       };
       const resource: Resource = {
+        id: 'resource-name',
         metadata: { name: 'test-resource' },
       };
 

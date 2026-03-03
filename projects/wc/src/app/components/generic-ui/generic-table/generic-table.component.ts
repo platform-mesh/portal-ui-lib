@@ -9,7 +9,6 @@ import {
   output,
 } from '@angular/core';
 import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
-import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
 import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
 import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { Table } from '@fundamental-ngx/ui5-webcomponents/table';
@@ -18,8 +17,11 @@ import { TableGrowing } from '@fundamental-ngx/ui5-webcomponents/table-growing';
 import { TableHeaderCell } from '@fundamental-ngx/ui5-webcomponents/table-header-cell';
 import { TableHeaderRow } from '@fundamental-ngx/ui5-webcomponents/table-header-row';
 import { TableRow } from '@fundamental-ngx/ui5-webcomponents/table-row';
-import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import {
+  FieldDefinition,
+  GenericResource,
+  ValueCellButtonClickEvent,
+} from '@platform-mesh/portal-ui-lib/models';
 
 @Component({
   selector: 'pm-generic-table',
@@ -41,15 +43,16 @@ import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
     TableGrowing,
   ],
 })
-export class GenericTable {
-  LuigiClient = input.required<LuigiClient>();
-  resources = input.required<any[]>();
+export class GenericTable<T extends GenericResource> {
   columns = input.required<FieldDefinition[]>();
+  resources = input.required<T[]>();
+  trackBy = input.required<(item: T) => string | number>();
 
   totalItemsCount = input<number>();
   paginationLimit = input<number>(5);
   hasMore = input<boolean>(false);
 
+  buttonClick = output<ValueCellButtonClickEvent<T>>();
   tableRowClicked = output<any>();
   loadMoreResources = output<void>();
   paginationLimitChanged = output<number>();

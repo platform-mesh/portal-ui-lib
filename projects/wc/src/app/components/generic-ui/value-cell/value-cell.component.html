@@ -37,13 +37,12 @@
     />
   } @else if (displayType === 'alert') {
     @if (!value()) {
-      @let iconSettings = uiSettings()?.iconSettings;
       <ui5-icon
         name="alert"
         design="Critical"
         [attr.test-id]="testId() + '-icon'"
         [showTooltip]="true"
-        accessibleName="{{ resource().accessibleName }}"
+        accessibleName="{{ resource()?.accessibleName }}"
         (click)="$event.stopPropagation()"
       />
     }
@@ -56,7 +55,7 @@
       [endIcon]="buttonSettings?.endIcon"
       [design]="buttonSettings?.design"
       [tooltip]="buttonSettings?.tooltip"
-      (click)="buttonAction($event)"
+      (click)="buttonClicked($event)"
       >{{ buttonSettings?.text }}</ui5-button
     >&nbsp;
   } @else {

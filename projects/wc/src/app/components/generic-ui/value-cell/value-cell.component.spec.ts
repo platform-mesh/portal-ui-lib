@@ -7,13 +7,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   FieldDefinition,
+  GenericResource,
   Resource,
 } from '@platform-mesh/portal-ui-lib/models/models';
 import { Mock } from 'vitest';
 
 describe('ValueCellComponent', () => {
-  let component: ValueCellComponent;
-  let fixture: ComponentFixture<ValueCellComponent>;
+  let component: ValueCellComponent<GenericResource>;
+  let fixture: ComponentFixture<ValueCellComponent<GenericResource>>;
   let mockLuigiClient: LuigiClient;
 
   const createMockLuigiClient = (showAlertSpy?: Mock<any>): LuigiClient =>
@@ -944,7 +945,9 @@ describe('ValueCellComponent', () => {
       });
       const compiled = fixture.nativeElement;
 
-      const tooltipIcon = compiled.querySelector('ui5-icon[name="information"]');
+      const tooltipIcon = compiled.querySelector(
+        'ui5-icon[name="information"]',
+      );
       expect(tooltipIcon).toBeTruthy();
     });
 

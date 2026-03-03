@@ -9,8 +9,8 @@ import {
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 
 describe('GenericView', () => {
-  let component: GenericView;
-  let fixture: ComponentFixture<GenericView>;
+  let component: GenericView<Resource>;
+  let fixture: ComponentFixture<GenericView<Resource>>;
   let mockLuigiClient: any;
   let mockContext: ResourceNodeContext;
   let mockResourceDefinition: ResourceDefinition;
@@ -47,7 +47,7 @@ describe('GenericView', () => {
       imports: [GenericView],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(GenericView);
+    fixture = TestBed.createComponent(GenericView<Resource>);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
     fixture.componentRef.setInput('context', mockContext);
@@ -106,7 +106,7 @@ describe('GenericView', () => {
 
   describe('buttonAction', () => {
     it('should stop event propagation', () => {
-      const mockEvent = { stopPropagation: vi.fn() };
+      const mockEvent = { stopPropagation: vi.fn() } as any;
       const mockField = {
         property: 'testField',
         value: '/test/path',
@@ -122,7 +122,7 @@ describe('GenericView', () => {
     });
 
     it('should call executeButtonAction with correct parameters', () => {
-      const mockEvent = { stopPropagation: vi.fn() };
+      const mockEvent = { stopPropagation: vi.fn() } as any;
       const mockField = {
         property: 'testField',
         value: '/test/path',
@@ -134,17 +134,17 @@ describe('GenericView', () => {
       const mockResource = { metadata: { name: 'resource-1' } } as Resource;
 
       fixture.componentRef.setInput('resource', mockResource);
-      
+
       // Should execute without errors
       expect(() => {
         component.buttonAction(mockEvent, mockField);
       }).not.toThrow();
-      
+
       expect(mockLuigiClient.linkManager).toHaveBeenCalled();
     });
 
     it('should call executeButtonAction with undefined resource when not set', () => {
-      const mockEvent = { stopPropagation: vi.fn() };
+      const mockEvent = { stopPropagation: vi.fn() } as any;
       const mockField = {
         property: 'testField',
         value: '/test/path',
@@ -158,7 +158,7 @@ describe('GenericView', () => {
       expect(() => {
         component.buttonAction(mockEvent, mockField);
       }).not.toThrow();
-      
+
       expect(mockLuigiClient.linkManager).toHaveBeenCalled();
     });
   });

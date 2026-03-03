@@ -17,7 +17,10 @@ import { Text } from '@fundamental-ngx/ui5-webcomponents/text';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  FieldDefinition,
+  GenericResource,
+} from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 
 @Component({
@@ -40,10 +43,10 @@ import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GenericView {
+export class GenericView<T extends GenericResource> {
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
-  resource = input<Resource>();
+  resource = input<T>();
   defaultTitle = input<string>();
   defaultDescription = input<string>();
 
@@ -60,7 +63,7 @@ export class GenericView {
     ),
   );
 
-  buttonAction(event: any, field: FieldDefinition) {
+  buttonAction(event: MouseEvent, field: FieldDefinition) {
     event.stopPropagation();
     executeButtonAction(this.LuigiClient(), field, this.resource());
   }

@@ -1,3 +1,4 @@
+import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { addSearchParams } from '../../../utils/set-search-params';
 import { GenericTable } from '../generic-table/generic-table.component';
 import { GenericView } from '../generic-view/generic-view.component';
@@ -67,24 +68,22 @@ export class ListView {
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(() => {
-    let c = this.resourceDefinition()?.ui?.listView?.fields ?? [];
+    let columns = this.resourceDefinition()?.ui?.listView?.fields ?? [];
 
     const readyCondition = this.resourceDefinition()?.readyCondition;
     if (readyCondition) {
-      const r: FieldDefinition = {
-        ...readyCondition,
-        uiSettings: {
-          displayAs: 'alert',
-          iconSettings: {
-            name: 'alert',
-            design: 'Critical',
+      columns = [
+        {
+          ...readyCondition,
+          uiSettings: {
+            displayAs: 'alert',
           },
         },
-      };
-      c = [r, ...c];
+        ...columns,
+      ];
     }
 
-    return c;
+    return columns;
   });
   readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
   hasUiCreateViewFields = computed(
@@ -103,6 +102,7 @@ export class ListView {
   private isLoadingList = false;
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
+  protected trackBy = (item) => item.metadata.name;
 
   constructor() {
     effect(() => {
@@ -272,7 +272,9 @@ export class ListView {
   }
 
   private getListQueryFields() {
-    const additionalFields: FieldDefinition[] = [];
+    const additionalFields: FieldDefinition[] = [
+      { property: 'metadata.deletionTimestamp' },
+    ];
 
     const readyCondition = this.readyCondition();
     if (readyCondition) {
@@ -302,17 +304,7 @@ export class ListView {
     return resourceDefinition;
   }
 
-  isAvailable(item: any) {
-    return item.ready && !item.metadata.deletionTimestamp;
-  }
-
-  getAccessibleName(item: Resource): string {
-    if (item.metadata.deletionTimestamp) {
-      return 'Resource is pending deletion';
-    } else if (!item.ready) {
-      return 'Resource is not ready';
-    }
-
-    return '';
+  executeAction(event) {
+    executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 }

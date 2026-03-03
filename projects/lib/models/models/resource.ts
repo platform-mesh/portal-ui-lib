@@ -1,4 +1,8 @@
-import { FieldDefinition, UIDefinition } from './ui-definition';
+import {
+  FieldDefinition,
+  GenericResource,
+  UIDefinition,
+} from './ui-definition';
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
 export interface ResourceStatus {
@@ -15,7 +19,7 @@ export interface ResourceMeta extends ObjectMeta {
   name: string;
 }
 
-export interface Resource extends Record<string, any> {
+export interface Resource extends GenericResource {
   metadata: ResourceMeta;
   spec?: ResourceSpec;
   status?: ResourceStatus;

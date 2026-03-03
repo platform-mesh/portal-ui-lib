@@ -1,12 +1,11 @@
 import {
   PropertyField,
-  Resource,
   TransformType,
 } from '@platform-mesh/portal-ui-lib/models';
 import jsonpath from 'jsonpath';
 
-export const getResourceValueByJsonPath = (
-  resource: Resource,
+export const getResourceValueByJsonPath = <T>(
+  resource: T,
   field: {
     jsonPathExpression?: string;
     property?: string | string[];

@@ -62,7 +62,6 @@
     <pm-value-cell
       [fieldDefinition]="resourceTitleDefinition"
       [resource]="resource()"
-      [LuigiClient]="LuigiClient()"
     />
   } @else {
     {{ defaultTitle() }}
@@ -74,7 +73,6 @@
     <pm-value-cell
       [fieldDefinition]="resourceDescriptionDefinition"
       [resource]="resource()"
-      [LuigiClient]="LuigiClient()"
     ></pm-value-cell>
   } @else {
     {{ defaultDescription() }}

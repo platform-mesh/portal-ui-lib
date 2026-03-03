@@ -17,15 +17,16 @@
 
   <ng-content page-content>
     <pm-generic-table
-      [LuigiClient]="LuigiClient()"
       [resources]="resources()"
       [columns]="columns()"
+      [trackBy]="trackBy"
       [hasMore]="hasMore()"
       [totalItemsCount]="totalItemsCount()"
       [paginationLimit]="paginationLimit()"
       (tableRowClicked)="navigateToResource($event)"
       (loadMoreResources)="loadMore()"
       (paginationLimitChanged)="onLimitChange($event)"
+      (buttonClick)="executeAction($event)"
     />
   </ng-content>
 </pm-generic-view>

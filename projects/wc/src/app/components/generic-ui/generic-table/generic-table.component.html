@@ -27,11 +27,11 @@
     </ui5-illustrated-message>
   }
 
-  @for (item of resources(); let i = $index; track item.metadata.name) {
+  @for (item of resources(); let i = $index; track trackBy()(item)) {
     <ui5-table-row
       [attr.test-id]="'generic-table-row-' + i"
-      [interactive]="item.isAvailable"
-      [class.disabled]="!item.isAvailable"
+      [interactive]="item.isAvailable ?? true"
+      [class.disabled]="!(item.isAvailable ?? true)"
       (click)="tableRowClicked.emit(item)"
     >
       @for (
@@ -66,7 +66,7 @@
                 <pm-value-cell
                   [fieldDefinition]="field"
                   [resource]="item"
-                  [LuigiClient]="LuigiClient()"
+                  (buttonClick)="buttonClick.emit($event)"
                 />
               </span>
               @if (!last && column.group.delimiter) {
@@ -81,7 +81,7 @@
             <pm-value-cell
               [fieldDefinition]="column"
               [resource]="item"
-              [LuigiClient]="LuigiClient()"
+              (buttonClick)="buttonClick.emit($event)"
             />
           </ui5-table-cell>
         }

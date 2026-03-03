@@ -22,25 +22,10 @@ export interface UiSettings {
     | 'button'
     | 'icon';
   buttonSettings?: ButtonSettings;
-  iconSettings?: IconSettings;
   tooltipIcon?: string;
   withCopyButton?: boolean;
   cssCustomization?: Partial<CSSStyleDeclaration>;
   cssRules?: CssRule[];
-}
-
-export interface IconSettings {
-  name: string;
-  design?:
-    | 'Contrast'
-    | 'Critical'
-    | 'Default'
-    | 'Information'
-    | 'Negative'
-    | 'Neutral'
-    | 'NonInteractive'
-    | 'Positive';
-  tooltip?: string;
 }
 
 export interface ButtonSettings {
@@ -78,6 +63,16 @@ export type CssRuleCondition =
 export interface CssRule {
   if: { condition: CssRuleCondition; value: string };
   styles: Partial<CSSStyleDeclaration>;
+}
+
+export interface GenericResource extends Record<string, any> {
+  isAvailable?: boolean; // Controls row interactivity
+}
+
+export interface ValueCellButtonClickEvent<T extends GenericResource> {
+  event: MouseEvent;
+  field: FieldDefinition;
+  resource: T | undefined;
 }
 
 export interface FieldDefinition {
