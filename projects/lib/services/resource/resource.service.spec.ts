@@ -430,6 +430,7 @@ describe('ResourceService', () => {
       expect(results[0]).toEqual({
         items: [
           {
+            isAvailable: true,
             metadata: {
               uid: 'uid1',
             },
@@ -437,6 +438,7 @@ describe('ResourceService', () => {
             ready: true,
           },
           {
+            isAvailable: true,
             metadata: {
               uid: 'uid2',
             },

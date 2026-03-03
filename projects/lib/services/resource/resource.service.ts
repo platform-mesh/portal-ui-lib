@@ -235,14 +235,14 @@ export class ResourceService {
     return !!item.ready && !item.metadata.deletionTimestamp;
   }
 
-  getAccessibleName(item: Resource): string {
+  getAccessibleName(item: Resource): string | undefined {
     if (item.metadata.deletionTimestamp) {
       return 'Resource is pending deletion';
     } else if (!item.ready) {
       return 'Resource is not ready';
     }
 
-    return '';
+    return undefined;
   }
 
   private listWithRawQuery(
