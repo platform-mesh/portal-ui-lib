@@ -97,11 +97,6 @@ export interface FieldDefinition {
   };
 }
 
-export interface UIResource extends Record<string, any> {
-  isAvailable: boolean;
-  accessibleName: string;
-}
-
 export interface UiView {
   actions?: FieldDefinition[];
   fields?: FieldDefinition[];
