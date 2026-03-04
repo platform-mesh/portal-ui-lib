@@ -1,6 +1,6 @@
 <ui5-table test-id="generic-table">
   <ui5-table-header-row slot="headerRow">
-    @for (column of viewColumns(); track column.property) {
+    @for (column of viewColumns(); track columnTrackBy(column, $index)) {
       @if (column.group) {
         <ui5-table-header-cell
           [attr.test-id]="'generic-table-header-' + column.property"
@@ -34,11 +34,7 @@
       [class.disabled]="!(item.isAvailable ?? true)"
       (click)="tableRowClicked.emit(item)"
     >
-      @for (
-        column of viewColumns();
-        let first = $first;
-        track column.property
-      ) {
+      @for (column of viewColumns(); track columnTrackBy(column, $index)) {
         @if (column.group) {
           <ui5-table-cell
             [attr.test-id]="'generic-table-cell-' + i + '-' + column.property"
@@ -47,7 +43,7 @@
             @for (
               field of column.group.fields;
               let last = $last;
-              track field.property
+              track columnTrackBy(field, $index)
             ) {
               <span
                 class="group-value"

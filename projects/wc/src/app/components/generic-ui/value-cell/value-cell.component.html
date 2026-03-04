@@ -42,7 +42,7 @@
         design="Critical"
         [attr.test-id]="testId() + '-icon'"
         [showTooltip]="true"
-        accessibleName="{{ resource()?.accessibleName }}"
+        accessibleName="{{ resource()?.accessibleName ?? '' }}"
         (click)="$event.stopPropagation()"
       />
     }

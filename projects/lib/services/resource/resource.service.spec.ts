@@ -2394,13 +2394,13 @@ describe('ResourceService', () => {
       expect(service.isAvailable(resource)).toBe(false);
     });
 
-    it('getAccessibleName: should return empty string for a healthy, ready resource', () => {
+    it('getAccessibleName: should return undefined string for a healthy, ready resource', () => {
       const resource = {
         ready: true,
         metadata: { name: 'res1' },
       } as any;
 
-      expect(service.getAccessibleName(resource)).toBe('');
+      expect(service.getAccessibleName(resource)).toBeUndefined();
     });
 
     it('getAccessibleName: should return "Resource is pending deletion" when deletionTimestamp is present', () => {

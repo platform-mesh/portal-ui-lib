@@ -57,5 +57,7 @@ export class GenericTable<T extends GenericResource> {
   loadMoreResources = output<void>();
   paginationLimitChanged = output<number>();
 
+  columnTrackBy = (column: FieldDefinition, index: number) =>
+    column.property ?? column.value ?? index;
   viewColumns = computed(() => processGroupFields(this.columns()));
 }

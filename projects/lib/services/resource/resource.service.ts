@@ -232,11 +232,11 @@ export class ResourceService {
   }
 
   isAvailable(item: Resource) {
-    return !!item.ready && !item.metadata.deletionTimestamp;
+    return !!item.ready && !item.metadata?.deletionTimestamp;
   }
 
   getAccessibleName(item: Resource): string | undefined {
-    if (item.metadata.deletionTimestamp) {
+    if (item.metadata?.deletionTimestamp) {
       return 'Resource is pending deletion';
     } else if (!item.ready) {
       return 'Resource is not ready';

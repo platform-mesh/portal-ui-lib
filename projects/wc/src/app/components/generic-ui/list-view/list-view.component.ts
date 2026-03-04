@@ -76,6 +76,7 @@ export class ListView {
         {
           ...readyCondition,
           uiSettings: {
+            ...readyCondition.uiSettings,
             displayAs: 'alert',
           },
         },
