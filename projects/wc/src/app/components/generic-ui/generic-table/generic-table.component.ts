@@ -1,7 +1,6 @@
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { ValueCellComponent } from '../value-cell/value-cell.component';
 import {
-  ChangeDetectionStrategy,
   Component,
   ViewEncapsulation,
   computed,
@@ -29,7 +28,6 @@ import {
   templateUrl: './generic-table.component.html',
   styleUrls: ['./generic-table.component.scss'],
   encapsulation: ViewEncapsulation.ShadowDom,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     IllustratedMessage,
     Table,
