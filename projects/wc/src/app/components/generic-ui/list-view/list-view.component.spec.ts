@@ -149,7 +149,6 @@ describe('ListViewComponent', () => {
       {
         property: 'metadata.deletionTimestamp',
       },
-      readyCondition,
     ]);
 
     expect(mockResourceService.list).toHaveBeenCalledWith(
