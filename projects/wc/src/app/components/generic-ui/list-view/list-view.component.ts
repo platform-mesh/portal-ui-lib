@@ -86,7 +86,6 @@ export class ListView {
 
     return columns;
   });
-  readyCondition = computed(() => this.resourceDefinition()?.readyCondition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
   );
@@ -276,11 +275,6 @@ export class ListView {
     const additionalFields: FieldDefinition[] = [
       { property: 'metadata.deletionTimestamp' },
     ];
-
-    const readyCondition = this.readyCondition();
-    if (readyCondition) {
-      additionalFields.push(readyCondition);
-    }
 
     if (this.isNamespaced()) {
       additionalFields.push({
