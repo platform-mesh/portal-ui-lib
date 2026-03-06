@@ -1,4 +1,15 @@
-//workarround as https://docs.luigi-project.io/docs/luigi-client-api?section=addcoresearchparams doesn't work with wc microfrontedns
 export const addSearchParams = (params: Record<string, string | undefined>) => {
-  (window as any).Luigi.routing().addSearchParams(params);
+  const newUrl = new URL(location.href);
+  const currentParams = newUrl.searchParams;
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined) {
+      currentParams.delete(key);
+      return;
+    }
+
+    currentParams.set(key, value);
+  });
+
+  history.replaceState(null, '', newUrl.toString());
 };
