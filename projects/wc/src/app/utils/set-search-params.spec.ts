@@ -2,7 +2,7 @@ import { addSearchParams } from './set-search-params';
 
 describe('addSearchParams', () => {
   beforeEach(() => {
-    history.replaceState(null, '', '/?namespace=old&view=list');
+    history.replaceState(null, '', '?namespace=old&view=list');
   });
 
   it('updates only matching key and keeps other params', () => {
