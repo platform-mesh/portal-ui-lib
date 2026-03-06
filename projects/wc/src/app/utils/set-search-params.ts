@@ -11,5 +11,5 @@ export const addSearchParams = (params: Record<string, string | undefined>) => {
     currentParams.set(key, value);
   });
 
-  history.replaceState(null, '', newUrl.toString());
+  history.replaceState(null, '', newUrl);
 };

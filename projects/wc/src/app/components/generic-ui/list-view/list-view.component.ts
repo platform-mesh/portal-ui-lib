@@ -262,7 +262,7 @@ export class ListView {
     }
 
     addSearchParams({
-      namespace: resource.metadata.namespace,
+      namespace: this.isNamespaced() ? resource.metadata.namespace : undefined,
     });
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }

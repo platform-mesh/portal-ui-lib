@@ -206,16 +206,46 @@ describe('ListViewComponent', () => {
   });
 
   it('should navigate to resource', () => {
+    const newFixture = TestBed.createComponent(ListView);
+    const newComponent = newFixture.componentInstance;
     const resource = {
       metadata: { name: 'res1', namespace: 'test-namespace' },
     };
     const navSpy = vi.fn();
-    const addSearchParamsSpy = vi.fn();
-    (window as any).Luigi = {
-      routing: () => ({
-        addSearchParams: addSearchParamsSpy,
+    history.replaceState(null, '', '/?namespace=old&view=list');
+    newComponent.context = (() => ({
+      resourceDefinition: {
+        plural: 'clusters',
+        kind: 'Cluster',
+        group: 'core.k8s.io',
+        version: 'v1alpha1',
+        scope: 'Namespaced',
+        ui: {
+          detailView: {
+            fields: [],
+          },
+        },
+      },
+    })) as any;
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({
+        navigate: navSpy,
       }),
+    })) as any;
+    newFixture.detectChanges();
+
+    newComponent.navigateToResource(resource as any);
+    expect(window.location.search).toContain('namespace=test-namespace');
+    expect(window.location.search).toContain('view=list');
+    expect(navSpy).toHaveBeenCalledWith('res1');
+  });
+
+  it('should clear namespace param for cluster scoped resource', () => {
+    const resource = {
+      metadata: { name: 'res1', namespace: 'test-namespace' },
     };
+    const navSpy = vi.fn();
+    history.replaceState(null, '', '/?namespace=old&view=list');
     component.LuigiClient = (() => ({
       linkManager: () => ({
         navigate: navSpy,
@@ -223,9 +253,9 @@ describe('ListViewComponent', () => {
     })) as any;
 
     component.navigateToResource(resource as any);
-    expect(addSearchParamsSpy).toHaveBeenCalledWith({
-      namespace: 'test-namespace',
-    });
+
+    expect(window.location.search).not.toContain('namespace=');
+    expect(window.location.search).toContain('view=list');
     expect(navSpy).toHaveBeenCalledWith('res1');
   });
 
