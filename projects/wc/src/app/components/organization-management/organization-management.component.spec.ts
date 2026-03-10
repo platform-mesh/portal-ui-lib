@@ -56,6 +56,7 @@ describe('OrganizationManagementComponent', () => {
     fixture.componentRef.setInput('LuigiClient', luigiClient);
     fixture.componentRef.setInput('context', {
       translationTable: { hello: 'world' },
+      userEmail: 'user@test.com',
     });
   });
 
@@ -224,6 +225,100 @@ describe('OrganizationManagementComponent', () => {
         expect.any(Object),
         '123',
         false,
+      );
+    });
+
+    it('should show ready alert for organizations created by current user', () => {
+      const mockOrganizations = {
+        items: [
+          {
+            metadata: { name: 'org1' },
+            status: { conditions: [{ type: 'Ready', status: 'False' }] },
+          },
+        ],
+        resourceVersion: '123',
+      };
+      const readyUpdate = {
+        type: 'MODIFIED',
+        object: {
+          metadata: { name: 'org1' },
+          spec: { creator: 'user@test.com' },
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+      };
+
+      resourceService.list.mockReturnValue(of(mockOrganizations as any));
+      resourceService.resourceChangeSubscription.mockReturnValue(
+        of(readyUpdate as any),
+      );
+
+      component.readOrganizations();
+
+      expect(mockShowAlert).toHaveBeenCalledWith({
+        text: 'Organization org1 has been successfully onboarded. Press switch button to login.',
+        type: 'success',
+      });
+    });
+
+    it('should not show ready alert for another creator', () => {
+      const mockOrganizations = {
+        items: [
+          {
+            metadata: { name: 'org1' },
+            status: { conditions: [{ type: 'Ready', status: 'False' }] },
+          },
+        ],
+        resourceVersion: '123',
+      };
+      const readyUpdate = {
+        type: 'MODIFIED',
+        object: {
+          metadata: { name: 'org1' },
+          spec: { creator: 'another-user@test.com' },
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+      };
+
+      resourceService.list.mockReturnValue(of(mockOrganizations as any));
+      resourceService.resourceChangeSubscription.mockReturnValue(
+        of(readyUpdate as any),
+      );
+
+      component.readOrganizations();
+
+      expect(mockShowAlert).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'success' }),
+      );
+    });
+
+    it('should not show ready alert when organization is already ready', () => {
+      const mockOrganizations = {
+        items: [
+          {
+            metadata: { name: 'org1' },
+            status: { conditions: [{ type: 'Ready', status: 'True' }] },
+          },
+        ],
+        resourceVersion: '123',
+      };
+      const readyUpdate = {
+        type: 'MODIFIED',
+        object: {
+          metadata: { name: 'org1' },
+          spec: { creator: 'user@test.com' },
+          status: { conditions: [{ type: 'Ready', status: 'True' }] },
+        },
+      };
+
+      resourceService.list.mockReturnValue(of(mockOrganizations as any));
+      resourceService.resourceChangeSubscription.mockReturnValue(
+        of(readyUpdate as any),
+      );
+
+      component.readOrganizations();
+
+      expect(mockShowAlert).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'success' }),
       );
     });
   });
@@ -423,7 +518,10 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should show success message in local setup', () => {
-      // (isLocalSetup as any).mockReturnValue(true);
+      Object.defineProperty(window, 'location', {
+        value: { hostname: 'localhost' },
+        writable: true,
+      });
       resourceService.create.mockReturnValue(of({} as any));
 
       component.onboardOrganization();
@@ -434,13 +532,17 @@ describe('OrganizationManagementComponent', () => {
       });
     });
 
-    it('should not show success message in non-local setup', () => {
+    it('should show success message in non-local setup', () => {
+      Object.defineProperty(window, 'location', {
+        value: { hostname: 'example.com' },
+        writable: true,
+      });
       resourceService.create.mockReturnValue(of({} as any));
 
       component.onboardOrganization();
 
       expect(mockShowAlert).toHaveBeenCalledWith({
-        text: `A new organization is creating. Once ready you can login using your e-mail. The default password is set to 'password'.`,
+        text: `You have started onborad process of organization. Once it ready press switch button to login.`,
         type: 'info',
       });
     });

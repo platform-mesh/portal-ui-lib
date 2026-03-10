@@ -16,3 +16,19 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+.not-ready-spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #0a6ed1;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: not-ready-spin 0.8s linear infinite;
+}
+
+@keyframes not-ready-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

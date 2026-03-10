@@ -5,6 +5,7 @@ import '@ui5/webcomponents-icons/dist/delete.js';
 import '@ui5/webcomponents-icons/dist/download-from-cloud.js';
 import '@ui5/webcomponents-icons/dist/hide.js';
 import '@ui5/webcomponents-icons/dist/hint.js';
+import '@ui5/webcomponents-icons/dist/message-information.js';
 import '@ui5/webcomponents-icons/dist/show.js';
 
 ignoreCustomElements('pm-');

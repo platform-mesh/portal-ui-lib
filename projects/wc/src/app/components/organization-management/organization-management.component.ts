@@ -6,6 +6,7 @@ import {
   DestroyRef,
   OnInit,
   ViewEncapsulation,
+  computed,
   effect,
   inject,
   input,
@@ -19,7 +20,6 @@ import {
   Validators,
 } from '@angular/forms';
 import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
-import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
 import { Input } from '@fundamental-ngx/ui5-webcomponents/input';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
 import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
@@ -54,7 +54,6 @@ import { map, switchMap } from 'rxjs';
     Select,
     FormsModule,
     ReactiveFormsModule,
-    Icon,
   ],
   templateUrl: './organization-management.component.html',
   styleUrl: './organization-management.component.scss',
@@ -73,6 +72,10 @@ export class OrganizationManagementView implements OnInit {
   texts: any = {};
   organizations = signal<{ name: string; ready: boolean }[]>([]);
   organizationToSwitch = signal<{ name: string; ready: boolean } | null>(null);
+  creator = computed(() => {
+    return this.context().userEmail;
+  });
+
   newOrganizationControl = new FormControl('', {
     validators: [Validators.required, k8sNameValidator],
     nonNullable: true,
@@ -109,6 +112,7 @@ export class OrganizationManagementView implements OnInit {
           'metadata.name',
           'status.conditions.status',
           'status.conditions.type',
+          'spec.creator',
         ],
       },
     ]);
@@ -154,6 +158,7 @@ export class OrganizationManagementView implements OnInit {
             return;
           }
 
+          this.showOrganizationReadyAlert(value);
           this.mergeResourcesWithSubscriptionResult(value);
           this.refreshOrganizationToSwitch();
         },
@@ -202,6 +207,40 @@ export class OrganizationManagementView implements OnInit {
     );
   }
 
+  private showOrganizationReadyAlert(
+    subscriptionResult: ResourceSubscriptionResult,
+  ) {
+    const organization = subscriptionResult.object;
+    const organizationName = organization.metadata?.name;
+
+    if (!organizationName) {
+      return;
+    }
+
+    if (organization.spec?.creator !== this.creator()) {
+      return;
+    }
+
+    if (!this.isOrganizationReady(organization)) {
+      return;
+    }
+
+    const existingOrganization = this.organizations().find(
+      (item) => item.name === organizationName,
+    );
+
+    if (existingOrganization?.ready) {
+      return;
+    }
+
+    this.LuigiClient()
+      .uxManager()
+      .showAlert({
+        text: `Organization ${organizationName} has been successfully onboarded. Press switch button to login.`,
+        type: 'success',
+      });
+  }
+
   onboardOrganization() {
     const resource: Resource = {
       spec: { type: 'org' },
@@ -243,6 +282,11 @@ export class OrganizationManagementView implements OnInit {
     if (isLocalSetup()) {
       this.LuigiClient().uxManager().showAlert({
         text: `A new organization is creating. Once ready you can login using your e-mail. The default password is set to 'password'.`,
+        type: 'info',
+      });
+    } else {
+      this.LuigiClient().uxManager().showAlert({
+        text: `You have started onborad process of organization. Once it ready press switch button to login.`,
         type: 'info',
       });
     }
