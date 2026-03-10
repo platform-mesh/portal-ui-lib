@@ -1,7 +1,7 @@
 import { NamespaceSelectionRendererService } from './namespace-selection-renderer.service';
 import { TestBed } from '@angular/core/testing';
 import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceOperationTypeMap } from '@platform-mesh/portal-ui-lib/models';
+import { ResourceOperationTypeMap, ALL_NAMESPACE } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { Subject, defer, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
@@ -67,10 +67,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [
-          { metadata: { name: 'ns1' } },
-          { metadata: { name: 'ns2' } },
-        ],
+        items: [{ metadata: { name: 'ns1' } }, { metadata: { name: 'ns2' } }],
       } as any),
     );
 
@@ -96,7 +93,7 @@ describe('NamespaceSelectionRendererService', () => {
       i.getAttribute('text'),
     );
 
-    expect(items).toEqual(['ns1', 'ns2', '-all-']);
+    expect(items).toEqual(['ns1', 'ns2', ALL_NAMESPACE]);
     expect(combobox.getAttribute('value')).toBe('ns2');
   });
 
@@ -127,10 +124,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [
-          { metadata: { name: 'ns1' } },
-          { metadata: { name: 'ns2' } },
-        ],
+        items: [{ metadata: { name: 'ns1' } }, { metadata: { name: 'ns2' } }],
       } as any),
     );
 
@@ -148,7 +142,10 @@ describe('NamespaceSelectionRendererService', () => {
       () => {},
     );
 
-    const combobox = getChildrenByTag(container, 'ui5-combobox')[0] as HTMLElement;
+    const combobox = getChildrenByTag(
+      container,
+      'ui5-combobox',
+    )[0] as HTMLElement;
     const event = new Event('change');
     Object.defineProperty(event, 'target', { value: { value: 'ns2' } });
     combobox.dispatchEvent(event);
@@ -160,7 +157,10 @@ describe('NamespaceSelectionRendererService', () => {
     searchParams.namespace = 'ns1';
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
-      of({ resourceVersion: '1', items: [{ metadata: { name: 'ns1' } }] } as any),
+      of({
+        resourceVersion: '1',
+        items: [{ metadata: { name: 'ns1' } }],
+      } as any),
     );
 
     const renderer = service.create({ portalContext: {} } as any);
@@ -179,7 +179,10 @@ describe('NamespaceSelectionRendererService', () => {
 
     addSearchParamsMock.mockClear();
 
-    const combobox = getChildrenByTag(container, 'ui5-combobox')[0] as HTMLElement;
+    const combobox = getChildrenByTag(
+      container,
+      'ui5-combobox',
+    )[0] as HTMLElement;
     const event = new Event('change');
     Object.defineProperty(event, 'target', { value: { value: '   ' } });
     combobox.dispatchEvent(event);
@@ -191,7 +194,10 @@ describe('NamespaceSelectionRendererService', () => {
     searchParams.namespace = 'ns1';
     mockAuthService.getToken.mockReturnValue('token');
     mockResourceService.list.mockReturnValue(
-      of({ resourceVersion: '1', items: [{ metadata: { name: 'ns1' } }] } as any),
+      of({
+        resourceVersion: '1',
+        items: [{ metadata: { name: 'ns1' } }],
+      } as any),
     );
 
     const renderer = service.create({ portalContext: {} } as any);
@@ -210,7 +216,10 @@ describe('NamespaceSelectionRendererService', () => {
 
     addSearchParamsMock.mockClear();
 
-    const combobox = getChildrenByTag(container, 'ui5-combobox')[0] as HTMLElement;
+    const combobox = getChildrenByTag(
+      container,
+      'ui5-combobox',
+    )[0] as HTMLElement;
     const event = new Event('change');
     Object.defineProperty(event, 'target', { value: { value: 'ns1' } });
     combobox.dispatchEvent(event);
@@ -242,8 +251,10 @@ describe('NamespaceSelectionRendererService', () => {
     );
 
     const combobox = getChildrenByTag(container, 'ui5-combobox')[0];
-    expect(combobox.getAttribute('value')).toBe('-all-');
-    expect(addSearchParamsMock).toHaveBeenCalledWith({ namespace: '-all-' });
+    expect(combobox.getAttribute('value')).toBe(ALL_NAMESPACE);
+    expect(addSearchParamsMock).toHaveBeenCalledWith({
+      namespace: ALL_NAMESPACE,
+    });
   });
 
   it('should select namespace from initial value when it exists in resources', () => {
@@ -304,7 +315,7 @@ describe('NamespaceSelectionRendererService', () => {
 
     const combobox = getChildrenByTag(container, 'ui5-combobox')[0];
     expect(getChildrenByTag(combobox, 'ui5-cb-item').length).toBe(1);
-    expect(combobox.getAttribute('value')).toBe('-all-');
+    expect(combobox.getAttribute('value')).toBe(ALL_NAMESPACE);
   });
 
   it('should cache namespace resources across renders', () => {
@@ -329,7 +340,9 @@ describe('NamespaceSelectionRendererService', () => {
     renderer(document.createElement('div'), nodeItems, () => {});
 
     expect(mockResourceService.list).toHaveBeenCalledTimes(1);
-    expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalledTimes(1);
+    expect(
+      mockResourceService.resourceChangeSubscription,
+    ).toHaveBeenCalledTimes(1);
     expect(mockLuigiCoreService.routing).toHaveBeenCalled();
   });
 
@@ -364,10 +377,10 @@ describe('NamespaceSelectionRendererService', () => {
       object: { metadata: { name: 'ns2' } },
     });
 
-    const itemsAfterAdd = getChildrenByTag(combobox, 'ui5-cb-item').map((item) =>
-      item.getAttribute('text'),
+    const itemsAfterAdd = getChildrenByTag(combobox, 'ui5-cb-item').map(
+      (item) => item.getAttribute('text'),
     );
-    expect(itemsAfterAdd).toEqual(['ns1', 'ns2', '-all-']);
+    expect(itemsAfterAdd).toEqual(['ns1', 'ns2', ALL_NAMESPACE]);
 
     changes$.next({
       type: ResourceOperationTypeMap.DELETED,
@@ -377,7 +390,7 @@ describe('NamespaceSelectionRendererService', () => {
     const itemsAfterDelete = getChildrenByTag(combobox, 'ui5-cb-item').map(
       (item) => item.getAttribute('text'),
     );
-    expect(itemsAfterDelete).toEqual(['ns2', '-all-']);
+    expect(itemsAfterDelete).toEqual(['ns2', ALL_NAMESPACE]);
   });
 
   it('should retry first namespace list request up to three times', () => {
@@ -414,7 +427,7 @@ describe('NamespaceSelectionRendererService', () => {
     );
 
     expect(attempts).toBe(4);
-    expect(items).toEqual(['ns1', '-all-']);
+    expect(items).toEqual(['ns1', ALL_NAMESPACE]);
   });
 
   it('should invalidate cache and unsubscribe old updates when kcpPath changes', () => {
@@ -478,6 +491,6 @@ describe('NamespaceSelectionRendererService', () => {
     const secondItems = getChildrenByTag(secondCombobox, 'ui5-cb-item').map(
       (item) => item.getAttribute('text'),
     );
-    expect(secondItems).toEqual(['new-ns', '-all-']);
+    expect(secondItems).toEqual(['new-ns', ALL_NAMESPACE]);
   });
 });

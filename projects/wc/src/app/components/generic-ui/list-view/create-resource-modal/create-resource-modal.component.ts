@@ -7,8 +7,10 @@ import {
   Component,
   OnInit,
   ViewEncapsulation,
+  computed,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
 } from '@angular/core';
@@ -29,10 +31,15 @@ import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  ALL_NAMESPACE,
+  FieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import {
   getResourceValueByJsonPath,
+  isNamespacedResource,
   setPropertyByPath,
 } from '@platform-mesh/portal-ui-lib/utils';
 
@@ -58,11 +65,18 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateResourceModal implements OnInit {
-  fields = input<FieldDefinition[]>([]);
   context = input.required<ResourceNodeContext>();
+  fields = input<FieldDefinition[]>([]);
+
   resource = output<Resource>();
   updateResource = output<Resource>();
   dialogOpen = signal<boolean>(false);
+  calculatedFields = linkedSignal<FieldDefinition[]>(() =>
+    this.calculateFields(),
+  );
+  isNamespacedResource = computed(() => {
+    return isNamespacedResource(this.context());
+  });
 
   fb = inject(FormBuilder);
   form: FormGroup;
@@ -77,6 +91,7 @@ export class CreateResourceModal implements OnInit {
 
   open(resource?: Resource) {
     this.originalResource.set(resource ?? null);
+    this.calculatedFields.set(this.calculateFields());
     this.form = this.fb.group(this.createControls(resource));
     this.dialogOpen.set(true);
   }
@@ -146,7 +161,7 @@ export class CreateResourceModal implements OnInit {
   }
 
   private createControls(resource?: Resource) {
-    return this.fields().reduce(
+    return this.calculatedFields().reduce(
       (obj, fieldDefinition) => {
         const validators = this.getValidator(fieldDefinition);
         const fieldName = this.sanitizePropertyName(fieldDefinition);
@@ -160,6 +175,39 @@ export class CreateResourceModal implements OnInit {
       },
       {} as Record<string, FormControl>,
     );
+  }
+
+  private calculateFields() {
+    const fields = this.fields().slice();
+
+    if (this.shouldAddNamespaceControl()) {
+      fields.push({
+        property: ResourceFieldNames.MetadataNamespace,
+        required: true,
+        label: 'Namespace',
+        dynamicValuesDefinition: {
+          operation: 'v1.Namespaces.items',
+          gqlQuery:
+            'query { v1 { Namespaces { items { metadata { name } } } } }',
+          value: 'metadata.name',
+          key: 'metadata.name',
+        },
+      });
+    }
+
+    return fields;
+  }
+
+  private shouldAddNamespaceControl() {
+    const namespace = this.getSelectedNamespace();
+    return (
+      this.isNamespacedResource() &&
+      (namespace === ALL_NAMESPACE || namespace === undefined)
+    );
+  }
+
+  private getSelectedNamespace() {
+    return new URLSearchParams(window.location.search).get('namespace');
   }
 
   private getValidator(fieldDefinition: FieldDefinition) {

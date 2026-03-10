@@ -4,6 +4,7 @@ import { Injectable, inject } from '@angular/core';
 import { TypedDocumentNode } from '@apollo/client/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
+  ALL_NAMESPACE,
   Resource,
   ResourceDefinition,
   ResourceListResult,
@@ -393,7 +394,7 @@ export class ResourceService {
     );
     const version = resourceDefinition.version;
     const kind = resourceDefinition.kind;
-    const namespace = this.getNamespace(nodeContext);
+    const namespace = this.getNamespace(nodeContext, resource);
 
     const mutationFields: any[] = [
       {
@@ -492,9 +493,16 @@ export class ResourceService {
       );
   }
 
-  private getNamespace(nodeContext: ResourceNodeContext): string | undefined {
+  private getNamespace(
+    nodeContext: ResourceNodeContext,
+    resource?: Resource,
+  ): string | undefined {
     if (nodeContext.namespaceId) {
       return nodeContext.namespaceId;
+    }
+
+    if (resource?.metadata?.namespace) {
+      return resource.metadata.namespace;
     }
 
     const namespace = this.luigiCoreService
@@ -502,7 +510,7 @@ export class ResourceService {
       .getSearchParams().namespace;
 
     if (namespace) {
-      return namespace === '-all-' ? undefined : namespace;
+      return namespace === ALL_NAMESPACE ? undefined : namespace;
     }
 
     return undefined;

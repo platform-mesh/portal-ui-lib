@@ -28,6 +28,11 @@ describe('CreateResourceModalComponent', () => {
     component = fixture.componentInstance;
 
     component.fields = (() => testFields) as any;
+    component.context = (() => ({
+      resourceDefinition: {
+        scope: 'Cluster',
+      },
+    })) as any;
 
     component.ngOnInit();
     fixture.detectChanges();
@@ -225,5 +230,18 @@ describe('CreateResourceModalComponent', () => {
     component.open();
 
     expect(component.dialogOpen()).toBeTruthy();
+  });
+
+  it('should append namespace field when selected namespace is all', () => {
+    (component as any).fields = () => [
+      { property: 'metadata.name', required: true, label: 'Name' },
+    ];
+    vi.spyOn(component as any, 'shouldAddNamespaceControl').mockReturnValue(true);
+
+    component.open();
+
+    expect(
+      component.calculatedFields().some((field) => field.property === 'metadata.namespace'),
+    ).toBe(true);
   });
 });

@@ -1,4 +1,8 @@
-<ui5-dialog test-id="create-resource-dialog" [open]="dialogOpen()" (close)="close()">
+<ui5-dialog
+  test-id="create-resource-dialog"
+  [open]="dialogOpen()"
+  (close)="close()"
+>
   <ui5-bar slot="header" design="Header">
     <ui5-title test-id="create-resource-dialog-title" slot="startContent">
       @if (isEditMode()) {
@@ -13,7 +17,7 @@
     class="form"
     [formGroup]="form"
   >
-    @for (field of fields(); track field.property) {
+    @for (field of calculatedFields(); track field.property) {
       @let fieldProperty = sanitizePropertyName(field);
       <div
         class="inputs"

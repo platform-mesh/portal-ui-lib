@@ -2,6 +2,7 @@ import { ApolloFactory } from './apollo-factory';
 import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { ALL_NAMESPACE } from '@platform-mesh/portal-ui-lib/models';
 import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
@@ -1721,7 +1722,7 @@ describe('ResourceService', () => {
 
       it('should return undefined when namespace is -all- in search params', () => {
         service['luigiCoreService'].routing = vi.fn(() => ({
-          getSearchParams: () => ({ namespace: '-all-' }),
+          getSearchParams: () => ({ namespace: ALL_NAMESPACE }),
         }));
 
         const result = service['getNamespace']({

@@ -11,6 +11,7 @@ import {
   Resource,
   ResourceDefinition,
   ResourceListResult,
+  ALL_NAMESPACE,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
@@ -159,7 +160,7 @@ export class NamespaceSelectionRendererService {
     });
 
     const allOption = document.createElement('ui5-cb-item');
-    allOption.setAttribute('text', '-all-');
+    allOption.setAttribute('text', ALL_NAMESPACE);
     allOption.setAttribute(
       'data-testid',
       'namespace-selection-combobox-item-all',
@@ -187,8 +188,8 @@ export class NamespaceSelectionRendererService {
     ) {
       ui5combobox.setAttribute('value', namespace);
     } else {
-      ui5combobox.setAttribute('value', '-all-');
-      this.changeNamespace('-all-');
+      ui5combobox.setAttribute('value', ALL_NAMESPACE);
+      this.changeNamespace(ALL_NAMESPACE);
     }
   }
 

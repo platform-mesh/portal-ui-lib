@@ -62,6 +62,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
 - `"createView"`: Defines the form for creating/updating resources
   - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value).
+  - for namespaced resources, when URL search param `namespace` is `-all-` (or missing), the create form automatically adds a required `metadata.namespace` field with dynamic namespace options.
 
 #### Field Definition Properties
 
