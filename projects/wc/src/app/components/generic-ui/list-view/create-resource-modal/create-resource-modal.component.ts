@@ -31,11 +31,7 @@ import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
-import {
-  ALL_NAMESPACE,
-  FieldDefinition,
-  Resource,
-} from '@platform-mesh/portal-ui-lib/models';
+import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import {
   getResourceValueByJsonPath,
@@ -199,15 +195,7 @@ export class CreateResourceModal implements OnInit {
   }
 
   private shouldAddNamespaceControl() {
-    const namespace = this.getSelectedNamespace();
-    return (
-      this.isNamespacedResource() &&
-      (namespace === ALL_NAMESPACE || namespace === undefined)
-    );
-  }
-
-  private getSelectedNamespace() {
-    return new URLSearchParams(window.location.search).get('namespace');
+    return this.isNamespacedResource();
   }
 
   private getValidator(fieldDefinition: FieldDefinition) {
