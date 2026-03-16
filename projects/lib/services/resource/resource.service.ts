@@ -13,11 +13,9 @@ import {
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   buildResourcePath,
-  capitalize,
   getResourceValueByJsonPath,
   getValueByPath,
   isNamespacedResource,
-  replaceDotsAndHyphensWithUnderscores,
   stripTypename,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
@@ -34,9 +32,9 @@ interface ResourceResponseError extends Record<string, any> {
 }
 
 export interface ResourceRequestParams {
-  kind: string;
+  entity: string;
   version: string;
-  group?: string;
+  apiGroup?: string;
 }
 
 @Injectable({
@@ -90,10 +88,10 @@ export class ResourceService {
     namespace: string | undefined,
   ) {
     if (fieldsOrRawQuery instanceof Array) {
-      const { kind, version, group } = params;
+      const { entity, version, apiGroup } = params;
       const queryFields = [
         {
-          operation: kind,
+          operation: entity,
           variables: {
             name: { value: resourceId, type: 'String!' },
             ...(namespace && {
@@ -105,7 +103,7 @@ export class ResourceService {
       ];
 
       const queryOptions = this.calcQueryOptions(queryFields, [
-        { operation: group },
+        { operation: apiGroup },
         { operation: version },
       ]);
       return gqlBuilder.query(queryOptions).query;
@@ -174,14 +172,10 @@ export class ResourceService {
     readFromParentKcpPath: boolean,
     variables: VariableOptions,
   ): Observable<ResourceListResult> {
-    const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group,
-    );
-    const version = resourceDefinition.version;
-    const kind = capitalize(resourceDefinition.plural);
+    const { apiGroup, entityCollection, version } = resourceDefinition;
     const queryFields = [
       {
-        operation: kind,
+        operation: entityCollection,
         variables,
         fields: [
           'resourceVersion',
@@ -192,7 +186,7 @@ export class ResourceService {
       },
     ];
     const queryOptions = this.calcQueryOptions(queryFields, [
-      { operation: group },
+      { operation: apiGroup },
       { operation: version },
     ]);
     const listQuery = gqlBuilder.query(queryOptions);
@@ -208,7 +202,7 @@ export class ResourceService {
         map((res: any): ResourceListResult => {
           const resourceListResult = getValueByPath<any, any>(
             res.data,
-            buildResourcePath({ group, version, kind }, '.'),
+            buildResourcePath({ apiGroup, version, entity: entityCollection }, '.'),
           );
           if (!resourceListResult) {
             throw new Error('Resource list result not found');
@@ -340,15 +334,11 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean = false,
   ) {
-    const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group,
-    );
     const isNamespaced = isNamespacedResource(nodeContext);
-    const kind = resourceDefinition.kind;
-    const version = resourceDefinition.version;
+    const { apiGroup, entity, version } = resourceDefinition;
     const fields = [
       {
-        operation: `delete${kind}`,
+        operation: `delete${entity}`,
         variables: {
           name: { type: 'String!', value: resource.metadata.name },
           ...(isNamespaced && {
@@ -362,7 +352,7 @@ export class ResourceService {
       },
     ];
     const queryOptions = this.calcQueryOptions(fields, [
-      { operation: group },
+      { operation: apiGroup },
       { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
@@ -389,27 +379,23 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
   ) {
     const isNamespaced = isNamespacedResource(nodeContext);
-    const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group,
-    );
-    const version = resourceDefinition.version;
-    const kind = resourceDefinition.kind;
-    const namespace = this.getNamespace(nodeContext, resource);
+    const { apiGroup, entity, version } = resourceDefinition;
+    const namespace = this.getNamespace(nodeContext);
 
     const mutationFields: any[] = [
       {
-        operation: `create${kind}`,
+        operation: `create${entity}`,
         variables: {
           ...(isNamespaced && {
             namespace: { type: 'String', value: namespace },
           }),
-          object: { type: `${kind}Input!`, value: resource },
+          object: { type: `${entity}Input!`, value: resource },
         },
         fields: ['__typename'],
       },
     ];
     const queryOptions = this.calcQueryOptions(mutationFields, [
-      { operation: group },
+      { operation: apiGroup },
       { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
@@ -439,25 +425,21 @@ export class ResourceService {
     fields: any[] = ['__typename'],
   ) {
     const isNamespaced = isNamespacedResource(nodeContext);
-    const group = replaceDotsAndHyphensWithUnderscores(
-      resourceDefinition.group,
-    );
-    const kind = resourceDefinition.kind;
-    const version = resourceDefinition.version;
+    const { apiGroup, entity, version } = resourceDefinition;
     const namespace = this.getNamespace(nodeContext);
 
     const cleanResource = stripTypename(resource);
 
     const mutationFields: any[] = [
       {
-        operation: `update${kind}`,
+        operation: `update${entity}`,
         variables: {
           ...(isNamespaced && {
             namespace: { type: 'String', value: namespace },
           }),
           name: { type: 'String!', value: resource.metadata.name },
           object: {
-            type: `${kind}Input!`,
+            type: `${entity}Input!`,
             value: cleanResource,
           },
         },
@@ -465,7 +447,7 @@ export class ResourceService {
       },
     ];
     const queryOptions = this.calcQueryOptions(mutationFields, [
-      { operation: group },
+      { operation: apiGroup },
       { operation: version },
     ]);
     const mutation = gqlBuilder.mutation(queryOptions);
@@ -482,7 +464,7 @@ export class ResourceService {
         map((res: any) =>
           getValueByPath(
             res.data,
-            buildResourcePath({ group, kind: `update${kind}`, version }, '.'),
+            buildResourcePath({ apiGroup, entity: `update${entity}`, version }, '.'),
           ),
         ),
         catchError((error) => {

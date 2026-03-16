@@ -31,11 +31,10 @@ export interface Resource extends GenericResource {
 }
 
 export interface ResourceDefinition {
-  group?: string;
+  apiGroup?: string;
   version: string;
-  plural: string;
-  singular: string;
-  kind: string;
+  entityCollection: string;
+  entity: string;
   name?: string;
   scope?: KubernetesScope;
   namespace?: string;

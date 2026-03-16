@@ -124,7 +124,7 @@ describe('DeleteResourceModalComponent', () => {
   it('should render prompt text with resource name and cannot be undone note', () => {
     component.open(resource);
     (component as any).context = () => ({
-      resourceDefinition: { singular: 'resource' },
+      resourceDefinition: { entity: 'resource', entityCollection: 'resources' },
     });
     fixture.detectChanges();
     const content = fixture.nativeElement.querySelector('section.content');

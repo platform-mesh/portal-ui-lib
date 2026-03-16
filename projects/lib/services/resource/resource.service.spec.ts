@@ -14,12 +14,12 @@ describe('ResourceService', () => {
   let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   const resourceDefinition: any = {
-    group: 'core.k8s.io',
-    kind: 'TestKind',
+    apiGroup: 'core_k8s_io',
+    entity: 'TestKind',
     version: 'v1',
     scope: 'Namespaced',
     namespace: 'default',
-    plural: 'testkinds',
+    entityCollection: 'Testkinds',
   };
 
   const unversionedResourceDefinition: any = {
@@ -29,12 +29,12 @@ describe('ResourceService', () => {
 
   const grouplessResourceDefinition: any = {
     ...resourceDefinition,
-    group: undefined,
+    apiGroup: undefined,
   };
 
   const grouplessUnversionedResourceDefinition: any = {
     ...resourceDefinition,
-    group: undefined,
+    apiGroup: undefined,
     version: undefined,
   };
 
@@ -42,12 +42,12 @@ describe('ResourceService', () => {
     cluster: 'test',
     namespaceId: 'test-namespace',
     resourceDefinition: {
-      group: 'core.k8s.io',
-      kind: 'TestKind',
+      apiGroup: 'core_k8s_io',
+      entity: 'TestKind',
       version: 'v1',
       scope: 'Namespaced',
       namespace: 'default',
-      plural: 'testkinds',
+      entityCollection: 'Testkinds',
     },
   };
 
@@ -63,7 +63,7 @@ describe('ResourceService', () => {
     ...namespacedNodeContext,
     resourceDefinition: {
       ...namespacedNodeContext.resourceDefinition,
-      group: undefined,
+      apiGroup: undefined,
     },
   };
 
@@ -71,7 +71,7 @@ describe('ResourceService', () => {
     ...namespacedNodeContext,
     resourceDefinition: {
       ...namespacedNodeContext.resourceDefinition,
-      group: undefined,
+      apiGroup: undefined,
       version: undefined,
     },
   };
@@ -79,12 +79,12 @@ describe('ResourceService', () => {
   const clusterScopeNodeContext: any = {
     namespaceId: 'test-namespace',
     resourceDefinition: {
-      group: 'core.k8s.io',
-      kind: 'TestKind',
+      apiGroup: 'core_k8s_io',
+      entity: 'TestKind',
       version: 'v1',
       scope: 'Cluster',
       namespace: 'default',
-      plural: 'testkinds',
+      entityCollection: 'Testkinds',
     },
   };
 
@@ -100,7 +100,7 @@ describe('ResourceService', () => {
     ...clusterScopeNodeContext,
     resourceDefinition: {
       ...clusterScopeNodeContext.resourceDefinition,
-      group: undefined,
+      apiGroup: undefined,
     },
   };
 
@@ -108,7 +108,7 @@ describe('ResourceService', () => {
     ...clusterScopeNodeContext,
     resourceDefinition: {
       ...clusterScopeNodeContext.resourceDefinition,
-      group: undefined,
+      apiGroup: undefined,
       version: undefined,
     },
   };
@@ -152,7 +152,7 @@ describe('ResourceService', () => {
       try {
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           invalidQuery,
           namespacedNodeContext,
         );
@@ -175,7 +175,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
         ),
@@ -200,7 +200,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
         ),
@@ -225,7 +225,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           ['name'],
           clusterScopeNodeContext,
         ),
@@ -250,7 +250,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
         ),
@@ -276,7 +276,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           rawQuery,
           clusterScopeNodeContext,
         ),
@@ -301,7 +301,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           rawQuery,
           namespacedNodeContext,
         ),
@@ -326,7 +326,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
           false,
@@ -349,7 +349,7 @@ describe('ResourceService', () => {
       const res = await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: undefined },
+          { entity: 'TestKind', version: 'v1', apiGroup: undefined },
           ['name'],
           grouplessNamespacedNodeContext,
         ),
@@ -377,9 +377,9 @@ describe('ResourceService', () => {
         ...namespacedNodeContext,
         resourceDefinition: {
           ...namespacedNodeContext.resourceDefinition,
-          group: undefined,
+          apiGroup: undefined,
           version: undefined,
-          plural: '',
+          entityCollection: '',
         },
       };
 
@@ -1940,9 +1940,9 @@ describe('ResourceService', () => {
     describe('resolveReadQuery', () => {
       it('should build query from fields array', () => {
         const params = {
-          kind: 'TestKind',
+          entity: 'TestKind',
           version: 'v1',
-          group: 'core_k8s_io',
+          apiGroup: 'core_k8s_io',
         };
         const fields = ['name', 'namespace'];
         const resourceId = 'test-id';
@@ -1962,9 +1962,9 @@ describe('ResourceService', () => {
 
       it('should return raw query string when provided', () => {
         const params = {
-          kind: 'TestKind',
+          entity: 'TestKind',
           version: 'v1',
-          group: 'core_k8s_io',
+          apiGroup: 'core_k8s_io',
         };
         const rawQuery = 'query { TestKind { name } }';
         const resourceId = 'test-id';
@@ -1982,9 +1982,9 @@ describe('ResourceService', () => {
 
       it('should build query without namespace when namespace is undefined', () => {
         const params = {
-          kind: 'TestKind',
+          entity: 'TestKind',
           version: 'v1',
-          group: 'core_k8s_io',
+          apiGroup: 'core_k8s_io',
         };
         const fields = ['name'];
         const resourceId = 'test-id';
@@ -2021,7 +2021,7 @@ describe('ResourceService', () => {
         firstValueFrom(
           service.read(
             'test-name',
-            { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+            { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
             ['name'],
             namespacedNodeContext,
           ),
@@ -2123,7 +2123,7 @@ describe('ResourceService', () => {
       await firstValueFrom(
         service.read(
           'test-name',
-          { kind: 'TestKind', version: 'v1', group: 'core_k8s_io' },
+          { entity: 'TestKind', version: 'v1', apiGroup: 'core_k8s_io' },
           ['name'],
           namespacedNodeContext,
           true,

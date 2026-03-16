@@ -4,9 +4,9 @@ describe('buildResourceOperation', () => {
   it('should build versioned operation', () => {
     expect(
       buildResourcePath({
-        group: 'core.platform-mesh.io',
+        apiGroup: 'core.platform-mesh.io',
         version: 'v1alpha1',
-        kind: 'myresources',
+        entity: 'myresources',
       }),
     ).toBe('core.platform-mesh.io_v1alpha1_myresources');
   });
@@ -14,19 +14,22 @@ describe('buildResourceOperation', () => {
   it('should build unversioned operation', () => {
     expect(
       buildResourcePath({
-        group: 'core.platform-mesh.io',
+        apiGroup: 'core.platform-mesh.io',
         version: undefined,
-        kind: 'accounts',
+        entity: 'accounts',
       }),
     ).toBe('core.platform-mesh.io_accounts');
   });
 
   it('should build operation with custom separator', () => {
     expect(
-      buildResourcePath({
-        group: 'core.platform-mesh.io',
-        kind: 'accounts',
-      }, '.'),
+      buildResourcePath(
+        {
+          apiGroup: 'core.platform-mesh.io',
+          entity: 'accounts',
+        },
+        '.',
+      ),
     ).toBe('core.platform-mesh.io.accounts');
   });
 });

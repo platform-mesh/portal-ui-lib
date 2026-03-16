@@ -7,7 +7,7 @@
   </ui5-bar>
   <section test-id="delete-resource-dialog-content" class="content" [formGroup]="form">
     <div class="inputs">
-      <p>Are you sure you want to delete {{ context()?.resourceDefinition?.singular }}
+      <p>Are you sure you want to delete {{ context()?.resourceDefinition?.entity }}
         <b>{{ innerResource()?.metadata?.name?.toLowerCase() }}</b>?</p>
       <ui5-text style="color: var(--sapCriticalElementColor)">
         This action <b>cannot</b> be undone.

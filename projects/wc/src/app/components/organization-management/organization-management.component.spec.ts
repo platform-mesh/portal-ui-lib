@@ -132,9 +132,9 @@ describe('OrganizationManagementComponent', () => {
         expect.any(Array),
         expect.objectContaining({
           resourceDefinition: expect.objectContaining({
-            group: 'core.platform-mesh.io',
+            apiGroup: 'core_platform_mesh_io',
             version: 'v1alpha1',
-            plural: 'accounts',
+            entityCollection: 'Accounts',
           }),
         }),
       );
@@ -491,8 +491,8 @@ describe('OrganizationManagementComponent', () => {
           spec: { type: 'org' },
         }),
         expect.objectContaining({
-          group: 'core.platform-mesh.io',
-          kind: 'Account',
+          apiGroup: 'core_platform_mesh_io',
+          entity: 'Account',
         }),
         expect.any(Object),
       );

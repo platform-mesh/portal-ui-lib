@@ -66,9 +66,9 @@ describe('ListViewComponent', () => {
 
     component.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
         version: 'v1alpha1',
         ui: {
           listView: {
@@ -115,9 +115,9 @@ describe('ListViewComponent', () => {
 
     newComponent.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
         version: 'v1alpha1',
         readyCondition,
         ui: {
@@ -168,9 +168,9 @@ describe('ListViewComponent', () => {
 
     newComponent.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
         version: 'v1alpha1',
         scope: 'Namespaced',
         ui: {
@@ -215,9 +215,9 @@ describe('ListViewComponent', () => {
     history.replaceState(null, '', '/?namespace=old&view=list');
     newComponent.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
         version: 'v1alpha1',
         scope: 'Namespaced',
         ui: {
@@ -265,9 +265,9 @@ describe('ListViewComponent', () => {
 
     newComponent.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
         ui: {
           listView: {
             fields: [],
@@ -294,9 +294,9 @@ describe('ListViewComponent', () => {
 
     newComponent.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
       },
     })) as any;
 
@@ -325,9 +325,9 @@ describe('ListViewComponent', () => {
 
     const mockContext = {
       resourceDefinition: {
-        kind: 'Cluster',
-        group: 'core.k8s.io',
-        plural: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
+        entityCollection: 'clusters',
         ui: {
           createView: {
             fields: [{ property: 'any' }],
@@ -365,9 +365,9 @@ describe('ListViewComponent', () => {
 
     newComponent.context = (() => ({
       resourceDefinition: {
-        plural: 'clusters',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
         ui: {
           listView: {
             fields: [],
@@ -565,9 +565,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -620,9 +620,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -672,9 +672,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -716,9 +716,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -763,9 +763,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -812,9 +812,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -855,9 +855,9 @@ describe('ListViewComponent', () => {
 
       newComponent.context = (() => ({
         resourceDefinition: {
-          plural: 'clusters',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
             listView: { fields: [] },
@@ -917,9 +917,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
               listView: { fields: [] },
@@ -956,9 +956,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
               listView: { fields: [] },
@@ -1007,9 +1007,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
               listView: { fields: [] },
@@ -1051,9 +1051,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
               listView: { fields: [] },
@@ -1088,9 +1088,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
               listView: { fields: [] },
@@ -1132,9 +1132,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             ui: {
               listView: { fields: [] },
             },
@@ -1161,9 +1161,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             ui: {
               createView: {
                 fields: [],
@@ -1193,9 +1193,9 @@ describe('ListViewComponent', () => {
 
         newComponent.context = (() => ({
           resourceDefinition: {
-            plural: 'clusters',
-            kind: 'Cluster',
-            group: 'core.k8s.io',
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
             ui: {
               listView: {
                 fields: [

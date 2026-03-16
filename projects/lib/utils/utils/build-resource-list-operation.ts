@@ -1,10 +1,10 @@
 
 export function buildResourcePath(input: {
-  group?: string | undefined;
-  kind: string;
+  apiGroup?: string | undefined;
+  entity: string;
   version?: string | undefined;
 }, separator: string = '_'): string {
-  return [input.group, input.version, input.kind]
+  return [input.apiGroup, input.version, input.entity]
     .filter((p): p is string => !!p)
     .join(separator);
 }

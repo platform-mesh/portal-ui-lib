@@ -35,7 +35,6 @@ import {
   getResourceValueByJsonPath,
   isNamespacedResource,
   mergeListWithSubscriptionResult,
-  replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { finalize } from 'rxjs/operators';
 
@@ -60,11 +59,11 @@ export class ListView {
   resources = signal<Resource[]>([]);
   defaultTitle = computed(
     () =>
-      `${this.resourceDefinition()?.plural.charAt(0).toUpperCase()}${this.resourceDefinition()?.plural.slice(1)}`,
+      this.resourceDefinition()?.entityCollection ?? '',
   );
   defaultDescription = computed(
     () =>
-      `This page displays the created ${this.resourceDefinition()?.plural} in your environment`,
+      `This page displays the created ${this.resourceDefinition()?.entityCollection} in your environment`,
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(() => {
@@ -121,13 +120,11 @@ export class ListView {
   private subscribeToResourceChange(version: string) {
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
-    const queryOperation = replaceDotsAndHyphensWithUnderscores(
-      buildResourcePath({
-        group: resourceDefinition.group,
-        version: resourceDefinition.version,
-        kind: resourceDefinition.plural,
-      }),
-    ) as string;
+    const queryOperation = buildResourcePath({
+      apiGroup: resourceDefinition.apiGroup,
+      version: resourceDefinition.version,
+      entity: resourceDefinition.entityCollection,
+    }) as string;
 
     return this.resourceService
       .resourceChangeSubscription(
@@ -181,13 +178,11 @@ export class ListView {
 
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
-    const queryOperation = replaceDotsAndHyphensWithUnderscores(
-      buildResourcePath({
-        group: resourceDefinition.group,
-        version: resourceDefinition.version,
-        kind: resourceDefinition.plural,
-      }),
-    ) as string;
+    const queryOperation = buildResourcePath({
+      apiGroup: resourceDefinition.apiGroup,
+      version: resourceDefinition.version,
+      entity: resourceDefinition.entityCollection,
+    }) as string;
 
     this.resourceService
       .list(queryOperation, fields, this.context(), false, {

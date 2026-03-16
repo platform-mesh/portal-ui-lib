@@ -24,7 +24,7 @@ In order to use the generic list view, you need to adjust the node’s   `conten
 
 - context resource definition `"context"`
 
-  - in the `"resourceDefinition"` the given fields need to be specified: `group, version,  plural, singular, kind, scope, namespace` describing properties of the resource.
+  - in the `"resourceDefinition"` the given fields need to be specified: `apiGroup, version, entityCollection, entity, scope, namespace` describing properties of the resource.
   - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
     It's an object that contains two fields:
       - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
@@ -151,11 +151,10 @@ This example demonstrates various features including:
           },
           "context": {
             "resourceDefinition": {
-              "group": "core.platform-mesh.io",
+              "apiGroup": "core_platform_mesh_io",
               "version": "v1alpha1",
-              "plural": "accounts",
-              "singular": "account",
-              "kind": "Account",
+              "entityCollection": "Accounts",
+              "entity": "Account",
               "scope": "Cluster",
               "namespace": null,
               "readyCondition": {
@@ -458,11 +457,10 @@ This example demonstrates various features including:
                     },
                     "context": {
                         "resourceDefinition": {
-                            "group": "orchestrate.platform-mesh.io",
-                            "plural": "httpBins",
-                            "singular": "httpBin", 
+                            "apiGroup": "orchestrate_platform_mesh_io",
+                            "entityCollection": "HttpBins",
+                            "entity": "HttpBin",
                             "version": "v1alpha1",
-                            "kind": "HttpBin",
                             "scope": "Namespaced",
                             "namespace": null,
                             "readyCondition": {
@@ -595,11 +593,10 @@ In case the detail view is an independent node provide context data:
  {
   "context": {
     "resourceDefinition": {
-      "group": "core.platform-mesh.io",
+      "apiGroup": "core_platform_mesh_io",
       "version": "v1alpha1",
-      "plural": "accounts",
-      "singular": "account",
-      "kind": "Account",
+      "entityCollection": "Accounts",
+      "entity": "Account",
       "scope": "Cluster",
       "namespace": null,
       "ui": {

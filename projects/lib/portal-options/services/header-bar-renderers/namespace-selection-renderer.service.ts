@@ -206,7 +206,8 @@ export class NamespaceSelectionRendererService {
       },
       resourceDefinition: {
         version: 'v1',
-        plural: 'namespaces',
+        entityCollection: 'Namespaces',
+        entity: 'Namespace',
         scope: 'Cluster',
       } as ResourceDefinition,
       kcpPath,

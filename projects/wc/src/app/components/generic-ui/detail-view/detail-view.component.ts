@@ -34,7 +34,6 @@ import {
 import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
-  replaceDotsAndHyphensWithUnderscores,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -75,7 +74,7 @@ export class DetailView {
   );
   defaultDescription = computed(
     () =>
-      `The ${this.resourceDefinition()?.singular} for ${this.resource()?.spec?.displayName || this.resourceId()}`,
+      `The ${this.resourceDefinition()?.entity} for ${this.resource()?.spec?.displayName || this.resourceId()}`,
   );
 
   resourceFields = computed(
@@ -103,11 +102,7 @@ export class DetailView {
     const resourceDefinition = this.getResourceDefinition();
     const fields = this.getDetailViewQueryFields();
 
-    const params: ResourceRequestParams = {
-      kind: resourceDefinition.kind,
-      version: resourceDefinition.version,
-      group: replaceDotsAndHyphensWithUnderscores(resourceDefinition.group),
-    };
+    const params: ResourceRequestParams = resourceDefinition;
 
     const resourceId = this.resourceId();
     if (!resourceId) {
@@ -125,7 +120,7 @@ export class DetailView {
         params,
         fields,
         this.context(),
-        params.kind.toLowerCase() === 'account',
+        params.entity.toLowerCase() === 'account',
       )
       .pipe(
         tap((resource) => {
@@ -187,7 +182,7 @@ export class DetailView {
         resourceToDelete,
         resourceDefinition,
         this.context(),
-        resourceDefinition.kind.toLowerCase() === 'account',
+        resourceDefinition.entity.toLowerCase() === 'account',
       )
       .subscribe({
         next: async (_result) => {
@@ -220,7 +215,7 @@ export class DetailView {
         resourceToUpdate,
         resourceDefinition,
         this.context(),
-        resourceDefinition.kind.toLowerCase() === 'account',
+        resourceDefinition.entity.toLowerCase() === 'account',
         fields,
       )
       .subscribe({

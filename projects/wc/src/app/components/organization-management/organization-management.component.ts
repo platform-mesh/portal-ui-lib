@@ -120,9 +120,10 @@ export class OrganizationManagementView implements OnInit {
     const ctx = {
       ...this.context(),
       resourceDefinition: {
-        group: 'core.platform-mesh.io',
+        apiGroup: 'core_platform_mesh_io',
         version: 'v1alpha1',
-        plural: 'accounts',
+        entityCollection: 'Accounts',
+        entity: 'Account',
         scope: 'Cluster',
       } as ResourceDefinition,
     };
@@ -247,10 +248,9 @@ export class OrganizationManagementView implements OnInit {
       metadata: { name: this.newOrganizationControl.value },
     };
     const resourceDefinition: ResourceDefinition = {
-      group: 'core.platform-mesh.io',
-      kind: 'Account',
-      plural: 'accounts',
-      singular: 'account',
+      apiGroup: 'core_platform_mesh_io',
+      entity: 'Account',
+      entityCollection: 'Accounts',
       scope: 'Cluster',
       version: 'v1alpha1',
     };

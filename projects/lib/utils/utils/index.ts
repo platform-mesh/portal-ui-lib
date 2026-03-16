@@ -1,7 +1,6 @@
 export * from './build-resource-list-operation';
 export * from './columns-to-gql-fields';
 export * from './get-value-by-path';
-export * from './group-name-sanitizer';
 export * from './is-local-setup';
 export * from './is-namespaced-resource';
 export * from './merge-list-with-subscription-result';

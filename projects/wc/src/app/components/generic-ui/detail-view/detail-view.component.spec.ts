@@ -91,8 +91,9 @@ describe('DetailViewComponent', () => {
       kcpCA: 'kcp-ca-data',
       resourceDefinition: {
         version: 'v1alpha1',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
         ui: {
           detailView: {
             fields: [],
@@ -156,8 +157,9 @@ describe('DetailViewComponent', () => {
       kcpCA: 'kcp-ca-data',
       resourceDefinition: {
         version: 'v1alpha1',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
         ui: {
           detailView: {
             fields: [],
@@ -197,8 +199,9 @@ describe('DetailViewComponent', () => {
       token: 'abc123',
       resourceDefinition: {
         version: 'v1alpha1',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
       },
       entity: {
         metadata: { name: 'test-resource' },
@@ -253,8 +256,9 @@ describe('DetailViewComponent', () => {
       kcpCA: 'kcp-ca-data',
       resourceDefinition: {
         version: 'v1alpha1',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
         ui: {
           detailView: {
             fields: [],
@@ -396,8 +400,9 @@ describe('DetailViewComponent', () => {
         token: 'abc123',
         resourceDefinition: {
           version: 'v1alpha1',
-          kind: 'Account',
-          group: 'core.k8s.io',
+          entity: 'Account',
+          entityCollection: 'accounts',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [],
@@ -492,8 +497,9 @@ describe('DetailViewComponent', () => {
         token: 'abc123',
         resourceDefinition: {
           version: 'v1alpha1',
-          kind: 'Account',
-          group: 'core.k8s.io',
+          entity: 'Account',
+          entityCollection: 'accounts',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [{ property: 'spec.name' }],
@@ -553,8 +559,9 @@ describe('DetailViewComponent', () => {
         token: 'abc123',
         resourceDefinition: {
           version: 'v1alpha1',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [],
@@ -585,8 +592,9 @@ describe('DetailViewComponent', () => {
       token: 'abc123',
       namespaceId: testNamespace,
       resourceDefinition: {
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
         ui: {
           detailView: {
             fields: [],
@@ -709,8 +717,9 @@ describe('DetailViewComponent', () => {
       resourceId: 'test-account',
       token: 'abc123',
       resourceDefinition: {
-        kind: 'Account',
-        group: 'core.k8s.io',
+        entity: 'Account',
+        entityCollection: 'accounts',
+        apiGroup: 'core_k8s_io',
         version: 'v1alpha1',
         ui: {
           detailView: {
@@ -742,11 +751,13 @@ describe('DetailViewComponent', () => {
     const fieldsStr = JSON.stringify(fieldsArg);
 
     expect(readCall[0]).toBe('test-account');
-    expect(readCall[1]).toEqual({
-      kind: 'Account',
-      group: 'core_k8s_io',
-      version: 'v1alpha1',
-    });
+    expect(readCall[1]).toEqual(
+      expect.objectContaining({
+        entity: 'Account',
+        apiGroup: 'core_k8s_io',
+        version: 'v1alpha1',
+      }),
+    );
     expect(fieldsStr).toContain('metadata');
     expect(fieldsStr).toContain('deletionTimestamp');
     expect(readCall[3]).toEqual(expect.any(Object));
@@ -766,8 +777,9 @@ describe('DetailViewComponent', () => {
       resourceId: 'cluster-1',
       token: 'abc123',
       resourceDefinition: {
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
         ui: {
           detailView: {
             fields: [],
@@ -814,8 +826,9 @@ describe('DetailViewComponent', () => {
         entityName: undefined,
         token: 'abc123',
         resourceDefinition: {
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [],
@@ -877,8 +890,9 @@ describe('DetailViewComponent', () => {
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [],
@@ -920,8 +934,9 @@ describe('DetailViewComponent', () => {
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [],
@@ -999,8 +1014,9 @@ describe('DetailViewComponent', () => {
         token: 'abc123',
         resourceDefinition: {
           version: 'v1alpha1',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [{ property: 'metadata.name' }],
@@ -1050,8 +1066,9 @@ describe('DetailViewComponent', () => {
         token: 'abc123',
         resourceDefinition: {
           version: 'v1alpha1',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [{ property: 'metadata.name' }],
@@ -1099,8 +1116,9 @@ describe('DetailViewComponent', () => {
         token: 'abc123',
         resourceDefinition: {
           version: 'v1alpha1',
-          kind: 'Cluster',
-          group: 'core.k8s.io',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
           ui: {
             detailView: {
               fields: [{ property: 'metadata.name' }],
@@ -1190,8 +1208,9 @@ describe('DetailViewComponent template', () => {
       kcpCA: 'kcp-ca-data',
       resourceDefinition: {
         version: 'v1alpha1',
-        kind: 'Cluster',
-        group: 'core.k8s.io',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
         ui: {
           detailView: {
             fields: [],
