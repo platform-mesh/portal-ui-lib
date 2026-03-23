@@ -1,6 +1,6 @@
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
-import { inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   CustomGlobalNodesService,
   EntityType,
@@ -8,6 +8,7 @@ import {
   NodeContext,
 } from '@openmfp/portal-ui-lib';
 
+@Injectable({ providedIn: 'root' })
 export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
   private i18nService = inject(I18nService);
 
