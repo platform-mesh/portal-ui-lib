@@ -1,7 +1,7 @@
 import { GatewayService } from './gateway.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { kcpRootOrgsPath } from '../../portal-options/models/constants';
+import { kcpRootOrgsPath } from '@platform-mesh/portal-ui-lib/models';
 
 describe('GatewayService', () => {
   let service: GatewayService;
@@ -99,6 +99,35 @@ describe('GatewayService', () => {
       // no kcpRootOrgsPath match → extractKcpPath returns '' → resolveKcpPath returns ''
       expect(result).toBe('https://example.com/org1/graphql');
     });
+
+    it('should replace kcp path when url has additional path suffix after kcp segment', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: `https://example.com/${kcpRootOrgsPath}:org1:acc1/abcdf/dfer/klo`,
+        },
+        token: 'token',
+        accountId: 'entityId',
+        kcpPath: `${kcpRootOrgsPath}:org1:acc2`,
+      };
+      const result = service.getGatewayUrl(nodeContext as any);
+      expect(result).toBe(
+        `https://example.com/${kcpRootOrgsPath}:org1:acc2/abcdf/dfer/klo`,
+      );
+    });
+
+    it('should slice kcp path when url has additional path suffix and readFromParentKcpPath is true', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: `https://example.com/${kcpRootOrgsPath}:org1:acc1/abcdf/dfer/klo`,
+        },
+        token: 'token',
+        accountId: 'acc1',
+      };
+      const result = service.getGatewayUrl(nodeContext as any, true);
+      expect(result).toBe(
+        `https://example.com/${kcpRootOrgsPath}:org1/abcdf/dfer/klo`,
+      );
+    });
   });
 
   describe('updateCrdGatewayUrlWithEntityPath', () => {
@@ -122,6 +151,21 @@ describe('GatewayService', () => {
 
       expect(globalContextObj.portalContext.crdGatewayApiUrl).toBe(
         `https://api.example.com/clusters/${kcpRootOrgsPath}:org1:acc9/graphql`,
+      );
+    });
+
+    it('should replace kcp path when url has additional path suffix after kcp segment', () => {
+      const globalContextObj = {
+        portalContext: {
+          crdGatewayApiUrl: `https://example.com/${kcpRootOrgsPath}:org1:acc1/abcdf/dfer/klo`,
+        },
+      };
+      mockLuigiCoreService.getGlobalContext.mockReturnValue(globalContextObj);
+
+      service.updateCrdGatewayUrlWithEntityPath(`${kcpRootOrgsPath}:org1:acc9`);
+
+      expect(globalContextObj.portalContext.crdGatewayApiUrl).toBe(
+        `https://example.com/${kcpRootOrgsPath}:org1:acc9/abcdf/dfer/klo`,
       );
     });
   });
@@ -229,6 +273,30 @@ describe('GatewayService', () => {
 
       const result = service.resolveKcpPath(nodeContext as any);
       expect(result).toBe('');
+    });
+
+    it('should extract kcp path from url with additional path suffix after kcp segment', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: `https://example.com/${kcpRootOrgsPath}:org1:acc1/abcdf/dfer/klo`,
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+      const result = service.resolveKcpPath(nodeContext as any);
+      expect(result).toBe(`${kcpRootOrgsPath}:org1:acc1`);
+    });
+
+    it('should slice kcp path from url with additional path suffix when readFromParentKcpPath is true', () => {
+      const nodeContext = {
+        portalContext: {
+          crdGatewayApiUrl: `https://example.com/${kcpRootOrgsPath}:org1:acc1/abcdf/dfer/klo`,
+        },
+        token: 'token',
+        accountId: 'entityId',
+      };
+      const result = service.resolveKcpPath(nodeContext as any, true);
+      expect(result).toBe(`${kcpRootOrgsPath}:org1`);
     });
   });
 });
