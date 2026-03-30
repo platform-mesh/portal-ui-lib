@@ -1,6 +1,7 @@
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { kcpRootOrgsPath } from '@platform-mesh/portal-ui-lib/models';
 
 @Injectable({ providedIn: 'root' })
 export class GatewayService {
@@ -11,7 +12,7 @@ export class GatewayService {
     readFromParentKcpPath = false,
   ) {
     const gatewayUrl = nodeContext.portalContext.crdGatewayApiUrl;
-    const currentKcpPath = gatewayUrl.match(/\/([^\/]+)\/graphql$/)?.[1] || '';
+    const currentKcpPath = this.extractKcpPath(gatewayUrl);
     return gatewayUrl?.replace(
       currentKcpPath,
       this.resolveKcpPath(nodeContext, readFromParentKcpPath),
@@ -21,9 +22,9 @@ export class GatewayService {
   public updateCrdGatewayUrlWithEntityPath(kcpPath: string) {
     const gatewayUrl =
       this.luigiCoreService.getGlobalContext().portalContext.crdGatewayApiUrl;
-    const kcpPathRegexp = /(.*\/)[^/]+(?=\/graphql$)/;
+    const currentKcpPath = this.extractKcpPath(gatewayUrl);
     this.luigiCoreService.getGlobalContext().portalContext.crdGatewayApiUrl =
-      gatewayUrl.replace(kcpPathRegexp, `$1${kcpPath}`);
+      gatewayUrl.replace(currentKcpPath, kcpPath);
   }
 
   public resolveKcpPath(
@@ -32,7 +33,7 @@ export class GatewayService {
   ): string {
     const gatewayUrl = nodeContext.portalContext.crdGatewayApiUrl;
 
-    let kcpPath = gatewayUrl.match(/\/([^\/]+)\/graphql$/)?.[1] || '';
+    let kcpPath = this.extractKcpPath(gatewayUrl);
     if (nodeContext.kcpPath) {
       kcpPath = nodeContext.kcpPath;
     }
@@ -45,5 +46,9 @@ export class GatewayService {
     }
 
     return kcpPath;
+  }
+
+  private extractKcpPath(gatewayUrl: string): string {
+    return gatewayUrl.match(new RegExp(`(${kcpRootOrgsPath}[^/]*)`))?.[1] || '';
   }
 }
