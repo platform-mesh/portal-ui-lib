@@ -1,1 +1,1 @@
-export const kcpRootOrgsPath = 'root:orgs';
+export { kcpRootOrgsPath } from '@platform-mesh/portal-ui-lib/models';
