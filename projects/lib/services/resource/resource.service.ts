@@ -202,7 +202,10 @@ export class ResourceService {
         map((res: any): ResourceListResult => {
           const resourceListResult = getValueByPath<any, any>(
             res.data,
-            buildResourcePath({ apiGroup, version, entity: entityCollection }, '.'),
+            buildResourcePath(
+              { apiGroup, version, entity: entityCollection },
+              '.',
+            ),
           );
           if (!resourceListResult) {
             throw new Error('Resource list result not found');
@@ -380,7 +383,7 @@ export class ResourceService {
   ) {
     const isNamespaced = isNamespacedResource(nodeContext);
     const { apiGroup, entity, version } = resourceDefinition;
-    const namespace = this.getNamespace(nodeContext);
+    const namespace = this.getNamespace(nodeContext, resource);
 
     const mutationFields: any[] = [
       {
@@ -464,7 +467,10 @@ export class ResourceService {
         map((res: any) =>
           getValueByPath(
             res.data,
-            buildResourcePath({ apiGroup, entity: `update${entity}`, version }, '.'),
+            buildResourcePath(
+              { apiGroup, entity: `update${entity}`, version },
+              '.',
+            ),
           ),
         ),
         catchError((error) => {
