@@ -8,6 +8,7 @@
     (blur)="blur.emit()"
     [required]="required()"
     [valueState]="valueState()"
+    [disabled]="disabled()"
   >
     @for (item of [{ value: '', label: '' }].concat(opts); track item.value) {
       <ui5-option

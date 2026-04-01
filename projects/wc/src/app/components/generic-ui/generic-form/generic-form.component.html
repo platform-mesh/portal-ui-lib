@@ -50,6 +50,7 @@
           (blur)="onFieldBlur(field.name)"
           [required]="!!field.required"
           [valueState]="getValueState(field.name)"
+          [disabled]="isDisabled(field)"
         />
       } @else {
         <ui5-input

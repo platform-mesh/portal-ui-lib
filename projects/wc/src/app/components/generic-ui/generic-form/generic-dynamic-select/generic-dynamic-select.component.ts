@@ -1,3 +1,4 @@
+import { SelectOption } from '../form-field-definition';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +10,6 @@ import {
 } from '@angular/core';
 import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
 import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
-import { SelectOption } from '../form-field-definition';
 
 @Component({
   selector: 'pm-generic-dynamic-select',
@@ -27,6 +27,7 @@ export class GenericDynamicSelect implements OnInit {
   readonly valueState = input<
     'None' | 'Positive' | 'Critical' | 'Negative' | 'Information'
   >('None');
+  readonly disabled = input<boolean>(false);
 
   readonly change = output<Event>();
   readonly input = output<Event>();

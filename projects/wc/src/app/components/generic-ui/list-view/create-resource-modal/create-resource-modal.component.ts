@@ -1,5 +1,10 @@
 import { k8sMessages } from '../../../../consts/k8s-messages';
 import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
+import {
+  FormFieldDefinition,
+  SelectOption,
+} from '../../../generic-ui/generic-form/form-field-definition';
+import { GenericForm } from '../../../generic-ui/generic-form/generic-form.component';
 import { ResourceFieldNames } from './create-resource-modal.enums';
 import {
   ChangeDetectionStrategy,
@@ -30,11 +35,6 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
-import {
-  FormFieldDefinition,
-  SelectOption,
-} from '../../../generic-ui/generic-form/form-field-definition';
-import { GenericForm } from '../../../generic-ui/generic-form/generic-form.component';
 
 @Component({
   selector: 'pm-create-resource-modal',
@@ -155,10 +155,8 @@ export class CreateResourceModal implements OnInit {
     return fields.reduce(
       (acc, field) => {
         if (typeof field.property === 'string') {
-          acc[this.sanitizePropertyName(field)] = getResourceValueByJsonPath(
-            resource,
-            field,
-          ) ?? '';
+          acc[this.sanitizePropertyName(field)] =
+            getResourceValueByJsonPath(resource, field) ?? '';
         }
         return acc;
       },

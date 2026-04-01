@@ -1,9 +1,12 @@
+import { FormFieldDefinition } from './form-field-definition';
+import { GenericDynamicSelect } from './generic-dynamic-select/generic-dynamic-select.component';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   OnInit,
   ViewEncapsulation,
+  effect,
   inject,
   input,
   output,
@@ -22,13 +25,18 @@ import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
 import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
 import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { setPropertyByPath } from '@platform-mesh/portal-ui-lib/utils';
-import { FormFieldDefinition } from './form-field-definition';
-import { GenericDynamicSelect } from './generic-dynamic-select/generic-dynamic-select.component';
 
 @Component({
   selector: 'pm-generic-form',
   standalone: true,
-  imports: [ReactiveFormsModule, Input, Label, Select, Option, GenericDynamicSelect],
+  imports: [
+    ReactiveFormsModule,
+    Input,
+    Label,
+    Select,
+    Option,
+    GenericDynamicSelect,
+  ],
   templateUrl: './generic-form.component.html',
   styleUrl: './generic-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +55,12 @@ export class GenericForm implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
+  constructor() {
+    effect(() => {
+      this.setInitialValues();
+    });
+  }
+
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
     this.subscribeToFormChanges();
@@ -58,9 +72,11 @@ export class GenericForm implements OnInit {
     this.form.controls[name].markAsDirty();
   }
 
-  getValueState(name: string): 'None' | 'Positive' | 'Critical' | 'Negative' | 'Information' {
+  getValueState(
+    name: string,
+  ): 'None' | 'Positive' | 'Critical' | 'Negative' | 'Information' {
     const control = this.form.controls[name];
-    return control.invalid && control.touched ? 'Negative' : 'None' as const;
+    return control.invalid && control.touched ? 'Negative' : ('None' as const);
   }
 
   onFieldBlur(name: string): void {
@@ -103,5 +119,14 @@ export class GenericForm implements OnInit {
       setPropertyByPath(result, key.replaceAll('_', '.'), this.form.value[key]);
     }
     return result;
+  }
+
+  private setInitialValues(): void {
+    if (!this.form) {
+      return;
+    }
+
+    const initialValues = this.initialValues();
+    this.form.patchValue(initialValues, { emitEvent: false });
   }
 }
