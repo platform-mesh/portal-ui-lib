@@ -16,6 +16,7 @@ import { SelectOption } from '../form-field-definition';
   standalone: true,
   imports: [Select, Option],
   templateUrl: './generic-dynamic-select.component.html',
+  styleUrls: ['./generic-dynamic-select.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.ShadowDom,
 })
