@@ -12,94 +12,24 @@
       }
     </ui5-title>
   </ui5-bar>
-  <section
+
+  <pm-generic-form
     test-id="create-resource-dialog-form"
-    class="form"
-    [formGroup]="form"
-  >
-    @for (field of calculatedFields(); track field.property) {
-      @let fieldProperty = sanitizePropertyName(field);
-      <div
-        class="inputs"
-        [attr.test-id]="'create-field-container-' + fieldProperty"
-      >
-        <ui5-label
-          [attr.test-id]="'create-field-label-' + fieldProperty"
-          for="username"
-          show-colon
-          [required]="field.required"
-          >{{ field.label }}</ui5-label
-        >
-        @if (field.values?.length) {
-          <ui5-select
-            class="input"
-            [attr.test-id]="'create-field-' + fieldProperty"
-            [value]="form.controls[fieldProperty].value"
-            (input)="setFormControlValue($event, fieldProperty)"
-            (change)="setFormControlValue($event, fieldProperty)"
-            (blur)="onFieldBlur(fieldProperty)"
-            [required]="field.required"
-            [valueState]="getValueState(fieldProperty)"
-            [disabled]="isEditMode() && isCreateFieldOnly(field)"
-          >
-            @for (value of [''].concat(field.values ?? []); track value) {
-              <ui5-option
-                [attr.test-id]="
-                  'create-field-' +
-                  fieldProperty +
-                  '-option-' +
-                  (value || 'empty')
-                "
-                [value]="value"
-                [selected]="value === form.controls[fieldProperty].value"
-                >{{ value }}</ui5-option
-              >
-            }
-          </ui5-select>
-        } @else if (field.dynamicValuesDefinition) {
-          <pm-dynamic-select
-            [attr.test-id]="'create-field-' + fieldProperty"
-            [context]="context()"
-            [dynamicValuesDefinition]="field.dynamicValuesDefinition"
-            [value]="form.controls[fieldProperty].value"
-            (input)="setFormControlValue($event, fieldProperty)"
-            (change)="setFormControlValue($event, fieldProperty)"
-            (blur)="onFieldBlur(fieldProperty)"
-            [required]="!!field.required"
-            [valueState]="getValueState(fieldProperty)"
-          />
-        } @else {
-          <ui5-input
-            class="input"
-            [attr.test-id]="'create-field-' + fieldProperty"
-            [value]="form.controls[fieldProperty].value"
-            (blur)="onFieldBlur(fieldProperty)"
-            (change)="setFormControlValue($event, fieldProperty)"
-            (input)="setFormControlValue($event, fieldProperty)"
-            [required]="field.required"
-            [valueState]="getValueState(fieldProperty)"
-            [disabled]="isEditMode() && isCreateFieldOnly(field)"
-          >
-            @if (form.controls[fieldProperty].errors?.k8sNameInvalid) {
-              <div slot="valueStateMessage">
-                <a href="{{ k8sMessages.RFC_1035.href }}" target="_blank">{{
-                  k8sMessages.RFC_1035.message
-                }}</a>
-              </div>
-            }
-          </ui5-input>
-        }
-      </div>
-    }
-  </section>
+    [fields]="formFields()"
+    [initialValues]="formInitialValues()"
+    [editMode]="isEditMode()"
+    (formValue)="onFormValue($event)"
+    (formValidChange)="onFormValidChange($event)"
+  />
+
   <ui5-toolbar class="ui5-content-density-compact" slot="footer">
     <ui5-toolbar-button
       test-id="create-resource-submit"
       class="dialogCloser"
       design="Emphasized"
       text="Submit"
-      [disabled]="!form.valid"
-      (click)="create()"
+      [disabled]="!isFormValid()"
+      (click)="submit()"
     >
     </ui5-toolbar-button>
     <ui5-toolbar-button
