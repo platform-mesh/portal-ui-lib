@@ -83,10 +83,6 @@ export class GenericForm implements OnInit {
     this.form.controls[name].markAsTouched();
   }
 
-  isDisabled(field: FormFieldDefinition): boolean {
-    return this.editMode() && !!field.createOnly;
-  }
-
   private createControls(): Record<string, FormControl> {
     const values = this.initialValues();
     return this.fields().reduce(

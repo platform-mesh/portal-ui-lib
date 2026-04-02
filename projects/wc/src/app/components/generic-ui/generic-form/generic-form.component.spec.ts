@@ -136,26 +136,6 @@ describe('GenericForm', () => {
     });
   });
 
-  describe('isDisabled', () => {
-    it('should return false when not in edit mode', () => {
-      fixture.componentRef.setInput('editMode', false);
-      const field: FormFieldDefinition = { name: 'metadata_name', createOnly: true };
-      expect(component.isDisabled(field)).toBeFalsy();
-    });
-
-    it('should return true for createOnly field in edit mode', () => {
-      fixture.componentRef.setInput('editMode', true);
-      const field: FormFieldDefinition = { name: 'metadata_name', createOnly: true };
-      expect(component.isDisabled(field)).toBeTruthy();
-    });
-
-    it('should return false for non-createOnly field in edit mode', () => {
-      fixture.componentRef.setInput('editMode', true);
-      const field: FormFieldDefinition = { name: 'spec_description' };
-      expect(component.isDisabled(field)).toBeFalsy();
-    });
-  });
-
   describe('setFormControlValue', () => {
     it('should set value, mark touched and dirty', () => {
       const event = { target: { value: 'new-value' } };

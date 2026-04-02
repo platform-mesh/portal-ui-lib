@@ -118,7 +118,7 @@ export class CreateResourceModal implements OnInit {
       name,
       label: field.label,
       required: field.required,
-      createOnly: this.isCreateFieldOnly(field),
+      disabled: this.isCreateFieldOnly(field) && this.isEditMode(),
     };
 
     if (field.values?.length) {

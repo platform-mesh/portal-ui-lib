@@ -3,8 +3,8 @@ import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { mock } from 'vitest-mock-extended';
 import { of } from 'rxjs';
+import { mock } from 'vitest-mock-extended';
 
 describe('CreateResourceModalComponent', () => {
   let component: CreateResourceModal;
@@ -76,44 +76,60 @@ describe('CreateResourceModalComponent', () => {
       expect(component.formFields().length).toBe(testFields.length);
     });
 
-    it('should set createOnly on metadata.name field', () => {
-      component.open();
-      const nameField = component.formFields().find((f) => f.name === 'metadata_name');
-      expect(nameField?.createOnly).toBeTruthy();
+    it('should set disabled on metadata.name field if edit', () => {
+      component.open({} as any);
+      const nameField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_name');
+      expect(nameField?.disabled).toBeTruthy();
     });
 
-    it('should not set createOnly on non-create-only field', () => {
+    it('should not set disabled on metadata.name field if not edit', () => {
       component.open();
-      const descField = component.formFields().find((f) => f.name === 'spec_description');
-      expect(descField?.createOnly).toBeFalsy();
+      const nameField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_name');
+      expect(nameField?.disabled).toBeFalsy();
+    });
+
+    it('should not set disabled on non-create-only field', () => {
+      component.open({} as any);
+      const descField = component
+        .formFields()
+        .find((f) => f.name === 'spec_description');
+      expect(descField?.disabled).toBeFalsy();
     });
 
     it('should attach k8sNameValidator to metadata.name field', () => {
       component.open();
-      const nameField = component.formFields().find((f) => f.name === 'metadata_name');
+      const nameField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_name');
       expect(nameField?.validators?.length).toBeGreaterThan(0);
     });
 
     it('should not attach validators to other fields', () => {
       component.open();
-      const descField = component.formFields().find((f) => f.name === 'spec_description');
+      const descField = component
+        .formFields()
+        .find((f) => f.name === 'spec_description');
       expect(descField?.validators ?? []).toHaveLength(0);
     });
 
     it('should append namespace field for namespaced resources', () => {
       fixture.componentRef.setInput('context', namespacedContext);
       component.open();
-      const nsField = component.formFields().find(
-        (f) => f.name === 'metadata_namespace',
-      );
+      const nsField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_namespace');
       expect(nsField).toBeDefined();
     });
 
     it('should not append namespace field for cluster-scoped resources', () => {
       component.open();
-      const nsField = component.formFields().find(
-        (f) => f.name === 'metadata_namespace',
-      );
+      const nsField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_namespace');
       expect(nsField).toBeUndefined();
     });
 
@@ -125,7 +141,8 @@ describe('CreateResourceModalComponent', () => {
           label: 'Namespace',
           dynamicValuesDefinition: {
             operation: 'v1.Namespaces.items',
-            gqlQuery: 'query { v1 { Namespaces { items { metadata { name } } } } }',
+            gqlQuery:
+              'query { v1 { Namespaces { items { metadata { name } } } } }',
             value: 'metadata.name',
             key: 'metadata.name',
           },
@@ -133,7 +150,9 @@ describe('CreateResourceModalComponent', () => {
       ];
       fixture.componentRef.setInput('fields', dynamicFields);
       component.open();
-      const nsField = component.formFields().find((f) => f.name === 'metadata_namespace');
+      const nsField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_namespace');
       expect(typeof nsField?.loadValues).toBe('function');
     });
 
@@ -148,7 +167,8 @@ describe('CreateResourceModalComponent', () => {
           label: 'Namespace',
           dynamicValuesDefinition: {
             operation: 'v1.Namespaces.items',
-            gqlQuery: 'query { v1 { Namespaces { items { metadata { name } } } } }',
+            gqlQuery:
+              'query { v1 { Namespaces { items { metadata { name } } } } }',
             value: 'metadata.name',
             key: 'metadata.name',
           },
@@ -156,7 +176,9 @@ describe('CreateResourceModalComponent', () => {
       ];
       fixture.componentRef.setInput('fields', dynamicFields);
       component.open();
-      const nsField = component.formFields().find((f) => f.name === 'metadata_namespace');
+      const nsField = component
+        .formFields()
+        .find((f) => f.name === 'metadata_namespace');
       const options = await nsField!.loadValues!();
       expect(options).toEqual([{ value: 'default', label: 'default' }]);
     });
@@ -189,10 +211,16 @@ describe('CreateResourceModalComponent', () => {
 
     it('should emit updateResource when in edit mode and form value is set', () => {
       component.open({ metadata: { name: 'existing' } } as any);
-      component.onFormValue({ metadata: { name: 'existing' }, spec: { description: 'updated' } });
+      component.onFormValue({
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
+      });
       const spy = vi.spyOn(component.updateResource, 'emit');
       component.submit();
-      expect(spy).toHaveBeenCalledWith({ metadata: { name: 'existing' }, spec: { description: 'updated' } });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
+      });
     });
 
     it('should not emit if no form value has been received', () => {

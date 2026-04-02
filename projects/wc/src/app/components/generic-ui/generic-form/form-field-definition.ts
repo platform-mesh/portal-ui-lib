@@ -12,5 +12,5 @@ export interface FormFieldDefinition {
   values?: string[];
   loadValues?: () => Promise<SelectOption[]>;
   validators?: ValidatorFn[];
-  createOnly?: boolean;
+  disabled?: boolean;
 }
