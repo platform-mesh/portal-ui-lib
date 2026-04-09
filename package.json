@@ -56,7 +56,7 @@
     "rollup": "4.60.1",
     "typescript": "5.9.3",
     "vitest": "4.1.2",
-    "vitest-mock-extended": "3.1.0"
+    "vitest-mock-extended": "3.1.1"
   },
   "overrides": {
     "underscore": "^1.13.8"
