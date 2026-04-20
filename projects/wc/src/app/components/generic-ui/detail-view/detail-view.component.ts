@@ -1,5 +1,6 @@
+import { NgTemplateOutlet } from '@angular/common';
+import { Dashboard, DashboardButtonSettings, DashboardConfig } from '@openmfp/ngx';
 import { processGroupFields } from '../../../utils/proccess-fields';
-import { GenericView } from '../generic-view/generic-view.component';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
@@ -20,7 +21,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
-import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -42,17 +42,17 @@ import { tap } from 'rxjs/operators';
   selector: 'pm-detail-view',
   standalone: true,
   imports: [
-    ToolbarButton,
+    NgTemplateOutlet,
     Label,
     ValueCellComponent,
     CreateResourceModal,
     DeleteResourceModal,
-    GenericView,
     ResourceLogo,
+    Dashboard,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
-  encapsulation: ViewEncapsulation.ShadowDom,
+  encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DetailView {
@@ -91,6 +91,50 @@ export class DetailView {
       false,
   );
   isDownloadingKubeConfig = signal(false);
+
+  dashboardConfig = computed(() => {
+    const customActions: DashboardButtonSettings[] = [];
+
+    if (this.showDownloadKubeconfig()) {
+      customActions.push({
+        action: 'download-kubeconfig',
+        text: 'Download kubeconfig',
+        icon: 'download-from-cloud',
+        design: 'Default',
+        tooltip: 'Download kubeconfig',
+      });
+    }
+
+    if (this.resource()) {
+      customActions.push(
+        { action: 'edit', text: 'Edit', icon: 'edit', design: 'Default' },
+        { action: 'delete', text: 'Delete', icon: 'delete', design: 'Negative' },
+      );
+    }
+
+    return {
+      title: this.defaultTitle() || '',
+      description: this.defaultDescription(),
+      editable: true,
+      backgroundImageUrl: '/assets/pm_background.png',
+      customActions,
+    };
+  })
+
+  onActionButtonClick({ event, action }: { event: MouseEvent; action: DashboardButtonSettings }): void {
+    const resource = this.resource();
+    switch (action.action) {
+      case 'download-kubeconfig':
+        this.downloadKubeConfig();
+        break;
+      case 'edit':
+        if (resource) this.openEditResourceModal(event, resource);
+        break;
+      case 'delete':
+        if (resource) this.openDeleteResourceModal(event, resource);
+        break;
+    }
+  }
 
   constructor() {
     effect(() => {
