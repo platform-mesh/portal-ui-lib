@@ -63,7 +63,7 @@
             "outputHashing": "none",
             "index": "",
             "main": "projects/wc/src/main.ts",
-            "assets": ["projects/wc/src/assets"],
+            "assets": [{ "glob": "**/*", "input": "projects/wc/src/assets", "output": "." }],
             "scripts": []
           },
           "configurations": {
