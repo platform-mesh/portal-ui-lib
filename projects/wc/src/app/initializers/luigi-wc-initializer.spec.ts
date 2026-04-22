@@ -2,8 +2,6 @@ import { provideLuigiWebComponents } from './luigi-wc-initializer';
 import { Injector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-vi.mock('../utils/wc', { spy: true });
-
 describe('provideLuigiWebComponents', () => {
   const originalCurrentScript = document.currentScript;
 
