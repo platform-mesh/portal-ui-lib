@@ -589,7 +589,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with ADDED
       subscriptionSubject.next({
         type: 'ADDED',
-        object: { metadata: { name: 'new-resource' } },
+        object: { id: '', metadata: { name: 'new-resource' } },
       });
 
       expect(newComponent.resources().length).toBe(2);
@@ -644,7 +644,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with MODIFIED
       subscriptionSubject.next({
         type: 'MODIFIED',
-        object: { metadata: { name: 'existing' }, spec: { type: 'v2' } },
+        object: { id: '', metadata: { name: 'existing' }, spec: { type: 'v2' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -696,7 +696,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with DELETED
       subscriptionSubject.next({
         type: 'DELETED',
-        object: { metadata: { name: 'to-delete' } },
+        object: { id: '', metadata: { name: 'to-delete' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -742,7 +742,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with MODIFIED for non-existent resource
       subscriptionSubject.next({
         type: 'MODIFIED',
-        object: { metadata: { name: 'non-existent' } },
+        object: { id: '', metadata: { name: 'non-existent' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -787,7 +787,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with MODIFIED for non-existent resource
       subscriptionSubject.next({
         type: 'MODIFIED',
-        object: { metadata: { name: 'non-existent' } },
+        object: { id: '', metadata: { name: 'non-existent' } },
       });
 
       expect(newComponent.resources().length).toBe(1);

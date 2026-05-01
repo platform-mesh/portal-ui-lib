@@ -46,6 +46,7 @@ describe('field-definition.utils', () => {
         value: 'fallback-value',
       };
       const resource: Resource = {
+        id: '',
         metadata: { name: '' },
       };
 
@@ -198,6 +199,7 @@ describe('field-definition.utils', () => {
         },
       };
       const resource: Resource = {
+        id: '',
         metadata: { name: 'test' },
         spec: { modalPath: '/modal/path' } as any,
       };
@@ -550,6 +552,7 @@ describe('field-definition.utils', () => {
         },
       };
       const resource: Resource = {
+        id: '',
         metadata: { name: 'test' },
       };
 

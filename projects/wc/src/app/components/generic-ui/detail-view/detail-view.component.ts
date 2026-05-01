@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Dashboard, DashboardButtonSettings, DashboardConfig } from '@openmfp/ngx';
+import { Dashboard, ButtonSettings, CardConfig} from '@openmfp/ngx';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
@@ -93,7 +93,7 @@ export class DetailView {
   isDownloadingKubeConfig = signal(false);
 
   dashboardConfig = computed(() => {
-    const customActions: DashboardButtonSettings[] = [];
+    const customActions: ButtonSettings[] = [];
 
     if (this.showDownloadKubeconfig()) {
       customActions.push({
@@ -121,7 +121,25 @@ export class DetailView {
     };
   })
 
-  onActionButtonClick({ event, action }: { event: MouseEvent; action: DashboardButtonSettings }): void {
+  cards = computed<CardConfig[]>(() => [{
+    label: 'Namespaces',
+    id: 'namespace-table-card',
+    component: 'pm-namespace-table-card',
+    w: 12,
+    h: 27,
+    componentInputs: { context: this.context() },
+  }]);
+
+  availableCards = computed<CardConfig[]>(() => [{
+    label: 'Namespaces',
+    id: 'namespace-table-card',
+    component: 'pm-namespace-table-card',
+    w: 12,
+    h: 27,
+    componentInputs: { context: this.context() },
+  }]);
+
+  onActionButtonClick({ event, action }: { event: MouseEvent; action: ButtonSettings }): void {
     const resource = this.resource();
     switch (action.action) {
       case 'download-kubeconfig':

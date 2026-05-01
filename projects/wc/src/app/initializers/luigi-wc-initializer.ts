@@ -1,12 +1,14 @@
 import {
   DetailView,
   ListView,
+  NamespaceTableCard,
   OrganizationManagementView,
   WelcomeView,
 } from '../components';
 import { ErrorView } from '../components/error/error.component';
 import { registerLuigiWebComponents } from '../utils/wc';
 import { Injector, inject, provideAppInitializer } from '@angular/core';
+import { createCustomElement } from '@angular/elements';
 
 export const provideLuigiWebComponents = () =>
   provideAppInitializer(() => {
@@ -21,6 +23,13 @@ export const provideLuigiWebComponents = () =>
       },
       injector,
     );
+
+    if (!customElements.get('pm-namespace-table-card')) {
+      customElements.define(
+        'pm-namespace-table-card',
+        createCustomElement(NamespaceTableCard, { injector }),
+      );
+    }
 
     return undefined;
   });
