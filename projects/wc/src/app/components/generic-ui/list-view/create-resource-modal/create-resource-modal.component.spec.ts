@@ -66,7 +66,7 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should be in edit mode when opened with a resource', () => {
-      component.open({ metadata: { name: 'res1' } } as any);
+      component.open({ id: '', metadata: { name: 'res1' } } as any);
       expect(component.isEditMode()).toBeTruthy();
     });
   });
@@ -158,7 +158,7 @@ describe('CreateResourceModalComponent', () => {
 
     it('should call resourceService.list when loadValues is invoked', async () => {
       resourceService.list.mockReturnValue(
-        of([{ metadata: { name: 'default' } }]),
+        of([{ id: '', metadata: { name: 'default' } }]),
       );
       const dynamicFields: FieldDefinition[] = [
         {
@@ -203,14 +203,14 @@ describe('CreateResourceModalComponent', () => {
   describe('submit', () => {
     it('should emit resource when not in edit mode and form value is set', () => {
       component.open();
-      component.onFormValue({ metadata: { name: 'new-res' } });
+      component.onFormValue({ id: '', metadata: { name: 'new-res' } });
       const spy = vi.spyOn(component.resource, 'emit');
       component.submit();
-      expect(spy).toHaveBeenCalledWith({ metadata: { name: 'new-res' } });
+      expect(spy).toHaveBeenCalledWith({ id: '', metadata: { name: 'new-res' } });
     });
 
     it('should emit updateResource when in edit mode and form value is set', () => {
-      component.open({ metadata: { name: 'existing' } } as any);
+      component.open({ id: '', metadata: { name: 'existing' } } as any);
       component.onFormValue({
         metadata: { name: 'existing' },
         spec: { description: 'updated' },
@@ -246,12 +246,12 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should return true after opening with a resource', () => {
-      component.open({ metadata: { name: 'r1' } } as any);
+      component.open({ id: '', metadata: { name: 'r1' } } as any);
       expect(component.isEditMode()).toBeTruthy();
     });
 
     it('should return false after close', () => {
-      component.open({ metadata: { name: 'r1' } } as any);
+      component.open({ id: '', metadata: { name: 'r1' } } as any);
       component.close();
       expect(component.isEditMode()).toBeFalsy();
     });

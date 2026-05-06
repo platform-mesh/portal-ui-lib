@@ -131,7 +131,7 @@ describe('GenericView', () => {
           buttonSettings: { action: 'navigate' },
         },
       } as FieldDefinition;
-      const mockResource = { metadata: { name: 'resource-1' } } as Resource;
+      const mockResource = { id: '', metadata: { name: 'resource-1' } } as Resource;
 
       fixture.componentRef.setInput('resource', mockResource);
 
@@ -178,7 +178,7 @@ describe('GenericView', () => {
     });
 
     it('should accept resource input', () => {
-      const mockResource = { metadata: { name: 'test-resource' } } as Resource;
+      const mockResource = { id: '', metadata: { name: 'test-resource' } } as Resource;
       fixture.componentRef.setInput('resource', mockResource);
       expect(component.resource()).toEqual(mockResource);
     });

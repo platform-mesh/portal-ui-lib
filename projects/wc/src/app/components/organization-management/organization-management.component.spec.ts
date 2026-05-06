@@ -210,7 +210,7 @@ describe('OrganizationManagementComponent', () => {
 
     it('should setup subscription for organization updates', () => {
       const mockOrganizations = {
-        items: [{ metadata: { name: 'org1' }, ready: true }],
+        items: [{ id: '', metadata: { name: 'org1' }, ready: true }],
         resourceVersion: '123',
       };
 
@@ -372,7 +372,7 @@ describe('OrganizationManagementComponent', () => {
     it('should not add non-existing organization on MODIFIED event', () => {
       const subscriptionResult = {
         type: 'MODIFIED' as const,
-        object: { metadata: { name: 'org-new' }, ready: true },
+        object: { id: '', metadata: { name: 'org-new' }, ready: true },
       };
 
       component['mergeResourcesWithSubscriptionResult'](
@@ -387,7 +387,7 @@ describe('OrganizationManagementComponent', () => {
     it('should remove organization on DELETED event', () => {
       const subscriptionResult = {
         type: 'DELETED' as const,
-        object: { metadata: { name: 'org1' }, ready: true },
+        object: { id: '', metadata: { name: 'org1' }, ready: true },
       };
 
       component['mergeResourcesWithSubscriptionResult'](
@@ -403,14 +403,14 @@ describe('OrganizationManagementComponent', () => {
       const spy = vi.spyOn(component as any, 'refreshOrganizationToSwitch');
       resourceService.list.mockReturnValue(
         of({
-          items: [{ metadata: { name: 'org1' }, ready: true }],
+          items: [{ id: '', metadata: { name: 'org1' }, ready: true }],
           resourceVersion: '1',
         } as any),
       );
       resourceService.resourceChangeSubscription.mockReturnValue(
         of({
           type: 'ADDED',
-          object: { metadata: { name: 'org2' }, ready: true },
+          object: { id: '', metadata: { name: 'org2' }, ready: true },
         } as any),
       );
 
@@ -847,7 +847,7 @@ describe('OrganizationManagementComponent', () => {
     it('should handle subscription with no data', () => {
       resourceService.list.mockReturnValue(
         of({
-          items: [{ metadata: { name: 'org1' }, ready: true }],
+          items: [{ id: '', metadata: { name: 'org1' }, ready: true }],
           resourceVersion: '1',
         } as any),
       );

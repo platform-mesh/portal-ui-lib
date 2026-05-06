@@ -199,7 +199,7 @@ describe('ListViewComponent', () => {
   });
 
   it('should create a resource', () => {
-    const resource = { metadata: { name: 'test' } };
+    const resource = { id: '', metadata: { name: 'test' } };
 
     component.create(resource as any);
     expect(mockResourceService.create).toHaveBeenCalled();
@@ -276,7 +276,7 @@ describe('ListViewComponent', () => {
       },
     })) as any;
 
-    const resource = { metadata: { name: 'res1' } };
+    const resource = { id: '', metadata: { name: 'res1' } };
     const navSpy = vi.fn();
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
@@ -300,7 +300,7 @@ describe('ListViewComponent', () => {
       },
     })) as any;
 
-    const resource = { metadata: { name: 'res1' } };
+    const resource = { id: '', metadata: { name: 'res1' } };
     const navSpy = vi.fn();
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
@@ -446,7 +446,7 @@ describe('ListViewComponent', () => {
         getNodeParams: vi.fn(),
       })) as any;
 
-      const resource = { metadata: { name: 'test' } } as any;
+      const resource = { id: '', metadata: { name: 'test' } } as any;
 
       // Test that create() method throws error when resourceDefinition is undefined
       expect(() => newComponent.create(resource)).toThrow(
@@ -494,11 +494,11 @@ describe('ListViewComponent', () => {
     it('should reset pagination when limit changes', () => {
       // Setup initial state with some resources
       component.resources.set([
-        { metadata: { name: 'res1' } },
-        { metadata: { name: 'res2' } },
-        { metadata: { name: 'res3' } },
-        { metadata: { name: 'res4' } },
-        { metadata: { name: 'res5' } },
+        { id: '', metadata: { name: 'res1' } },
+        { id: '', metadata: { name: 'res2' } },
+        { id: '', metadata: { name: 'res3' } },
+        { id: '', metadata: { name: 'res4' } },
+        { id: '', metadata: { name: 'res5' } },
       ] as any);
       component.remainingItemCount.set(10);
 
@@ -531,8 +531,8 @@ describe('ListViewComponent', () => {
 
     it('should calculate totalItemsCount correctly', () => {
       component.resources.set([
-        { metadata: { name: 'res1' } },
-        { metadata: { name: 'res2' } },
+        { id: '', metadata: { name: 'res1' } },
+        { id: '', metadata: { name: 'res2' } },
       ] as any);
       component.remainingItemCount.set(8);
 
@@ -555,7 +555,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const initialResources = [{ metadata: { name: 'existing' } }] as any;
+      const initialResources = [{ id: '', metadata: { name: 'existing' } }] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
       );
@@ -589,7 +589,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with ADDED
       subscriptionSubject.next({
         type: 'ADDED',
-        object: { metadata: { name: 'new-resource' } },
+        object: { id: '', metadata: { name: 'new-resource' } },
       });
 
       expect(newComponent.resources().length).toBe(2);
@@ -609,7 +609,7 @@ describe('ListViewComponent', () => {
       );
 
       const initialResources = [
-        { metadata: { name: 'existing' }, spec: { type: 'v1' } },
+        { id: '', metadata: { name: 'existing' }, spec: { type: 'v1' } },
       ] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
@@ -644,7 +644,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with MODIFIED
       subscriptionSubject.next({
         type: 'MODIFIED',
-        object: { metadata: { name: 'existing' }, spec: { type: 'v2' } },
+        object: { id: '', metadata: { name: 'existing' }, spec: { type: 'v2' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -660,8 +660,8 @@ describe('ListViewComponent', () => {
       );
 
       const initialResources = [
-        { metadata: { name: 'to-delete' } },
-        { metadata: { name: 'to-keep' } },
+        { id: '', metadata: { name: 'to-delete' } },
+        { id: '', metadata: { name: 'to-keep' } },
       ] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
@@ -696,7 +696,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with DELETED
       subscriptionSubject.next({
         type: 'DELETED',
-        object: { metadata: { name: 'to-delete' } },
+        object: { id: '', metadata: { name: 'to-delete' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -737,12 +737,12 @@ describe('ListViewComponent', () => {
 
       newFixture.detectChanges();
 
-      newComponent.resources.set([{ metadata: { name: 'existing' } }] as any);
+      newComponent.resources.set([{ id: '', metadata: { name: 'existing' } }] as any);
 
       // Trigger subscription with MODIFIED for non-existent resource
       subscriptionSubject.next({
         type: 'MODIFIED',
-        object: { metadata: { name: 'non-existent' } },
+        object: { id: '', metadata: { name: 'non-existent' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -753,7 +753,7 @@ describe('ListViewComponent', () => {
       const subscriptionSubject = new Subject<
         ResourceSubscriptionResult | undefined
       >();
-      const initialResources = [{ metadata: { name: 'existing' } }] as any;
+      const initialResources = [{ id: '', metadata: { name: 'existing' } }] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
       );
@@ -787,7 +787,7 @@ describe('ListViewComponent', () => {
       // Trigger subscription with MODIFIED for non-existent resource
       subscriptionSubject.next({
         type: 'MODIFIED',
-        object: { metadata: { name: 'non-existent' } },
+        object: { id: '', metadata: { name: 'non-existent' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -802,7 +802,7 @@ describe('ListViewComponent', () => {
         subscriptionSubject,
       );
 
-      const initialResources = [{ metadata: { name: 'existing' } }] as any;
+      const initialResources = [{ id: '', metadata: { name: 'existing' } }] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
       );
@@ -905,7 +905,7 @@ describe('ListViewComponent', () => {
       it('should set hasMore to false when continue token is not present', () => {
         mockResourceService.list.mockReturnValue(
           of({
-            items: [{ metadata: { name: 'test' } }],
+            items: [{ id: '', metadata: { name: 'test' } }],
             resourceVersion: '123',
             continue: undefined,
             remainingItemCount: 0,
@@ -944,7 +944,7 @@ describe('ListViewComponent', () => {
       it('should set hasMore to true when continue token is present', () => {
         mockResourceService.list.mockReturnValue(
           of({
-            items: [{ metadata: { name: 'test' } }],
+            items: [{ id: '', metadata: { name: 'test' } }],
             resourceVersion: '123',
             continue: 'next-token',
             remainingItemCount: 5,
@@ -983,15 +983,15 @@ describe('ListViewComponent', () => {
 
       it('should merge existing resources with new ones from list', () => {
         const firstResponse = {
-          items: [{ metadata: { name: 'res1' }, spec: { version: 'v1' } }],
+          items: [{ id: '', metadata: { name: 'res1' }, spec: { version: 'v1' } }],
           resourceVersion: '123',
           continue: 'token1',
         };
 
         const secondResponse = {
           items: [
-            { metadata: { name: 'res1' }, spec: { version: 'v2' } },
-            { metadata: { name: 'res2' }, spec: { version: 'v1' } },
+            { id: '', metadata: { name: 'res1' }, spec: { version: 'v2' } },
+            { id: '', metadata: { name: 'res2' }, spec: { version: 'v1' } },
           ],
           resourceVersion: '124',
         };
@@ -1078,7 +1078,7 @@ describe('ListViewComponent', () => {
       it('should set remainingItemCount to 0 when not provided in response', () => {
         mockResourceService.list.mockReturnValue(
           of({
-            items: [{ metadata: { name: 'test' } }],
+            items: [{ id: '', metadata: { name: 'test' } }],
             resourceVersion: '123',
           }),
         );
@@ -1115,7 +1115,7 @@ describe('ListViewComponent', () => {
 
     describe('Modal operations', () => {
       it('should close create modal after successful creation', () => {
-        const resource = { metadata: { name: 'test' } } as any;
+        const resource = { id: '', metadata: { name: 'test' } } as any;
         const closeSpy = vi.fn();
         (component as any).createModal = () => ({ close: closeSpy });
 

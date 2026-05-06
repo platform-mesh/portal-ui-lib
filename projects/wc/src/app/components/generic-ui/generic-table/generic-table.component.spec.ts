@@ -13,6 +13,7 @@ interface TestResource extends GenericResource {
   id: string;
   name: string;
   status: string;
+  isAvailable?: boolean;
 }
 
 describe('GenericTable', () => {

@@ -33,7 +33,7 @@ describe('mergeListWithSubscriptionResult', () => {
     const items: TestItem[] = [{ name: 'one' }];
     const subscriptionResult = {
       type: ResourceOperationTypeMap.ADDED,
-      object: { metadata: { name: 'two' }, spec: { value: 'v2' } },
+      object: { id: '', metadata: { name: 'two' }, spec: { value: 'v2' } },
     } as unknown as ResourceSubscriptionResult;
 
     const result = mergeListWithSubscriptionResult(
@@ -52,7 +52,7 @@ describe('mergeListWithSubscriptionResult', () => {
     const items: TestItem[] = [{ name: 'one', value: 'v1' }];
     const subscriptionResult = {
       type: ResourceOperationTypeMap.MODIFIED,
-      object: { metadata: { name: 'one' }, spec: { value: 'v2' } },
+      object: { id: '', metadata: { name: 'one' }, spec: { value: 'v2' } },
     } as unknown as ResourceSubscriptionResult;
 
     const result = mergeListWithSubscriptionResult(
@@ -68,7 +68,7 @@ describe('mergeListWithSubscriptionResult', () => {
     const items: TestItem[] = [{ name: 'one', value: 'v1' }];
     const subscriptionResult = {
       type: ResourceOperationTypeMap.MODIFIED,
-      object: { metadata: { name: 'two' }, spec: { value: 'v2' } },
+      object: { id: '', metadata: { name: 'two' }, spec: { value: 'v2' } },
     } as unknown as ResourceSubscriptionResult;
 
     const result = mergeListWithSubscriptionResult(
@@ -84,7 +84,7 @@ describe('mergeListWithSubscriptionResult', () => {
     const items: TestItem[] = [{ name: 'one' }, { name: 'two' }];
     const subscriptionResult = {
       type: ResourceOperationTypeMap.DELETED,
-      object: { metadata: { name: 'one' } },
+      object: { id: '', metadata: { name: 'one' } },
     } as unknown as ResourceSubscriptionResult;
 
     const result = mergeListWithSubscriptionResult(
@@ -116,7 +116,7 @@ describe('mergeListWithSubscriptionResult', () => {
     const items: TestItem[] = [{ value: 'missing-key' }, { name: 'one' }];
     const subscriptionResult = {
       type: ResourceOperationTypeMap.ADDED,
-      object: { metadata: { name: 'two' } },
+      object: { id: '', metadata: { name: 'two' } },
     } as unknown as ResourceSubscriptionResult;
 
     const result = mergeListWithSubscriptionResult(

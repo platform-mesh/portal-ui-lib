@@ -438,7 +438,7 @@ describe('DetailViewComponent', () => {
         close: vi.fn(),
       };
       (component as any).createModal = () => mockCreateModal;
-      const updatedResource = { metadata: { name: 'cluster-1' }, spec: {} };
+      const updatedResource = { id: '', metadata: { name: 'cluster-1' }, spec: {} };
       mockResourceService.update = vi.fn().mockReturnValue(of(updatedResource));
 
       const resource: any = {

@@ -47,6 +47,7 @@ describe('field-definition.utils', () => {
       };
       const resource: Resource = {
         metadata: { name: '' },
+        id: '',
       };
 
       const result = getFieldValue(field, resource);
@@ -200,6 +201,7 @@ describe('field-definition.utils', () => {
       const resource: Resource = {
         metadata: { name: 'test' },
         spec: { modalPath: '/modal/path' } as any,
+        id: 'test',
       };
 
       getResourceValueByJsonPathMock.mockReturnValue('/modal/path');
@@ -551,6 +553,7 @@ describe('field-definition.utils', () => {
       };
       const resource: Resource = {
         metadata: { name: 'test' },
+        id: 'test',
       };
 
       getResourceValueByJsonPathMock.mockReturnValue(null);

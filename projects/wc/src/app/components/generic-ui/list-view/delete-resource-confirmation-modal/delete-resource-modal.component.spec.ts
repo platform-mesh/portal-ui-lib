@@ -8,7 +8,7 @@ describe('DeleteResourceModalComponent', () => {
   let component: DeleteResourceModal;
   let fixture: ComponentFixture<DeleteResourceModal>;
 
-  const resource: any = { metadata: { name: 'TestName' } };
+  const resource: any = { id: '', metadata: { name: 'TestName' } };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

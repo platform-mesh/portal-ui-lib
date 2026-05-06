@@ -67,7 +67,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }, { metadata: { name: 'ns2' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }, { id: '', metadata: { name: 'ns2' } }],
       } as any),
     );
 
@@ -124,7 +124,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }, { metadata: { name: 'ns2' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }, { id: '', metadata: { name: 'ns2' } }],
       } as any),
     );
 
@@ -159,7 +159,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }],
       } as any),
     );
 
@@ -196,7 +196,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }],
       } as any),
     );
 
@@ -232,7 +232,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }],
       } as any),
     );
 
@@ -271,7 +271,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }],
       } as any),
     );
 
@@ -323,7 +323,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }],
       } as any),
     );
 
@@ -352,7 +352,7 @@ describe('NamespaceSelectionRendererService', () => {
     mockResourceService.list.mockReturnValue(
       of({
         resourceVersion: '1',
-        items: [{ metadata: { name: 'ns1' } }],
+        items: [{ id: '', metadata: { name: 'ns1' } }],
       } as any),
     );
     mockResourceService.resourceChangeSubscription.mockReturnValue(
@@ -374,7 +374,7 @@ describe('NamespaceSelectionRendererService', () => {
 
     changes$.next({
       type: ResourceOperationTypeMap.ADDED,
-      object: { metadata: { name: 'ns2' } },
+      object: { id: '', metadata: { name: 'ns2' } },
     });
 
     const itemsAfterAdd = getChildrenByTag(combobox, 'ui5-cb-item').map(
@@ -384,7 +384,7 @@ describe('NamespaceSelectionRendererService', () => {
 
     changes$.next({
       type: ResourceOperationTypeMap.DELETED,
-      object: { metadata: { name: 'ns1' } },
+      object: { id: '', metadata: { name: 'ns1' } },
     });
 
     const itemsAfterDelete = getChildrenByTag(combobox, 'ui5-cb-item').map(
@@ -404,7 +404,7 @@ describe('NamespaceSelectionRendererService', () => {
         }
         return of({
           resourceVersion: '1',
-          items: [{ metadata: { name: 'ns1' } }],
+          items: [{ id: '', metadata: { name: 'ns1' } }],
         } as any);
       }),
     );
@@ -438,13 +438,13 @@ describe('NamespaceSelectionRendererService', () => {
       .mockReturnValueOnce(
         of({
           resourceVersion: '1',
-          items: [{ metadata: { name: 'old-ns' } }],
+          items: [{ id: '', metadata: { name: 'old-ns' } }],
         } as any),
       )
       .mockReturnValueOnce(
         of({
           resourceVersion: '2',
-          items: [{ metadata: { name: 'new-ns' } }],
+          items: [{ id: '', metadata: { name: 'new-ns' } }],
         } as any),
       );
     mockResourceService.resourceChangeSubscription

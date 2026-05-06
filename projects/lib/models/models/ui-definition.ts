@@ -1,3 +1,5 @@
+import { GenericResource } from '@openmfp/ngx';
+
 export type TransformType =
   | 'uppercase'
   | 'lowercase'
@@ -62,10 +64,6 @@ export type CssRuleCondition =
 export interface CssRule {
   if: { condition: CssRuleCondition; value: string };
   styles: Partial<CSSStyleDeclaration>;
-}
-
-export interface GenericResource extends Record<string, any> {
-  isAvailable?: boolean; // Controls row interactivity
 }
 
 export interface ValueCellButtonClickEvent<T extends GenericResource> {
