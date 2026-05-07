@@ -221,6 +221,7 @@ export class ResourceService {
             }))
             .map((r) => ({
               ...r,
+              id: r.metadata.name,
               isAvailable: this.isAvailable(r),
               accessibleName: this.getAccessibleName(r),
             }));
@@ -314,6 +315,7 @@ export class ResourceService {
               resource.object,
               nodeContext,
             );
+            resource.object.id = resource.object.metadata.name;
             resource.object.isAvailable = this.isAvailable(resource.object);
             resource.object.accessibleName = this.getAccessibleName(
               resource.object,

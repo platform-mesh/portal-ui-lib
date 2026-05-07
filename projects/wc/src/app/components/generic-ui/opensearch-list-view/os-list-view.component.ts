@@ -72,8 +72,9 @@ export class OSListView {
           uiSettings: {
             ...readyCondition.uiSettings,
             displayAs: 'alert',
+            columnWidth: '30px',
           },
-        },
+        } as any,
         ...columns,
       ];
     }
@@ -82,23 +83,6 @@ export class OSListView {
   });
 
 
-  config = computed(()=>{
-    const tc: TableCardConfig = {
-      header: this.defaultTitle(),
-      tableConfig: {
-        fields: this.columns(),
-        totalItemsCount: this.totalItemsCount(),
-        paginationLimit: this.paginationLimit(),
-        hasMore: this.hasMore(),
-      },
-    };
-
-    return tc;
-  })
-  hasUiCreateViewFields = computed(
-    () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
-  );
-
   totalItemsCount = computed(
     () => this.resources().length + this.remainingItemCount(),
   );
@@ -106,6 +90,18 @@ export class OSListView {
   remainingItemCount = signal<number>(0);
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
+
+  config = computed<TableCardConfig>(()=>{
+    return {
+      resourcesSearchable: true,
+      tableConfig: {
+        fields: this.columns(),
+        totalItemsCount: this.totalItemsCount(),
+        paginationLimit: this.paginationLimit(),
+        hasMore: this.hasMore(),
+      },
+    };
+  })
 
   private currentContinueToken: string | undefined = undefined;
   private isLoadingList = false;
