@@ -1126,6 +1126,64 @@ describe('ListViewComponent', () => {
     });
 
     describe('Computed properties', () => {
+      it('should use entityCollection as defaultTitle when ui.title is not set', () => {
+        expect(component.defaultTitle()).toBe('clusters');
+      });
+
+      it('should use ui.title as defaultTitle when set', () => {
+        const newFixture = TestBed.createComponent(ListView);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
+            version: 'v1alpha1',
+            ui: {
+              title: 'My Clusters',
+              listView: { fields: [] },
+            },
+          },
+        })) as any;
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({ fromContext: vi.fn().mockReturnThis(), navigate: vi.fn(), withParams: vi.fn().mockReturnThis() }),
+          getNodeParams: vi.fn(),
+        })) as any;
+        newFixture.detectChanges();
+        expect(newComponent.defaultTitle()).toBe('My Clusters');
+      });
+
+      it('should use default description when ui.description is not set', () => {
+        expect(component.defaultDescription()).toBe(
+          'This page displays the created clusters in your environment',
+        );
+      });
+
+      it('should use ui.description as defaultDescription when set', () => {
+        const newFixture = TestBed.createComponent(ListView);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = (() => ({
+          resourceDefinition: {
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
+            version: 'v1alpha1',
+            ui: {
+              description: 'Custom description for clusters',
+              listView: { fields: [] },
+            },
+          },
+        })) as any;
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({ fromContext: vi.fn().mockReturnThis(), navigate: vi.fn(), withParams: vi.fn().mockReturnThis() }),
+          getNodeParams: vi.fn(),
+        })) as any;
+        newFixture.detectChanges();
+        expect(newComponent.defaultDescription()).toBe(
+          'Custom description for clusters',
+        );
+      });
+
       it('should return false for hasUiCreateViewFields when createView is undefined', () => {
         const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
