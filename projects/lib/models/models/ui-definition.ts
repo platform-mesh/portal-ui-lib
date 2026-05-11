@@ -106,8 +106,6 @@ export interface UiView {
 
 export interface UIDefinition {
   logoUrl?: string;
-  title?: string;
-  description?: string;
   listView?: UiView;
   createView?: UiView;
   detailView?: DetailView;

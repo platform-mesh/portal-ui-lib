@@ -59,13 +59,13 @@ export class ListView {
   resources = signal<Resource[]>([]);
   defaultTitle = computed(
     () =>
-      this.resourceDefinition()?.ui?.title ??
+      this.resourceDefinition()?.ui?.listView?.resourceTitle?.label ??
       this.resourceDefinition()?.entityCollection ??
       '',
   );
   defaultDescription = computed(
     () =>
-      this.resourceDefinition()?.ui?.description ??
+      this.resourceDefinition()?.ui?.listView?.resourceDescription?.label ??
       `This page displays the created ${this.resourceDefinition()?.entityCollection} in your environment`,
   );
   resourceDefinition = computed(() => this.context().resourceDefinition);

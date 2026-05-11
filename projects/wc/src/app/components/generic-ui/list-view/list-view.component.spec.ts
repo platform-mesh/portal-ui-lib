@@ -1130,7 +1130,7 @@ describe('ListViewComponent', () => {
         expect(component.defaultTitle()).toBe('clusters');
       });
 
-      it('should use ui.title as defaultTitle when set', () => {
+      it('should use listView.resourceTitle.label as defaultTitle when set', () => {
         const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
         newComponent.context = (() => ({
@@ -1140,8 +1140,7 @@ describe('ListViewComponent', () => {
             apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
-              title: 'My Clusters',
-              listView: { fields: [] },
+              listView: { fields: [], resourceTitle: { label: 'My Clusters' } },
             },
           },
         })) as any;
@@ -1159,7 +1158,7 @@ describe('ListViewComponent', () => {
         );
       });
 
-      it('should use ui.description as defaultDescription when set', () => {
+      it('should use listView.resourceDescription.label as defaultDescription when set', () => {
         const newFixture = TestBed.createComponent(ListView);
         const newComponent = newFixture.componentInstance;
         newComponent.context = (() => ({
@@ -1169,8 +1168,7 @@ describe('ListViewComponent', () => {
             apiGroup: 'core_k8s_io',
             version: 'v1alpha1',
             ui: {
-              description: 'Custom description for clusters',
-              listView: { fields: [] },
+              listView: { fields: [], resourceDescription: { label: 'Custom description for clusters' } },
             },
           },
         })) as any;
