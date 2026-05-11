@@ -32,8 +32,8 @@ describe('GenericView', () => {
             { property: 'action2', uiSettings: { displayAs: 'link' } },
             { property: 'action3', uiSettings: { displayAs: 'button' } },
           ],
-          resourceTitle: 'title',
-          resourceDescription: 'description',
+          resourceTitle: { property: 'metadata.name' },
+          resourceDescription: { property: 'metadata.annotations.description' },
         },
       } as UIDefinition,
     } as ResourceDefinition;
@@ -51,6 +51,7 @@ describe('GenericView', () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput('LuigiClient', mockLuigiClient);
     fixture.componentRef.setInput('context', mockContext);
+    fixture.componentRef.setInput('view', 'detailView');
   });
 
   it('should create', () => {
@@ -63,11 +64,11 @@ describe('GenericView', () => {
     });
 
     it('should compute resourceTitleDefinition from resourceDefinition', () => {
-      expect(component.resourceTitleDefinition()).toBe('title');
+      expect(component.resourceTitleDefinition()).toEqual({ property: 'metadata.name' });
     });
 
     it('should compute resourceDescriptionDefinition from resourceDefinition', () => {
-      expect(component.resourceDescriptionDefinition()).toBe('description');
+      expect(component.resourceDescriptionDefinition()).toEqual({ property: 'metadata.annotations.description' });
     });
 
     it('should compute viewActions filtering only button actions', () => {

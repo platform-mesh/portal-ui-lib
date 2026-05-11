@@ -23,6 +23,8 @@ import {
 } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 
+export type ViewType = 'detailView' | 'listView';
+
 @Component({
   selector: 'pm-generic-view',
   standalone: true,
@@ -44,6 +46,7 @@ import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GenericView<T extends GenericResource> {
+  view = input.required<ViewType>();
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
   resource = input<T>();
@@ -52,13 +55,13 @@ export class GenericView<T extends GenericResource> {
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   resourceTitleDefinition = computed(
-    () => this.resourceDefinition()?.ui?.detailView?.resourceTitle,
+    () => this.resourceDefinition()?.ui?.[this.view()]?.resourceTitle,
   );
   resourceDescriptionDefinition = computed(
-    () => this.resourceDefinition()?.ui?.detailView?.resourceDescription,
+    () => this.resourceDefinition()?.ui?.[this.view()]?.resourceDescription,
   );
   viewActions = computed(() =>
-    (this.resourceDefinition()?.ui?.detailView?.actions ?? []).filter(
+    (this.resourceDefinition()?.ui?.[this.view()]?.actions ?? []).filter(
       (a) => a.uiSettings?.displayAs === 'button',
     ),
   );
