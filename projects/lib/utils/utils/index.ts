@@ -1,3 +1,4 @@
+export * from './build-graphql-input-type-name';
 export * from './build-resource-list-operation';
 export * from './columns-to-gql-fields';
 export * from './get-value-by-path';

@@ -12,6 +12,7 @@ import {
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
+  buildGraphQLInputTypeName,
   buildResourcePath,
   getResourceValueByJsonPath,
   getValueByPath,
@@ -392,7 +393,7 @@ export class ResourceService {
           ...(isNamespaced && {
             namespace: { type: 'String', value: namespace },
           }),
-          object: { type: `${entity}Input!`, value: resource },
+          object: { type: `${buildGraphQLInputTypeName(apiGroup, version, entity)}!`, value: resource },
         },
         fields: ['__typename'],
       },
@@ -442,7 +443,7 @@ export class ResourceService {
           }),
           name: { type: 'String!', value: resource.metadata.name },
           object: {
-            type: `${entity}Input!`,
+            type: `${buildGraphQLInputTypeName(apiGroup, version, entity)}!`,
             value: cleanResource,
           },
         },
