@@ -331,7 +331,7 @@ describe('CreateResourceModalComponent', () => {
         value: 'valid-name',
       });
       expect(component.isFormValid()).toBe(true);
-      expect(component.fieldErrors()['metadata.name']).toBeUndefined();
+      expect(component.fieldErrors()['metadata.name']).toBeNull();
     });
 
     it('should accept a single-character lowercase name as valid', () => {
@@ -360,7 +360,7 @@ describe('CreateResourceModalComponent', () => {
         fieldProperty: 'spec.description',
         value: '',
       });
-      expect(component.fieldErrors()['spec.description']).toBeUndefined();
+      expect(component.fieldErrors()['spec.description']).toBeNull();
     });
 
     it('should update formValues so a subsequent change event builds on prior state', () => {

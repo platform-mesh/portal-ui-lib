@@ -6,6 +6,7 @@ import {
   computed,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   viewChild,
@@ -61,7 +62,9 @@ export class CreateResourceModal {
   fieldErrors = signal<FormFieldErrors>({});
   formFields = signal<FormFieldDefinition[]>([]);
   formInitialValues = signal<Record<string, unknown>>({});
-  isFormValid = computed(() => Object.keys(this.fieldErrors()).length === 0);
+  isFormValid = linkedSignal(
+    () => Object.values(this.fieldErrors()).filter(Boolean).length === 0,
+  );
 
   async open(resource?: Resource) {
     this.originalResource.set(resource ?? null);
@@ -76,6 +79,7 @@ export class CreateResourceModal {
   close() {
     this.dialogOpen.set(false);
     this.fieldErrors.set({});
+    this.isFormValid.set(false);
     this.originalResource.set(null);
   }
 
@@ -87,11 +91,11 @@ export class CreateResourceModal {
     this.validateField(event.fieldProperty, String(event.value ?? '').trim());
   }
 
-  onFormSubmit(value: Resource): void {
+  onFormSubmit(value: Record<string, unknown>): void {
     if (this.isEditMode()) {
-      this.updateResource.emit(value);
+      this.updateResource.emit(value as Resource);
     } else {
-      this.resource.emit(value);
+      this.resource.emit(value as Resource);
     }
   }
 
@@ -120,11 +124,7 @@ export class CreateResourceModal {
 
     this.fieldErrors.update((errors) => {
       const updated = { ...errors };
-      if (error !== null) {
-        updated[name] = error;
-      } else {
-        delete updated[name];
-      }
+      updated[name] = error;
       return updated;
     });
   }
