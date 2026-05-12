@@ -1,4 +1,8 @@
-import { ResourceFieldNames } from './create-resource-modal.enums';
+import {
+  K8S_NAME_ERROR,
+  K8S_NAME_RE,
+  ResourceFieldNames,
+} from './create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -33,9 +37,6 @@ import {
   isNamespacedResource,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
-
-const K8S_NAME_RE = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
-const K8S_NAME_ERROR = 'Invalid resource name accrording to RFC 1035';
 
 @Component({
   selector: 'pm-create-resource-modal',
