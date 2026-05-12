@@ -17,10 +17,10 @@
   </ng-content>
 
   <ng-content page-content>
-    <pm-generic-table
+    <mfp-declarative-table
+      trackByPath="metadata.name"
       [resources]="resources()"
       [columns]="columns()"
-      [trackBy]="trackBy"
       [hasMore]="hasMore()"
       [totalItemsCount]="totalItemsCount()"
       [paginationLimit]="paginationLimit()"

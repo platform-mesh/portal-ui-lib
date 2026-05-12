@@ -9,3 +9,4 @@ import '@ui5/webcomponents-icons/dist/message-information.js';
 import '@ui5/webcomponents-icons/dist/show.js';
 
 ignoreCustomElements('pm-');
+ignoreCustomElements('mfp-');

@@ -1,8 +1,5 @@
-import {
-  FieldDefinition,
-  GenericResource,
-  UIDefinition,
-} from './ui-definition';
+import { UIDefinition } from './ui-definition';
+import { FieldDefinition, GenericResource } from '@openmfp/ngx';
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
 export interface ResourceStatus {
