@@ -63,16 +63,16 @@ export class CreateResourceModal {
   fieldErrors = signal<FormFieldErrors>({});
   formFields = signal<FormFieldDefinition[]>([]);
   formInitialValues = signal<Record<string, unknown>>({});
-  isFormValid = linkedSignal(
-    () => Object.values(this.fieldErrors()).filter(Boolean).length === 0,
-  );
+  isFormValid = linkedSignal(() => this.checkFormValidity());
 
   async open(resource?: Resource) {
-    this.originalResource.set(resource ?? null);
     const fields = this.calculateFields();
     const formFields = await this.buildFormFieldsAsync(fields);
-    this.formFields.set(formFields);
     const initialValues = this.buildInitialValues(fields, resource);
+
+    this.originalResource.set(resource ?? null);
+    this.formFields.set(formFields);
+    this.isFormValid.set(this.checkFormValidity());
     this.formInitialValues.set(initialValues);
     this.dialogOpen.set(true);
   }
@@ -82,6 +82,7 @@ export class CreateResourceModal {
     this.fieldErrors.set({});
     this.isFormValid.set(false);
     this.originalResource.set(null);
+    this.declarativeFormRef().clear();
   }
 
   isEditMode() {
@@ -219,6 +220,10 @@ export class CreateResourceModal {
 
   private shouldAddNamespaceControl() {
     return this.isNamespacedResource();
+  }
+
+  private checkFormValidity(): boolean {
+    return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
   }
 
   private isCreateFieldOnly(field: FieldDefinition): boolean {
