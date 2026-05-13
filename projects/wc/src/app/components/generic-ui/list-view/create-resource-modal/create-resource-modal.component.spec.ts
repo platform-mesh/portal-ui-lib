@@ -1,6 +1,7 @@
 import { CreateResourceModal } from './create-resource-modal.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { DeclarativeForm } from '@openmfp/ngx';
 import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
@@ -36,8 +37,14 @@ describe('CreateResourceModalComponent', () => {
       providers: [{ provide: ResourceService, useValue: resourceService }],
     })
       .overrideComponent(CreateResourceModal, {
-        set: { template: '', imports: [], schemas: [CUSTOM_ELEMENTS_SCHEMA] },
+        set: {
+          template:
+            '<mfp-declarative-form [fields]="formFields()" [initialValues]="formInitialValues()" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (formSubmit)="onFormSubmit($event)" />',
+          imports: [DeclarativeForm],
+          schemas: [CUSTOM_ELEMENTS_SCHEMA],
+        },
       })
+      .overrideComponent(DeclarativeForm, { set: { template: '' } })
       .compileComponents();
 
     fixture = TestBed.createComponent(CreateResourceModal);

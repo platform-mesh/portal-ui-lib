@@ -67,10 +67,10 @@ export class CreateResourceModal {
 
   async open(resource?: Resource) {
     const fields = this.calculateFields();
+    this.originalResource.set(resource ?? null);
     const formFields = await this.buildFormFieldsAsync(fields);
     const initialValues = this.buildInitialValues(fields, resource);
 
-    this.originalResource.set(resource ?? null);
     this.formFields.set(formFields);
     this.isFormValid.set(this.checkFormValidity());
     this.formInitialValues.set(initialValues);
