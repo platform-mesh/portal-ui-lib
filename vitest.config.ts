@@ -6,8 +6,13 @@ export default defineConfig({
     environment: 'jsdom',
     server: {
       deps: {
-        inline: ['gridstack'],
+        inline: [/@openmfp\/ngx/],
       },
     },
+  },
+  resolve: {
+    alias: [
+      { find: /^gridstack(\/.+)?$/, replacement: '/test-stubs/empty.js' },
+    ],
   },
 });

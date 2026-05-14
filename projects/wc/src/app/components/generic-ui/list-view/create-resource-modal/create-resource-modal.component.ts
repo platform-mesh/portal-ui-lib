@@ -1,28 +1,31 @@
-import { k8sMessages } from '../../../../consts/k8s-messages';
-import { k8sNameValidator } from '../../../../validators/k8s-name-validator';
 import {
-  FormFieldDefinition,
-  SelectOption,
-} from '../../../generic-ui/generic-form/form-field-definition';
-import { GenericForm } from '../../../generic-ui/generic-form/generic-form.component';
-import { ResourceFieldNames } from './create-resource-modal.enums';
+  K8S_NAME_ERROR,
+  K8S_NAME_RE,
+  ResourceFieldNames,
+} from './create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   ViewEncapsulation,
   computed,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
-import { ValidatorFn } from '@angular/forms';
 import { Bar } from '@fundamental-ngx/ui5-webcomponents/bar';
 import { Dialog } from '@fundamental-ngx/ui5-webcomponents/dialog';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
+import {
+  DeclarativeForm,
+  FormFieldChangeEvent,
+  FormFieldDefinition,
+  FormFieldErrors,
+} from '@openmfp/ngx';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
@@ -34,18 +37,17 @@ import {
   isNamespacedResource,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-create-resource-modal',
   standalone: true,
-  imports: [Dialog, ToolbarButton, Toolbar, GenericForm, Bar, Title],
+  imports: [Dialog, ToolbarButton, Toolbar, DeclarativeForm, Bar, Title],
   templateUrl: './create-resource-modal.component.html',
   styleUrl: './create-resource-modal.component.scss',
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateResourceModal implements OnInit {
+export class CreateResourceModal {
   context = input.required<ResourceNodeContext>();
   fields = input<FieldDefinition[]>([]);
 
@@ -56,92 +58,123 @@ export class CreateResourceModal implements OnInit {
 
   private readonly resourceService = inject(ResourceService);
   private originalResource = signal<Resource | null>(null);
-  private latestFormValue = signal<Record<string, any> | null>(null);
-  isFormValid = signal<boolean>(false);
+  private declarativeFormRef = viewChild.required(DeclarativeForm);
 
+  fieldErrors = signal<FormFieldErrors>({});
   formFields = signal<FormFieldDefinition[]>([]);
-  formInitialValues = signal<Record<string, any>>({});
+  formInitialValues = signal<Record<string, unknown>>({});
+  isFormValid = linkedSignal(() => this.checkFormValidity());
 
-  protected readonly k8sMessages = k8sMessages;
-
-  ngOnInit(): void {
-    this.formFields.set(this.buildFormFields());
-  }
-
-  open(resource?: Resource) {
-    this.originalResource.set(resource ?? null);
+  async open(resource?: Resource) {
     const fields = this.calculateFields();
-    this.formFields.set(this.buildFormFields(fields));
-    this.formInitialValues.set(this.buildInitialValues(fields, resource));
+    this.originalResource.set(resource ?? null);
+    const formFields = await this.buildFormFieldsAsync(fields);
+    const initialValues = this.buildInitialValues(fields, resource);
+
+    this.formFields.set(formFields);
+    this.isFormValid.set(this.checkFormValidity());
+    this.formInitialValues.set(initialValues);
     this.dialogOpen.set(true);
   }
 
   close() {
     this.dialogOpen.set(false);
-    this.latestFormValue.set(null);
+    this.fieldErrors.set({});
     this.isFormValid.set(false);
     this.originalResource.set(null);
-  }
-
-  submit() {
-    const value = this.latestFormValue();
-    if (value) {
-      if (this.isEditMode()) {
-        this.updateResource.emit(value as Resource);
-      } else {
-        this.resource.emit(value as Resource);
-      }
-    }
-  }
-
-  onFormValue(value: Record<string, any>) {
-    this.latestFormValue.set(value);
-  }
-
-  onFormValidChange(valid: boolean) {
-    this.isFormValid.set(valid);
+    this.declarativeFormRef().clear();
   }
 
   isEditMode() {
     return !!this.originalResource();
   }
 
-  private buildFormFields(fields?: FieldDefinition[]): FormFieldDefinition[] {
-    return (fields ?? this.calculateFields()).map((field) =>
-      this.toFormField(field),
-    );
+  onFieldChange(event: FormFieldChangeEvent): void {
+    this.validateField(event.fieldProperty, String(event.value ?? '').trim());
+  }
+
+  onFormSubmit(value: Record<string, unknown>): void {
+    if (this.isEditMode()) {
+      this.updateResource.emit(value as Resource);
+    } else {
+      this.resource.emit(value as Resource);
+    }
+  }
+
+  protected submitForm(): void {
+    this.declarativeFormRef().submit();
+  }
+
+  private validateField(name: string, value: string): void {
+    let error: string | null = null;
+
+    switch (name) {
+      case ResourceFieldNames.MetadataName:
+        if (!value) {
+          error = 'This field is required';
+        } else if (!K8S_NAME_RE.test(value)) {
+          error = K8S_NAME_ERROR;
+        }
+        break;
+      default: {
+        const field = this.formFields().find((f) => f.name === name);
+        if (field?.required && !value) {
+          error = 'This field is required';
+        }
+      }
+    }
+
+    this.fieldErrors.update((errors) => {
+      const updated = { ...errors };
+      updated[name] = error;
+      return updated;
+    });
+  }
+
+  private async buildFormFieldsAsync(
+    fields: FieldDefinition[],
+  ): Promise<FormFieldDefinition[]> {
+    return Promise.all(fields.map((field) => this.toFormFieldAsync(field)));
+  }
+
+  private async toFormFieldAsync(
+    field: FieldDefinition,
+  ): Promise<FormFieldDefinition> {
+    const formField = this.toFormField(field);
+
+    if (field.dynamicValuesDefinition) {
+      const def = field.dynamicValuesDefinition;
+      const resources = await firstValueFrom(
+        this.resourceService.list(def.operation, def.gqlQuery, this.context()),
+      );
+      formField.values = (resources as Resource[])
+        .map((r) => getValueByPath(r, def.value) as string)
+        .filter(Boolean);
+    }
+
+    return formField;
   }
 
   private toFormField(field: FieldDefinition): FormFieldDefinition {
-    const name = this.sanitizePropertyName(field);
+    if (typeof field.property !== 'string') {
+      throw new Error(
+        `Form field property must be a string, got: ${JSON.stringify(field.property)}`,
+      );
+    }
+
     const formField: FormFieldDefinition = {
-      name,
+      name: field.property,
       label: field.label,
       required: field.required,
       disabled: this.isCreateFieldOnly(field) && this.isEditMode(),
     };
 
     if (field.values?.length) {
-      formField.values = field.values;
-    } else if (field.dynamicValuesDefinition) {
-      const def = field.dynamicValuesDefinition;
-      const context = this.context();
-      formField.loadValues = (): Promise<SelectOption[]> =>
-        firstValueFrom(
-          this.resourceService.list(def.operation, def.gqlQuery, context).pipe(
-            map((resources) =>
-              resources.map((r) => ({
-                value: getValueByPath(r, def.value),
-                label: getValueByPath(r, def.key),
-              })),
-            ),
-          ),
-        );
+      formField.values = field.values as string[];
     }
 
-    const validators = this.getValidators(field);
-    if (validators.length) {
-      formField.validators = validators;
+    if (field.required || field.property === ResourceFieldNames.MetadataName) {
+      formField.validation = 'onChange';
     }
 
     return formField;
@@ -150,17 +183,17 @@ export class CreateResourceModal implements OnInit {
   private buildInitialValues(
     fields: FieldDefinition[],
     resource?: Resource,
-  ): Record<string, any> {
+  ): Record<string, unknown> {
     if (!resource) return {};
     return fields.reduce(
       (acc, field) => {
         if (typeof field.property === 'string') {
-          acc[this.sanitizePropertyName(field)] =
+          acc[field.property as string] =
             getResourceValueByJsonPath(resource, field) ?? '';
         }
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<string, unknown>,
     );
   }
 
@@ -189,30 +222,15 @@ export class CreateResourceModal implements OnInit {
     return this.isNamespacedResource();
   }
 
+  private checkFormValidity(): boolean {
+    return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
+  }
+
   private isCreateFieldOnly(field: FieldDefinition): boolean {
     return (
       field.property === ResourceFieldNames.MetadataName ||
       field.property === ResourceFieldNames.SpecType ||
       field.property === ResourceFieldNames.MetadataNamespace
     );
-  }
-
-  private sanitizePropertyName(field: FieldDefinition): string {
-    const property: string | string[] = field.property || '';
-    if (property instanceof Array) {
-      throw new Error('Wrong property type, array not supported');
-    }
-    return (
-      (property as string).replaceAll('.', '_') +
-      (field.propertyField ? `_${field.propertyField.key}` : '')
-    );
-  }
-
-  private getValidators(field: FieldDefinition): ValidatorFn[] {
-    const validators: ValidatorFn[] = [];
-    if (field.property === ResourceFieldNames.MetadataName) {
-      validators.push(k8sNameValidator);
-    }
-    return validators;
   }
 }

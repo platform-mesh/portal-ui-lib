@@ -1,6 +1,5 @@
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { addSearchParams } from '../../../utils/set-search-params';
-import { GenericTable } from '../generic-table/generic-table.component';
 import { GenericView } from '../generic-view/generic-view.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
 import {
@@ -19,7 +18,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
+  DeclarativeTable,
   FieldDefinition,
+  ValueCellButtonClickEvent,
+} from '@openmfp/ngx';
+import {
   Resource,
   ResourceListResult,
   ResourceSubscriptionResult,
@@ -45,7 +48,7 @@ import { finalize } from 'rxjs/operators';
   styleUrls: ['./list-view.component.scss'],
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CreateResourceModal, ToolbarButton, GenericView, GenericTable],
+  imports: [CreateResourceModal, ToolbarButton, GenericView, DeclarativeTable],
 })
 export class ListView {
   private resourceService = inject(ResourceService);
@@ -58,8 +61,7 @@ export class ListView {
 
   resources = signal<Resource[]>([]);
   defaultTitle = computed(
-    () =>
-      this.resourceDefinition()?.entityCollection ?? '',
+    () => this.resourceDefinition()?.entityCollection ?? '',
   );
   defaultDescription = computed(
     () =>
@@ -77,6 +79,7 @@ export class ListView {
           uiSettings: {
             ...readyCondition.uiSettings,
             displayAs: 'alert',
+            columnWidth: '30px',
           },
         },
         ...columns,
@@ -101,7 +104,6 @@ export class ListView {
   private isLoadingList = false;
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
-  protected trackBy = (item) => item.metadata.name;
 
   constructor() {
     effect(() => {
@@ -294,7 +296,7 @@ export class ListView {
     return resourceDefinition;
   }
 
-  executeAction(event) {
+  executeAction(event: ValueCellButtonClickEvent<Resource>) {
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 }
