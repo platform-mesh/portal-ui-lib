@@ -1,45 +1,115 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { GenericResource } from '@openmfp/ngx';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { mockOpenSearchResources } from './open-search.mock';
 
-interface OpenSearchRequest {
+export interface OpenSearchRequest {
   q: string; // (required): free-text query
-  resource?:string; // (optional): plural resource name; if omitted, searches across all resources
-  filter?:string; // filter.<field> (optional, repeatable): exact-match filters; requires resource
+  resource?: string; // (optional): plural resource name; if omitted, searches across all resources
+  filter?: string; // filter.<field> (optional, repeatable): exact-match filters; requires resource
   limit?: number; // (optional): default 20, max 100
   cursor?: string; // (optional): opaque pagination cursor
 }
 
-interface OpenSearchResult {
-  results: unknown[];
+export interface OpenSearchResult {
+  results: OpenSearchResource[];
   source: string;
   nextCursor: string;
 }
 
-@Injectable({ providedIn: 'root'})
+export interface OpenSearchResourceSource extends Record<any, unknown> {
+  default_fields: Record<string, unknown>;
+  filterable_fields: Record<string, unknown>;
+  semantic_fields: Record<string, unknown>;
+}
+
+export interface OpenSearchResource extends GenericResource {
+  id: string;
+  score: number;
+  kind: string;
+  name: string;
+  namespace: string;
+  apiGroup: string;
+  apiVersion: string;
+  workspacePath: string;
+  clusterName: string;
+  organizationId: string;
+  organizationName: string;
+  accountId: string;
+  accountName: string;
+  source: OpenSearchResourceSource;
+}
+
+function expandDotNotation(fields: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    const parts = key.split('.');
+    let node = result;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (node[parts[i]] === undefined || typeof node[parts[i]] !== 'object') {
+        node[parts[i]] = {};
+      }
+      node = node[parts[i]] as Record<string, unknown>;
+    }
+    node[parts[parts.length - 1]] = value;
+  }
+  return result;
+}
+
+@Injectable({ providedIn: 'root' })
 export class OpenSearchService {
   private luigiCoreService = inject(LuigiCoreService);
   private httpClient = inject(HttpClient);
 
-  listResources = (nodeContext: ResourceNodeContext, request: OpenSearchRequest): Observable<OpenSearchResult> => {
-
+  listResources = (
+    nodeContext: ResourceNodeContext,
+    request: OpenSearchRequest,
+  ): Observable<OpenSearchResult> => {
     const openSearchApiUrl = nodeContext.portalContext.openSearchApiUrl;
 
-    if (!openSearchApiUrl){
-      const message = 'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!'
+    if (!openSearchApiUrl) {
+      const message =
+        'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!';
       this.alertErrors(message);
       throw Error(message);
     }
 
-    return this.httpClient.get<OpenSearchResult>(openSearchApiUrl, {
-      headers: {
-        Authorization: `Bearer ${nodeContext.token}`,
-      },
-      params: this.buildParams(request),
-    });
-  }
+    // return this.httpClient
+    //   .get<OpenSearchResult>(openSearchApiUrl, {
+    //     headers: {
+    //       Authorization: `Bearer ${nodeContext.token}`,
+    //     },
+    //     params: this.buildParams(request),
+    //   })
+    //   .pipe(
+    //     map((response) => ({
+    //       ...response,
+    //       results: response.results.map((r) => ({
+    //         ...r,
+    //         ...expandDotNotation({
+    //           ...r.source.default_fields,
+    //           ...r.source.filterable_fields,
+    //           ...r.source.semantic_fields,
+    //         }),
+    //       })),
+    //     })),
+    //   );
+
+    const results = mockOpenSearchResources.map((r) => ({
+      ...r,
+      ...expandDotNotation({
+        ...r.source.default_fields,
+        ...r.source.filterable_fields,
+        ...r.source.semantic_fields,
+      }),
+    }));
+
+    return of({ results, source: '', nextCursor: '' });
+  };
 
   private buildParams(request: OpenSearchRequest): HttpParams {
     let params = new HttpParams().set('q', request.q);
