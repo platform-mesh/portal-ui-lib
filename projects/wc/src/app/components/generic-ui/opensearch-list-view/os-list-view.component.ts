@@ -125,10 +125,10 @@ export class OSListView {
       return;
     }
 
-    this.list();
+    this.list(false);
   }
 
-  list(isInitialLoad: boolean = false) {
+  list(isInitialLoad: boolean, searchKey?: string) {
     if (this.isLoadingList) {
       return;
     }
@@ -136,7 +136,7 @@ export class OSListView {
 
     this.openSearchService
       .listResources(this.context(), {
-        q: '',
+        q: searchKey ?? '',
         resource: this.resourceDefinition()?.entityCollection,
         limit: this.paginationLimit(),
         cursor: this.currentContinueToken,
@@ -205,5 +205,7 @@ export class OSListView {
     return resourceDefinition;
   }
 
-  protected search($event: string) {}
+  protected search(searchKey: string) {
+    this.list(false, searchKey)
+  }
 }
