@@ -1,0 +1,26 @@
+import { CardConfig, SectionConfig } from '@openmfp/ngx';
+
+export interface DashboardConfigKeyParams {
+  workspacePath: string;
+  entity: string | undefined;
+  resourceId: string | undefined;
+  userId: string | undefined;
+}
+
+export interface DashboardConfigData {
+  cards: CardConfig[];
+  sections: SectionConfig[];
+}
+
+export const calculateDashboardConfigKey = (params: DashboardConfigKeyParams): string =>
+  `pm.ws:${params.workspacePath}.resourceType:${params.entity}.resourceId:${params.resourceId}.user:${params.userId}`;
+
+export const writeConfig = (params: DashboardConfigKeyParams, config: DashboardConfigData): void => {
+  localStorage.setItem(calculateDashboardConfigKey(params), JSON.stringify(config));
+};
+
+export const readConfig = (params: DashboardConfigKeyParams): DashboardConfigData | null => {
+  const raw = localStorage.getItem(calculateDashboardConfigKey(params));
+  if (!raw) return null;
+  return JSON.parse(raw) as DashboardConfigData;
+};

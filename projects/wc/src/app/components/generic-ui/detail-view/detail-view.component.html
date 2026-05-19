@@ -1,8 +1,10 @@
 <mfp-dashboard
   [config]="dashboardConfig()"
+  [sections]="sections()"
   [cards]="cards()"
   [availableCards]="availableCards()"
   (actionButtonClick)="onActionButtonClick($event)"
+  (saved)="dashboardConfigurationChanged($event)"
 >
   <div slot="dashboard-subheader">
     <ng-container *ngTemplateOutlet="subheader" />

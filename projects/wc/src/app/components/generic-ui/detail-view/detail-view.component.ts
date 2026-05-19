@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Dashboard, ButtonSettings, CardConfig} from '@openmfp/ngx';
+import { Dashboard, ButtonSettings, CardConfig, SectionConfig} from '@openmfp/ngx';
+import { writeConfig, readConfig } from '../../../utils/dashboard-config';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
@@ -121,23 +122,27 @@ export class DetailView {
     };
   })
 
-  cards = computed<CardConfig[]>(() => [{
-    label: 'Namespaces',
-    id: 'namespace-table-card',
-    component: 'pm-namespace-table-card',
-    w: 12,
-    h: 27,
-    componentInputs: { context: this.context() },
-  }]);
+  sections = computed<SectionConfig[]>(() => {
+    const c = readConfig(      {
+      workspacePath: this.workspacePath(),
+      entity: this.resourceDefinition()?.entity,
+      resourceId: this.resourceId(),
+      userId: this.context().userId,
+    });
 
-  availableCards = computed<CardConfig[]>(() => [{
-    label: 'Namespaces',
-    id: 'namespace-table-card',
-    component: 'pm-namespace-table-card',
-    w: 12,
-    h: 27,
-    componentInputs: { context: this.context() },
-  }]);
+    return c?.sections ?? [];
+  });
+  cards = computed<CardConfig[]>(() => {
+    const c = readConfig(      {
+      workspacePath: this.workspacePath(),
+      entity: this.resourceDefinition()?.entity,
+      resourceId: this.resourceId(),
+      userId: this.context().userId,
+    });
+
+    return c?.cards ?? [];
+  });
+  availableCards = computed<CardConfig[]>(() => []);
 
   onActionButtonClick({ event, action }: { event: MouseEvent; action: ButtonSettings }): void {
     const resource = this.resource();
@@ -386,5 +391,18 @@ export class DetailView {
     }
 
     return resourceId;
+  }
+
+
+  protected dashboardConfigurationChanged(config: { cards: CardConfig[]; sections: SectionConfig[] }) {
+    writeConfig(
+      {
+        workspacePath: this.workspacePath(),
+        entity: this.resourceDefinition()?.entity,
+        resourceId: this.resourceId(),
+        userId: this.context().userId,
+      },
+      config,
+    );
   }
 }

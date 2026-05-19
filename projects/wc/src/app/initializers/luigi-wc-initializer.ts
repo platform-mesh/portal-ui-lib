@@ -1,7 +1,6 @@
 import {
   DetailView,
   ListView,
-  NamespaceTableCard,
   OrganizationManagementView,
   WelcomeView,
 } from '../components';
@@ -23,13 +22,5 @@ export const provideLuigiWebComponents = () =>
       },
       injector,
     );
-
-    if (!customElements.get('pm-namespace-table-card')) {
-      customElements.define(
-        'pm-namespace-table-card',
-        createCustomElement(NamespaceTableCard, { injector }),
-      );
-    }
-
     return undefined;
   });
