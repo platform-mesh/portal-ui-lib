@@ -1,10 +1,9 @@
 <mfp-dashboard
   [config]="dashboardConfig()"
-  [sections]="sections()"
+  [sections]="sections"
   [cards]="cards()"
-  [availableCards]="availableCards()"
+  [availableCards]="availableCards"
   (actionButtonClick)="onDashboardAction($event)"
-  (saved)="dashboardConfigurationChanged($event)"
 />
 
 @if (hasUiCreateViewFields()) {
