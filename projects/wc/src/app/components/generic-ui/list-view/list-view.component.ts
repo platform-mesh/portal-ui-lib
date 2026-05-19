@@ -1,4 +1,3 @@
-import { writeConfig, readConfig } from '../../../utils/dashboard-config';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { addSearchParams } from '../../../utils/set-search-params';
 import { ResourceTableCard } from './resource-table-card/resource-table-card.component';
@@ -8,7 +7,6 @@ import {
   CardConfig,
   Dashboard,
   ButtonSettings,
-  SectionConfig,
   TableCardConfig,
   ValueCellButtonClickEvent,
   FieldDefinition,
@@ -34,7 +32,6 @@ import {
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
-  GatewayService,
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -61,7 +58,6 @@ Dashboard.registerAngularComponents([ResourceTableCard]);
 export class ListView {
   private resourceService = inject(ResourceService);
   private errorHandlerService = inject(ErrorHandlerService);
-  private gatewayService = inject(GatewayService);
   private destroyRef = inject(DestroyRef);
   private createModal = viewChild<CreateResourceModal>('createModal');
 
@@ -102,17 +98,6 @@ export class ListView {
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
 
-  workspacePath = computed(() =>
-    this.gatewayService.resolveKcpPath(this.context()),
-  );
-
-  private configKeyParams = computed(() => ({
-    workspacePath: this.workspacePath(),
-    entity: this.resourceDefinition()?.entity,
-    resourceId: undefined,
-    userId: this.context().userId,
-  }));
-
   tableCardConfig = computed<TableCardConfig>(() => ({
     tableConfig: {
       fields: this.columns(),
@@ -147,21 +132,19 @@ export class ListView {
     };
   });
 
-  cards = computed<CardConfig[]>(() => {
-    return [{
-      id: 'pm-resource-table-card',
-      component: 'pm-resource-table-card',
-      type: CARD_TYPES.ANGULAR,
-      w: 12,
-      componentInputs: {
-        resources: this.resources(),
-        config: this.tableCardConfig(),
-      },
-    }];
-  });
+  cards = computed<CardConfig[]>(() => [{
+    id: 'pm-resource-table-card',
+    component: 'pm-resource-table-card',
+    type: CARD_TYPES.ANGULAR,
+    w: 12,
+    componentInputs: {
+      resources: this.resources(),
+      config: this.tableCardConfig(),
+    },
+  }]);
 
-  availableCards = computed<CardConfig[]>(() => []);
-  sections = computed<SectionConfig[]>(() => readConfig(this.configKeyParams())?.sections ?? []);
+  availableCards: CardConfig[] = [];
+  sections: never[] = [];
 
   private currentContinueToken: string | undefined = undefined;
   private isLoadingList = false;
@@ -325,10 +308,6 @@ export class ListView {
     if (action.action === 'create') {
       this.openCreateResourceModal();
     }
-  }
-
-  protected dashboardConfigurationChanged(config: { cards: CardConfig[]; sections: SectionConfig[] }) {
-    writeConfig(this.configKeyParams(), config);
   }
 
   private getListQueryFields() {
