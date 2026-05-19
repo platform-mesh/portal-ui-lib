@@ -1,7 +1,18 @@
+import { writeConfig, readConfig } from '../../../utils/dashboard-config';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { addSearchParams } from '../../../utils/set-search-params';
-import { GenericView } from '../generic-view/generic-view.component';
+import { ResourceTableCard } from './resource-table-card/resource-table-card.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
+import {
+  CARD_TYPES,
+  CardConfig,
+  Dashboard,
+  ButtonSettings,
+  SectionConfig,
+  TableCardConfig,
+  ValueCellButtonClickEvent,
+  FieldDefinition,
+} from '@openmfp/ngx';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,13 +26,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import {
-  DeclarativeTable,
-  FieldDefinition,
-  ValueCellButtonClickEvent,
-} from '@openmfp/ngx';
 import {
   Resource,
   ResourceListResult,
@@ -29,6 +34,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
+  GatewayService,
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -41,18 +47,21 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { finalize } from 'rxjs/operators';
 
+Dashboard.registerAngularComponents([ResourceTableCard]);
+
 @Component({
   selector: 'pm-list-view',
   standalone: true,
   templateUrl: './list-view.component.html',
   styleUrls: ['./list-view.component.scss'],
-  encapsulation: ViewEncapsulation.ShadowDom,
+  encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CreateResourceModal, ToolbarButton, GenericView, DeclarativeTable],
+  imports: [CreateResourceModal, Dashboard],
 })
 export class ListView {
   private resourceService = inject(ResourceService);
   private errorHandlerService = inject(ErrorHandlerService);
+  private gatewayService = inject(GatewayService);
   private destroyRef = inject(DestroyRef);
   private createModal = viewChild<CreateResourceModal>('createModal');
 
@@ -60,13 +69,6 @@ export class ListView {
   context = input.required<ResourceNodeContext>();
 
   resources = signal<Resource[]>([]);
-  defaultTitle = computed(
-    () => this.resourceDefinition()?.entityCollection ?? '',
-  );
-  defaultDescription = computed(
-    () =>
-      `This page displays the created ${this.resourceDefinition()?.entityCollection} in your environment`,
-  );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(() => {
     let columns = this.resourceDefinition()?.ui?.listView?.fields ?? [];
@@ -99,6 +101,67 @@ export class ListView {
   remainingItemCount = signal<number>(0);
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
+
+  workspacePath = computed(() =>
+    this.gatewayService.resolveKcpPath(this.context()),
+  );
+
+  private configKeyParams = computed(() => ({
+    workspacePath: this.workspacePath(),
+    entity: this.resourceDefinition()?.entity,
+    resourceId: undefined,
+    userId: this.context().userId,
+  }));
+
+  tableCardConfig = computed<TableCardConfig>(() => ({
+    tableConfig: {
+      fields: this.columns(),
+      totalItemsCount: this.totalItemsCount(),
+      paginationLimit: this.paginationLimit(),
+      hasMore: this.hasMore(),
+    },
+  }));
+
+  resourceTitleDefinition = computed(
+      () => this.resourceDefinition()?.ui?.listView?.resourceTitle?.label ?? this.resourceDefinition()?.entityCollection ?? '',
+  );
+  resourceDescriptionDefinition = computed(
+      () => this.resourceDefinition()?.ui?.listView?.resourceDescription?.label ?? `This page displays the created ${this.resourceDefinition()?.entityCollection} in your environment`,
+  );
+
+  dashboardConfig = computed(() => {
+    const customActions: ButtonSettings[] = [];
+    if (this.hasUiCreateViewFields()) {
+      customActions.push({
+        action: 'create',
+        text: 'Create',
+        design: 'Emphasized',
+        tooltip: 'Create',
+      });
+    }
+    return {
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+      editable: false,
+      customActions,
+    };
+  });
+
+  cards = computed<CardConfig[]>(() => {
+    return [{
+      id: 'pm-resource-table-card',
+      component: 'pm-resource-table-card',
+      type: CARD_TYPES.ANGULAR,
+      w: 12,
+      componentInputs: {
+        resources: this.resources(),
+        config: this.tableCardConfig(),
+      },
+    }];
+  });
+
+  availableCards = computed<CardConfig[]>(() => []);
+  sections = computed<SectionConfig[]>(() => readConfig(this.configKeyParams())?.sections ?? []);
 
   private currentContinueToken: string | undefined = undefined;
   private isLoadingList = false;
@@ -138,10 +201,7 @@ export class ListView {
       )
       .subscribe({
         next: (value) => {
-          if (!value) {
-            return;
-          }
-
+          if (!value) return;
           this.mergeResourcesWithSubscriptionResult(value);
         },
         error: (_error) => {
@@ -165,17 +225,12 @@ export class ListView {
   }
 
   loadMore() {
-    if (!this.hasMore()) {
-      return;
-    }
-
+    if (!this.hasMore()) return;
     this.list();
   }
 
   list(isInitialLoad: boolean = false) {
-    if (this.isLoadingList) {
-      return;
-    }
+    if (this.isLoadingList) return;
     this.isLoadingList = true;
 
     const fields = this.getListQueryFields();
@@ -202,9 +257,7 @@ export class ListView {
           } else {
             this.resources.update((values) => {
               const map = new Map(values.map((i) => [i.metadata.name, i]));
-              (result.items ?? []).forEach((i) => {
-                map.set(i.metadata.name, i);
-              });
+              (result.items ?? []).forEach((i) => map.set(i.metadata.name, i));
               return [...map.values()];
             });
           }
@@ -232,7 +285,6 @@ export class ListView {
 
   create(resource: Resource) {
     const resourceDefinition = this.getResourceDefinition();
-
     this.resourceService
       .create(resource, resourceDefinition, this.context())
       .subscribe({
@@ -245,16 +297,13 @@ export class ListView {
 
   navigateToResource(resource: Resource) {
     const resourceDefinition = this.getResourceDefinition();
-    if (!resourceDefinition.ui?.detailView) {
-      return;
-    }
+    if (!resourceDefinition.ui?.detailView) return;
 
     if (!resource.metadata.name) {
       this.LuigiClient().uxManager().showAlert({
         text: 'Resource name is not defined',
         type: 'error',
       });
-
       throw new Error('Resource name is not defined');
     }
 
@@ -268,15 +317,27 @@ export class ListView {
     this.createModal()?.open();
   }
 
+  executeAction(event: ValueCellButtonClickEvent<Resource>) {
+    executeButtonAction(this.LuigiClient(), event.field, event.resource);
+  }
+
+  onDashboardAction({ action }: { event: MouseEvent; action: ButtonSettings }) {
+    if (action.action === 'create') {
+      this.openCreateResourceModal();
+    }
+  }
+
+  protected dashboardConfigurationChanged(config: { cards: CardConfig[]; sections: SectionConfig[] }) {
+    writeConfig(this.configKeyParams(), config);
+  }
+
   private getListQueryFields() {
     const additionalFields: FieldDefinition[] = [
       { property: 'metadata.deletionTimestamp' },
     ];
 
     if (this.isNamespaced()) {
-      additionalFields.push({
-        property: 'metadata.namespace',
-      });
+      additionalFields.push({ property: 'metadata.namespace' });
     }
 
     return generateGraphQLFields(this.columns().concat(additionalFields));
@@ -289,14 +350,8 @@ export class ListView {
         text: 'Resource definition is not defined',
         type: 'error',
       });
-
       throw new Error('Resource definition is not defined');
     }
-
     return resourceDefinition;
-  }
-
-  executeAction(event: ValueCellButtonClickEvent<Resource>) {
-    executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 }

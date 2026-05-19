@@ -1,0 +1,8 @@
+<mfp-declarative-table-card
+  [resources]="resources()"
+  [config]="config()"
+  (tableRowClicked)="tableRowClicked.emit($event)"
+  (loadMoreResources)="loadMoreResources.emit()"
+  (paginationLimitChanged)="paginationLimitChanged.emit($event)"
+  (actionButtonClick)="buttonClick.emit($event)"
+/>

@@ -71,11 +71,18 @@ export class DetailView {
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(
-    () => this.resource()?.spec?.displayName || this.resourceId(),
+    () => this.resource()?.spec?.displayName || this.resourceId() || '',
   );
   defaultDescription = computed(
     () =>
       `The ${this.resourceDefinition()?.entity} for ${this.resource()?.spec?.displayName || this.resourceId()}`,
+  );
+
+  resourceTitleDefinition = computed(
+      () => this.resourceDefinition()?.ui?.detailView?.resourceTitle?.label ?? this.defaultTitle(),
+  );
+  resourceDescriptionDefinition = computed(
+      () => this.resourceDefinition()?.ui?.detailView?.resourceDescription?.label ?? this.defaultDescription(),
   );
 
   resourceFields = computed(
@@ -114,8 +121,8 @@ export class DetailView {
     }
 
     return {
-      title: this.defaultTitle() || '',
-      description: this.defaultDescription(),
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
       editable: true,
       backgroundImageUrl: '/assets/pm_background.png',
       customActions,
