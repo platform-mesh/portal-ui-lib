@@ -13,13 +13,13 @@
     </ui5-title>
   </ui5-bar>
 
-  <pm-generic-form
+  <mfp-declarative-form
     test-id="create-resource-dialog-form"
     [fields]="formFields()"
     [initialValues]="formInitialValues()"
-    [editMode]="isEditMode()"
-    (formValue)="onFormValue($event)"
-    (formValidChange)="onFormValidChange($event)"
+    [fieldErrors]="fieldErrors()"
+    (fieldChange)="onFieldChange($event)"
+    (formSubmit)="onFormSubmit($event)"
   />
 
   <ui5-toolbar class="ui5-content-density-compact" slot="footer">
@@ -29,7 +29,7 @@
       design="Emphasized"
       text="Submit"
       [disabled]="!isFormValid()"
-      (click)="submit()"
+      (click)="submitForm()"
     >
     </ui5-toolbar-button>
     <ui5-toolbar-button

@@ -5,7 +5,7 @@ in the scope of the Platform Mesh functionalities.
 <!-- CI trigger -->
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/platform-mesh/portal-ui-lib/badge)](https://scorecard.dev/viewer/?uri=github.com/platform-mesh/portal-ui-lib)
-![Build Status](https://github.com/platform-mesh/portal-ui-lib/actions/workflows/pipeline.yaml/badge.svg)
+![Build Status](https://github.com/platform-mesh/portal-ui-lib/actions/workflows/ci.yml/badge.svg)
 
 ## Getting Started
 
