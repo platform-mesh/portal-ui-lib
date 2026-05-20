@@ -124,7 +124,7 @@ export class DetailView {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
       editable: true,
-      backgroundImageUrl: '/assets/pm_background.png',
+      backgroundImageUrl: this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ?? '/assets/pm_background.png',
       customActions,
     };
   })
