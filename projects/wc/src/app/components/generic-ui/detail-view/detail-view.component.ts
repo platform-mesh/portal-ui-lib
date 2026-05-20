@@ -26,7 +26,7 @@ import {
   CardConfig,
   Dashboard,
   SectionConfig,
-  ValueCellComponent,
+  ValueCell,
 } from '@openmfp/ngx';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -50,7 +50,7 @@ import { tap } from 'rxjs/operators';
   imports: [
     NgTemplateOutlet,
     Label,
-    ValueCellComponent,
+    ValueCell,
     CreateResourceModal,
     DeleteResourceModal,
     ResourceLogo,
