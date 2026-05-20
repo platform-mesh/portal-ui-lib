@@ -27,6 +27,7 @@ export interface UiView {
   fields?: FieldDefinition[];
   resourceDescription?: FieldDefinition;
   resourceTitle?: FieldDefinition;
+  backgroundImageUrl?: string;
 }
 
 export interface UIDefinition {

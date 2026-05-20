@@ -18,7 +18,6 @@ import {
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
-  ErrorHandlerService,
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -71,6 +70,7 @@ export class ListView {
     return {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
+      backgroundImageUrl: this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ?? '/assets/pm_background.png',
       editable: false,
       customActions,
     };
