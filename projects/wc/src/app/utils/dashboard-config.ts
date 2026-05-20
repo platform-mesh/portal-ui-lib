@@ -13,7 +13,7 @@ export interface DashboardConfigData {
 }
 
 export const calculateDashboardConfigKey = (params: DashboardConfigKeyParams): string =>
-  `pm.ws:${params.workspacePath}.resourceType:${params.entity}.resourceId:${params.resourceId}.user:${params.userId}`;
+  `pm.workspace:${params.workspacePath}.resourceType:${params.entity}.resourceId:${params.resourceId}.user:${params.userId}`;
 
 export const writeConfig = (params: DashboardConfigKeyParams, config: DashboardConfigData): void => {
   localStorage.setItem(calculateDashboardConfigKey(params), JSON.stringify(config));
