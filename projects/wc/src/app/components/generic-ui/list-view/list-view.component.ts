@@ -1,11 +1,5 @@
-import { ResourceTableCard } from './resource-table-card/resource-table-card.component';
 import { CreateResourceModal } from './create-resource-modal/create-resource-modal.component';
-import {
-  CARD_TYPES,
-  CardConfig,
-  Dashboard,
-  ButtonSettings,
-} from '@openmfp/ngx';
+import { ResourceTableCard } from './resource-table-card/resource-table-card.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,6 +10,12 @@ import {
   viewChild,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import {
+  ButtonSettings,
+  CARD_TYPES,
+  CardConfig,
+  Dashboard,
+} from '@openmfp/ngx';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
@@ -70,7 +70,9 @@ export class ListView {
     return {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
-      backgroundImageUrl: this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ?? '/assets/pm_background.png',
+      backgroundImageUrl:
+        this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
+        '/assets/pm_background.png',
       editable: false,
       customActions,
     };

@@ -187,7 +187,9 @@ describe('ListViewComponent', () => {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          ui: { listView: { resourceTitle: { label: 'My Clusters' }, fields: [] } },
+          ui: {
+            listView: { resourceTitle: { label: 'My Clusters' }, fields: [] },
+          },
         },
       })) as any;
       newComponent.LuigiClient = component.LuigiClient;
@@ -224,12 +226,19 @@ describe('ListViewComponent', () => {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          ui: { listView: { resourceDescription: { label: 'All your clusters' }, fields: [] } },
+          ui: {
+            listView: {
+              resourceDescription: { label: 'All your clusters' },
+              fields: [],
+            },
+          },
         },
       })) as any;
       newComponent.LuigiClient = component.LuigiClient;
       newFixture.detectChanges();
-      expect(newComponent.resourceDescriptionDefinition()).toBe('All your clusters');
+      expect(newComponent.resourceDescriptionDefinition()).toBe(
+        'All your clusters',
+      );
     });
 
     it('should use default description when resourceDescription is not defined', () => {
@@ -248,13 +257,18 @@ describe('ListViewComponent', () => {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          ui: { createView: { fields: [{ property: 'metadata.name' }] }, listView: { fields: [] } },
+          ui: {
+            createView: { fields: [{ property: 'metadata.name' }] },
+            listView: { fields: [] },
+          },
         },
       })) as any;
       newComponent.LuigiClient = component.LuigiClient;
       newFixture.detectChanges();
       const config = newComponent.dashboardConfig();
-      expect(config.customActions.some((a) => a.action === 'create')).toBe(true);
+      expect(config.customActions.some((a) => a.action === 'create')).toBe(
+        true,
+      );
       expect(config.editable).toBe(false);
     });
 
@@ -271,16 +285,22 @@ describe('ListViewComponent', () => {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          ui: { listView: { backgroundImageUrl: '/assets/custom.png', fields: [] } },
+          ui: {
+            listView: { backgroundImageUrl: '/assets/custom.png', fields: [] },
+          },
         },
       })) as any;
       newComponent.LuigiClient = component.LuigiClient;
       newFixture.detectChanges();
-      expect(newComponent.dashboardConfig().backgroundImageUrl).toBe('/assets/custom.png');
+      expect(newComponent.dashboardConfig().backgroundImageUrl).toBe(
+        '/assets/custom.png',
+      );
     });
 
     it('should use default backgroundImageUrl when not defined', () => {
-      expect(component.dashboardConfig().backgroundImageUrl).toBe('/assets/pm_background.png');
+      expect(component.dashboardConfig().backgroundImageUrl).toBe(
+        '/assets/pm_background.png',
+      );
     });
   });
 

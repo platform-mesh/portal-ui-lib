@@ -1,3 +1,5 @@
+import { executeButtonAction } from '../../../../utils/field-definition.utils';
+import { addSearchParams } from '../../../../utils/set-search-params';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,8 +12,12 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DeclarativeTableCard, TableCardConfig, ValueCellButtonClickEvent } from '@openmfp/ngx';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import {
+  DeclarativeTableCard,
+  TableCardConfig,
+  ValueCellButtonClickEvent,
+} from '@openmfp/ngx';
 import {
   Resource,
   ResourceListResult,
@@ -29,8 +35,6 @@ import {
   mergeListWithSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { finalize } from 'rxjs/operators';
-import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { addSearchParams } from '../../../../utils/set-search-params';
 
 @Component({
   selector: 'pm-resource-table-card',

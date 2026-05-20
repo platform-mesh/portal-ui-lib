@@ -201,7 +201,11 @@ describe('ResourceTableCard', () => {
     it('should not navigate when ui is not defined', () => {
       const navSpy = vi.fn();
       component.context = (() => ({
-        resourceDefinition: { entityCollection: 'clusters', entity: 'Cluster', apiGroup: 'core_k8s_io' },
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+        },
       })) as any;
       component.LuigiClient = makeLuigiClient(navSpy);
 
@@ -282,10 +286,17 @@ describe('ResourceTableCard', () => {
     });
 
     it('should handle ADDED operation in subscription', () => {
-      const subscriptionSubject = new Subject<ResourceSubscriptionResult | undefined>();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(subscriptionSubject);
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
       mockResourceService.list.mockReturnValue(
-        of({ items: [{ metadata: { name: 'existing' } }], resourceVersion: '1' }),
+        of({
+          items: [{ metadata: { name: 'existing' } }],
+          resourceVersion: '1',
+        }),
       );
 
       const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -294,17 +305,31 @@ describe('ResourceTableCard', () => {
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
 
-      subscriptionSubject.next({ type: 'ADDED', object: { id: '', metadata: { name: 'new-resource' } } });
+      subscriptionSubject.next({
+        type: 'ADDED',
+        object: { id: '', metadata: { name: 'new-resource' } },
+      });
 
       expect(newComponent.resources().length).toBe(2);
-      expect(newComponent.resources().some((r) => r.metadata.name === 'new-resource')).toBe(true);
+      expect(
+        newComponent
+          .resources()
+          .some((r) => r.metadata.name === 'new-resource'),
+      ).toBe(true);
     });
 
     it('should handle MODIFIED operation in subscription', () => {
-      const subscriptionSubject = new Subject<ResourceSubscriptionResult | undefined>();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(subscriptionSubject);
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
       mockResourceService.list.mockReturnValue(
-        of({ items: [{ metadata: { name: 'existing' }, spec: { type: 'v1' } }], resourceVersion: '1' }),
+        of({
+          items: [{ metadata: { name: 'existing' }, spec: { type: 'v1' } }],
+          resourceVersion: '1',
+        }),
       );
 
       const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -313,17 +338,34 @@ describe('ResourceTableCard', () => {
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
 
-      subscriptionSubject.next({ type: 'MODIFIED', object: { id: '', metadata: { name: 'existing' }, spec: { type: 'v2' } } });
+      subscriptionSubject.next({
+        type: 'MODIFIED',
+        object: {
+          id: '',
+          metadata: { name: 'existing' },
+          spec: { type: 'v2' },
+        },
+      });
 
       expect(newComponent.resources().length).toBe(1);
       expect(newComponent.resources()[0]?.spec?.type).toBe('v2');
     });
 
     it('should handle DELETED operation in subscription', () => {
-      const subscriptionSubject = new Subject<ResourceSubscriptionResult | undefined>();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(subscriptionSubject);
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
       mockResourceService.list.mockReturnValue(
-        of({ items: [{ metadata: { name: 'to-delete' } }, { metadata: { name: 'to-keep' } }], resourceVersion: '1' }),
+        of({
+          items: [
+            { metadata: { name: 'to-delete' } },
+            { metadata: { name: 'to-keep' } },
+          ],
+          resourceVersion: '1',
+        }),
       );
 
       const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -332,15 +374,22 @@ describe('ResourceTableCard', () => {
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
 
-      subscriptionSubject.next({ type: 'DELETED', object: { id: '', metadata: { name: 'to-delete' } } });
+      subscriptionSubject.next({
+        type: 'DELETED',
+        object: { id: '', metadata: { name: 'to-delete' } },
+      });
 
       expect(newComponent.resources().length).toBe(1);
       expect(newComponent.resources()[0].metadata.name).toBe('to-keep');
     });
 
     it('should handle null/undefined subscription results', () => {
-      const subscriptionSubject = new Subject<ResourceSubscriptionResult | undefined>();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(subscriptionSubject);
+      const subscriptionSubject = new Subject<
+        ResourceSubscriptionResult | undefined
+      >();
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
       const initialResources = [{ metadata: { name: 'existing' } }] as any;
       mockResourceService.list.mockReturnValue(
         of({ items: initialResources, resourceVersion: '1' }),
@@ -359,9 +408,13 @@ describe('ResourceTableCard', () => {
 
     it('should unsubscribe from subscription on cleanup', () => {
       const subscription = { unsubscribe: vi.fn() } as any;
-      const subscriptionSubject: MockedObject<Subject<ResourceSubscriptionResult | undefined>> = mock();
+      const subscriptionSubject: MockedObject<
+        Subject<ResourceSubscriptionResult | undefined>
+      > = mock();
       subscriptionSubject.subscribe.mockReturnValue(subscription);
-      mockResourceService.resourceChangeSubscription.mockReturnValue(subscriptionSubject);
+      mockResourceService.resourceChangeSubscription.mockReturnValue(
+        subscriptionSubject,
+      );
 
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
@@ -377,7 +430,9 @@ describe('ResourceTableCard', () => {
 
     describe('List method', () => {
       it('should not call list twice if already loading', () => {
-        const listSpy = vi.fn().mockReturnValueOnce(of({ items: [], resourceVersion: '123' }));
+        const listSpy = vi
+          .fn()
+          .mockReturnValueOnce(of({ items: [], resourceVersion: '123' }));
         mockResourceService.list = listSpy;
         (component as any).isLoadingList = true;
         component.list();
@@ -386,7 +441,12 @@ describe('ResourceTableCard', () => {
 
       it('should set hasMore to false when continue token is not present', () => {
         mockResourceService.list.mockReturnValue(
-          of({ items: [{ metadata: { name: 'test' } }], resourceVersion: '123', continue: undefined, remainingItemCount: 0 }),
+          of({
+            items: [{ metadata: { name: 'test' } }],
+            resourceVersion: '123',
+            continue: undefined,
+            remainingItemCount: 0,
+          }),
         );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -400,7 +460,12 @@ describe('ResourceTableCard', () => {
 
       it('should set hasMore to true when continue token is present', () => {
         mockResourceService.list.mockReturnValue(
-          of({ items: [{ metadata: { name: 'test' } }], resourceVersion: '123', continue: 'next-token', remainingItemCount: 5 }),
+          of({
+            items: [{ metadata: { name: 'test' } }],
+            resourceVersion: '123',
+            continue: 'next-token',
+            remainingItemCount: 5,
+          }),
         );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -444,7 +509,9 @@ describe('ResourceTableCard', () => {
         newComponent.list();
 
         expect(newComponent.resources().length).toBe(2);
-        const res1 = newComponent.resources().find((r) => r.metadata.name === 'res1');
+        const res1 = newComponent
+          .resources()
+          .find((r) => r.metadata.name === 'res1');
         expect(res1?.spec?.version).toBe('v2');
       });
 
@@ -463,7 +530,10 @@ describe('ResourceTableCard', () => {
 
       it('should set remainingItemCount to 0 when not provided in response', () => {
         mockResourceService.list.mockReturnValue(
-          of({ items: [{ metadata: { name: 'test' } }], resourceVersion: '123' }),
+          of({
+            items: [{ metadata: { name: 'test' } }],
+            resourceVersion: '123',
+          }),
         );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -478,7 +548,9 @@ describe('ResourceTableCard', () => {
       it('should show alert and throw when resourceDefinition is undefined', () => {
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
-        newComponent.context = (() => ({ resourceDefinition: undefined })) as any;
+        newComponent.context = (() => ({
+          resourceDefinition: undefined,
+        })) as any;
 
         const showAlertSpy = vi.fn();
         newComponent.LuigiClient = (() => ({
@@ -486,7 +558,9 @@ describe('ResourceTableCard', () => {
           uxManager: () => ({ showAlert: showAlertSpy }),
         })) as any;
 
-        expect(() => newComponent.list()).toThrow('Resource definition is not defined');
+        expect(() => newComponent.list()).toThrow(
+          'Resource definition is not defined',
+        );
         expect(showAlertSpy).toHaveBeenCalledWith({
           text: 'Resource definition is not defined',
           type: 'error',
@@ -499,7 +573,14 @@ describe('ResourceTableCard', () => {
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
         newComponent.context = makeContext({
-          ui: { listView: { fields: [{ property: 'metadata.name' }, { property: 'spec.version' }] } },
+          ui: {
+            listView: {
+              fields: [
+                { property: 'metadata.name' },
+                { property: 'spec.version' },
+              ],
+            },
+          },
         });
         newComponent.LuigiClient = makeLuigiClient();
         newFixture.detectChanges();

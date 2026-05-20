@@ -1,5 +1,19 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Bar } from '@fundamental-ngx/ui5-webcomponents/bar';
 import { Dialog } from '@fundamental-ngx/ui5-webcomponents/dialog';
 import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
@@ -10,13 +24,6 @@ import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-
-
-
-
-
-
-
 
 @Component({
   selector: 'pm-delete-resource-modal',

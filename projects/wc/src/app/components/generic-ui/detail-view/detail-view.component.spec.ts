@@ -1,6 +1,6 @@
 import { DetailView } from './detail-view.component';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models/models';
@@ -1187,7 +1187,10 @@ describe('DetailViewComponent', () => {
       })) as any;
 
       newComponent.LuigiClient = (() => ({
-        linkManager: () => ({ fromContext: vi.fn().mockReturnThis(), navigate: vi.fn() }),
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+        }),
         uxManager: () => ({ showAlert: vi.fn() }),
         getNodeParams: vi.fn(),
       })) as any;
@@ -1195,7 +1198,9 @@ describe('DetailViewComponent', () => {
       newFixture.detectChanges();
 
       const actions = newComponent.dashboardConfig().customActions;
-      expect(actions.some((a) => a.action === 'download-kubeconfig')).toBe(true);
+      expect(actions.some((a) => a.action === 'download-kubeconfig')).toBe(
+        true,
+      );
     });
 
     it('should not include edit/delete actions when resource is not loaded', () => {
@@ -1216,7 +1221,10 @@ describe('DetailViewComponent', () => {
         parentNavigationContexts: ['project'],
       })) as any;
       newComponent.LuigiClient = (() => ({
-        linkManager: () => ({ fromContext: vi.fn().mockReturnThis(), navigate: vi.fn() }),
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+        }),
         uxManager: () => ({ showAlert: vi.fn() }),
         getNodeParams: vi.fn(),
       })) as any;
@@ -1229,8 +1237,13 @@ describe('DetailViewComponent', () => {
 
   describe('onActionButtonClick', () => {
     it('should call downloadKubeConfig for download-kubeconfig action', () => {
-      const downloadSpy = vi.spyOn(component, 'downloadKubeConfig').mockResolvedValue(undefined);
-      component.onActionButtonClick({ event: new MouseEvent('click'), action: { action: 'download-kubeconfig' } } as any);
+      const downloadSpy = vi
+        .spyOn(component, 'downloadKubeConfig')
+        .mockResolvedValue(undefined);
+      component.onActionButtonClick({
+        event: new MouseEvent('click'),
+        action: { action: 'download-kubeconfig' },
+      } as any);
       expect(downloadSpy).toHaveBeenCalled();
     });
 
@@ -1239,7 +1252,10 @@ describe('DetailViewComponent', () => {
       component.resource.set(resource);
       const openEditSpy = vi.spyOn(component, 'openEditResourceModal');
       const event = new MouseEvent('click');
-      component.onActionButtonClick({ event, action: { action: 'edit' } } as any);
+      component.onActionButtonClick({
+        event,
+        action: { action: 'edit' },
+      } as any);
       expect(openEditSpy).toHaveBeenCalledWith(event, resource);
     });
 
@@ -1248,21 +1264,30 @@ describe('DetailViewComponent', () => {
       component.resource.set(resource);
       const openDeleteSpy = vi.spyOn(component, 'openDeleteResourceModal');
       const event = new MouseEvent('click');
-      component.onActionButtonClick({ event, action: { action: 'delete' } } as any);
+      component.onActionButtonClick({
+        event,
+        action: { action: 'delete' },
+      } as any);
       expect(openDeleteSpy).toHaveBeenCalledWith(event, resource);
     });
 
     it('should not call openEditResourceModal for edit action when resource is undefined', () => {
       component.resource.set(undefined);
       const openEditSpy = vi.spyOn(component, 'openEditResourceModal');
-      component.onActionButtonClick({ event: new MouseEvent('click'), action: { action: 'edit' } } as any);
+      component.onActionButtonClick({
+        event: new MouseEvent('click'),
+        action: { action: 'edit' },
+      } as any);
       expect(openEditSpy).not.toHaveBeenCalled();
     });
 
     it('should not call openDeleteResourceModal for delete action when resource is undefined', () => {
       component.resource.set(undefined);
       const openDeleteSpy = vi.spyOn(component, 'openDeleteResourceModal');
-      component.onActionButtonClick({ event: new MouseEvent('click'), action: { action: 'delete' } } as any);
+      component.onActionButtonClick({
+        event: new MouseEvent('click'),
+        action: { action: 'delete' },
+      } as any);
       expect(openDeleteSpy).not.toHaveBeenCalled();
     });
   });
@@ -1278,7 +1303,10 @@ describe('DetailViewComponent', () => {
 
   describe('Computed branches', () => {
     it('should use spec.displayName for defaultTitle when present', () => {
-      component.resource.set({ metadata: { name: 'cluster-1' }, spec: { displayName: 'My Cluster' } } as any);
+      component.resource.set({
+        metadata: { name: 'cluster-1' },
+        spec: { displayName: 'My Cluster' },
+      } as any);
       expect(component.defaultTitle()).toBe('My Cluster');
     });
 
@@ -1304,7 +1332,10 @@ describe('DetailViewComponent', () => {
         parentNavigationContexts: ['project'],
       })) as any;
       newComponent.LuigiClient = (() => ({
-        linkManager: () => ({ fromContext: vi.fn().mockReturnThis(), navigate: vi.fn() }),
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+        }),
         uxManager: () => ({ showAlert: vi.fn() }),
         getNodeParams: vi.fn(),
       })) as any;
@@ -1314,7 +1345,9 @@ describe('DetailViewComponent', () => {
 
     it('should read saved sections from localStorage via sections computed', () => {
       const savedConfig = {
-        cards: [{ id: 'card-1', component: 'pm-card', type: 'angular', w: 6, h: 10 }],
+        cards: [
+          { id: 'card-1', component: 'pm-card', type: 'angular', w: 6, h: 10 },
+        ],
         sections: [{ id: 'section-1', label: 'Section 1', cards: [] }],
       };
       localStorage.setItem(
@@ -1332,7 +1365,9 @@ describe('DetailViewComponent', () => {
 
     it('should read saved cards from localStorage via cards computed', () => {
       const savedConfig = {
-        cards: [{ id: 'card-1', component: 'pm-card', type: 'angular', w: 6, h: 10 }],
+        cards: [
+          { id: 'card-1', component: 'pm-card', type: 'angular', w: 6, h: 10 },
+        ],
         sections: [],
       };
       localStorage.setItem(

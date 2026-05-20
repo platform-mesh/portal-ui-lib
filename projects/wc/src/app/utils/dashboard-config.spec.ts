@@ -27,7 +27,9 @@ describe('calculateDashboardConfigKey', () => {
   });
 
   it('builds key with undefined resourceId', () => {
-    expect(calculateDashboardConfigKey({ ...params, resourceId: undefined })).toBe(
+    expect(
+      calculateDashboardConfigKey({ ...params, resourceId: undefined }),
+    ).toBe(
       'pm.workspace:root:orgs:myorg.resourceType:Account.resourceId:undefined.user:user-123',
     );
   });

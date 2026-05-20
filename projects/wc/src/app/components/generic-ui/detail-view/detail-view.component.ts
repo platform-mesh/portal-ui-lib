@@ -1,15 +1,13 @@
-import { NgTemplateOutlet } from '@angular/common';
-import { Dashboard, ButtonSettings, CardConfig, SectionConfig} from '@openmfp/ngx';
-import { writeConfig, readConfig } from '../../../utils/dashboard-config';
+import { readConfig, writeConfig } from '../../../utils/dashboard-config';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
 import {
   KubeConfigTemplateProps,
   kubeConfigTemplate,
 } from './kubeconfig-template';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -23,6 +21,13 @@ import {
 } from '@angular/core';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import {
+  ButtonSettings,
+  CardConfig,
+  Dashboard,
+  SectionConfig,
+  ValueCellComponent,
+} from '@openmfp/ngx';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
@@ -79,10 +84,14 @@ export class DetailView {
   );
 
   resourceTitleDefinition = computed(
-      () => this.resourceDefinition()?.ui?.detailView?.resourceTitle?.label ?? this.defaultTitle(),
+    () =>
+      this.resourceDefinition()?.ui?.detailView?.resourceTitle?.label ??
+      this.defaultTitle(),
   );
   resourceDescriptionDefinition = computed(
-      () => this.resourceDefinition()?.ui?.detailView?.resourceDescription?.label ?? this.defaultDescription(),
+    () =>
+      this.resourceDefinition()?.ui?.detailView?.resourceDescription?.label ??
+      this.defaultDescription(),
   );
 
   resourceFields = computed(
@@ -116,7 +125,12 @@ export class DetailView {
     if (this.resource()) {
       customActions.push(
         { action: 'edit', text: 'Edit', icon: 'edit', design: 'Default' },
-        { action: 'delete', text: 'Delete', icon: 'delete', design: 'Negative' },
+        {
+          action: 'delete',
+          text: 'Delete',
+          icon: 'delete',
+          design: 'Negative',
+        },
       );
     }
 
@@ -124,13 +138,15 @@ export class DetailView {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
       editable: true,
-      backgroundImageUrl: this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ?? '/assets/pm_background.png',
+      backgroundImageUrl:
+        this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
+        '/assets/pm_background.png',
       customActions,
     };
-  })
+  });
 
   sections = computed<SectionConfig[]>(() => {
-    const c = readConfig(      {
+    const c = readConfig({
       workspacePath: this.workspacePath(),
       entity: this.resourceDefinition()?.entity,
       resourceId: this.resourceId(),
@@ -140,7 +156,7 @@ export class DetailView {
     return c?.sections ?? [];
   });
   cards = computed<CardConfig[]>(() => {
-    const c = readConfig(      {
+    const c = readConfig({
       workspacePath: this.workspacePath(),
       entity: this.resourceDefinition()?.entity,
       resourceId: this.resourceId(),
@@ -151,7 +167,13 @@ export class DetailView {
   });
   availableCards = computed<CardConfig[]>(() => []);
 
-  onActionButtonClick({ event, action }: { event: MouseEvent; action: ButtonSettings }): void {
+  onActionButtonClick({
+    event,
+    action,
+  }: {
+    event: MouseEvent;
+    action: ButtonSettings;
+  }): void {
     const resource = this.resource();
     switch (action.action) {
       case 'download-kubeconfig':
@@ -400,8 +422,10 @@ export class DetailView {
     return resourceId;
   }
 
-
-  protected dashboardConfigurationChanged(config: { cards: CardConfig[]; sections: SectionConfig[] }) {
+  protected dashboardConfigurationChanged(config: {
+    cards: CardConfig[];
+    sections: SectionConfig[];
+  }) {
     writeConfig(
       {
         workspacePath: this.workspacePath(),

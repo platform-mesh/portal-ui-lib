@@ -12,14 +12,24 @@ export interface DashboardConfigData {
   sections: SectionConfig[];
 }
 
-export const calculateDashboardConfigKey = (params: DashboardConfigKeyParams): string =>
+export const calculateDashboardConfigKey = (
+  params: DashboardConfigKeyParams,
+): string =>
   `pm.workspace:${params.workspacePath}.resourceType:${params.entity}.resourceId:${params.resourceId}.user:${params.userId}`;
 
-export const writeConfig = (params: DashboardConfigKeyParams, config: DashboardConfigData): void => {
-  localStorage.setItem(calculateDashboardConfigKey(params), JSON.stringify(config));
+export const writeConfig = (
+  params: DashboardConfigKeyParams,
+  config: DashboardConfigData,
+): void => {
+  localStorage.setItem(
+    calculateDashboardConfigKey(params),
+    JSON.stringify(config),
+  );
 };
 
-export const readConfig = (params: DashboardConfigKeyParams): DashboardConfigData | null => {
+export const readConfig = (
+  params: DashboardConfigKeyParams,
+): DashboardConfigData | null => {
   const raw = localStorage.getItem(calculateDashboardConfigKey(params));
   if (!raw) return null;
   return JSON.parse(raw) as DashboardConfigData;
