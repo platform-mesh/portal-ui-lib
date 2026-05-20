@@ -1,5 +1,7 @@
+import { NgTemplateOutlet } from '@angular/common';
+import { Dashboard, ButtonSettings, CardConfig, SectionConfig} from '@openmfp/ngx';
+import { writeConfig, readConfig } from '../../../utils/dashboard-config';
 import { processGroupFields } from '../../../utils/proccess-fields';
-import { GenericView } from '../generic-view/generic-view.component';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
@@ -20,7 +22,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
-import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -42,17 +43,17 @@ import { tap } from 'rxjs/operators';
   selector: 'pm-detail-view',
   standalone: true,
   imports: [
-    ToolbarButton,
+    NgTemplateOutlet,
     Label,
     ValueCellComponent,
     CreateResourceModal,
     DeleteResourceModal,
-    GenericView,
     ResourceLogo,
+    Dashboard,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
-  encapsulation: ViewEncapsulation.ShadowDom,
+  encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DetailView {
@@ -70,11 +71,18 @@ export class DetailView {
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(
-    () => this.resource()?.spec?.displayName || this.resourceId(),
+    () => this.resource()?.spec?.displayName || this.resourceId() || '',
   );
   defaultDescription = computed(
     () =>
       `The ${this.resourceDefinition()?.entity} for ${this.resource()?.spec?.displayName || this.resourceId()}`,
+  );
+
+  resourceTitleDefinition = computed(
+      () => this.resourceDefinition()?.ui?.detailView?.resourceTitle?.label ?? this.defaultTitle(),
+  );
+  resourceDescriptionDefinition = computed(
+      () => this.resourceDefinition()?.ui?.detailView?.resourceDescription?.label ?? this.defaultDescription(),
   );
 
   resourceFields = computed(
@@ -91,6 +99,72 @@ export class DetailView {
       false,
   );
   isDownloadingKubeConfig = signal(false);
+
+  dashboardConfig = computed(() => {
+    const customActions: ButtonSettings[] = [];
+
+    if (this.showDownloadKubeconfig()) {
+      customActions.push({
+        action: 'download-kubeconfig',
+        text: 'Download kubeconfig',
+        icon: 'download-from-cloud',
+        design: 'Default',
+        tooltip: 'Download kubeconfig',
+      });
+    }
+
+    if (this.resource()) {
+      customActions.push(
+        { action: 'edit', text: 'Edit', icon: 'edit', design: 'Default' },
+        { action: 'delete', text: 'Delete', icon: 'delete', design: 'Negative' },
+      );
+    }
+
+    return {
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+      editable: true,
+      backgroundImageUrl: this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ?? '/assets/pm_background.png',
+      customActions,
+    };
+  })
+
+  sections = computed<SectionConfig[]>(() => {
+    const c = readConfig(      {
+      workspacePath: this.workspacePath(),
+      entity: this.resourceDefinition()?.entity,
+      resourceId: this.resourceId(),
+      userId: this.context().userId,
+    });
+
+    return c?.sections ?? [];
+  });
+  cards = computed<CardConfig[]>(() => {
+    const c = readConfig(      {
+      workspacePath: this.workspacePath(),
+      entity: this.resourceDefinition()?.entity,
+      resourceId: this.resourceId(),
+      userId: this.context().userId,
+    });
+
+    return c?.cards ?? [];
+  });
+  availableCards = computed<CardConfig[]>(() => []);
+
+  onActionButtonClick({ event, action }: { event: MouseEvent; action: ButtonSettings }): void {
+    const resource = this.resource();
+    switch (action.action) {
+      case 'download-kubeconfig':
+        this.downloadKubeConfig();
+        break;
+      case 'edit':
+        if (resource) this.openEditResourceModal(event, resource);
+        break;
+      case 'delete':
+        if (resource) this.openDeleteResourceModal(event, resource);
+        break;
+    }
+  }
 
   constructor() {
     effect(() => {
@@ -324,5 +398,18 @@ export class DetailView {
     }
 
     return resourceId;
+  }
+
+
+  protected dashboardConfigurationChanged(config: { cards: CardConfig[]; sections: SectionConfig[] }) {
+    writeConfig(
+      {
+        workspacePath: this.workspacePath(),
+        entity: this.resourceDefinition()?.entity,
+        resourceId: this.resourceId(),
+        userId: this.context().userId,
+      },
+      config,
+    );
   }
 }

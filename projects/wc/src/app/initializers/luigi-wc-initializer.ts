@@ -7,6 +7,7 @@ import {
 import { ErrorView } from '../components/error/error.component';
 import { registerLuigiWebComponents } from '../utils/wc';
 import { Injector, inject, provideAppInitializer } from '@angular/core';
+import { createCustomElement } from '@angular/elements';
 
 export const provideLuigiWebComponents = () =>
   provideAppInitializer(() => {
@@ -21,6 +22,5 @@ export const provideLuigiWebComponents = () =>
       },
       injector,
     );
-
     return undefined;
   });
