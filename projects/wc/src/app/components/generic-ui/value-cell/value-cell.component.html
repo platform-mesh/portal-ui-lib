@@ -48,6 +48,12 @@
     }
   } @else if (displayType === 'img' && value()) {
     <img class="image-cell" [src]="value()" alt="Resource image" />
+  } @else if (displayType === 'tags' && tagsValue()) {
+    <pm-tag-list-value
+      [testId]="testId() + '-tags'"
+      [tags]="tagsValue()!"
+      [tagSettings]="tagSettings()"
+    ></pm-tag-list-value>
   } @else if (displayType === 'button') {
     @let buttonSettings = uiSettings()?.buttonSettings;
     <ui5-button

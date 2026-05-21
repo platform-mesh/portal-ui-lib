@@ -3,6 +3,7 @@ import { getFieldValue } from '../../../utils/field-definition.utils';
 import { BooleanValue } from './boolean-value/boolean-value.component';
 import { LinkValue } from './link-value/link-value.component';
 import { SecretValue } from './secret-value/secret-value.component';
+import { TagListValue } from './tag-list-value/tag-list-value.component';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
   ChangeDetectionStrategy,
@@ -22,7 +23,7 @@ import {
 
 @Component({
   selector: 'pm-value-cell',
-  imports: [Icon, BooleanValue, LinkValue, SecretValue, Button],
+  imports: [Icon, BooleanValue, LinkValue, SecretValue, Button, TagListValue],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './value-cell.component.html',
   styleUrls: ['./value-cell.component.scss'],
@@ -50,6 +51,7 @@ export class ValueCellComponent<T extends GenericResource> {
     ...this.cssCustomization(),
     ...this.cssRules(),
   }));
+  tagSettings = computed(() => this.uiSettings()?.tagSettings);
 
   isBoolLike = computed(() => this.boolValue() !== undefined);
   isUrlValue = computed(() => this.checkValidUrl(this.stringValue()));
@@ -57,6 +59,7 @@ export class ValueCellComponent<T extends GenericResource> {
 
   boolValue = computed(() => this.normalizeBoolean(this.value()));
   stringValue = computed(() => this.normalizeString(this.value()));
+  tagsValue = computed(() => this.normalizeTagsArray(this.value()));
   isVisible = signal(false);
 
   toggleVisibility(e: Event): void {
@@ -81,6 +84,16 @@ export class ValueCellComponent<T extends GenericResource> {
     }
 
     return value;
+  }
+
+  private normalizeTagsArray(value: unknown): string[] | undefined {
+    if (Array.isArray(value) && value.length > 0) {
+      return value.map(String);
+    }
+    if (typeof value === 'string' && value.trim()) {
+      return value.split(',').map((t) => t.trim()).filter(Boolean);
+    }
+    return undefined;
   }
 
   private checkValidUrl(value: string | undefined): boolean {

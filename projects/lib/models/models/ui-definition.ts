@@ -1,4 +1,8 @@
-import { FormFieldDefinition, TableFieldDefinition } from '@openmfp/ngx';
+import {
+  FormFieldDefinition,
+  TableFieldDefinition,
+  UiSettings as NgxUiSettings,
+} from '@openmfp/ngx';
 
 export type {
   ButtonSettings,
@@ -8,9 +12,17 @@ export type {
   ModalSettings,
   PropertyField,
   TransformType,
-  UiSettings,
   ValueCellButtonClickEvent,
 } from '@openmfp/ngx';
+
+export interface TagSettings {
+  design?: 'Neutral' | 'Positive' | 'Critical' | 'Negative' | 'Information' | 'Set1' | 'Set2';
+  colorScheme?: string;
+}
+
+export type UiSettings = NgxUiSettings & {
+  tagSettings?: TagSettings;
+};
 
 export type FieldDefinition = TableFieldDefinition &
   Omit<FormFieldDefinition, 'name'> & {
