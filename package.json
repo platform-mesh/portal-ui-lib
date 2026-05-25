@@ -50,7 +50,7 @@
     "@fundamental-ngx/ui5-webcomponents-fiori": "0.59.1",
     "@openmfp/config-prettier": "0.9.2",
     "@openmfp/ngx": "0.8.4",
-    "@openmfp/portal-ui-lib": "0.192.39",
+    "@openmfp/portal-ui-lib": "0.192.41",
     "@types/jsonpath": "0.2.4",
     "@vitest/coverage-v8": "4.1.6",
     "cpx2": "8.0.2",
