@@ -9,7 +9,7 @@ export type {
   PropertyField,
   TransformType,
   UiSettings,
-  ValueCellButtonClickEvent,
+  ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 
 export type FieldDefinition = TableFieldDefinition &

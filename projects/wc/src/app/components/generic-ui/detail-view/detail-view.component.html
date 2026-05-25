@@ -45,7 +45,7 @@
               ) {
                 <span [class.multiline]="viewField.group.multiline ?? true">
                   <span>{{ field.label }}: </span>
-                  <mfp-value-cell
+                  <mfp-resource-field
                     [fieldDefinition]="field"
                     [resource]="resource"
                   />
@@ -67,7 +67,7 @@
                 'generic-detail-view-field-' + viewField.property + '-value'
               "
             >
-              <mfp-value-cell
+              <mfp-resource-field
                 [fieldDefinition]="viewField"
                 [resource]="resource"
               />

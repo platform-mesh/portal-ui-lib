@@ -3,14 +3,4 @@
   [sections]="sections"
   [cards]="cards()"
   [availableCards]="availableCards"
-  (actionButtonClick)="onDashboardAction($event)"
 />
-
-@if (hasUiCreateViewFields()) {
-  <pm-create-resource-modal
-    #createModal
-    [fields]="resourceDefinition()?.ui?.createView?.fields ?? []"
-    (resource)="create($event)"
-    [context]="context()"
-  />
-}

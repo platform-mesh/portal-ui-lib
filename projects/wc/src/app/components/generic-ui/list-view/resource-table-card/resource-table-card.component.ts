@@ -1,6 +1,11 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
 import { addSearchParams } from '../../../../utils/set-search-params';
 import {
+  K8S_NAME_ERROR,
+  K8S_NAME_RE,
+  ResourceFieldNames,
+} from '../create-resource-modal/create-resource-modal.consts';
+import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -9,16 +14,21 @@ import {
   effect,
   inject,
   input,
-  signal,
+  signal, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   DeclarativeTableCard,
+  FormFieldChangeEvent,
+  FormFieldDefinition,
+  FormFieldErrors,
   TableCardConfig,
-  ValueCellButtonClickEvent,
+  TableCardFormState,
+  ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 import {
+  FieldDefinition,
   Resource,
   ResourceListResult,
   ResourceSubscriptionResult,
@@ -52,8 +62,13 @@ export class ResourceTableCard {
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
 
+  tableCard = viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
+
   resources = signal<Resource[]>([]);
   resourceDefinition = computed(() => this.context().resourceDefinition);
+  hasUiCreateViewFields = computed(
+    () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
+  );
   columns = computed(() => {
     let columns = this.resourceDefinition()?.ui?.listView?.fields ?? [];
 
@@ -83,6 +98,11 @@ export class ResourceTableCard {
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
 
+  private createFieldErrors = signal<FormFieldErrors>({});
+  createFormState = computed<TableCardFormState>(() => ({
+    fieldErrors: this.createFieldErrors(),
+  }));
+
   config = computed<TableCardConfig>(() => ({
     tableConfig: {
       fields: this.columns(),
@@ -90,6 +110,13 @@ export class ResourceTableCard {
       paginationLimit: this.paginationLimit(),
       hasMore: this.hasMore(),
     },
+    ...(this.hasUiCreateViewFields() && {
+      createResourceFormConfig: {
+        fields: this.toFormFields(
+          this.resourceDefinition()?.ui?.createView?.fields ?? [],
+        ),
+      },
+    }),
   }));
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
@@ -229,8 +256,70 @@ export class ResourceTableCard {
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
-  executeAction(event: ValueCellButtonClickEvent<Resource>) {
+  executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
+  }
+
+  onCreateFieldChange(event: FormFieldChangeEvent): void {
+    const name = event.fieldProperty;
+    const value = String(event.value ?? '').trim();
+    let error: string | null = null;
+
+    if (name === ResourceFieldNames.MetadataName) {
+      if (!value) {
+        error = 'This field is required';
+      } else if (!K8S_NAME_RE.test(value)) {
+        error = K8S_NAME_ERROR;
+      }
+    } else {
+      const field = this.toFormFields(
+        this.resourceDefinition()?.ui?.createView?.fields ?? [],
+      ).find((f) => f.name === name);
+      if (field?.required && !value) {
+        error = 'This field is required';
+      }
+    }
+
+    this.createFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+  }
+
+  onCreateSubmit(value: Resource): void {
+    const resourceDefinition = this.getResourceDefinition();
+    this.resourceService
+      .create(value, resourceDefinition, this.context())
+      .subscribe({
+        next: (result) => {
+          this.createFieldErrors.set({});
+          this.tableCard().closeCreateDialog();
+          console.debug('Resource created', result);
+        },
+      });
+  }
+
+  private toFormFields(fields: FieldDefinition[]): FormFieldDefinition[] {
+    return fields.map((field) => {
+      if (typeof field.property !== 'string') {
+        throw new Error(
+          `Form field property must be a string, got: ${JSON.stringify(field.property)}`,
+        );
+      }
+
+      const formField: FormFieldDefinition = {
+        name: field.property,
+        label: field.label,
+        required: field.required,
+        values: field.values as string[] | undefined,
+      };
+
+      if (
+        field.required ||
+        field.property === ResourceFieldNames.MetadataName
+      ) {
+        formField.validation = 'onChange';
+      }
+
+      return formField;
+    });
   }
 
   private getListQueryFields() {

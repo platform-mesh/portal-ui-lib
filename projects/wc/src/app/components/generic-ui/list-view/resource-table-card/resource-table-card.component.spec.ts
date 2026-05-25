@@ -278,6 +278,109 @@ describe('ResourceTableCard', () => {
     });
   });
 
+  describe('Create resource', () => {
+    it('should detect hasUiCreateViewFields when createView fields are defined', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: {
+            createView: { fields: [{ property: 'metadata.name' }] },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(newComponent.hasUiCreateViewFields()).toBe(true);
+    });
+
+    it('should return false for hasUiCreateViewFields when createView is undefined', () => {
+      expect(component.hasUiCreateViewFields()).toBe(false);
+    });
+
+    it('should include createResourceFormConfig in config when createView fields exist', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: {
+            createView: { fields: [{ property: 'metadata.name', label: 'Name', required: true }] },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      const formConfig = newComponent.config().createResourceFormConfig;
+      expect(formConfig).toBeDefined();
+      expect(formConfig!.fields[0].name).toBe('metadata.name');
+      expect(formConfig!.fields[0].label).toBe('Name');
+      expect(formConfig!.fields[0].required).toBe(true);
+    });
+
+    it('should not include createResourceFormConfig when no createView fields', () => {
+      expect(component.config().createResourceFormConfig).toBeUndefined();
+    });
+
+    it('should call resourceService.create on onCreateSubmit', () => {
+      mockResourceService.create = vi
+        .fn()
+        .mockReturnValue(of({ metadata: { name: 'new' } }));
+      component.onCreateSubmit({ metadata: { name: 'new' } });
+      expect(mockResourceService.create).toHaveBeenCalled();
+    });
+
+    it('should reset createFieldErrors after successful create', () => {
+      mockResourceService.create = vi
+        .fn()
+        .mockReturnValue(of({ metadata: { name: 'new' } }));
+      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'bad value!!' });
+      component.onCreateSubmit({ metadata: { name: 'new' } });
+      expect(component.createFormState().fieldErrors).toEqual({});
+    });
+
+    it('should set k8s name error for invalid metadata.name', () => {
+      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'Invalid Name!!' });
+      expect(component.createFormState().fieldErrors?.['metadata.name']).toBeTruthy();
+    });
+
+    it('should clear k8s name error for valid metadata.name', () => {
+      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'Invalid Name!!' });
+      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'valid-name' });
+      expect(component.createFormState().fieldErrors?.['metadata.name']).toBeFalsy();
+    });
+
+    it('should set required error for empty required field', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: {
+            createView: { fields: [{ property: 'spec.type', required: true }] },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      newComponent.onCreateFieldChange({ fieldProperty: 'spec.type', value: '' });
+      expect(newComponent.createFormState().fieldErrors?.['spec.type']).toBe('This field is required');
+    });
+  });
+
   describe('List subscription', () => {
     beforeEach(() => {
       mockResourceService.list.mockReturnValue(

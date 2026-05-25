@@ -1,4 +1,4 @@
-import { readConfig, writeConfig } from '../../../utils/dashboard-config';
+import { DashboardConfigService } from './dashboard-config.service';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
@@ -26,7 +26,7 @@ import {
   CardConfig,
   Dashboard,
   SectionConfig,
-  ValueCell,
+  ResourceField,
 } from '@openmfp/ngx';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -50,7 +50,7 @@ import { tap } from 'rxjs/operators';
   imports: [
     NgTemplateOutlet,
     Label,
-    ValueCell,
+    ResourceField,
     CreateResourceModal,
     DeleteResourceModal,
     ResourceLogo,
@@ -66,6 +66,7 @@ export class DetailView {
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
   private errorHandlerService = inject(ErrorHandlerService);
+  private dashboardConfigService = inject(DashboardConfigService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
   private createModal = viewChild<CreateResourceModal>('createModal');
   private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
@@ -146,7 +147,7 @@ export class DetailView {
   });
 
   sections = computed<SectionConfig[]>(() => {
-    const c = readConfig({
+    const c = this.dashboardConfigService.read({
       workspacePath: this.workspacePath(),
       entity: this.resourceDefinition()?.entity,
       resourceId: this.resourceId(),
@@ -156,7 +157,7 @@ export class DetailView {
     return c?.sections ?? [];
   });
   cards = computed<CardConfig[]>(() => {
-    const c = readConfig({
+    const c = this.dashboardConfigService.read({
       workspacePath: this.workspacePath(),
       entity: this.resourceDefinition()?.entity,
       resourceId: this.resourceId(),
@@ -426,7 +427,7 @@ export class DetailView {
     cards: CardConfig[];
     sections: SectionConfig[];
   }) {
-    writeConfig(
+    this.dashboardConfigService.write(
       {
         workspacePath: this.workspacePath(),
         entity: this.resourceDefinition()?.entity,
