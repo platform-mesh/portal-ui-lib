@@ -1,3 +1,4 @@
+import {AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
 import { DashboardConfigService } from './dashboard-config.service';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
@@ -154,7 +155,7 @@ export class DetailView {
       userId: this.context().userId,
     });
 
-    return c?.sections ?? [];
+    return c?.sections ?? SECTIONS;
   });
   cards = computed<CardConfig[]>(() => {
     const c = this.dashboardConfigService.read({
@@ -164,9 +165,9 @@ export class DetailView {
       userId: this.context().userId,
     });
 
-    return c?.cards ?? [];
+    return c?.cards ?? CARDS;
   });
-  availableCards = computed<CardConfig[]>(() => []);
+  availableCards = computed<CardConfig[]>(() => AVAILABLE_CARDS);
 
   onActionButtonClick({
     event,
