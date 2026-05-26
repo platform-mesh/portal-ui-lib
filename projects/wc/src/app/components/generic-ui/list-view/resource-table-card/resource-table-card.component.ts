@@ -51,6 +51,9 @@ import { finalize } from 'rxjs/operators';
   standalone: true,
   imports: [DeclarativeTableCard],
   templateUrl: './resource-table-card.component.html',
+  styles: `mfp-declarative-table-card {
+    opacity: 80%
+  }`,
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

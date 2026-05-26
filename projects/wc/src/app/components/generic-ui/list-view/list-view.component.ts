@@ -7,7 +7,7 @@ import {
   input,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { CARD_TYPES, CardConfig, Dashboard } from '@openmfp/ngx';
+import { CARD_TYPES, CardConfig, Dashboard, SectionConfig } from '@openmfp/ngx';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 
 Dashboard.registerAngularComponents([ResourceTableCard]);
@@ -43,6 +43,25 @@ export class ListView {
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
 
+  sections: SectionConfig[] = [{id: 'accounts', editable: false}];
+  cards = computed<CardConfig[]>(() => [
+    {
+      id: 'pm-resource-table-card',
+      component: 'pm-resource-table-card',
+      type: CARD_TYPES.ANGULAR,
+      w: 12,
+      h: 50,
+      sectionId: 'accounts',
+      componentInputs: {
+        LuigiClient: this.LuigiClient(),
+        context: this.context(),
+      },
+    },
+  ]);
+
+  availableCards: CardConfig[] = [];
+
+
   dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled() ? '/assets/nn-demo.png' : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
       '/assets/pm_background.png');
@@ -55,20 +74,5 @@ export class ListView {
     }
   });
 
-  cards = computed<CardConfig[]>(() => [
-    {
-      id: 'pm-resource-table-card',
-      component: 'pm-resource-table-card',
-      type: CARD_TYPES.ANGULAR,
-      w: 12,
-      h: 50,
-      componentInputs: {
-        LuigiClient: this.LuigiClient(),
-        context: this.context(),
-      },
-    },
-  ]);
 
-  availableCards: CardConfig[] = [];
-  sections: never[] = [];
 }
