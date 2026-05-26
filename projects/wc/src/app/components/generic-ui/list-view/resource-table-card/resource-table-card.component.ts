@@ -112,6 +112,8 @@ export class ResourceTableCard {
       totalItemsCount: this.totalItemsCount(),
       paginationLimit: this.paginationLimit(),
       hasMore: this.hasMore(),
+      growMode: 'Button',
+      loadMoreButtonText: 'Load More'
     },
     ...(this.hasUiCreateViewFields() && {
       createResourceFormConfig: {
