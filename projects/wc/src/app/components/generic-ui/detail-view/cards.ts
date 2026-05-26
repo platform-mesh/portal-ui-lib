@@ -18,7 +18,7 @@ Dashboard.registerAngularComponents([
 ]);
 
 export const SECTIONS: SectionConfig[] = [
-  { id: 'ras', title: 'Recently accessed services', editable: false, w: 12 },
+  { id: 'ras', title: 'Recently accessed services', editable: true, w: 12 },
 ];
 
 const RAS_CARD_TEMPLATES = [
