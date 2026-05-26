@@ -110,6 +110,9 @@ export class DetailView {
       false,
   );
   isDownloadingKubeConfig = signal(false);
+  private isDemoEnabled = computed(() =>
+    this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
+  );
 
   dashboardConfig = computed(() => {
     const customActions: ButtonSettings[] = [];
@@ -136,13 +139,14 @@ export class DetailView {
       );
     }
 
+    const backgroundImageUrl = this.isDemoEnabled() ? '/assets/nn-demo.png' : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
+      '/assets/pm_background.png');
+
     return {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
       editable: true,
-      backgroundImageUrl:
-        this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
-        '/assets/pm_background.png',
+      backgroundImageUrl,
       customActions,
     };
   });
@@ -155,7 +159,7 @@ export class DetailView {
       userId: this.context().userId,
     });
 
-    return c?.sections ?? SECTIONS;
+    return c?.sections ?? (this.isDemoEnabled() ? SECTIONS : []);
   });
   cards = computed<CardConfig[]>(() => {
     const c = this.dashboardConfigService.read({
@@ -165,9 +169,11 @@ export class DetailView {
       userId: this.context().userId,
     });
 
-    return c?.cards ?? CARDS;
+    return c?.cards ?? (this.isDemoEnabled() ? CARDS : []);
   });
-  availableCards = computed<CardConfig[]>(() => AVAILABLE_CARDS);
+  availableCards = computed<CardConfig[]>(() =>
+    this.isDemoEnabled() ? AVAILABLE_CARDS : [],
+  );
 
   onActionButtonClick({
     event,

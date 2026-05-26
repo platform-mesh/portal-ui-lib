@@ -39,15 +39,21 @@ export class ListView {
       `This page displays the created ${this.resourceDefinition()?.entityCollection} in your environment`,
   );
 
-  dashboardConfig = computed(() => ({
+  private isDemoEnabled = computed(() =>
+    this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
+  );
+
+  dashboardConfig = computed(() => {
+    const backgroundImageUrl = this.isDemoEnabled() ? '/assets/nn-demo.png' : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
+      '/assets/pm_background.png');
+    return {
     title: this.resourceTitleDefinition(),
     description: this.resourceDescriptionDefinition(),
-    backgroundImageUrl:
-      this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
-      '/assets/pm_background.png',
+    backgroundImageUrl,
     editable: false,
     customActions: [],
-  }));
+    }
+  });
 
   cards = computed<CardConfig[]>(() => [
     {
