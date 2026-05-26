@@ -116,6 +116,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     fixture.detectChanges();
@@ -183,6 +184,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -220,6 +222,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -246,6 +249,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     component.context = (() => ({
@@ -371,6 +375,7 @@ describe('DetailViewComponent', () => {
           showAlert: showAlertSpy,
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       mockResourceService.delete = vi
@@ -465,6 +470,7 @@ describe('DetailViewComponent', () => {
           showAlert: showAlertSpy,
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       mockResourceService.update = vi
@@ -553,6 +559,7 @@ describe('DetailViewComponent', () => {
           showAlert: showAlertSpy,
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newComponent.context = (() => ({
@@ -696,6 +703,7 @@ describe('DetailViewComponent', () => {
         withParams: vi.fn().mockReturnThis(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
     accountInfoServiceMock.read.mockReturnValueOnce(
       throwError(() => new Error('boom')),
@@ -742,6 +750,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -801,6 +810,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -847,6 +857,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       expect(() => {
@@ -912,6 +923,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -956,6 +968,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -991,6 +1004,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       expect(() => {
@@ -1041,6 +1055,7 @@ describe('DetailViewComponent', () => {
           showAlert: vi.fn(),
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1093,6 +1108,7 @@ describe('DetailViewComponent', () => {
           showAlert: vi.fn(),
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1146,6 +1162,7 @@ describe('DetailViewComponent', () => {
           showAlert: vi.fn(),
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1193,6 +1210,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => ({ showAlert: vi.fn() }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1227,6 +1245,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => ({ showAlert: vi.fn() }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
       newFixture.detectChanges();
       const actions = newComponent.dashboardConfig().customActions;
@@ -1338,6 +1357,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => ({ showAlert: vi.fn() }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
       newComponent.resource.set({ metadata: { name: 'cluster-1' } } as any);
       expect(newComponent.defaultTitle()).toBe('');
@@ -1455,6 +1475,7 @@ describe('DetailViewComponent template', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     fixture.detectChanges();

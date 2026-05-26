@@ -54,6 +54,7 @@ describe('ListViewComponent', () => {
       }),
       uxManager: () => ({ showAlert: vi.fn() }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     fixture.detectChanges();

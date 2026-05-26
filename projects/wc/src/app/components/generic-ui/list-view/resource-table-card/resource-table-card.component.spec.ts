@@ -335,6 +335,8 @@ describe('ResourceTableCard', () => {
       mockResourceService.create = vi
         .fn()
         .mockReturnValue(of({ metadata: { name: 'new' } }));
+      const mockCloseDialog = vi.fn();
+      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({ closeCreateDialog: mockCloseDialog }));
       component.onCreateSubmit({ metadata: { name: 'new' } });
       expect(mockResourceService.create).toHaveBeenCalled();
     });
@@ -343,6 +345,7 @@ describe('ResourceTableCard', () => {
       mockResourceService.create = vi
         .fn()
         .mockReturnValue(of({ metadata: { name: 'new' } }));
+      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({ closeCreateDialog: vi.fn() }));
       component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'bad value!!' });
       component.onCreateSubmit({ metadata: { name: 'new' } });
       expect(component.createFormState().fieldErrors).toEqual({});
