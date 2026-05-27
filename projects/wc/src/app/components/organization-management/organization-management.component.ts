@@ -244,7 +244,6 @@ export class OrganizationManagementView implements OnInit {
 
   onboardOrganization() {
     const resource: Resource = {
-      id: 'org',
       spec: { type: 'org' },
       metadata: { name: this.newOrganizationControl.value },
     };
