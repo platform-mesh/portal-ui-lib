@@ -39,7 +39,7 @@ export class ListView {
       `This page displays the created ${this.resourceDefinition()?.entityCollection} in your environment`,
   );
 
-  private isDemoEnabled = computed(() =>
+  isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
 

@@ -3,4 +3,10 @@
   [sections]="sections"
   [cards]="cards()"
   [availableCards]="availableCards"
-/>
+>
+  @if (isDemoEnabled()) {
+    <div slot="dashboard-subheader" style="width: 100%">
+      <div class="demo-logo"></div>
+    </div>
+  }
+</mfp-dashboard>
