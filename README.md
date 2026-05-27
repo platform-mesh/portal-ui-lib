@@ -1,7 +1,8 @@
 # Portal UI Library
 
-This library helps you to set up the front end application using `@openmfp/portal-ui-lib` by providing the set of required implmentations 
+This library helps you to set up the front end application using `@openmfp/portal-ui-lib` by providing the set of required implmentations
 in the scope of the Platform Mesh functionalities.
+
 <!-- CI trigger -->
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/platform-mesh/portal-ui-lib/badge)](https://scorecard.dev/viewer/?uri=github.com/platform-mesh/portal-ui-lib)

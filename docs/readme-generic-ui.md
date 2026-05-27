@@ -14,29 +14,28 @@ The generic ui consists of the following components:
 
 ### Generic List View
 
-In order to use the generic list view, you need to adjust the node’s   `content-configuration` to include the following:
+In order to use the generic list view, you need to adjust the node’s `content-configuration` to include the following:
 
 - node properties
-
-    - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view"`: pointing to the web component.
-    - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent.
-    - `"navigationContext": "accounts"`: providing the navigation context for easy navigation between the entity and list views.
+  - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view"`: pointing to the web component.
+  - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent.
+  - `"navigationContext": "accounts"`: providing the navigation context for easy navigation between the entity and list views.
 
 - context resource definition `"context"`
-
   - in the `"resourceDefinition"` the given fields need to be specified: `apiGroup, version, entityCollection, entity, scope, namespace` describing properties of the resource.
   - Also `"resourceDefinition"` have optional field `readyCondition` that describing when resource treated as ready
     It's an object that contains two fields:
-      - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
-      - `property`: JSON path(s) used to generate GraphQL fields to fetch the necessary data for readiness evaluation
+    - `jsonPathExpression`: JSONPath expression used to evaluate whether the resource is ready at runtime
+    - `property`: JSON path(s) used to generate GraphQL fields to fetch the necessary data for readiness evaluation
     ```json
     {
       "readyCondition": {
-      "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
-      "property": ["status.conditions.status", "status.conditions.type"]
+        "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
+        "property": ["status.conditions.status", "status.conditions.type"]
       }
     }
     ```
+
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
       - `"logoUrl"`: resource type logo shown in the view header
       - view definitions for the corresponding views:
@@ -120,9 +119,11 @@ Each field definition supports the following properties:
   - `"key"`: JSON path to the display value in the response
 
 #### Example Content Configuration for an Accounts Node
+
 Below is an example content-configuration for an accounts node using the generic list view.
 
 This example demonstrates various features including:
+
 - **Secret fields**: The "Key" field in `listView` and "API Key" field in `detailView` use `displayAs: "secret"` to hide sensitive data with a toggle
 - **Copy buttons**: Multiple fields include `withCopyButton: true` for easy copying to clipboard
 - **Link display**: The "External URL" field uses `displayAs: "link"` to render URLs as clickable links
@@ -159,7 +160,10 @@ This example demonstrates various features including:
               "namespace": null,
               "readyCondition": {
                 "jsonPathExpression": "status.conditions[?(@.type=='Ready' && @.status=='True')]",
-                "property": ["status.conditions.status", "status.conditions.type"]
+                "property": [
+                  "status.conditions.status",
+                  "status.conditions.type"
+                ]
               },
               "ui": {
                 "logoUrl": "https://www.kcp.io/icons/logo.svg",
@@ -275,23 +279,25 @@ This example demonstrates various features including:
                   "resourceDescription": {
                     "property": "spec.description"
                   },
-                  "actions": [{
-                    "value": "/accounts/namesapces",
-                    "uiSettings": {
-                      "displayAs": "button",
-                      "buttonSettings": {
-                        "text": "Now",
-                        "endIcon": "download-from-cloud",
-                        "design": "Emphasized",
-                        "tooltip": "It is about time!",
-                        "action": "openInModal",
-                        "modalSettings": {
-                          "title": "Time is precious",
-                          "size": "m"
+                  "actions": [
+                    {
+                      "value": "/accounts/namesapces",
+                      "uiSettings": {
+                        "displayAs": "button",
+                        "buttonSettings": {
+                          "text": "Now",
+                          "endIcon": "download-from-cloud",
+                          "design": "Emphasized",
+                          "tooltip": "It is about time!",
+                          "action": "openInModal",
+                          "modalSettings": {
+                            "title": "Time is precious",
+                            "size": "m"
+                          }
                         }
                       }
                     }
-                  }],
+                  ],
                   "fields": [
                     {
                       "label": "Description",
@@ -435,110 +441,110 @@ This example demonstrates various features including:
 
 ```json
 {
-    "name": "httpbins",
-    "creationTimestamp": "2022-05-17T11:37:17Z",
-    "luigiConfigFragment": {
-        "data": {
-            "nodes": [
-                {
-                    "pathSegment": "orchestrate_platform-mesh_io_httpbins",
-                    "navigationContext": "orchestrate_platform-mesh_io_httpbins",
-                    "label": "Http Bins",
-                    "icon": "paint-bucket",
-                    "order": 800,
-                    "entityType": "main.core_platform-mesh_io_account.namespace",
-                    "loadingIndicator": {
-                        "enabled": false
+  "name": "httpbins",
+  "creationTimestamp": "2022-05-17T11:37:17Z",
+  "luigiConfigFragment": {
+    "data": {
+      "nodes": [
+        {
+          "pathSegment": "orchestrate_platform-mesh_io_httpbins",
+          "navigationContext": "orchestrate_platform-mesh_io_httpbins",
+          "label": "Http Bins",
+          "icon": "paint-bucket",
+          "order": 800,
+          "entityType": "main.core_platform-mesh_io_account.namespace",
+          "loadingIndicator": {
+            "enabled": false
+          },
+          "keepSelectedForChildren": true,
+          "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
+          "webcomponent": {
+            "selfRegistered": true
+          },
+          "context": {
+            "resourceDefinition": {
+              "apiGroup": "orchestrate_platform_mesh_io",
+              "entityCollection": "HttpBins",
+              "entity": "HttpBin",
+              "version": "v1alpha1",
+              "scope": "Namespaced",
+              "namespace": null,
+              "readyCondition": {
+                "jsonPathExpression": "status.ready",
+                "property": ["status.ready"]
+              },
+              "ui": {
+                "logoUrl": "https://www.kcp.io/icons/logo.svg",
+                "listView": {
+                  "fields": [
+                    {
+                      "label": "Name",
+                      "property": "metadata.name"
                     },
-                    "keepSelectedForChildren": true,
-                    "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
-                    "webcomponent": {
-                        "selfRegistered": true
-                    },
-                    "context": {
-                        "resourceDefinition": {
-                            "apiGroup": "orchestrate_platform_mesh_io",
-                            "entityCollection": "HttpBins",
-                            "entity": "HttpBin",
-                            "version": "v1alpha1",
-                            "scope": "Namespaced",
-                            "namespace": null,
-                            "readyCondition": {
-                              "jsonPathExpression": "status.ready",
-                              "property": ["status.ready"]
-                            },
-                            "ui": {
-                                "logoUrl": "https://www.kcp.io/icons/logo.svg",
-                                "listView": {
-                                    "fields": [
-                                        {
-                                            "label": "Name",
-                                            "property": "metadata.name"
-                                        },
-                                        {
-                                            "label": "Ready",
-                                            "property": "status.ready",
-                                            "uiSettings": {
-                                              "displayAs": "boolIcon"
-                                            }
-                                        },
-                                        {
-                                            "label": "Link",
-                                            "property": "status.url",
-                                            "uiSettings": {
-                                              "displayAs": "link"
-                                            }
-                                        }
-                                    ]
-                                },
-                                "detailView": {},
-                                "createView": {
-                                    "fields": [
-                                        {
-                                            "label": "Name",
-                                            "property": "metadata.name",
-                                            "required": true
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "children": [
-                      {
-                          "pathSegment": ":httpbinId",
-                          "hideFromNav": true,
-                          "keepSelectedForChildren": false,
-                          "defineEntity": {
-                              "id": "orchestrate_platform-mesh_io_httpbin",
-                              "contextKey": "httpbinId"
-                          },
-                          "context": {
-                              "accountId": ":accountId",
-                              "namespaceId": ":namespaceId",
-                              "resourceId": ":httpbinId"
-                          }
+                    {
+                      "label": "Ready",
+                      "property": "status.ready",
+                      "uiSettings": {
+                        "displayAs": "boolIcon"
                       }
-                    ]
+                    },
+                    {
+                      "label": "Link",
+                      "property": "status.url",
+                      "uiSettings": {
+                        "displayAs": "link"
+                      }
+                    }
+                  ]
                 },
-                {
-                  "entityType": "main.core_platform-mesh_io_account.namespace.orchestrate_platform-mesh_io_httpbin",
-                  "pathSegment": "dashboard",
-                  "label": "Dashboard",
-                  "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
-                  "webcomponent": {
-                    "selfRegistered": true
-                  },
-                  "defineEntity": {
-                      "id": "dashboard"
-                  },
-                  "compound": {
-                      "children": []
-                  }
+                "detailView": {},
+                "createView": {
+                  "fields": [
+                    {
+                      "label": "Name",
+                      "property": "metadata.name",
+                      "required": true
+                    }
+                  ]
                 }
-            ]
+              }
+            }
+          },
+          "children": [
+            {
+              "pathSegment": ":httpbinId",
+              "hideFromNav": true,
+              "keepSelectedForChildren": false,
+              "defineEntity": {
+                "id": "orchestrate_platform-mesh_io_httpbin",
+                "contextKey": "httpbinId"
+              },
+              "context": {
+                "accountId": ":accountId",
+                "namespaceId": ":namespaceId",
+                "resourceId": ":httpbinId"
+              }
+            }
+          ]
+        },
+        {
+          "entityType": "main.core_platform-mesh_io_account.namespace.orchestrate_platform-mesh_io_httpbin",
+          "pathSegment": "dashboard",
+          "label": "Dashboard",
+          "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
+          "webcomponent": {
+            "selfRegistered": true
+          },
+          "defineEntity": {
+            "id": "dashboard"
+          },
+          "compound": {
+            "children": []
+          }
         }
+      ]
     }
+  }
 }
 ```
 
@@ -547,16 +553,15 @@ This example demonstrates various features including:
 To use the generic detail view, update the node’s `content-configuration` to include the following:
 
 - node properties
-
-    - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view"`: pointing to the web component
-    - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent
+  - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view"`: pointing to the web component
+  - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent
 
 - context resource definition
-
-    - because below provided example is a child of the list view node's child indicated by `"entityType": "main.account"`, the context data is
-      inherited automatically via Luigi feature
+  - because below provided example is a child of the list view node's child indicated by `"entityType": "main.account"`, the context data is
+    inherited automatically via Luigi feature
 
 #### Example Content Configuration for an Account Resource
+
 Below is a sample content-configuration for displaying an account resource using the generic detail view:
 
 ```json
@@ -584,13 +589,12 @@ Below is a sample content-configuration for displaying an account resource using
     }
   }
 }
-
 ```
 
 In case the detail view is an independent node provide context data:
 
 ```json
- {
+{
   "context": {
     "resourceDefinition": {
       "apiGroup": "core_platform_mesh_io",

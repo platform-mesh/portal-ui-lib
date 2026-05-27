@@ -393,7 +393,10 @@ export class ResourceService {
           ...(isNamespaced && {
             namespace: { type: 'String', value: namespace },
           }),
-          object: { type: `${buildGraphQLInputTypeName(apiGroup, version, entity)}!`, value: resource },
+          object: {
+            type: `${buildGraphQLInputTypeName(apiGroup, version, entity)}!`,
+            value: resource,
+          },
         },
         fields: ['__typename'],
       },

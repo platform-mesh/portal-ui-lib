@@ -313,7 +313,11 @@ describe('ResourceTableCard', () => {
           apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
-            createView: { fields: [{ property: 'metadata.name', label: 'Name', required: true }] },
+            createView: {
+              fields: [
+                { property: 'metadata.name', label: 'Name', required: true },
+              ],
+            },
             listView: { fields: [] },
           },
         },
@@ -336,7 +340,9 @@ describe('ResourceTableCard', () => {
         .fn()
         .mockReturnValue(of({ metadata: { name: 'new' } }));
       const mockCloseDialog = vi.fn();
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({ closeCreateDialog: mockCloseDialog }));
+      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
+        closeCreateDialog: mockCloseDialog,
+      }));
       component.onCreateSubmit({ metadata: { name: 'new' } });
       expect(mockResourceService.create).toHaveBeenCalled();
     });
@@ -345,21 +351,39 @@ describe('ResourceTableCard', () => {
       mockResourceService.create = vi
         .fn()
         .mockReturnValue(of({ metadata: { name: 'new' } }));
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({ closeCreateDialog: vi.fn() }));
-      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'bad value!!' });
+      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
+        closeCreateDialog: vi.fn(),
+      }));
+      component.onCreateFieldChange({
+        fieldProperty: 'metadata.name',
+        value: 'bad value!!',
+      });
       component.onCreateSubmit({ metadata: { name: 'new' } });
       expect(component.createFormState().fieldErrors).toEqual({});
     });
 
     it('should set k8s name error for invalid metadata.name', () => {
-      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'Invalid Name!!' });
-      expect(component.createFormState().fieldErrors?.['metadata.name']).toBeTruthy();
+      component.onCreateFieldChange({
+        fieldProperty: 'metadata.name',
+        value: 'Invalid Name!!',
+      });
+      expect(
+        component.createFormState().fieldErrors?.['metadata.name'],
+      ).toBeTruthy();
     });
 
     it('should clear k8s name error for valid metadata.name', () => {
-      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'Invalid Name!!' });
-      component.onCreateFieldChange({ fieldProperty: 'metadata.name', value: 'valid-name' });
-      expect(component.createFormState().fieldErrors?.['metadata.name']).toBeFalsy();
+      component.onCreateFieldChange({
+        fieldProperty: 'metadata.name',
+        value: 'Invalid Name!!',
+      });
+      component.onCreateFieldChange({
+        fieldProperty: 'metadata.name',
+        value: 'valid-name',
+      });
+      expect(
+        component.createFormState().fieldErrors?.['metadata.name'],
+      ).toBeFalsy();
     });
 
     it('should set required error for empty required field', () => {
@@ -379,8 +403,13 @@ describe('ResourceTableCard', () => {
       })) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      newComponent.onCreateFieldChange({ fieldProperty: 'spec.type', value: '' });
-      expect(newComponent.createFormState().fieldErrors?.['spec.type']).toBe('This field is required');
+      newComponent.onCreateFieldChange({
+        fieldProperty: 'spec.type',
+        value: '',
+      });
+      expect(newComponent.createFormState().fieldErrors?.['spec.type']).toBe(
+        'This field is required',
+      );
     });
   });
 

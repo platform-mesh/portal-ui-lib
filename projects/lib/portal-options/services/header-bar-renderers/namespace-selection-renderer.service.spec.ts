@@ -1,7 +1,10 @@
 import { NamespaceSelectionRendererService } from './namespace-selection-renderer.service';
 import { TestBed } from '@angular/core/testing';
 import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceOperationTypeMap, ALL_NAMESPACE } from '@platform-mesh/portal-ui-lib/models';
+import {
+  ALL_NAMESPACE,
+  ResourceOperationTypeMap,
+} from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { Subject, defer, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';

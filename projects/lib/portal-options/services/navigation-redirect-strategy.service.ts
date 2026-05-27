@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
-import { LocalStorageKeys, NavigationRedirectStrategy } from '@openmfp/portal-ui-lib';
+import {
+  LocalStorageKeys,
+  NavigationRedirectStrategy,
+} from '@openmfp/portal-ui-lib';
 
 @Injectable({ providedIn: 'root' })
 export class NavigationRedirectStrategyServiceImpl implements NavigationRedirectStrategy {

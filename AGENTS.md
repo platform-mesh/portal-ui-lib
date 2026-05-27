@@ -45,9 +45,11 @@ npm run test:wc            # run wc tests only
 Tests use **Vitest** (via `@angular/build:unit-test` with `runnerConfig: vitest.config.ts`). Coverage is collected via v8 and enforced at:
 
 **lib:**
+
 - Statements: 95%, Branches: 95%, Functions: 95%, Lines: 95%
 
 **wc:**
+
 - Statements: 95%, Branches: 75%, Functions: 95%, Lines: 95%
 
 Excluded from coverage: `**/*.html`. Coverage for `lib` is scoped to `projects/lib/**/*.ts`; for `wc` to `projects/wc/src/**/*.ts`.
@@ -126,25 +128,25 @@ New shared logic (services, models, utils) belongs in `lib`. New custom elements
 
 The library provides concrete Angular injectable implementations of interfaces defined in `@openmfp/portal-ui-lib`:
 
-| Class | Implements | Purpose |
-|---|---|---|
-| `HeaderBarConfigServiceImpl` | `HeaderBarConfigService` | Configures breadcrumb + namespace-selection header bar renderers |
-| `NavigationRedirectStrategyServiceImpl` | `NavigationRedirectStrategy` | Persists/restores last navigation URL in `localStorage` |
-| `NodeContextProcessingServiceImpl` | `NodeContextProcessingService` | Resolves KCP path, account path, and AccountInfo for each Luigi node |
-| `CustomGlobalNodesServiceImpl` | `CustomGlobalNodesService` | Injects global `/error/:id` and `/users/:userId` nodes |
-| `NodeChangeHookConfigServiceImpl` | `NodeChangeHookConfigService` | Handles `initialRoute`/`virtualTree` navigation and KCP path resolution on node change |
-| `CustomRoutingConfigServiceImpl` | `RoutingConfigService` | Preserves query params; redirects unknown routes to `/error/404` or `/welcome` |
-| `UserProfileConfigServiceImpl` | `UserProfileConfigService` | Builds user profile menu with link to `/users/<email>/overview` |
-| `LuigiExtendedGlobalContextConfigServiceImpl` | `LuigiExtendedGlobalContextConfigService` | Adds `organization`, `kcpPath`, and `entityName` to Luigi global context |
+| Class                                         | Implements                                | Purpose                                                                                |
+| --------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| `HeaderBarConfigServiceImpl`                  | `HeaderBarConfigService`                  | Configures breadcrumb + namespace-selection header bar renderers                       |
+| `NavigationRedirectStrategyServiceImpl`       | `NavigationRedirectStrategy`              | Persists/restores last navigation URL in `localStorage`                                |
+| `NodeContextProcessingServiceImpl`            | `NodeContextProcessingService`            | Resolves KCP path, account path, and AccountInfo for each Luigi node                   |
+| `CustomGlobalNodesServiceImpl`                | `CustomGlobalNodesService`                | Injects global `/error/:id` and `/users/:userId` nodes                                 |
+| `NodeChangeHookConfigServiceImpl`             | `NodeChangeHookConfigService`             | Handles `initialRoute`/`virtualTree` navigation and KCP path resolution on node change |
+| `CustomRoutingConfigServiceImpl`              | `RoutingConfigService`                    | Preserves query params; redirects unknown routes to `/error/404` or `/welcome`         |
+| `UserProfileConfigServiceImpl`                | `UserProfileConfigService`                | Builds user profile menu with link to `/users/<email>/overview`                        |
+| `LuigiExtendedGlobalContextConfigServiceImpl` | `LuigiExtendedGlobalContextConfigService` | Adds `organization`, `kcpPath`, and `entityName` to Luigi global context               |
 
 Key internal services:
 
-| Class | Purpose |
-|---|---|
+| Class                        | Purpose                                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `CrdGatewayKcpPatchResolver` | Calculates the KCP workspace path (`root:orgs:<org>[:<account>...]`) and patches the live `crdGatewayApiUrl` in the Luigi global context |
-| `GatewayService` | Extracts and replaces the KCP path segment within a `crdGatewayApiUrl` |
-| `AccountInfoService` | Reads `AccountInfo` CR via Apollo/GraphQL; caches per KCP path |
-| `OrganizationReadyService` | Polls `LogicalCluster` readiness; navigates to `/error/503` if not ready |
+| `GatewayService`             | Extracts and replaces the KCP path segment within a `crdGatewayApiUrl`                                                                   |
+| `AccountInfoService`         | Reads `AccountInfo` CR via Apollo/GraphQL; caches per KCP path                                                                           |
+| `OrganizationReadyService`   | Polls `LogicalCluster` readiness; navigates to `/error/503` if not ready                                                                 |
 
 ## Code Conventions
 

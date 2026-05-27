@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { AccountInfoService, ApolloFactory, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  AccountInfoService,
+  ApolloFactory,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';

@@ -1,9 +1,9 @@
-import {AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
-import { DashboardConfigService } from './dashboard-config.service';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
+import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
+import { DashboardConfigService } from './dashboard-config.service';
 import {
   KubeConfigTemplateProps,
   kubeConfigTemplate,
@@ -26,8 +26,8 @@ import {
   ButtonSettings,
   CardConfig,
   Dashboard,
-  SectionConfig,
   ResourceField,
+  SectionConfig,
 } from '@openmfp/ngx';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -139,8 +139,10 @@ export class DetailView {
       );
     }
 
-    const backgroundImageUrl = this.isDemoEnabled() ? '/assets/nn-demo.png' : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
-      '/assets/pm_background.png');
+    const backgroundImageUrl = this.isDemoEnabled()
+      ? '/assets/nn-demo.png'
+      : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
+        '/assets/pm_background.png');
 
     return {
       title: this.resourceTitleDefinition(),

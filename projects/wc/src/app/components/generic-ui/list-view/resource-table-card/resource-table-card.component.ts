@@ -14,7 +14,8 @@ import {
   effect,
   inject,
   input,
-  signal, viewChild,
+  signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
@@ -23,9 +24,9 @@ import {
   FormFieldChangeEvent,
   FormFieldDefinition,
   FormFieldErrors,
+  ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
-  ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 import {
   FieldDefinition,
@@ -51,9 +52,11 @@ import { finalize } from 'rxjs/operators';
   standalone: true,
   imports: [DeclarativeTableCard],
   templateUrl: './resource-table-card.component.html',
-  styles: `mfp-declarative-table-card {
-    opacity: 80%
-  }`,
+  styles: `
+    mfp-declarative-table-card {
+      opacity: 80%;
+    }
+  `,
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -65,7 +68,8 @@ export class ResourceTableCard {
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
 
-  tableCard = viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
+  tableCard =
+    viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
 
   resources = signal<Resource[]>([]);
   resourceDefinition = computed(() => this.context().resourceDefinition);
@@ -112,8 +116,8 @@ export class ResourceTableCard {
       totalItemsCount: this.totalItemsCount(),
       paginationLimit: this.paginationLimit(),
       hasMore: this.hasMore(),
-      growMode: 'Button',
-      loadMoreButtonText: 'Load More'
+      // growMode: 'Button',
+      // loadMoreButtonText: 'Load More'
     },
     ...(this.hasUiCreateViewFields() && {
       createResourceFormConfig: {

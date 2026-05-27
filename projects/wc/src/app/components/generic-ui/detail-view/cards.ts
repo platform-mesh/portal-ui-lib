@@ -77,29 +77,51 @@ const TABLE_RESOURCES = [
   {
     id: 'abc-002',
     metadata: { name: 'worker-5bc8', namespace: 'default', uid: 'abc-002' },
-    status: { phase: 'Pending', ready: false, restarts: 3, message: 'ImagePullBackOff' },
+    status: {
+      phase: 'Pending',
+      ready: false,
+      restarts: 3,
+      message: 'ImagePullBackOff',
+    },
     spec: { nodeName: 'node-2', image: 'myapp:latest' },
     isAvailable: false,
     accessibleName: 'Pod unavailable: ImagePullBackOff',
   },
   {
     id: 'abc-003',
-    metadata: { name: 'cache-redis-0', namespace: 'kube-system', uid: 'abc-003' },
+    metadata: {
+      name: 'cache-redis-0',
+      namespace: 'kube-system',
+      uid: 'abc-003',
+    },
     status: { phase: 'Running', ready: true, restarts: 1, message: undefined },
     spec: { nodeName: 'node-1', image: 'redis:7' },
     isAvailable: true,
   },
   {
     id: 'abc-004',
-    metadata: { name: 'db-postgres-0', namespace: 'production', uid: 'abc-004' },
-    status: { phase: 'Failed', ready: false, restarts: 5, message: 'CrashLoopBackOff' },
+    metadata: {
+      name: 'db-postgres-0',
+      namespace: 'production',
+      uid: 'abc-004',
+    },
+    status: {
+      phase: 'Failed',
+      ready: false,
+      restarts: 5,
+      message: 'CrashLoopBackOff',
+    },
     spec: { nodeName: 'node-3', image: 'postgres:16' },
     isAvailable: false,
     accessibleName: 'Pod unavailable: CrashLoopBackOff',
   },
   {
     id: 'abc-005',
-    metadata: { name: 'ingress-ctrl-xkp', namespace: 'default', uid: 'abc-005' },
+    metadata: {
+      name: 'ingress-ctrl-xkp',
+      namespace: 'default',
+      uid: 'abc-005',
+    },
     status: { phase: 'Running', ready: true, restarts: 0, message: undefined },
     spec: { nodeName: 'node-2', image: 'nginx-ingress:1.9' },
     isAvailable: true,
@@ -123,9 +145,18 @@ const PODS_TABLE_CARD_CONFIG = {
         property: 'status.phase',
         uiSettings: {
           cssRules: [
-            { if: { condition: 'equals', value: 'Running' }, styles: { color: 'green' } },
-            { if: { condition: 'equals', value: 'Pending' }, styles: { color: 'darkorange' } },
-            { if: { condition: 'equals', value: 'Failed' }, styles: { color: 'red', fontWeight: 'bold' } },
+            {
+              if: { condition: 'equals', value: 'Running' },
+              styles: { color: 'green' },
+            },
+            {
+              if: { condition: 'equals', value: 'Pending' },
+              styles: { color: 'darkorange' },
+            },
+            {
+              if: { condition: 'equals', value: 'Failed' },
+              styles: { color: 'red', fontWeight: 'bold' },
+            },
           ],
         },
       },
@@ -154,7 +185,11 @@ const PODS_TABLE_CARD_CONFIG = {
         property: 'metadata.name',
         uiSettings: {
           displayAs: 'button',
-          buttonSettings: { icon: 'inspect', design: 'Transparent', action: 'navigate' },
+          buttonSettings: {
+            icon: 'inspect',
+            design: 'Transparent',
+            action: 'navigate',
+          },
         },
         group: { name: 'actions', label: 'Actions', multiline: false },
       },
@@ -165,7 +200,12 @@ const PODS_TABLE_CARD_CONFIG = {
   createResourceFormConfig: {
     fields: [
       { name: 'metadata.name', label: 'Name', required: true },
-      { name: 'metadata.namespace', label: 'Namespace', required: true, values: ['default', 'kube-system', 'production'] },
+      {
+        name: 'metadata.namespace',
+        label: 'Namespace',
+        required: true,
+        values: ['default', 'kube-system', 'production'],
+      },
     ],
     title: 'Create Pod',
     confirmLabel: 'Create',
@@ -174,7 +214,12 @@ const PODS_TABLE_CARD_CONFIG = {
   editResourceFormConfig: {
     fields: [
       { name: 'metadata.name', label: 'Name', required: true, disabled: true },
-      { name: 'metadata.namespace', label: 'Namespace', required: true, values: ['default', 'kube-system', 'production'] },
+      {
+        name: 'metadata.namespace',
+        label: 'Namespace',
+        required: true,
+        values: ['default', 'kube-system', 'production'],
+      },
     ],
     title: 'Edit Pod',
     confirmLabel: 'Save',
@@ -182,7 +227,8 @@ const PODS_TABLE_CARD_CONFIG = {
   },
   deleteResourceConfirmationConfig: {
     title: 'Delete Pod?',
-    message: 'This action cannot be undone. The pod will be permanently removed.',
+    message:
+      'This action cannot be undone. The pod will be permanently removed.',
     confirmLabel: 'Delete',
     cancelLabel: 'Cancel',
   },
@@ -191,7 +237,7 @@ const PODS_TABLE_CARD_CONFIG = {
 export const AVAILABLE_CARDS: CardConfig[] = [
   {
     id: 'table-pods',
-    label: "Pods",
+    label: 'Pods',
     w: 12,
     h: 50,
     component: 'mfp-declarative-table-card',
@@ -231,7 +277,6 @@ export const AVAILABLE_CARDS: CardConfig[] = [
   },
 ];
 
-
 export const CARDS: CardConfig[] = [
   ...RAS_CARD_TEMPLATES.map((t, i) => ({
     id: `ras-card-${i}`,
@@ -242,5 +287,5 @@ export const CARDS: CardConfig[] = [
     component: 'mfp-visited-service-card',
     componentInputs: { ...t },
   })),
-    ...AVAILABLE_CARDS
+  ...AVAILABLE_CARDS,
 ];

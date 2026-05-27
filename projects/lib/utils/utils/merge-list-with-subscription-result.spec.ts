@@ -1,11 +1,11 @@
 import {
+  MergeListWithSubscriptionResultOptions,
+  mergeListWithSubscriptionResult,
+} from './merge-list-with-subscription-result';
+import {
   ResourceOperationTypeMap,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
-import {
-  mergeListWithSubscriptionResult,
-  MergeListWithSubscriptionResultOptions,
-} from './merge-list-with-subscription-result';
 
 interface TestItem {
   name?: string;
@@ -42,10 +42,7 @@ describe('mergeListWithSubscriptionResult', () => {
       options,
     );
 
-    expect(result).toEqual([
-      { name: 'one' },
-      { name: 'two', value: 'v2' },
-    ]);
+    expect(result).toEqual([{ name: 'one' }, { name: 'two', value: 'v2' }]);
   });
 
   it('should update item on MODIFIED event when item exists', () => {
@@ -125,6 +122,9 @@ describe('mergeListWithSubscriptionResult', () => {
       options,
     );
 
-    expect(result).toEqual([{ name: 'one' }, { name: 'two', value: undefined }]);
+    expect(result).toEqual([
+      { name: 'one' },
+      { name: 'two', value: undefined },
+    ]);
   });
 });

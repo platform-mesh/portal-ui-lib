@@ -7,11 +7,11 @@ import {
   PortalConfig,
 } from '@openmfp/portal-ui-lib';
 import {
+  ALL_NAMESPACE,
   FieldDefinition,
   Resource,
   ResourceDefinition,
   ResourceListResult,
-  ALL_NAMESPACE,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,

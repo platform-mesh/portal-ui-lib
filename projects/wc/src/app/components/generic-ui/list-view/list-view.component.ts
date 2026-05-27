@@ -43,7 +43,7 @@ export class ListView {
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
 
-  sections: SectionConfig[] = [{id: 'accounts', editable: false}];
+  sections: SectionConfig[] = [{ id: 'accounts', editable: false }];
   cards = computed<CardConfig[]>(() => [
     {
       id: 'pm-resource-table-card',
@@ -61,18 +61,17 @@ export class ListView {
 
   availableCards: CardConfig[] = [];
 
-
   dashboardConfig = computed(() => {
-    const backgroundImageUrl = this.isDemoEnabled() ? '/assets/nn-demo.png' : (this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
-      '/assets/pm_background.png');
+    const backgroundImageUrl = this.isDemoEnabled()
+      ? '/assets/nn-demo.png'
+      : (this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
+        '/assets/pm_background.png');
     return {
-    title: this.resourceTitleDefinition(),
-    description: this.resourceDescriptionDefinition(),
-    backgroundImageUrl,
-    editable: false,
-    customActions: [],
-    }
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+      backgroundImageUrl,
+      editable: false,
+      customActions: [],
+    };
   });
-
-
 }

@@ -13,7 +13,9 @@
 
 <ng-template #subheader>
   <div class="resource-info">
-    <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+    @if (resourceDefinition()?.ui?.logoUrl) {
+      <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+    }
     <div class="resource-info-cell">
       <ui5-label>Workspace Path</ui5-label>
       <div test-id="generic-detail-view-workspace-path">
