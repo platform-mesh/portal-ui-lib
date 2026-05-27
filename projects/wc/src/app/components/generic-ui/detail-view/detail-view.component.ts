@@ -110,7 +110,7 @@ export class DetailView {
       false,
   );
   isDownloadingKubeConfig = signal(false);
-  private isDemoEnabled = computed(() =>
+  isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
 
@@ -140,7 +140,7 @@ export class DetailView {
     }
 
     const backgroundImageUrl = this.isDemoEnabled()
-      ? '/assets/nn-demo.png'
+      ? ''
       : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
         '/assets/pm_background.png');
 

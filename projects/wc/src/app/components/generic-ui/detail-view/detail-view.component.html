@@ -6,8 +6,13 @@
   (actionButtonClick)="onActionButtonClick($event)"
   (saved)="dashboardConfigurationChanged($event)"
 >
-  <div slot="dashboard-subheader">
-    <ng-container *ngTemplateOutlet="subheader" />
+  <div slot="dashboard-subheader" style="width: 100%">
+    <div class="sh">
+      <ng-container *ngTemplateOutlet="subheader" />
+      @if (isDemoEnabled()) {
+       <div class="logo"></div>
+      }
+    </div>
   </div>
 </mfp-dashboard>
 

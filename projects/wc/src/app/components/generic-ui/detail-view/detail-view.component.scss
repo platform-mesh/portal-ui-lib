@@ -17,6 +17,13 @@ mfp-dashboard {
   height: auto;
 }
 
+.sh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .resource-info {
   padding-top: 1rem;
   display: flex;
@@ -33,6 +40,16 @@ mfp-dashboard {
 
 .multiline {
   display: block;
+}
+
+.logo {
+  width: 200px;
+  height: 80px;
+  background-image: url('http://localhost:4300/assets/img.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin: 0 50px;
 }
 
 .resource-title-snapped-container {

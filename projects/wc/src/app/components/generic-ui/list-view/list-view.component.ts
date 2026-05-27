@@ -63,7 +63,7 @@ export class ListView {
 
   dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled()
-      ? '/assets/nn-demo.png'
+      ? ''
       : (this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
         '/assets/pm_background.png');
     return {
