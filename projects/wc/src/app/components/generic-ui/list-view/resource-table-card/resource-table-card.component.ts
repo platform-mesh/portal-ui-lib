@@ -365,9 +365,4 @@ export class ResourceTableCard {
     }
     return resourceDefinition;
   }
-
-  protected validateEditForm(event: {
-    resource: Resource;
-    formChangeEvent: FormFieldChangeEvent;
-  }) {}
 }
