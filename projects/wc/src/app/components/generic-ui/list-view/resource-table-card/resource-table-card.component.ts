@@ -134,8 +134,12 @@ export class ResourceTableCard {
         totalItemsCount: this.totalItemsCount(),
         paginationLimit: this.paginationLimit(),
         hasMore: this.hasMore(),
-        createResourceFormConfig: this.toFormFields(this.createFormFields()),
       },
+      ...(this.hasUiCreateViewFields() && {
+        createResourceFormConfig: {
+          fields: this.toFormFields(this.createFormFields()),
+        },
+      }),
     };
   });
 
