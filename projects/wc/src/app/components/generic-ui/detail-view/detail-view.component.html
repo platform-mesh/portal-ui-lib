@@ -1,108 +1,90 @@
-<pm-generic-view
-  [view]="'detailView'"
-  [context]="context()"
-  [LuigiClient]="LuigiClient()"
-  [resource]="resource()"
-  [defaultTitle]="defaultTitle()"
-  [defaultDescription]="defaultDescription()"
+<mfp-dashboard
+  [config]="dashboardConfig()"
+  [sections]="sections()"
+  [cards]="cards()"
+  [availableCards]="availableCards()"
+  (actionButtonClick)="onActionButtonClick($event)"
+  (saved)="dashboardConfigurationChanged($event)"
 >
-  <ng-content header-actions>
-    @if (showDownloadKubeconfig()) {
-      <ui5-toolbar-button
-        [disabled]="isDownloadingKubeConfig()"
-        test-id="generic-detail-view-download"
-        text="Download kubeconfig"
-        icon="download-from-cloud"
-        design="Emphasized"
-        (click)="downloadKubeConfig()"
-      ></ui5-toolbar-button>
-    }
-    @if (resource(); as resource) {
-      <ui5-toolbar-button
-        test-id="generic-detail-view-edit-button"
-        text="Edit"
-        icon="edit"
-        design="Default"
-        (click)="openEditResourceModal($event, resource)"
-      />
-      <ui5-toolbar-button
-        test-id="generic-detail-view-delete-button"
-        text="Delete"
-        icon="delete"
-        design="Negative"
-        (click)="openDeleteResourceModal($event, resource)"
-      />
-    }
-  </ng-content>
-
-  <ng-content header-fields>
-    <div class="resource-info">
-      <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
-      <div class="resource-info-cell">
-        <ui5-label>Workspace Path</ui5-label>
-        <p test-id="generic-detail-view-workspace-path">
-          {{ workspacePath() }}
-        </p>
-      </div>
-      @if (resource(); as resource) {
-        @for (viewField of viewFields(); track viewField.property) {
-          <div
-            class="resource-info-cell"
-            [attr.test-id]="'generic-detail-view-field-' + viewField.property"
-          >
-            @if (viewField.group) {
-              <ui5-label
-                [attr.test-id]="
-                  'generic-detail-view-field-' + viewField.property + '-label'
-                "
-                >{{ viewField.group.label ?? viewField.group.name }}</ui5-label
-              >
-              <p
-                [attr.test-id]="
-                  'generic-detail-view-field-' + viewField.property + '-value'
-                "
-              >
-                @for (
-                  field of viewField.group.fields;
-                  let last = $last;
-                  track field.label
-                ) {
-                  <span [class.multiline]="viewField.group.multiline ?? true">
-                    <span>{{ field.label }}: </span>
-                    <pm-value-cell
-                      [fieldDefinition]="field"
-                      [resource]="resource"
-                    />
-                  </span>
-                  @if (!last && viewField.group.delimiter) {
-                    <span>{{ viewField.group.delimiter }}</span>
-                  }
-                }
-              </p>
-            } @else {
-              <ui5-label
-                [attr.test-id]="
-                  'generic-detail-view-field-' + viewField.property + '-label'
-                "
-                >{{ viewField.label }}</ui5-label
-              >
-              <p
-                [attr.test-id]="
-                  'generic-detail-view-field-' + viewField.property + '-value'
-                "
-              >
-                <pm-value-cell
-                  [fieldDefinition]="viewField"
-                  [resource]="resource"
-                />
-              </p>
-            }
-          </div>
-        }
+  <div slot="dashboard-subheader" style="width: 100%">
+    <div class="sh">
+      <ng-container *ngTemplateOutlet="subheader" />
+      @if (isDemoEnabled()) {
+        <div class="logo"></div>
       }
     </div>
-  </ng-content>
-</pm-generic-view>
+  </div>
+</mfp-dashboard>
+
+<ng-template #subheader>
+  <div class="resource-info">
+    @if (resourceDefinition()?.ui?.logoUrl) {
+      <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+    }
+    <div class="resource-info-cell">
+      <ui5-label>Workspace Path</ui5-label>
+      <div test-id="generic-detail-view-workspace-path">
+        {{ workspacePath() }}
+      </div>
+    </div>
+    @if (resource(); as resource) {
+      @for (viewField of viewFields(); track viewField.property) {
+        <div
+          class="resource-info-cell"
+          [attr.test-id]="'generic-detail-view-field-' + viewField.property"
+        >
+          @if (viewField.group) {
+            <ui5-label
+              [attr.test-id]="
+                'generic-detail-view-field-' + viewField.property + '-label'
+              "
+              >{{ viewField.group.label ?? viewField.group.name }}</ui5-label
+            >
+            <div
+              [attr.test-id]="
+                'generic-detail-view-field-' + viewField.property + '-value'
+              "
+            >
+              @for (
+                field of viewField.group.fields;
+                let last = $last;
+                track field.label
+              ) {
+                <span [class.multiline]="viewField.group.multiline ?? true">
+                  <span>{{ field.label }}: </span>
+                  <mfp-resource-field
+                    [fieldDefinition]="field"
+                    [resource]="resource"
+                  />
+                </span>
+                @if (!last && viewField.group.delimiter) {
+                  <span>{{ viewField.group.delimiter }}</span>
+                }
+              }
+            </div>
+          } @else {
+            <ui5-label
+              [attr.test-id]="
+                'generic-detail-view-field-' + viewField.property + '-label'
+              "
+              >{{ viewField.label }}</ui5-label
+            >
+            <div
+              [attr.test-id]="
+                'generic-detail-view-field-' + viewField.property + '-value'
+              "
+            >
+              <mfp-resource-field
+                [fieldDefinition]="viewField"
+                [resource]="resource"
+              />
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</ng-template>
 
 <pm-create-resource-modal
   #createModal

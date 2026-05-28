@@ -1,7 +1,7 @@
 import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
-import { Injectable, inject } from '@angular/core';
 import { HttpHeaders } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import {
   type ApolloClientOptions,
   ApolloLink,

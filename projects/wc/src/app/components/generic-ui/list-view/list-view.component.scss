@@ -1,3 +1,14 @@
+.demo-logo {
+  width: 200px;
+  height: 80px;
+  margin-left: auto;
+  background-image: url('http://localhost:4300/assets/nn-logo.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-right: 50px;
+}
+
 .title-logo {
   display: flex;
   align-items: center;

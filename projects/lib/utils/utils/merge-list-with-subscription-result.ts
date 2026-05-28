@@ -1,4 +1,8 @@
-import { Resource, ResourceOperationTypeMap, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
+import {
+  Resource,
+  ResourceOperationTypeMap,
+  ResourceSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/models';
 
 export interface MergeListWithSubscriptionResultOptions<T> {
   getItemKey: (item: T) => string | undefined;
@@ -14,10 +18,7 @@ export function mergeListWithSubscriptionResult<T>(
     return items;
   }
 
-  const {
-    getItemKey,
-    mapSubscriptionObjectToItem,
-  } = options;
+  const { getItemKey, mapSubscriptionObjectToItem } = options;
 
   const result = new Map<string, T>();
   items.forEach((item) => {

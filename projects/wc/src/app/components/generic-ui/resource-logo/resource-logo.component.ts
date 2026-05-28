@@ -13,6 +13,12 @@ import { ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
       />
     }
   `,
+  styles: `
+    .resource-logo {
+      width: 5rem;
+      padding-bottom: 1rem;
+    }
+  `,
 })
 export class ResourceLogo {
   resourceDefinition = input.required<ResourceDefinition | undefined>();

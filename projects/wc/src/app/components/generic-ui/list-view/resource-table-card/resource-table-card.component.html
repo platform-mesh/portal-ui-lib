@@ -1,0 +1,11 @@
+<mfp-declarative-table-card
+  [resources]="resources()"
+  [config]="config()"
+  [createFormState]="createFormState()"
+  (tableRowClicked)="navigateToResource($event)"
+  (loadMoreResources)="loadMore()"
+  (paginationLimitChanged)="onLimitChange($event)"
+  (actionButtonClick)="executeAction($event)"
+  (createFieldChange)="onCreateFieldChange($event)"
+  (createSubmit)="onCreateSubmit($event)"
+/>

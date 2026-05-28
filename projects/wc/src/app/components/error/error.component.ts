@@ -8,9 +8,9 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
 import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
-import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
 import { I18nService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js';

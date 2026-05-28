@@ -1,19 +1,36 @@
-<ui5-dialog test-id="delete-resource-dialog" [open]="dialogOpen()" (close)="close()">
+<ui5-dialog
+  test-id="delete-resource-dialog"
+  [open]="dialogOpen()"
+  (close)="close()"
+>
   <ui5-bar slot="header" design="Header">
     <ui5-title test-id="delete-resource-dialog-title" slot="startContent">
-      <ui5-icon test-id="delete-resource-dialog-alert" name="alert" design="Critical"></ui5-icon>
+      <ui5-icon
+        test-id="delete-resource-dialog-alert"
+        name="alert"
+        design="Critical"
+      ></ui5-icon>
       Delete {{ innerResource()?.metadata?.name?.toLowerCase() }}
     </ui5-title>
   </ui5-bar>
-  <section test-id="delete-resource-dialog-content" class="content" [formGroup]="form">
+  <section
+    test-id="delete-resource-dialog-content"
+    class="content"
+    [formGroup]="form"
+  >
     <div class="inputs">
-      <p>Are you sure you want to delete {{ context()?.resourceDefinition?.entity }}
-        <b>{{ innerResource()?.metadata?.name?.toLowerCase() }}</b>?</p>
+      <p>
+        Are you sure you want to delete
+        {{ context()?.resourceDefinition?.entity }}
+        <b>{{ innerResource()?.metadata?.name?.toLowerCase() }}</b
+        >?
+      </p>
       <ui5-text style="color: var(--sapCriticalElementColor)">
         This action <b>cannot</b> be undone.
       </ui5-text>
       <p>
-        Please type <b>{{ innerResource()?.metadata?.name?.toLowerCase() }}</b> to confirm:
+        Please type
+        <b>{{ innerResource()?.metadata?.name?.toLowerCase() }}</b> to confirm:
       </p>
       <ui5-input
         class="input"
@@ -32,7 +49,11 @@
     <ui5-toolbar-button
       test-id="delete-resource-confirm"
       class="dialogCloser"
-      [disabled]="form.invalid || form.controls.resource.value !== innerResource()?.metadata?.name?.toLowerCase()"
+      [disabled]="
+        form.invalid ||
+        form.controls.resource.value !==
+          innerResource()?.metadata?.name?.toLowerCase()
+      "
       design="Emphasized"
       text="Delete"
       (click)="delete()"

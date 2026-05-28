@@ -42,7 +42,9 @@ describe('parse-raw-gql-query', () => {
     });
 
     it('should handle queries without spaces around braces', () => {
-      expect(parseRawGqlQueryToFields('{user{id}}')).toEqual([{ user: ['id'] }]);
+      expect(parseRawGqlQueryToFields('{user{id}}')).toEqual([
+        { user: ['id'] },
+      ]);
     });
   });
 });

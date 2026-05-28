@@ -7,11 +7,11 @@ import {
   PortalConfig,
 } from '@openmfp/portal-ui-lib';
 import {
+  ALL_NAMESPACE,
   FieldDefinition,
   Resource,
   ResourceDefinition,
   ResourceListResult,
-  ALL_NAMESPACE,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
@@ -32,6 +32,7 @@ import {
   startWith,
   switchMap,
   takeUntil,
+  tap,
 } from 'rxjs/operators';
 
 const defaultColumns: FieldDefinition[] = [
@@ -238,6 +239,10 @@ export class NamespaceSelectionRendererService {
                 }),
               result.items,
             ),
+            tap((result) => {
+              const namespaces = result.map((e) => e.metadata?.name);
+              this.luigiCoreService.setInGlobalContext({ namespaces });
+            }),
             takeUntil(stop$),
           ),
       ),

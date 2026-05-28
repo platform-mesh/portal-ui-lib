@@ -4,6 +4,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost/',
+      },
+    },
     server: {
       deps: {
         inline: [/@openmfp\/ngx/],

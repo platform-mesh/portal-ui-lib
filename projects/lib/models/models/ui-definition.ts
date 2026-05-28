@@ -9,7 +9,7 @@ export type {
   PropertyField,
   TransformType,
   UiSettings,
-  ValueCellButtonClickEvent,
+  ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 
 export type FieldDefinition = TableFieldDefinition &
@@ -27,6 +27,7 @@ export interface UiView {
   fields?: FieldDefinition[];
   resourceDescription?: FieldDefinition;
   resourceTitle?: FieldDefinition;
+  backgroundImageUrl?: string;
 }
 
 export interface UIDefinition {

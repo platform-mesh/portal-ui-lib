@@ -1,5 +1,5 @@
 export const addSearchParams = (params: Record<string, string | undefined>) => {
-  const newUrl = new URL(location.href);
+  const newUrl = new URL(location.href || 'http://localhost/');
   const currentParams = newUrl.searchParams;
 
   Object.entries(params).forEach(([key, value]) => {

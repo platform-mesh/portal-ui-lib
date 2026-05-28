@@ -1,42 +1,12 @@
-<pm-generic-view
-  [view]="'listView'"
-  [context]="context()"
-  [LuigiClient]="LuigiClient()"
-  [defaultTitle]="defaultTitle()"
-  [defaultDescription]="defaultDescription()"
+<mfp-dashboard
+  [config]="dashboardConfig()"
+  [sections]="sections"
+  [cards]="cards()"
+  [availableCards]="availableCards"
 >
-  <ng-content header-actions>
-    @if (hasUiCreateViewFields()) {
-      <ui5-toolbar-button
-        test-id="generic-list-view-create-button"
-        design="Emphasized"
-        text="Create"
-        (click)="openCreateResourceModal()"
-      ></ui5-toolbar-button>
-    }
-  </ng-content>
-
-  <ng-content page-content>
-    <mfp-declarative-table
-      trackByPath="metadata.name"
-      [resources]="resources()"
-      [columns]="columns()"
-      [hasMore]="hasMore()"
-      [totalItemsCount]="totalItemsCount()"
-      [paginationLimit]="paginationLimit()"
-      (tableRowClicked)="navigateToResource($event)"
-      (loadMoreResources)="loadMore()"
-      (paginationLimitChanged)="onLimitChange($event)"
-      (buttonClick)="executeAction($event)"
-    />
-  </ng-content>
-</pm-generic-view>
-
-@if (hasUiCreateViewFields()) {
-  <pm-create-resource-modal
-    #createModal
-    [fields]="resourceDefinition()?.ui?.createView?.fields ?? []"
-    (resource)="create($event)"
-    [context]="context()"
-  />
-}
+  @if (isDemoEnabled()) {
+    <div slot="dashboard-subheader" style="width: 100%">
+      <div class="demo-logo"></div>
+    </div>
+  }
+</mfp-dashboard>

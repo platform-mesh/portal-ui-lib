@@ -1,4 +1,7 @@
-import type { PropertyField, Resource } from '@platform-mesh/portal-ui-lib/models';
+import type {
+  PropertyField,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 
 vi.mock('jsonpath', () => {
   const query = vi.fn();

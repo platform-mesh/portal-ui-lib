@@ -1,3 +1,5 @@
+import type { ApolloFactory } from './apollo-factory';
+import type { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { TestBed } from '@angular/core/testing';
 import { ApolloLink, InMemoryCache, execute } from '@apollo/client/core';
@@ -5,8 +7,6 @@ import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Apollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
 import { parse } from 'graphql';
-import type { ApolloFactory } from './apollo-factory';
-import type { GatewayService } from './gateway.service';
 import { MockedFunction, MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
@@ -29,9 +29,8 @@ describe('ApolloFactory', () => {
     vi.resetModules();
     createClientMock.mockClear();
     ({ createClient } = await import('graphql-sse'));
-    ({ GatewayService: GatewayServiceToken } = await import(
-      './gateway.service'
-    ));
+    ({ GatewayService: GatewayServiceToken } =
+      await import('./gateway.service'));
     ({ ApolloFactory: ApolloFactoryClass } = await import('./apollo-factory'));
     httpLinkMock = {
       create: vi.fn().mockReturnValue({ request: [] }),

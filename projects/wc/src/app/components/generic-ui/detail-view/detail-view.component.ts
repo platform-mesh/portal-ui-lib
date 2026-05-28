@@ -1,13 +1,14 @@
 import { processGroupFields } from '../../../utils/proccess-fields';
-import { GenericView } from '../generic-view/generic-view.component';
 import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
-import { ValueCellComponent } from '../value-cell/value-cell.component';
+import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
+import { DashboardConfigService } from './dashboard-config.service';
 import {
   KubeConfigTemplateProps,
   kubeConfigTemplate,
 } from './kubeconfig-template';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -20,8 +21,14 @@ import {
   viewChild,
 } from '@angular/core';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
-import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import {
+  ButtonSettings,
+  CardConfig,
+  Dashboard,
+  ResourceField,
+  SectionConfig,
+} from '@openmfp/ngx';
 import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
@@ -42,17 +49,17 @@ import { tap } from 'rxjs/operators';
   selector: 'pm-detail-view',
   standalone: true,
   imports: [
-    ToolbarButton,
+    NgTemplateOutlet,
     Label,
-    ValueCellComponent,
+    ResourceField,
     CreateResourceModal,
     DeleteResourceModal,
-    GenericView,
     ResourceLogo,
+    Dashboard,
   ],
   templateUrl: './detail-view.component.html',
   styleUrl: './detail-view.component.scss',
-  encapsulation: ViewEncapsulation.ShadowDom,
+  encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DetailView {
@@ -60,6 +67,7 @@ export class DetailView {
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
   private errorHandlerService = inject(ErrorHandlerService);
+  private dashboardConfigService = inject(DashboardConfigService);
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
   private createModal = viewChild<CreateResourceModal>('createModal');
   private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
@@ -70,11 +78,22 @@ export class DetailView {
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(
-    () => this.resource()?.spec?.displayName || this.resourceId(),
+    () => this.resource()?.spec?.displayName || this.resourceId() || '',
   );
   defaultDescription = computed(
     () =>
       `The ${this.resourceDefinition()?.entity} for ${this.resource()?.spec?.displayName || this.resourceId()}`,
+  );
+
+  resourceTitleDefinition = computed(
+    () =>
+      this.resourceDefinition()?.ui?.detailView?.resourceTitle?.label ??
+      this.defaultTitle(),
+  );
+  resourceDescriptionDefinition = computed(
+    () =>
+      this.resourceDefinition()?.ui?.detailView?.resourceDescription?.label ??
+      this.defaultDescription(),
   );
 
   resourceFields = computed(
@@ -91,6 +110,95 @@ export class DetailView {
       false,
   );
   isDownloadingKubeConfig = signal(false);
+  isDemoEnabled = computed(() =>
+    this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
+  );
+
+  dashboardConfig = computed(() => {
+    const customActions: ButtonSettings[] = [];
+
+    if (this.showDownloadKubeconfig()) {
+      customActions.push({
+        action: 'download-kubeconfig',
+        text: 'Download kubeconfig',
+        icon: 'download-from-cloud',
+        design: 'Default',
+        tooltip: 'Download kubeconfig',
+      });
+    }
+
+    if (this.resource()) {
+      customActions.push(
+        { action: 'edit', text: 'Edit', icon: 'edit', design: 'Default' },
+        {
+          action: 'delete',
+          text: 'Delete',
+          icon: 'delete',
+          design: 'Negative',
+        },
+      );
+    }
+
+    const backgroundImageUrl = this.isDemoEnabled()
+      ? ''
+      : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
+        '/assets/pm_background.png');
+
+    return {
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+      editable: true,
+      backgroundImageUrl,
+      customActions,
+    };
+  });
+
+  sections = computed<SectionConfig[]>(() => {
+    const c = this.dashboardConfigService.read({
+      workspacePath: this.workspacePath(),
+      entity: this.resourceDefinition()?.entity,
+      resourceId: this.resourceId(),
+      userId: this.context().userId,
+      seed: this.isDemoEnabled() ? 'demo' : '',
+    });
+
+    return c?.sections ?? (this.isDemoEnabled() ? SECTIONS : []);
+  });
+  cards = computed<CardConfig[]>(() => {
+    const c = this.dashboardConfigService.read({
+      workspacePath: this.workspacePath(),
+      entity: this.resourceDefinition()?.entity,
+      resourceId: this.resourceId(),
+      userId: this.context().userId,
+      seed: this.isDemoEnabled() ? 'demo' : '',
+    });
+
+    return c?.cards ?? (this.isDemoEnabled() ? CARDS : []);
+  });
+  availableCards = computed<CardConfig[]>(() =>
+    this.isDemoEnabled() ? AVAILABLE_CARDS : [],
+  );
+
+  onActionButtonClick({
+    event,
+    action,
+  }: {
+    event: MouseEvent;
+    action: ButtonSettings;
+  }): void {
+    const resource = this.resource();
+    switch (action.action) {
+      case 'download-kubeconfig':
+        this.downloadKubeConfig();
+        break;
+      case 'edit':
+        if (resource) this.openEditResourceModal(event, resource);
+        break;
+      case 'delete':
+        if (resource) this.openDeleteResourceModal(event, resource);
+        break;
+    }
+  }
 
   constructor() {
     effect(() => {
@@ -324,5 +432,21 @@ export class DetailView {
     }
 
     return resourceId;
+  }
+
+  protected dashboardConfigurationChanged(config: {
+    cards: CardConfig[];
+    sections: SectionConfig[];
+  }) {
+    this.dashboardConfigService.write(
+      {
+        workspacePath: this.workspacePath(),
+        entity: this.resourceDefinition()?.entity,
+        resourceId: this.resourceId(),
+        userId: this.context().userId,
+        seed: this.isDemoEnabled() ? 'demo' : '',
+      },
+      config,
+    );
   }
 }

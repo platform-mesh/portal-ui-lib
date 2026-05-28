@@ -1,4 +1,5 @@
 import { DetailView } from './detail-view.component';
+import { NgTemplateOutlet } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
@@ -115,6 +116,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     fixture.detectChanges();
@@ -182,6 +184,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -219,6 +222,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -245,6 +249,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     component.context = (() => ({
@@ -370,6 +375,7 @@ describe('DetailViewComponent', () => {
           showAlert: showAlertSpy,
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       mockResourceService.delete = vi
@@ -464,6 +470,7 @@ describe('DetailViewComponent', () => {
           showAlert: showAlertSpy,
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       mockResourceService.update = vi
@@ -552,6 +559,7 @@ describe('DetailViewComponent', () => {
           showAlert: showAlertSpy,
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newComponent.context = (() => ({
@@ -695,6 +703,7 @@ describe('DetailViewComponent', () => {
         withParams: vi.fn().mockReturnThis(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
     accountInfoServiceMock.read.mockReturnValueOnce(
       throwError(() => new Error('boom')),
@@ -741,6 +750,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -800,6 +810,7 @@ describe('DetailViewComponent', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     newFixture.detectChanges();
@@ -846,6 +857,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       expect(() => {
@@ -911,6 +923,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -955,6 +968,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -990,6 +1004,7 @@ describe('DetailViewComponent', () => {
         }),
         uxManager: () => mockUxManager,
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       expect(() => {
@@ -1040,6 +1055,7 @@ describe('DetailViewComponent', () => {
           showAlert: vi.fn(),
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1092,6 +1108,7 @@ describe('DetailViewComponent', () => {
           showAlert: vi.fn(),
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1145,6 +1162,7 @@ describe('DetailViewComponent', () => {
           showAlert: vi.fn(),
         }),
         getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
       })) as any;
 
       newFixture.detectChanges();
@@ -1160,6 +1178,231 @@ describe('DetailViewComponent', () => {
       expect(fieldsStr).toContain('deletionTimestamp');
     });
   });
+
+  describe('dashboardConfig', () => {
+    it('should include download-kubeconfig action when showDownloadKubeconfig is true', () => {
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
+          ui: {
+            detailView: {
+              fields: [],
+              showDownloadKubeconfig: true,
+            },
+          },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+        }),
+        uxManager: () => ({ showAlert: vi.fn() }),
+        getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
+      })) as any;
+
+      newFixture.detectChanges();
+
+      const actions = newComponent.dashboardConfig().customActions;
+      expect(actions.some((a) => a.action === 'download-kubeconfig')).toBe(
+        true,
+      );
+    });
+
+    it('should not include edit/delete actions when resource is not loaded', () => {
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+      mockResourceService.read = vi.fn().mockReturnValue(of(undefined));
+      newComponent.context = (() => ({
+        resourceId: 'cluster-1',
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
+          ui: { detailView: { fields: [] } },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+        }),
+        uxManager: () => ({ showAlert: vi.fn() }),
+        getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
+      })) as any;
+      newFixture.detectChanges();
+      const actions = newComponent.dashboardConfig().customActions;
+      expect(actions.some((a) => a.action === 'edit')).toBe(false);
+      expect(actions.some((a) => a.action === 'delete')).toBe(false);
+    });
+  });
+
+  describe('onActionButtonClick', () => {
+    it('should call downloadKubeConfig for download-kubeconfig action', () => {
+      const downloadSpy = vi
+        .spyOn(component, 'downloadKubeConfig')
+        .mockResolvedValue(undefined);
+      component.onActionButtonClick({
+        event: new MouseEvent('click'),
+        action: { action: 'download-kubeconfig' },
+      } as any);
+      expect(downloadSpy).toHaveBeenCalled();
+    });
+
+    it('should call openEditResourceModal for edit action when resource exists', () => {
+      const resource = { metadata: { name: 'cluster-1' } } as any;
+      component.resource.set(resource);
+      const openEditSpy = vi.spyOn(component, 'openEditResourceModal');
+      const event = new MouseEvent('click');
+      component.onActionButtonClick({
+        event,
+        action: { action: 'edit' },
+      } as any);
+      expect(openEditSpy).toHaveBeenCalledWith(event, resource);
+    });
+
+    it('should call openDeleteResourceModal for delete action when resource exists', () => {
+      const resource = { metadata: { name: 'cluster-1' } } as any;
+      component.resource.set(resource);
+      const openDeleteSpy = vi.spyOn(component, 'openDeleteResourceModal');
+      const event = new MouseEvent('click');
+      component.onActionButtonClick({
+        event,
+        action: { action: 'delete' },
+      } as any);
+      expect(openDeleteSpy).toHaveBeenCalledWith(event, resource);
+    });
+
+    it('should not call openEditResourceModal for edit action when resource is undefined', () => {
+      component.resource.set(undefined);
+      const openEditSpy = vi.spyOn(component, 'openEditResourceModal');
+      component.onActionButtonClick({
+        event: new MouseEvent('click'),
+        action: { action: 'edit' },
+      } as any);
+      expect(openEditSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not call openDeleteResourceModal for delete action when resource is undefined', () => {
+      component.resource.set(undefined);
+      const openDeleteSpy = vi.spyOn(component, 'openDeleteResourceModal');
+      component.onActionButtonClick({
+        event: new MouseEvent('click'),
+        action: { action: 'delete' },
+      } as any);
+      expect(openDeleteSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('dashboardConfigurationChanged', () => {
+    it('should write config to localStorage', () => {
+      const writeConfigSpy = vi.spyOn(Storage.prototype, 'setItem');
+      const config = { cards: [], sections: [] };
+      (component as any).dashboardConfigurationChanged(config);
+      expect(writeConfigSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('Computed branches', () => {
+    it('should use spec.displayName for defaultTitle when present', () => {
+      component.resource.set({
+        metadata: { name: 'cluster-1' },
+        spec: { displayName: 'My Cluster' },
+      } as any);
+      expect(component.defaultTitle()).toBe('My Cluster');
+    });
+
+    it('should fall back to resourceId for defaultTitle when spec.displayName is absent', () => {
+      component.resource.set({ metadata: { name: 'cluster-1' } } as any);
+      expect(component.defaultTitle()).toBe('cluster-1');
+    });
+
+    it('should return empty string for defaultTitle when resource has no displayName and resourceId is undefined', () => {
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceId: undefined,
+        token: 'abc123',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
+          ui: { detailView: { fields: [] } },
+        },
+        entityName: 'test-resource',
+        parentNavigationContexts: ['project'],
+      })) as any;
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({
+          fromContext: vi.fn().mockReturnThis(),
+          navigate: vi.fn(),
+        }),
+        uxManager: () => ({ showAlert: vi.fn() }),
+        getNodeParams: vi.fn(),
+        getActiveFeatureToggles: () => [],
+      })) as any;
+      newComponent.resource.set({ metadata: { name: 'cluster-1' } } as any);
+      expect(newComponent.defaultTitle()).toBe('');
+    });
+
+    it('should read saved sections from localStorage via sections computed', () => {
+      const savedConfig = {
+        cards: [
+          { id: 'card-1', component: 'pm-card', type: 'angular', w: 6, h: 10 },
+        ],
+        sections: [{ id: 'section-1', label: 'Section 1', cards: [] }],
+      };
+      localStorage.setItem(
+        `pm.workspace:https://example.com.resourceType:Cluster.resourceId:cluster-1.user:undefined`,
+        JSON.stringify(savedConfig),
+      );
+
+      expect(component.sections().length).toBe(1);
+      expect(component.sections()[0].id).toBe('section-1');
+
+      localStorage.removeItem(
+        `pm.workspace:https://example.com.resourceType:Cluster.resourceId:cluster-1.user:undefined`,
+      );
+    });
+
+    it('should read saved cards from localStorage via cards computed', () => {
+      const savedConfig = {
+        cards: [
+          { id: 'card-1', component: 'pm-card', type: 'angular', w: 6, h: 10 },
+        ],
+        sections: [],
+      };
+      localStorage.setItem(
+        `pm.workspace:https://example.com.resourceType:Cluster.resourceId:cluster-1.user:undefined`,
+        JSON.stringify(savedConfig),
+      );
+
+      expect(component.cards().length).toBe(1);
+      expect(component.cards()[0].id).toBe('card-1');
+
+      localStorage.removeItem(
+        `pm.workspace:https://example.com.resourceType:Cluster.resourceId:cluster-1.user:undefined`,
+      );
+    });
+  });
 });
 
 describe('DetailViewComponent template', () => {
@@ -1167,10 +1410,12 @@ describe('DetailViewComponent template', () => {
   let mockGatewayService: any;
   let envConfigServiceMock: MockedObject<EnvConfigService>;
   let accountInfoServiceMock: MockedObject<AccountInfoService>;
+  let errorHandlerServiceMock: MockedObject<ErrorHandlerService>;
 
   beforeEach(() => {
     envConfigServiceMock = mock();
     accountInfoServiceMock = mock();
+    errorHandlerServiceMock = mock();
     mockResourceService = {
       read: vi.fn().mockReturnValue(of({ name: 'test-resource' })),
       readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
@@ -1180,18 +1425,16 @@ describe('DetailViewComponent template', () => {
     };
 
     TestBed.configureTestingModule({
-      imports: [DetailView],
       providers: [
         { provide: ResourceService, useValue: mockResourceService },
         { provide: GatewayService, useValue: mockGatewayService },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
         { provide: AccountInfoService, useValue: accountInfoServiceMock },
+        { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    });
-
-    TestBed.overrideComponent(DetailView, {
-      set: { schemas: [CUSTOM_ELEMENTS_SCHEMA] },
+    }).overrideComponent(DetailView, {
+      set: { imports: [NgTemplateOutlet], schemas: [CUSTOM_ELEMENTS_SCHEMA] },
     });
   });
 
@@ -1232,6 +1475,7 @@ describe('DetailViewComponent template', () => {
         showAlert: vi.fn(),
       }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     fixture.detectChanges();

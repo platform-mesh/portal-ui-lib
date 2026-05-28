@@ -2,53 +2,22 @@ import { ListView } from './list-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  ResourceDefinition,
-  ResourceSubscriptionResult,
-} from '@platform-mesh/portal-ui-lib/models';
-import {
-  ErrorHandlerService,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
-import * as utils from '@platform-mesh/portal-ui-lib/utils';
-import { Subject, of, throwError } from 'rxjs';
+import { ErrorHandlerService } from '@platform-mesh/portal-ui-lib/services';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 describe('ListViewComponent', () => {
   let component: ListView;
   let fixture: ComponentFixture<ListView>;
-  let mockResourceService: MockedObject<ResourceService>;
   let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
   let mockLuigiCoreService: any;
 
   beforeEach(() => {
-    mockResourceService = mock();
-    mockResourceService.list.mockReturnValue(
-      of({
-        items: [
-          {
-            metadata: { name: 'test' },
-            status: {
-              conditions: [{ type: 'Ready', status: 'True' }],
-            },
-          },
-        ],
-        resourceVersion: '1234567890',
-      }),
-    );
-    mockResourceService.resourceChangeSubscription.mockReturnValue(
-      of(undefined),
-    );
-    mockResourceService.delete.mockReturnValue(of({ data: {} } as any));
-    mockResourceService.create.mockReturnValue(of({ data: { name: 'test' } }));
-    mockResourceService.update.mockReturnValue(of({ data: { name: 'test' } }));
     mockLuigiCoreService = mock();
     mockErrorHandlerService = mock();
 
     TestBed.configureTestingModule({
       providers: [
-        { provide: ResourceService, useValue: mockResourceService },
         { provide: LuigiCoreService, useValue: mockLuigiCoreService },
         { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
       ],
@@ -71,12 +40,8 @@ describe('ListViewComponent', () => {
         apiGroup: 'core_k8s_io',
         version: 'v1alpha1',
         ui: {
-          listView: {
-            fields: [],
-          },
-          detailView: {
-            fields: [],
-          },
+          listView: { fields: [] },
+          detailView: { fields: [] },
         },
       },
     })) as any;
@@ -87,7 +52,9 @@ describe('ListViewComponent', () => {
         navigate: vi.fn(),
         withParams: vi.fn().mockReturnThis(),
       }),
+      uxManager: () => ({ showAlert: vi.fn() }),
       getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
     })) as any;
 
     fixture.detectChanges();
@@ -97,1129 +64,122 @@ describe('ListViewComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should fetch resources on init', () => {
-    expect(mockResourceService.list).toHaveBeenCalled();
-    expect(component.resources().length).toBeGreaterThan(0);
-  });
-
-  it('should include ready fields when listing resources', () => {
-    mockResourceService.list = vi.fn().mockReturnValue(of([]));
-
-    const readyCondition = {
-      jsonPathExpression: '$.status.ready',
-      property: 'status.ready',
-    };
-
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        version: 'v1alpha1',
-        readyCondition,
-        ui: {
-          listView: {
-            fields: [{ property: 'metadata.name' }],
-          },
-        },
-      } as ResourceDefinition,
-    })) as any;
-
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-        withParams: vi.fn().mockReturnThis(),
-      }),
-      getNodeParams: vi.fn(),
-    })) as any;
-
-    const expectedContext = newComponent.context();
-
-    newFixture.detectChanges();
-
-    const expectedFields = utils.generateGraphQLFields([
-      {
-        property: 'status.ready',
-      },
-      { property: 'metadata.name' },
-      {
-        property: 'metadata.deletionTimestamp',
-      },
-    ]);
-
-    expect(mockResourceService.list).toHaveBeenCalledWith(
-      'core_k8s_io_v1alpha1_clusters',
-      expectedFields,
-      expectedContext,
-      false,
-      { continue: undefined, limit: 5 },
-    );
-  });
-
-  it('should include metadata.namespace in query fields for namespaced resources', () => {
-    mockResourceService.list = vi.fn().mockReturnValue(of([]));
-
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        version: 'v1alpha1',
-        scope: 'Namespaced',
-        ui: {
-          listView: {
-            fields: [{ property: 'metadata.name' }],
-          },
-        },
-      } as ResourceDefinition,
-    })) as any;
-
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-        withParams: vi.fn().mockReturnThis(),
-      }),
-      getNodeParams: vi.fn(),
-    })) as any;
-
-    newFixture.detectChanges();
-
-    const fields = mockResourceService.list.mock.calls.at(-1)?.[1];
-    const fieldsAsString = JSON.stringify(fields);
-    expect(fieldsAsString).toContain('metadata');
-    expect(fieldsAsString).toContain('namespace');
-  });
-
-  it('should create a resource', () => {
-    const resource = { id: '', metadata: { name: 'test' } };
-
-    component.create(resource as any);
-    expect(mockResourceService.create).toHaveBeenCalled();
-  });
-
-  it('should navigate to resource', () => {
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-    const resource = {
-      metadata: { name: 'res1', namespace: 'test-namespace' },
-    };
-    const navSpy = vi.fn();
-    history.replaceState(null, '', '/?namespace=old&view=list');
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        version: 'v1alpha1',
-        scope: 'Namespaced',
-        ui: {
-          detailView: {
-            fields: [],
-          },
-        },
-      },
-    })) as any;
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        navigate: navSpy,
-      }),
-    })) as any;
-    newFixture.detectChanges();
-
-    newComponent.navigateToResource(resource as any);
-    expect(window.location.search).toContain('namespace=test-namespace');
-    expect(window.location.search).toContain('view=list');
-    expect(navSpy).toHaveBeenCalledWith('res1');
-  });
-
-  it('should clear namespace param for cluster scoped resource', () => {
-    const resource = {
-      metadata: { name: 'res1', namespace: 'test-namespace' },
-    };
-    const navSpy = vi.fn();
-    history.replaceState(null, '', '/?namespace=old&view=list');
-    component.LuigiClient = (() => ({
-      linkManager: () => ({
-        navigate: navSpy,
-      }),
-    })) as any;
-
-    component.navigateToResource(resource as any);
-
-    expect(window.location.search).not.toContain('namespace=');
-    expect(window.location.search).toContain('view=list');
-    expect(navSpy).toHaveBeenCalledWith('res1');
-  });
-
-  it('should not navigate when detailView is not defined', () => {
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        ui: {
-          listView: {
-            fields: [],
-          },
-        },
-      },
-    })) as any;
-
-    const resource = { id: '', metadata: { name: 'res1' } };
-    const navSpy = vi.fn();
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        navigate: navSpy,
-      }),
-    })) as any;
-
-    newComponent.navigateToResource(resource as any);
-    expect(navSpy).not.toHaveBeenCalled();
-  });
-
-  it('should not navigate when ui is not defined', () => {
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-      },
-    })) as any;
-
-    const resource = { id: '', metadata: { name: 'res1' } };
-    const navSpy = vi.fn();
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        navigate: navSpy,
-      }),
-    })) as any;
-
-    newComponent.navigateToResource(resource as any);
-    expect(navSpy).not.toHaveBeenCalled();
-  });
-
-  it('should open create resource modal', () => {
-    const openSpy = vi.fn();
-    (component as any).createModal = () => ({ open: openSpy });
-    component.openCreateResourceModal();
-    expect(openSpy).toHaveBeenCalledWith();
-  });
-
-  it('should check create view fields existence', () => {
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-
-    const mockContext = {
-      resourceDefinition: {
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        entityCollection: 'clusters',
-        ui: {
-          createView: {
-            fields: [{ property: 'any' }],
-          },
-          listView: { fields: [] },
-        },
-      },
-    } as any;
-
-    newComponent.context = (() => mockContext) as any;
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-        withParams: vi.fn().mockReturnThis(),
-      }),
-      getNodeParams: vi.fn(),
-    })) as any;
-
-    newFixture.detectChanges();
-
-    expect(newComponent.resourceDefinition()).toEqual(
-      mockContext.resourceDefinition,
-    );
-    expect(newComponent.hasUiCreateViewFields()).toBe(true);
-  });
-
-  it('should handle resource service list error', () => {
-    mockResourceService.list.mockReturnValueOnce(
-      throwError(() => new Error('List failed')),
-    );
-
-    const newFixture = TestBed.createComponent(ListView);
-    const newComponent = newFixture.componentInstance;
-
-    newComponent.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        ui: {
-          listView: {
-            fields: [],
-          },
-        },
-      },
-    })) as any;
-
-    newComponent.LuigiClient = (() => ({
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-        withParams: vi.fn().mockReturnThis(),
-      }),
-      getNodeParams: vi.fn(),
-    })) as any;
-
-    newFixture.detectChanges();
-
-    // Component should still be created even if list fails
-    expect(newComponent).toBeTruthy();
-  });
-
-  describe('Undefined checks', () => {
-    it('should show alert and throw error when resourceDefinition is undefined in list method', () => {
+  describe('resourceTitleDefinition', () => {
+    it('should use resourceTitle.label when defined', () => {
       const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
-
-      // Set context to return undefined resourceDefinition
-      newComponent.context = (() => ({
-        resourceDefinition: undefined,
-      })) as any;
-
-      const showAlertSpy = vi.fn();
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      // Test that list() method throws error when resourceDefinition is undefined
-      expect(() => newComponent.list()).toThrow(
-        'Resource definition is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource definition is not defined',
-        type: 'error',
-      });
-    });
-
-    it('should show alert and throw error when resourceDefinition is undefined in create method', () => {
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      // Set context to return undefined resourceDefinition
-      newComponent.context = (() => ({
-        resourceDefinition: undefined,
-      })) as any;
-
-      const showAlertSpy = vi.fn();
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      const resource = { id: '', metadata: { name: 'test' } } as any;
-
-      // Test that create() method throws error when resourceDefinition is undefined
-      expect(() => newComponent.create(resource)).toThrow(
-        'Resource definition is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource definition is not defined',
-        type: 'error',
-      });
-    });
-
-    it('should show alert and throw error when navigating to resource with undefined name', () => {
-      const resource = { metadata: {} } as any;
-      const showAlertSpy = vi.fn();
-      component.LuigiClient = (() => ({
-        linkManager: () => ({
-          navigate: vi.fn(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-      })) as any;
-
-      expect(() => component.navigateToResource(resource)).toThrow(
-        'Resource name is not defined',
-      );
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Resource name is not defined',
-        type: 'error',
-      });
-    });
-  });
-
-  // NEW TEST CASES FOR MISSING COVERAGE
-
-  describe('Pagination', () => {
-    it('should update pagination limit when onLimitChange is called', () => {
-      const event = 10;
-
-      component.onLimitChange(event);
-
-      expect(component.paginationLimit()).toBe(10);
-    });
-
-    it('should reset pagination when limit changes', () => {
-      // Setup initial state with some resources
-      component.resources.set([
-        { id: '', metadata: { name: 'res1' } },
-        { id: '', metadata: { name: 'res2' } },
-        { id: '', metadata: { name: 'res3' } },
-        { id: '', metadata: { name: 'res4' } },
-        { id: '', metadata: { name: 'res5' } },
-      ] as any);
-      component.remainingItemCount.set(10);
-
-      const event = 3;
-
-      component.onLimitChange(event);
-
-      expect(component.paginationLimit()).toBe(3);
-      expect(component.resources().length).toBe(3);
-      expect(component.hasMore()).toBe(true);
-    });
-
-    it('should load more resources when loadMore is called and hasMore is true', () => {
-      const listSpy = vi.spyOn(component, 'list');
-      component.hasMore.set(true);
-
-      component.loadMore();
-
-      expect(listSpy).toHaveBeenCalled();
-    });
-
-    it('should not load more resources when hasMore is false', () => {
-      const listSpy = vi.spyOn(component, 'list');
-      component.hasMore.set(false);
-
-      component.loadMore();
-
-      expect(listSpy).not.toHaveBeenCalled();
-    });
-
-    it('should calculate totalItemsCount correctly', () => {
-      component.resources.set([
-        { id: '', metadata: { name: 'res1' } },
-        { id: '', metadata: { name: 'res2' } },
-      ] as any);
-      component.remainingItemCount.set(8);
-
-      expect(component.totalItemsCount()).toBe(10);
-    });
-  });
-
-  describe('List subscription', () => {
-    beforeEach(() => {
-      mockResourceService.list.mockReturnValue(
-        of({ items: [], resourceVersion: '1' }),
-      );
-    });
-
-    it('should handle ADDED operation in subscription', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
-      );
-
-      const initialResources = [{ id: '', metadata: { name: 'existing' } }] as any;
-      mockResourceService.list.mockReturnValue(
-        of({ items: initialResources, resourceVersion: '1' }),
-      );
-
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
       newComponent.context = (() => ({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
           ui: {
-            listView: { fields: [] },
+            listView: { resourceTitle: { label: 'My Clusters' }, fields: [] },
           },
         },
       })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
+      newComponent.LuigiClient = component.LuigiClient;
       newFixture.detectChanges();
-
-      // Trigger subscription with ADDED
-      subscriptionSubject.next({
-        type: 'ADDED',
-        object: { id: '', metadata: { name: 'new-resource' } },
-      });
-
-      expect(newComponent.resources().length).toBe(2);
-      expect(
-        newComponent
-          .resources()
-          .some((r) => r.metadata.name === 'new-resource'),
-      ).toBe(true);
+      expect(newComponent.resourceTitleDefinition()).toBe('My Clusters');
     });
 
-    it('should handle MODIFIED operation in subscription', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
-      );
+    it('should fall back to entityCollection when resourceTitle is not defined', () => {
+      expect(component.resourceTitleDefinition()).toBe('clusters');
+    });
 
-      const initialResources = [
-        { id: '', metadata: { name: 'existing' }, spec: { type: 'v1' } },
-      ] as any;
-      mockResourceService.list.mockReturnValue(
-        of({ items: initialResources, resourceVersion: '1' }),
-      );
-
+    it('should return empty string when neither resourceTitle nor entityCollection is defined', () => {
       const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          ui: { listView: { fields: [] } },
+        },
+      })) as any;
+      newComponent.LuigiClient = component.LuigiClient;
+      newFixture.detectChanges();
+      expect(newComponent.resourceTitleDefinition()).toBe('');
+    });
+  });
 
+  describe('resourceDescriptionDefinition', () => {
+    it('should use resourceDescription.label when defined', () => {
+      const newFixture = TestBed.createComponent(ListView);
+      const newComponent = newFixture.componentInstance;
       newComponent.context = (() => ({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
           ui: {
-            listView: { fields: [] },
+            listView: {
+              resourceDescription: { label: 'All your clusters' },
+              fields: [],
+            },
           },
         },
       })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
+      newComponent.LuigiClient = component.LuigiClient;
       newFixture.detectChanges();
-
-      // Trigger subscription with MODIFIED
-      subscriptionSubject.next({
-        type: 'MODIFIED',
-        object: { id: '', metadata: { name: 'existing' }, spec: { type: 'v2' } },
-      });
-
-      expect(newComponent.resources().length).toBe(1);
-      expect(newComponent.resources()[0]?.spec?.type).toBe('v2');
+      expect(newComponent.resourceDescriptionDefinition()).toBe(
+        'All your clusters',
+      );
     });
 
-    it('should handle DELETED operation in subscription', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
+    it('should use default description when resourceDescription is not defined', () => {
+      expect(component.resourceDescriptionDefinition()).toBe(
+        'This page displays the created clusters in your environment',
       );
+    });
+  });
 
-      const initialResources = [
-        { id: '', metadata: { name: 'to-delete' } },
-        { id: '', metadata: { name: 'to-keep' } },
-      ] as any;
-      mockResourceService.list.mockReturnValue(
-        of({ items: initialResources, resourceVersion: '1' }),
-      );
-
+  describe('dashboardConfig', () => {
+    it('should use backgroundImageUrl from definition when provided', () => {
       const newFixture = TestBed.createComponent(ListView);
       const newComponent = newFixture.componentInstance;
-
       newComponent.context = (() => ({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
           ui: {
-            listView: { fields: [] },
+            listView: { backgroundImageUrl: '/assets/custom.png', fields: [] },
           },
         },
       })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
+      newComponent.LuigiClient = component.LuigiClient;
       newFixture.detectChanges();
-
-      // Trigger subscription with DELETED
-      subscriptionSubject.next({
-        type: 'DELETED',
-        object: { id: '', metadata: { name: 'to-delete' } },
-      });
-
-      expect(newComponent.resources().length).toBe(1);
-      expect(newComponent.resources()[0].metadata.name).toBe('to-keep');
-    });
-
-    it('should not modify resources when MODIFIED resource does not exist in list', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
+      expect(newComponent.dashboardConfig().backgroundImageUrl).toBe(
+        '/assets/custom.png',
       );
-
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          entityCollection: 'clusters',
-          entity: 'Cluster',
-          apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      newComponent.resources.set([{ id: '', metadata: { name: 'existing' } }] as any);
-
-      // Trigger subscription with MODIFIED for non-existent resource
-      subscriptionSubject.next({
-        type: 'MODIFIED',
-        object: { id: '', metadata: { name: 'non-existent' } },
-      });
-
-      expect(newComponent.resources().length).toBe(1);
-      expect(newComponent.resources()[0].metadata.name).toBe('existing');
     });
 
-    it('should handle null/undefined subscription results', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      const initialResources = [{ id: '', metadata: { name: 'existing' } }] as any;
-      mockResourceService.list.mockReturnValue(
-        of({ items: initialResources, resourceVersion: '1' }),
+    it('should use default backgroundImageUrl when not defined', () => {
+      expect(component.dashboardConfig().backgroundImageUrl).toBe(
+        '/assets/pm_background.png',
       );
-
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          entityCollection: 'clusters',
-          entity: 'Cluster',
-          apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      // Trigger subscription with MODIFIED for non-existent resource
-      subscriptionSubject.next({
-        type: 'MODIFIED',
-        object: { id: '', metadata: { name: 'non-existent' } },
-      });
-
-      expect(newComponent.resources().length).toBe(1);
-      expect(newComponent.resources()[0].metadata.name).toBe('existing');
     });
 
-    it('should handle null/undefined subscription results', () => {
-      const subscriptionSubject = new Subject<
-        ResourceSubscriptionResult | undefined
-      >();
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
-      );
+    it('should have no custom actions', () => {
+      expect(component.dashboardConfig().customActions.length).toBe(0);
+    });
+  });
 
-      const initialResources = [{ id: '', metadata: { name: 'existing' } }] as any;
-      mockResourceService.list.mockReturnValue(
-        of({ items: initialResources, resourceVersion: '1' }),
-      );
-
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          entityCollection: 'clusters',
-          entity: 'Cluster',
-          apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      // Trigger subscription with null
-      subscriptionSubject.next(undefined);
-
-      // Resources should remain unchanged
-      expect(newComponent.resources()).toEqual(initialResources);
+  describe('cards', () => {
+    it('should return a single resource-table-card config', () => {
+      const cards = component.cards();
+      expect(cards.length).toBe(1);
+      expect(cards[0].id).toBe('pm-resource-table-card');
+      expect(cards[0].component).toBe('pm-resource-table-card');
+      expect(cards[0].w).toBe(12);
+      expect(cards[0].h).toBe(50);
     });
 
-    it('should unsubscribe from subscription on cleanup', () => {
-      const subscription = { unsubscribe: vi.fn() } as any;
-      const subscriptionSubject: MockedObject<
-        Subject<ResourceSubscriptionResult | undefined>
-      > = mock();
-      subscriptionSubject.subscribe.mockReturnValue(subscription);
-      mockResourceService.resourceChangeSubscription.mockReturnValue(
-        subscriptionSubject,
-      );
-
-      const newFixture = TestBed.createComponent(ListView);
-      const newComponent = newFixture.componentInstance;
-
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          entityCollection: 'clusters',
-          entity: 'Cluster',
-          apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
-          ui: {
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        getNodeParams: vi.fn(),
-      })) as any;
-
-      newFixture.detectChanges();
-
-      // Change resourceVersion to trigger new subscription
-      newComponent.resourceVersion.set('new-version');
-      newFixture.detectChanges();
-
-      // The old subscription should have been unsubscribed
-      expect(subscription.unsubscribe).toHaveBeenCalled();
-    });
-
-    describe('List method', () => {
-      it('should not call list twice if already loading', () => {
-        const listSpy = vi.fn().mockReturnValueOnce(
-          of({
-            items: [],
-            resourceVersion: '123',
-          }),
-        );
-        mockResourceService.list = listSpy;
-
-        // Manually set isLoadingList to true
-        (component as any).isLoadingList = true;
-
-        component.list();
-
-        expect(listSpy).not.toHaveBeenCalled();
-      });
-
-      it('should set hasMore to false when continue token is not present', () => {
-        mockResourceService.list.mockReturnValue(
-          of({
-            items: [{ id: '', metadata: { name: 'test' } }],
-            resourceVersion: '123',
-            continue: undefined,
-            remainingItemCount: 0,
-          }),
-        );
-
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            version: 'v1alpha1',
-            ui: {
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.hasMore()).toBe(false);
-      });
-
-      it('should set hasMore to true when continue token is present', () => {
-        mockResourceService.list.mockReturnValue(
-          of({
-            items: [{ id: '', metadata: { name: 'test' } }],
-            resourceVersion: '123',
-            continue: 'next-token',
-            remainingItemCount: 5,
-          }),
-        );
-
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            version: 'v1alpha1',
-            ui: {
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.hasMore()).toBe(true);
-        expect((newComponent as any).currentContinueToken).toBe('next-token');
-      });
-
-      it('should merge existing resources with new ones from list', () => {
-        const firstResponse = {
-          items: [{ id: '', metadata: { name: 'res1' }, spec: { version: 'v1' } }],
-          resourceVersion: '123',
-          continue: 'token1',
-        };
-
-        const secondResponse = {
-          items: [
-            { id: '', metadata: { name: 'res1' }, spec: { version: 'v2' } },
-            { id: '', metadata: { name: 'res2' }, spec: { version: 'v1' } },
-          ],
-          resourceVersion: '124',
-        };
-
-        let callCount = 0;
-        mockResourceService.list.mockImplementation(() => {
-          callCount++;
-          return of(callCount === 1 ? firstResponse : secondResponse);
-        });
-
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            version: 'v1alpha1',
-            ui: {
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        // First call creates initial resources
-        expect(newComponent.resources().length).toBe(1);
-
-        // Manually trigger second list call
-        newComponent.list();
-
-        // Should have merged resources
-        expect(newComponent.resources().length).toBe(2);
-        const res1 = newComponent
-          .resources()
-          .find((r) => r.metadata.name === 'res1');
-        expect(res1?.spec?.version).toBe('v2'); // Updated version
-      });
-
-      it('should handle error and call error handler service', () => {
-        const error = new Error('Unauthorized');
-        mockResourceService.list.mockReturnValue(throwError(() => error));
-
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            version: 'v1alpha1',
-            ui: {
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
-      });
-
-      it('should set remainingItemCount to 0 when not provided in response', () => {
-        mockResourceService.list.mockReturnValue(
-          of({
-            items: [{ id: '', metadata: { name: 'test' } }],
-            resourceVersion: '123',
-          }),
-        );
-
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            version: 'v1alpha1',
-            ui: {
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.remainingItemCount()).toBe(0);
-      });
-    });
-
-    describe('Modal operations', () => {
-      it('should close create modal after successful creation', () => {
-        const resource = { id: '', metadata: { name: 'test' } } as any;
-        const closeSpy = vi.fn();
-        (component as any).createModal = () => ({ close: closeSpy });
-
-        component.create(resource);
-
-        expect(closeSpy).toHaveBeenCalled();
-      });
-    });
-
-    describe('Computed properties', () => {
-      it('should return false for hasUiCreateViewFields when createView is undefined', () => {
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            ui: {
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.hasUiCreateViewFields()).toBe(false);
-      });
-
-      it('should return false for hasUiCreateViewFields when fields array is empty', () => {
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            ui: {
-              createView: {
-                fields: [],
-              },
-              listView: { fields: [] },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.hasUiCreateViewFields()).toBe(false);
-      });
-
-      it('should compute viewColumns correctly', () => {
-        const newFixture = TestBed.createComponent(ListView);
-        const newComponent = newFixture.componentInstance;
-
-        newComponent.context = (() => ({
-          resourceDefinition: {
-            entityCollection: 'clusters',
-            entity: 'Cluster',
-            apiGroup: 'core_k8s_io',
-            ui: {
-              listView: {
-                fields: [
-                  { property: 'metadata.name' },
-                  { property: 'spec.version' },
-                ],
-              },
-            },
-          },
-        })) as any;
-
-        newComponent.LuigiClient = (() => ({
-          linkManager: () => ({
-            fromContext: vi.fn().mockReturnThis(),
-            navigate: vi.fn(),
-            withParams: vi.fn().mockReturnThis(),
-          }),
-          getNodeParams: vi.fn(),
-        })) as any;
-
-        newFixture.detectChanges();
-
-        expect(newComponent.columns().length).toBe(2);
-      });
+    it('should pass LuigiClient and context as componentInputs', () => {
+      const cards = component.cards();
+      expect(cards[0].componentInputs?.['LuigiClient']).toBeDefined();
+      expect(cards[0].componentInputs?.['context']).toBeDefined();
     });
   });
 });

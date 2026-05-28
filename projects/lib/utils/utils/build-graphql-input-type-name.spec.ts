@@ -92,9 +92,9 @@ describe('buildGraphQLInputTypeName', () => {
     });
 
     it('should handle groups starting with a digit', () => {
-      expect(
-        buildGraphQLInputTypeName('3scale.net', 'v1', 'APIProduct'),
-      ).toBe('3scaleNetV1APIProduct_Input');
+      expect(buildGraphQLInputTypeName('3scale.net', 'v1', 'APIProduct')).toBe(
+        '3scaleNetV1APIProduct_Input',
+      );
     });
   });
 

@@ -8,6 +8,7 @@ import { ErrorView } from '../components/error/error.component';
 import { OSListView } from '../components/generic-ui/opensearch-list-view/os-list-view.component';
 import { registerLuigiWebComponents } from '../utils/wc';
 import { Injector, inject, provideAppInitializer } from '@angular/core';
+import { createCustomElement } from '@angular/elements';
 
 export const provideLuigiWebComponents = () =>
   provideAppInitializer(() => {
@@ -23,6 +24,5 @@ export const provideLuigiWebComponents = () =>
       },
       injector,
     );
-
     return undefined;
   });
