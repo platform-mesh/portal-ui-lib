@@ -32,6 +32,7 @@ import {
   startWith,
   switchMap,
   takeUntil,
+  tap,
 } from 'rxjs/operators';
 
 const defaultColumns: FieldDefinition[] = [
@@ -238,6 +239,10 @@ export class NamespaceSelectionRendererService {
                 }),
               result.items,
             ),
+            tap((result) => {
+              const namespaces = result.map((e) => e.metadata?.name);
+              this.luigiCoreService.setInGlobalContext({ namespaces });
+            }),
             takeUntil(stop$),
           ),
       ),

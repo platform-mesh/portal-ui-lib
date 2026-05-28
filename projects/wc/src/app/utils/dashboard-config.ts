@@ -16,7 +16,8 @@ export interface DashboardConfigData {
 export const calculateDashboardConfigKey = (
   params: DashboardConfigKeyParams,
 ): string =>
-  `pm.workspace:${params.workspacePath}.resourceType:${params.entity}.resourceId:${params.resourceId}.user:${params.userId}` + (params.seed ? `.seed:${params.seed}` : '');
+  `pm.workspace:${params.workspacePath}.resourceType:${params.entity}.resourceId:${params.resourceId}.user:${params.userId}` +
+  (params.seed ? `.seed:${params.seed}` : '');
 
 export const writeConfig = (
   params: DashboardConfigKeyParams,

@@ -9,6 +9,7 @@ export interface ResourceNodeContext extends Partial<NodeContext> {
   accountId?: string;
   kcpCA?: string;
   namespaceId?: string;
+  namespaces?: string[];
   portalContext: {
     crdGatewayApiUrl: string;
     kcpWorkspaceUrl?: string;

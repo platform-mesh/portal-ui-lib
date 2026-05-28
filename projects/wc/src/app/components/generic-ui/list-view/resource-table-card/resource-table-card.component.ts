@@ -110,23 +110,34 @@ export class ResourceTableCard {
     fieldErrors: this.createFieldErrors(),
   }));
 
-  config = computed<TableCardConfig>(() => ({
-    tableConfig: {
-      fields: this.columns(),
-      totalItemsCount: this.totalItemsCount(),
-      paginationLimit: this.paginationLimit(),
-      hasMore: this.hasMore(),
-      // growMode: 'Button',
-      // loadMoreButtonText: 'Load More'
-    },
-    ...(this.hasUiCreateViewFields() && {
-      createResourceFormConfig: {
-        fields: this.toFormFields(
-          this.resourceDefinition()?.ui?.createView?.fields ?? [],
-        ),
+  createFormFields = computed(() => {
+    let fields = this.resourceDefinition()?.ui?.createView?.fields || [];
+    if (this.hasUiCreateViewFields() && this.isNamespaced()) {
+      fields = [
+        ...fields,
+        {
+          property: ResourceFieldNames.MetadataNamespace,
+          required: true,
+          label: 'Namespace',
+          values: this.context().namespaces,
+        },
+      ];
+    }
+
+    return fields;
+  });
+
+  config = computed<TableCardConfig>(() => {
+    return {
+      tableConfig: {
+        fields: this.columns(),
+        totalItemsCount: this.totalItemsCount(),
+        paginationLimit: this.paginationLimit(),
+        hasMore: this.hasMore(),
+        createResourceFormConfig: this.toFormFields(this.createFormFields()),
       },
-    }),
-  }));
+    };
+  });
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private currentContinueToken: string | undefined = undefined;
@@ -281,9 +292,9 @@ export class ResourceTableCard {
         error = K8S_NAME_ERROR;
       }
     } else {
-      const field = this.toFormFields(
-        this.resourceDefinition()?.ui?.createView?.fields ?? [],
-      ).find((f) => f.name === name);
+      const field = this.toFormFields(this.createFormFields()).find(
+        (f) => f.name === name,
+      );
       if (field?.required && !value) {
         error = 'This field is required';
       }
@@ -306,7 +317,7 @@ export class ResourceTableCard {
   }
 
   private toFormFields(fields: FieldDefinition[]): FormFieldDefinition[] {
-    return fields.map((field) => {
+    return (fields || []).map((field) => {
       if (typeof field.property !== 'string') {
         throw new Error(
           `Form field property must be a string, got: ${JSON.stringify(field.property)}`,
@@ -350,4 +361,9 @@ export class ResourceTableCard {
     }
     return resourceDefinition;
   }
+
+  protected validateEditForm(event: {
+    resource: Resource;
+    formChangeEvent: FormFieldChangeEvent;
+  }) {}
 }

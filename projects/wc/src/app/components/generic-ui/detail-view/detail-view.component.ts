@@ -159,7 +159,7 @@ export class DetailView {
       entity: this.resourceDefinition()?.entity,
       resourceId: this.resourceId(),
       userId: this.context().userId,
-      seed: this.isDemoEnabled() ? 'demo' : ''
+      seed: this.isDemoEnabled() ? 'demo' : '',
     });
 
     return c?.sections ?? (this.isDemoEnabled() ? SECTIONS : []);
@@ -170,7 +170,7 @@ export class DetailView {
       entity: this.resourceDefinition()?.entity,
       resourceId: this.resourceId(),
       userId: this.context().userId,
-      seed: this.isDemoEnabled() ? 'demo' : ''
+      seed: this.isDemoEnabled() ? 'demo' : '',
     });
 
     return c?.cards ?? (this.isDemoEnabled() ? CARDS : []);
@@ -444,7 +444,7 @@ export class DetailView {
         entity: this.resourceDefinition()?.entity,
         resourceId: this.resourceId(),
         userId: this.context().userId,
-        seed: this.isDemoEnabled() ? 'demo' : ''
+        seed: this.isDemoEnabled() ? 'demo' : '',
       },
       config,
     );
