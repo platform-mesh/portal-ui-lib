@@ -43,6 +43,7 @@ describe('NamespaceSelectionRendererService', () => {
         getSearchParams: () => searchParams,
         addSearchParams: addSearchParamsMock,
       })),
+      setInGlobalContext: vi.fn(),
     };
 
     TestBed.configureTestingModule({
