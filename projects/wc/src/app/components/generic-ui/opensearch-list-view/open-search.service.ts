@@ -78,37 +78,37 @@ export class OpenSearchService {
       throw Error(message);
     }
 
-    // return this.httpClient
-    //   .get<OpenSearchResult>(openSearchApiUrl, {
-    //     headers: {
-    //       Authorization: `Bearer ${nodeContext.token}`,
-    //     },
-    //     params: this.buildParams(request),
-    //   })
-    //   .pipe(
-    //     map((response) => ({
-    //       ...response,
-    //       results: response.results.map((r) => ({
-    //         ...r,
-    //         ...expandDotNotation({
-    //           ...r.source.default_fields,
-    //           ...r.source.filterable_fields,
-    //           ...r.source.semantic_fields,
-    //         }),
-    //       })),
-    //     })),
-    //   );
+    return this.httpClient
+      .get<OpenSearchResult>(openSearchApiUrl, {
+        headers: {
+          Authorization: `Bearer ${nodeContext.token}`,
+        },
+        params: this.buildParams(request),
+      })
+      .pipe(
+        map((response) => ({
+          ...response,
+          results: response.results.map((r) => ({
+            ...r,
+            ...expandDotNotation({
+              ...r.source.default_fields,
+              ...r.source.filterable_fields,
+              ...r.source.semantic_fields,
+            }),
+          })),
+        })),
+      );
 
-    const results = mockOpenSearchResources.map((r) => ({
-      ...r,
-      ...expandDotNotation({
-        ...r.source.default_fields,
-        ...r.source.filterable_fields,
-        ...r.source.semantic_fields,
-      }),
-    }));
-
-    return of({ results, source: '', nextCursor: '' });
+    // const results = mockOpenSearchResources.map((r) => ({
+    //   ...r,
+    //   ...expandDotNotation({
+    //     ...r.source.default_fields,
+    //     ...r.source.filterable_fields,
+    //     ...r.source.semantic_fields,
+    //   }),
+    // }));
+    //
+    // return of({ results, source: '', nextCursor: '' });
   };
 
   private buildParams(request: OpenSearchRequest): HttpParams {

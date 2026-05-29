@@ -1,5 +1,5 @@
 import { addSearchParams } from '../../../utils/set-search-params';
-import { GenericView } from '../generic-view/generic-view.component';
+import { GenericView } from './generic-view/generic-view.component';
 import { OpenSearchResult, OpenSearchService } from './open-search.service';
 import {
   ChangeDetectionStrategy,
