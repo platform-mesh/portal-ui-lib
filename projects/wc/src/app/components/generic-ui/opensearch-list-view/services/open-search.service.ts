@@ -2,8 +2,15 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { GenericResource } from '@openmfp/ngx';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-import { Observable, of } from 'rxjs';
+import {
+  ReadResources,
+  ReadResourcesPagination,
+  ReadResourcesParams,
+  ReadResourcesResult,
+  ReadResourcesSubscriptionResult,
+  ResourceNodeContext,
+} from '@platform-mesh/portal-ui-lib/services';
+import { EMPTY, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { mockOpenSearchResources } from './open-search.mock';
 
@@ -138,5 +145,38 @@ export class OpenSearchService {
       text: message,
       type: 'error',
     });
+  }
+
+  /**
+   * Returns a {@link ReadResources}-shaped adapter over this service so it can
+   * be swapped for ResourceService behind a feature toggle. OpenSearch has no
+   * subscription channel, so `subscribe` returns an EMPTY observable.
+   */
+  asReadResources(): ReadResources {
+    return {
+      list: (
+        nodeContext: ResourceNodeContext,
+        pagination: ReadResourcesPagination,
+        params: ReadResourcesParams,
+      ): Observable<ReadResourcesResult> => {
+        const request: OpenSearchRequest = {
+          q: params.q ?? '',
+          resource:
+            params.resource ?? nodeContext.resourceDefinition?.entityCollection,
+          filter: params.filter,
+          limit: pagination.limit,
+          cursor: pagination.cursor,
+        };
+
+        return this.listResources(nodeContext, request).pipe(
+          map((result): ReadResourcesResult => ({
+            items: result?.results ?? [],
+            nextCursor: result?.nextCursor,
+          })),
+        );
+      },
+      subscribe: (): Observable<ReadResourcesSubscriptionResult | undefined> =>
+        EMPTY,
+    };
   }
 }

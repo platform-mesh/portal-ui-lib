@@ -1,6 +1,6 @@
 import { addSearchParams } from '../../../utils/set-search-params';
+import { ReadResourcesProxyService } from './services/read-resources-proxy.service';
 import { GenericView } from './generic-view/generic-view.component';
-import { OpenSearchResult, OpenSearchService } from './open-search.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,6 +21,7 @@ import {
 } from '@openmfp/ngx';
 import {
   ErrorHandlerService,
+  ReadResourcesResult,
   ResourceNodeContext,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
@@ -39,7 +40,7 @@ import { finalize } from 'rxjs/operators';
   imports: [GenericView, DeclarativeTableCard],
 })
 export class OSListView {
-  private openSearchService = inject(OpenSearchService);
+  private readResourcesProxy = inject(ReadResourcesProxyService);
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
 
@@ -134,34 +135,42 @@ export class OSListView {
     }
     this.isLoadingList = true;
 
-    this.openSearchService
-      .listResources(this.context(), {
-        q: searchKey ?? '',
-        resource: this.resourceDefinition()?.entityCollection,
-        limit: this.paginationLimit(),
-        cursor: this.currentContinueToken,
-      })
+    this.readResourcesProxy
+      .forContext(this.LuigiClient())
+      .list(
+        this.context(),
+        {
+          limit: this.paginationLimit(),
+          cursor: this.currentContinueToken,
+        },
+        {
+          q: searchKey ?? '',
+          resource: this.resourceDefinition()?.entityCollection,
+        },
+      )
       .pipe(
         finalize(() => (this.isLoadingList = false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (result: OpenSearchResult) => {
+        next: (result: ReadResourcesResult) => {
           if (isInitialLoad) {
-            this.resources.set(result.results ?? []);
+            this.resources.set(result.items ?? []);
           } else {
             this.resources.update((values) => {
               const map = new Map(values.map((i) => [i.id, i]));
-              (result.results ?? []).forEach((i) => {
+              (result.items ?? []).forEach((i) => {
                 map.set(i.id, i);
               });
               return [...map.values()];
             });
           }
-          // this.resourceVersion.set(result.resourceVersion);
+          if (result.resourceVersion !== undefined) {
+            this.resourceVersion.set(result.resourceVersion);
+          }
           this.hasMore.set(!!result.nextCursor);
           this.currentContinueToken = result.nextCursor;
-          // this.remainingItemCount.set(result.remainingItemCount || 0);
+          this.remainingItemCount.set(result.remainingItemCount || 0);
         },
         error: (error) => {
           this.errorHandlerService.handleError(error);
