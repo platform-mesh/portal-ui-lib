@@ -2442,4 +2442,196 @@ describe('ResourceService', () => {
       expect(service.getAccessibleName(resource)).toBe('Resource is not ready');
     });
   });
+
+  describe('asReadResources', () => {
+    const apolloListResponse = (overrides: any = {}) =>
+      of({
+        data: {
+          core_k8s_io: {
+            v1: {
+              Testkinds: {
+                resourceVersion: 'rv-7',
+                items: [{ name: 'res1', metadata: { uid: 'uid1' } }],
+                continue: 'next-token',
+                remainingItemCount: 3,
+                ...overrides,
+              },
+            },
+          },
+        },
+      });
+
+    it('should map list result to ReadResourcesResult shape', async () => {
+      mockApollo.query.mockReturnValue(apolloListResponse());
+
+      const adapter = service.asReadResources();
+      const result = await firstValueFrom(
+        adapter.list(
+          namespacedNodeContext,
+          { limit: 5, cursor: 'prev-token' },
+          { fields: ['name'] },
+        ),
+      );
+
+      expect(result).toEqual({
+        items: expect.any(Array),
+        nextCursor: 'next-token',
+        remainingItemCount: 3,
+        resourceVersion: 'rv-7',
+      });
+      expect(result.items).toHaveLength(1);
+    });
+
+    it('should pass cursor as continue and limit through to apollo variables', async () => {
+      mockApollo.query.mockReturnValue(apolloListResponse());
+
+      await firstValueFrom(
+        service
+          .asReadResources()
+          .list(
+            namespacedNodeContext,
+            { limit: 7, cursor: 'cur-1' },
+            { fields: ['name'] },
+          ),
+      );
+
+      const queryCall = mockApollo.query.mock.calls[0][0];
+      expect(queryCall.variables).toEqual(
+        expect.objectContaining({ limit: 7, continue: 'cur-1' }),
+      );
+    });
+
+    it('should default operation and fields from resourceDefinition.ui.listView.fields', async () => {
+      mockApollo.query.mockReturnValue(apolloListResponse());
+
+      const ctxWithFields: any = {
+        ...namespacedNodeContext,
+        resourceDefinition: {
+          ...namespacedNodeContext.resourceDefinition,
+          ui: { listView: { fields: ['name'] } },
+        },
+      };
+
+      const result = await firstValueFrom(
+        service.asReadResources().list(ctxWithFields, {}, {}),
+      );
+
+      expect(result.items).toHaveLength(1);
+      expect(mockApollo.query).toHaveBeenCalled();
+    });
+
+    it('should handle missing optional fields in list result without throwing', async () => {
+      mockApollo.query.mockReturnValue(
+        apolloListResponse({
+          continue: undefined,
+          remainingItemCount: undefined,
+        }),
+      );
+
+      const result = await firstValueFrom(
+        service
+          .asReadResources()
+          .list(namespacedNodeContext, {}, { fields: ['name'] }),
+      );
+
+      expect(result.nextCursor).toBeUndefined();
+      expect(result.remainingItemCount).toBeUndefined();
+    });
+
+    it('should respect readFromParentKcpPath flag on list', async () => {
+      mockApollo.query.mockReturnValue(apolloListResponse());
+
+      await firstValueFrom(
+        service
+          .asReadResources()
+          .list(
+            namespacedNodeContext,
+            {},
+            { fields: ['name'], readFromParentKcpPath: true },
+          ),
+      );
+
+      expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
+        namespacedNodeContext,
+        true,
+      );
+    });
+
+    it('should delegate subscribe to resourceChangeSubscription', async () => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            testkinds: {
+              type: 'ADDED',
+              object: { name: 'res1', metadata: { name: 'res1' } },
+            },
+          },
+        }),
+      );
+
+      const res = await firstValueFrom(
+        service.asReadResources().subscribe(namespacedNodeContext, {
+          fields: ['name'],
+          resourceVersion: 'rv-9',
+        }),
+      );
+
+      expect(res?.type).toBe('ADDED');
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: expect.objectContaining({ resourceVersion: 'rv-9' }),
+      });
+    });
+
+    it('should default subscribe resourceVersion to empty string when omitted', async () => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            testkinds: {
+              type: 'MODIFIED',
+              object: { name: 'res1', metadata: { name: 'res1' } },
+            },
+          },
+        }),
+      );
+
+      await firstValueFrom(
+        service
+          .asReadResources()
+          .subscribe(namespacedNodeContext, { fields: ['name'] }),
+      );
+
+      expect(mockApollo.subscribe).toHaveBeenCalledWith({
+        query: expect.anything(),
+        variables: expect.objectContaining({ resourceVersion: '' }),
+      });
+    });
+
+    it('should fall back to resourceDefinition fields for subscribe when none provided', async () => {
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            testkinds: {
+              type: 'ADDED',
+              object: { name: 'res1', metadata: { name: 'res1' } },
+            },
+          },
+        }),
+      );
+
+      const ctxWithFields: any = {
+        ...namespacedNodeContext,
+        resourceDefinition: {
+          ...namespacedNodeContext.resourceDefinition,
+          ui: { listView: { fields: ['name'] } },
+        },
+      };
+
+      await firstValueFrom(
+        service.asReadResources().subscribe(ctxWithFields, {}),
+      );
+
+      expect(mockApollo.subscribe).toHaveBeenCalled();
+    });
+  });
 });
