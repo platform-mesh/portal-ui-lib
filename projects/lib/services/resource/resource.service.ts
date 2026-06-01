@@ -1,3 +1,10 @@
+import {
+  ReadResources,
+  ReadResourcesPagination,
+  ReadResourcesParams,
+  ReadResourcesResult,
+  ReadResourcesSubscriptionResult,
+} from '../read-resources/read-resources';
 import { ApolloFactory } from './apollo-factory';
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
@@ -222,6 +229,7 @@ export class ResourceService {
             }))
             .map((r) => ({
               ...r,
+              id: r.metadata.name,
               isAvailable: this.isAvailable(r),
               accessibleName: this.getAccessibleName(r),
             }));
@@ -315,6 +323,7 @@ export class ResourceService {
               resource.object,
               nodeContext,
             );
+            resource.object.id = resource.object.metadata.name;
             resource.object.isAvailable = this.isAvailable(resource.object);
             resource.object.accessibleName = this.getAccessibleName(
               resource.object,
@@ -570,5 +579,65 @@ export class ResourceService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Returns a {@link ReadResources}-shaped adapter over this service so that
+   * consumers can swap implementations behind a feature toggle without depending
+   * on the GraphQL-specific signatures of `list` / `resourceChangeSubscription`.
+   */
+  asReadResources(): ReadResources {
+    return {
+      list: (
+        nodeContext: ResourceNodeContext,
+        pagination: ReadResourcesPagination,
+        params: ReadResourcesParams,
+      ): Observable<ReadResourcesResult> => {
+        const operation =
+          params.operation ?? nodeContext.resourceDefinition?.entityCollection ?? '';
+        const fields =
+          params.fields ??
+          nodeContext.resourceDefinition?.ui?.listView?.fields ??
+          [];
+        const resourcePagination: ResourcePagination = {
+          limit: pagination.limit,
+          continue: pagination.cursor,
+        };
+
+        return this.list(
+          operation,
+          fields,
+          nodeContext,
+          params.readFromParentKcpPath ?? false,
+          resourcePagination,
+        ).pipe(
+          map((result: ResourceListResult): ReadResourcesResult => ({
+            items: result?.items ?? [],
+            nextCursor: result?.continue,
+            remainingItemCount: result?.remainingItemCount,
+            resourceVersion: result?.resourceVersion,
+          })),
+        );
+      },
+      subscribe: (
+        nodeContext: ResourceNodeContext,
+        params: ReadResourcesParams & { resourceVersion?: string },
+      ): Observable<ReadResourcesSubscriptionResult | undefined> => {
+        const operation =
+          nodeContext.resourceDefinition?.entityCollection ?? '';
+        const fields = Array.isArray(params.fields)
+          ? params.fields
+          : (nodeContext.resourceDefinition?.ui?.listView?.fields as any[]) ??
+            [];
+
+        return this.resourceChangeSubscription(
+          operation,
+          fields,
+          nodeContext,
+          params.resourceVersion ?? '',
+          params.readFromParentKcpPath ?? false,
+        );
+      },
+    };
   }
 }

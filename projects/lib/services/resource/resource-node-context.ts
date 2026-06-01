@@ -12,6 +12,7 @@ export interface ResourceNodeContext extends Partial<NodeContext> {
   namespaces?: string[];
   portalContext: {
     crdGatewayApiUrl: string;
+    openSearchApiUrl?: string;
     kcpWorkspaceUrl?: string;
   };
 }
