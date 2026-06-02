@@ -1,5 +1,5 @@
 import { ReadResourcesProxyService } from './services/read-resources-proxy.service';
-import { OSListView } from './os-list-view.component';
+import { OpenSearchListView } from './open-search-list-view.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -12,9 +12,9 @@ import { Subject, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
-describe('OSListView', () => {
-  let component: OSListView;
-  let fixture: ComponentFixture<OSListView>;
+describe('OpenSearchListView', () => {
+  let component: OpenSearchListView;
+  let fixture: ComponentFixture<OpenSearchListView>;
   let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
   let mockLuigiCoreService: any;
   let mockReadResourcesProxy: { forContext: ReturnType<typeof vi.fn> };
@@ -75,7 +75,7 @@ describe('OSListView', () => {
         },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    }).overrideComponent(OSListView, {
+    }).overrideComponent(OpenSearchListView, {
       set: {
         template: '',
         imports: [],
@@ -83,7 +83,7 @@ describe('OSListView', () => {
       },
     });
 
-    fixture = TestBed.createComponent(OSListView);
+    fixture = TestBed.createComponent(OpenSearchListView);
     component = fixture.componentInstance;
 
     component.context = buildContext();
@@ -118,7 +118,7 @@ describe('OSListView', () => {
     });
 
     it('defaultTitle should be empty string when entityCollection is missing', () => {
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = (() => ({
         resourceDefinition: { entity: 'Cluster' },
       })) as any;
@@ -134,7 +134,7 @@ describe('OSListView', () => {
     });
 
     it('columns should return ui.listView.fields when no readyCondition is set', () => {
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = buildContext({
         resourceDefinition: {
           ui: { listView: { fields: [{ property: 'name' }] } },
@@ -146,7 +146,7 @@ describe('OSListView', () => {
     });
 
     it('columns should prepend the readyCondition with displayAs=alert when defined', () => {
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = buildContext({
         resourceDefinition: {
           ui: { listView: { fields: [{ property: 'name' }] } },
@@ -169,7 +169,7 @@ describe('OSListView', () => {
     });
 
     it('columns should default to empty array when ui is missing', () => {
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = (() => ({
         resourceDefinition: { entityCollection: 'x' },
       })) as any;
@@ -391,7 +391,7 @@ describe('OSListView', () => {
 
   describe('navigateToResource', () => {
     it('should do nothing when detailView is not configured', () => {
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = buildContext({
         resourceDefinition: {
           ui: { listView: { fields: [] } /* no detailView */ },
@@ -422,7 +422,7 @@ describe('OSListView', () => {
     it('should navigate for cluster-scoped resources (no namespace search param)', () => {
       const lc = buildLuigiClient();
 
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = buildContext({
         resourceDefinition: {
           scope: 'Cluster',
@@ -461,7 +461,7 @@ describe('OSListView', () => {
       const showAlert = vi.fn();
       lc.uxManager = () => ({ showAlert });
 
-      const f = TestBed.createComponent(OSListView);
+      const f = TestBed.createComponent(OpenSearchListView);
       f.componentInstance.context = (() => ({})) as any;
       f.componentInstance.LuigiClient = (() => lc) as any;
       f.detectChanges();

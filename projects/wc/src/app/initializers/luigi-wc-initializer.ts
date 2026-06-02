@@ -5,7 +5,7 @@ import {
   WelcomeView,
 } from '../components';
 import { ErrorView } from '../components/error/error.component';
-import { OSListView } from '../components/generic-ui/opensearch-list-view/os-list-view.component';
+import { OpenSearchListView } from '../components/generic-ui/opensearch-list-view/open-search-list-view.component';
 import { registerLuigiWebComponents } from '../utils/wc';
 import { Injector, inject, provideAppInitializer } from '@angular/core';
 import { createCustomElement } from '@angular/elements';
@@ -15,7 +15,7 @@ export const provideLuigiWebComponents = () =>
     const injector = inject(Injector);
     registerLuigiWebComponents(
       {
-        'generic-os-list-view': OSListView,
+        'generic-os-list-view': OpenSearchListView,
         'generic-list-view': ListView,
         'generic-detail-view': DetailView,
         'organization-management': OrganizationManagementView,

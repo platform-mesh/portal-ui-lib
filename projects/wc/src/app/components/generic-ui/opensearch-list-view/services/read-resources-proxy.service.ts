@@ -17,7 +17,7 @@ const OS_PROVIDER_TOGGLE = 'os-provider';
 /**
  * Selects between {@link ResourceService} (GraphQL gateway) and
  * {@link OpenSearchService} for read operations on resources, based on the
- * `os-provider` Luigi feature toggle. Used only by `OSListView`.
+ * `os-provider` Luigi feature toggle. Used only by `OpenSearchListView`.
  *
  * The `LuigiClient` is a per-component input rather than a DI token in this
  * library, so consumers obtain a {@link ReadResources} via {@link forContext}.

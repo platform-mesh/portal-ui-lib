@@ -33,13 +33,13 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'pm-list-view',
   standalone: true,
-  templateUrl: './os-list-view.component.html',
-  styleUrls: ['./os-list-view.component.scss'],
+  templateUrl: './open-search-list-view.component.html',
+  styleUrls: ['./open-search-list-view.component.scss'],
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [GenericView, DeclarativeTableCard],
 })
-export class OSListView {
+export class OpenSearchListView {
   private readResourcesProxy = inject(ReadResourcesProxyService);
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
