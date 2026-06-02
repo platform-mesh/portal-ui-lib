@@ -80,7 +80,7 @@ export class OSListView {
   totalItemsCount = computed(
     () => this.resources().length + this.remainingItemCount(),
   );
-  paginationLimit = signal<number>(5);
+  paginationLimit = signal<number>(50);
   remainingItemCount = signal<number>(0);
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);

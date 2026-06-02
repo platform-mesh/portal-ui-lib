@@ -12,7 +12,6 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import { EMPTY, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { mockOpenSearchResources } from './open-search.mock';
 
 export interface OpenSearchRequest {
   q: string; // (required): free-text query
@@ -105,17 +104,6 @@ export class OpenSearchService {
           })),
         })),
       );
-
-    // const results = mockOpenSearchResources.map((r) => ({
-    //   ...r,
-    //   ...expandDotNotation({
-    //     ...r.source.default_fields,
-    //     ...r.source.filterable_fields,
-    //     ...r.source.semantic_fields,
-    //   }),
-    // }));
-    //
-    // return of({ results, source: '', nextCursor: '' });
   };
 
   private buildParams(request: OpenSearchRequest): HttpParams {
