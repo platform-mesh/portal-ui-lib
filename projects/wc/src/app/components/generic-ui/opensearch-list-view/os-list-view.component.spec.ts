@@ -102,7 +102,7 @@ describe('OSListView', () => {
     expect(mockReadResources.list).toHaveBeenCalledWith(
       expect.objectContaining({ resourceDefinition: expect.any(Object) }),
       expect.objectContaining({
-        limit: 5,
+        limit: 50,
         cursor: undefined,
       }),
       expect.objectContaining({
