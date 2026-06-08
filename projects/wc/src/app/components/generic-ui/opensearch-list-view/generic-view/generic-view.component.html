@@ -1,0 +1,80 @@
+<ui5-dynamic-page test-id="generic-detail-view">
+  <ui5-dynamic-page-title slot="titleArea">
+    <ng-container *ngTemplateOutlet="pageTitle" />
+
+    <ui5-toolbar
+      class="resource-title-actions"
+      id="actionsBar"
+      slot="actionsBar"
+      design="Transparent"
+    >
+      <ng-content select="[header-actions]" />
+      @for (
+        action of viewActions();
+        track action.uiSettings?.buttonSettings?.text ?? '' + $index
+      ) {
+        @let buttonSettings = action.uiSettings?.buttonSettings;
+        <ui5-button
+          [icon]="buttonSettings?.icon"
+          [endIcon]="buttonSettings?.endIcon"
+          [design]="buttonSettings?.design"
+          [tooltip]="buttonSettings?.tooltip"
+          (click)="buttonAction($event, action)"
+          >{{ buttonSettings?.text }}</ui5-button
+        >&nbsp;
+      }
+    </ui5-toolbar>
+  </ui5-dynamic-page-title>
+
+  <ui5-dynamic-page-header slot="headerArea">
+    <ng-content select="[header-fields]" />
+  </ui5-dynamic-page-header>
+
+  <ng-content select="[page-content]" />
+</ui5-dynamic-page>
+
+<ng-template #pageTitle>
+  <ui5-title
+    test-id="generic-detail-view-title"
+    class="resource-title"
+    slot="heading"
+  >
+    <ng-container *ngTemplateOutlet="resourceTitle" />
+  </ui5-title>
+  <ui5-text
+    test-id="generic-detail-view-subtitle"
+    class="resource-title-subheading"
+    slot="subheading"
+  >
+    <ng-container *ngTemplateOutlet="resourceDescription" />
+  </ui5-text>
+
+  <div class="resource-title-snapped-container" slot="snappedHeading">
+    <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+    <ui5-title>
+      <ng-container *ngTemplateOutlet="resourceTitle" />
+    </ui5-title>
+  </div>
+</ng-template>
+
+<ng-template #resourceTitle>
+  @if (resourceTitleDefinition(); as resourceTitleDefinition) {
+    <mfp-resource-field
+      [fieldDefinition]="resourceTitleDefinition"
+      [resource]="resource()"
+    />
+  } @else {
+    {{ defaultTitle() }}
+  }
+</ng-template>
+
+<ng-template #resourceDescription>
+  @if (resourceDescriptionDefinition(); as resourceDescriptionDefinition) {
+    <mfp-resource-field
+      [fieldDefinition]="resourceDescriptionDefinition"
+      [resource]="resource()"
+    ></mfp-resource-field>
+  } @else {
+    {{ defaultDescription() }}
+  }
+</ng-template>
