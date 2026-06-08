@@ -1403,6 +1403,73 @@ describe('DetailViewComponent', () => {
       );
     });
   });
+  describe('Luigi page-dirty shim', () => {
+    it('should not post luigi.set-page-dirty on init', () => {
+      const postSpy = vi.spyOn(window, 'postMessage');
+
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = component.context;
+      newComponent.LuigiClient = component.LuigiClient;
+      newFixture.detectChanges();
+
+      expect(
+        postSpy.mock.calls.some(
+          (call) => (call[0] as any)?.msg === 'luigi.set-page-dirty',
+        ),
+      ).toBe(false);
+    });
+
+    it('should post luigi.set-page-dirty when the dashboard emits unsavedChangesChange', () => {
+      const postSpy = vi.spyOn(window, 'postMessage');
+
+      // Drive the template handler directly — this is what the
+      // (unsavedChangesChange)="setLuigiPageDirty($event)" binding does.
+      (component as any).setLuigiPageDirty(true);
+
+      const dirtyCalls = postSpy.mock.calls.filter(
+        (call) => (call[0] as any)?.msg === 'luigi.set-page-dirty',
+      );
+      expect(dirtyCalls.length).toBe(1);
+      expect(dirtyCalls[0][0]).toEqual({
+        msg: 'luigi.set-page-dirty',
+        dirty: true,
+      });
+
+      (component as any).setLuigiPageDirty(false);
+
+      const finalCalls = postSpy.mock.calls.filter(
+        (call) => (call[0] as any)?.msg === 'luigi.set-page-dirty',
+      );
+      expect(finalCalls.length).toBe(2);
+      expect(finalCalls[1][0]).toEqual({
+        msg: 'luigi.set-page-dirty',
+        dirty: false,
+      });
+    });
+
+    it('should post dirty=false when the component is destroyed', () => {
+      const newFixture = TestBed.createComponent(DetailView);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = component.context;
+      newComponent.LuigiClient = component.LuigiClient;
+
+      newFixture.detectChanges();
+
+      // Reset spy so we only assert what destroy emits.
+      const postSpy = vi.spyOn(window, 'postMessage');
+      newFixture.destroy();
+
+      const dirtyCalls = postSpy.mock.calls.filter(
+        (call) => (call[0] as any)?.msg === 'luigi.set-page-dirty',
+      );
+      expect(dirtyCalls.length).toBe(1);
+      expect(dirtyCalls[0][0]).toEqual({
+        msg: 'luigi.set-page-dirty',
+        dirty: false,
+      });
+    });
+  });
 });
 
 describe('DetailViewComponent template', () => {
