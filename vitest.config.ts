@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    setupFiles: ['./test-stubs/local-storage.ts'],
     environmentOptions: {
       jsdom: {
         url: 'http://localhost/',

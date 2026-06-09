@@ -5,7 +5,7 @@
   [availableCards]="availableCards()"
   (actionButtonClick)="onActionButtonClick($event)"
   (saved)="dashboardConfigurationChanged($event)"
-  (unsavedChangesChange)="setLuigiPageDirty($event)"
+  (unsavedChangesChange)="setLuigiPageDirty($any($event))"
 >
   <div slot="dashboard-subheader" style="width: 100%">
     <div class="sh">

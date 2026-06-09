@@ -1313,7 +1313,7 @@ describe('DetailViewComponent', () => {
 
   describe('dashboardConfigurationChanged', () => {
     it('should write config to localStorage', () => {
-      const writeConfigSpy = vi.spyOn(Storage.prototype, 'setItem');
+      const writeConfigSpy = vi.spyOn(localStorage, 'setItem');
       const config = { cards: [], sections: [] };
       (component as any).dashboardConfigurationChanged(config);
       expect(writeConfigSpy).toHaveBeenCalled();
