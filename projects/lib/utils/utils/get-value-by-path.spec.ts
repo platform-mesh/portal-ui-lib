@@ -1,18 +1,14 @@
-vi.mock('jsonpath', async (importOriginal) => {
+vi.mock('jsonpath-plus', async (importOriginal) => {
   const actual: any = await importOriginal();
 
-  const safeQuery = (...args: any[]) => {
-    const res = actual?.query?.(...args);
+  const safeJSONPath = (...args: any[]) => {
+    const res = actual?.JSONPath?.(...args);
     return Array.isArray(res) ? res : [];
   };
 
   return {
     ...actual,
-    query: safeQuery,
-    default: {
-      ...(actual?.default ?? actual),
-      query: safeQuery,
-    },
+    JSONPath: safeJSONPath,
   };
 });
 
