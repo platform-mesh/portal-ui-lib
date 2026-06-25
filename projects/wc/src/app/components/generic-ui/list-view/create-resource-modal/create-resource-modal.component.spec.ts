@@ -191,6 +191,17 @@ describe('CreateResourceModalComponent', () => {
       expect(nsField).toBeUndefined();
     });
 
+    it('should not append a metadata.namespace field when a namespace is already resolved', async () => {
+      resourceService.getNamespace.mockReturnValue('default');
+      fixture.componentRef.setInput('context', namespacedContext);
+      fixture.detectChanges();
+      await component.open();
+      const nsField = component
+        .formFields()
+        .find((f) => f.name === 'metadata.namespace');
+      expect(nsField).toBeUndefined();
+    });
+
     it('should prefetch dynamic values and store them in formField.values', async () => {
       resourceService.list.mockReturnValue(
         of([

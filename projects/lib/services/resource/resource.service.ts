@@ -494,7 +494,7 @@ export class ResourceService {
       );
   }
 
-  private getNamespace(
+  getNamespace(
     nodeContext: ResourceNodeContext,
     resource?: Resource,
   ): string | undefined {
