@@ -1,9 +1,8 @@
-import { FormFieldDefinition, TableFieldDefinition } from '@openmfp/ngx';
+import { FormFieldDefinition, Scope, TableFieldDefinition } from '@openmfp/ngx';
 
 export type {
   ButtonSettings,
   CssRule,
-  CssRuleCondition,
   GenericResource,
   ModalSettings,
   PropertyField,
@@ -32,9 +31,17 @@ export interface UiView {
 
 export interface UIDefinition {
   logoUrl?: string;
-  listView?: UiView;
+  listView?: ListView;
   createView?: UiView;
   detailView?: DetailView;
+}
+
+export interface ListView extends UiView {
+  filters?: FieldFilterDefinition[];
+}
+
+export interface FieldFilterDefinition extends Scope {
+  default?: boolean;
 }
 
 export interface DetailView extends UiView {

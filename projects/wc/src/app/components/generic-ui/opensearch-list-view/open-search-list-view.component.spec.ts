@@ -1,5 +1,5 @@
-import { ReadResourcesProxyService } from './services/read-resources-proxy.service';
 import { OpenSearchListView } from './open-search-list-view.component';
+import { ReadResourcesProxyService } from './services/read-resources-proxy.service';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -188,7 +188,7 @@ describe('OpenSearchListView', () => {
       component.paginationLimit.set(10);
       component.hasMore.set(true);
       const cfg = component.config();
-      expect(cfg.resourcesSearchable).toBe(true);
+      expect(cfg.searchConfig).toBe({});
       expect(cfg.tableConfig?.paginationLimit).toBe(10);
       expect(cfg.tableConfig?.hasMore).toBe(true);
     });
@@ -225,10 +225,7 @@ describe('OpenSearchListView', () => {
       component.loadMore();
 
       listSubject.next({
-        items: [
-          { id: 'r1', tag: 'new' } as any,
-          { id: 'r2', tag: 'a' } as any,
-        ],
+        items: [{ id: 'r1', tag: 'new' } as any, { id: 'r2', tag: 'a' } as any],
         nextCursor: undefined,
       });
       listSubject.complete();
@@ -308,7 +305,9 @@ describe('OpenSearchListView', () => {
       listSubject.next({ items: [], nextCursor: undefined });
       listSubject.complete();
 
-      mockReadResources.list.mockReturnValue(throwError(() => new Error('boom')));
+      mockReadResources.list.mockReturnValue(
+        throwError(() => new Error('boom')),
+      );
       component.list(false, 'x');
       expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(
         expect.any(Error),
@@ -376,11 +375,7 @@ describe('OpenSearchListView', () => {
     });
 
     it('should set hasMore=true when items still exceed visible total after trim', () => {
-      component.resources.set([
-        { id: 'a' },
-        { id: 'b' },
-        { id: 'c' },
-      ] as any);
+      component.resources.set([{ id: 'a' }, { id: 'b' }, { id: 'c' }] as any);
       // totalItemsCount = visible (3) + remaining (5) = 8 → resources(3) < 8 → hasMore=true
       component.remainingItemCount.set(5);
 

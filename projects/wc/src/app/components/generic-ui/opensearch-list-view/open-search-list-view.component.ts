@@ -1,6 +1,6 @@
 import { addSearchParams } from '../../../utils/set-search-params';
-import { ReadResourcesProxyService } from './services/read-resources-proxy.service';
 import { GenericView } from './generic-view/generic-view.component';
+import { ReadResourcesProxyService } from './services/read-resources-proxy.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,8 +17,10 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   DeclarativeTableCard,
   GenericResource,
+  Scope,
   TableCardConfig,
 } from '@openmfp/ngx';
+import { FieldFilterDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
   ReadResourcesResult,
@@ -85,9 +87,29 @@ export class OpenSearchListView {
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
 
+  selectedSearchFilter: any;
+  searchFilters = computed<FieldFilterDefinition[] | undefined>(() => {
+    const ctx = this.context();
+    return ctx.resourceDefinition?.ui?.listView?.filters
+      ?.slice()
+      .sort((a, b) => Number(b.default ?? false) - Number(a.default ?? false))
+      .map((filter) => ({
+        ...filter,
+        value: resolveContextPlaceholders(filter.value, ctx),
+      }));
+  });
   config = computed<TableCardConfig>(() => {
+    const initialScopeValue = this.searchFilters()?.find((f) => f.default);
+
     return {
-      resourcesSearchable: true,
+      searchConfig: {
+        scopes: this.searchFilters()?.map((e) => ({
+          value: e.value,
+          label: e.label,
+          property: e.property,
+        })),
+        initialScopeValue,
+      },
       tableConfig: {
         fields: this.columns(),
         totalItemsCount: this.totalItemsCount(),
@@ -129,7 +151,7 @@ export class OpenSearchListView {
     this.list(false);
   }
 
-  list(isInitialLoad: boolean, searchKey?: string) {
+  list(isInitialLoad: boolean, searchKey?: string | null) {
     if (this.isLoadingList) {
       return;
     }
@@ -214,7 +236,39 @@ export class OpenSearchListView {
     return resourceDefinition;
   }
 
-  protected search(searchKey: string) {
-    this.list(false, searchKey)
+  protected search(event: string | null) {
+    this.list(false, event);
   }
+
+  protected searchWithScope(
+    event: { value: string; property: string } | undefined,
+  ) {
+    console.log(event);
+    this.selectedSearchFilter = event;
+    this.list(false, event?.value);
+  }
+}
+
+/**
+ * Replaces `{context.<dot.path>}` placeholders in `value` with values from `ctx`.
+ *
+ *   "{context.userId}"                                → ctx.userId
+ *   "/users/{context.userId}/orgs/{context.orgId}"    → "/users/u1/orgs/o2"
+ *   "{context.user.email}"                            → ctx.user.email  (nested)
+ *
+ * If the resolved value is `undefined` or `null`, the original placeholder is left
+ * in place (so it's visible in the UI rather than silently becoming "undefined").
+ */
+function resolveContextPlaceholders(
+  value: string | undefined,
+  ctx: Record<string, any>,
+): string {
+  if (typeof value !== 'string') return '';
+
+  return value.replace(/\{context\.([\w.]+)\}/g, (match, path: string) => {
+    const resolved = path
+      .split('.')
+      .reduce<any>((acc, key) => (acc == null ? acc : acc[key]), ctx);
+    return resolved == null ? match : String(resolved);
+  });
 }

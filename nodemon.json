@@ -1,0 +1,8 @@
+{
+  "watch": ["projects", "test-stubs", ".yalc"],
+  "ignore": ["dist", "dist-wc", "coverage"],
+  "ext": "js,mjs,cjs,map,yml,yaml,ts,html,css,scss,json,md",
+  "delay": 1000,
+  "legacyWatch": true,
+  "exec": "rimraf dist && npm run build:dev && cd dist && yalc publish --push --sig"
+}
