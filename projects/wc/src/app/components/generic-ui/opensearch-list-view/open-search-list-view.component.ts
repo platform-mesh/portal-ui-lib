@@ -276,7 +276,14 @@ export class OpenSearchListView {
     this.list(false, event);
   }
 
-  protected searchCleared(event: string | null) {
+  /**
+   * Fires on every (debounced) keystroke. Keep `searchKey` in sync so a scope
+   * change always uses the latest typed text, but only re-fetch when the user
+   * clears the input — submitting via {@link search} is the trigger for a real
+   * search request.
+   */
+  protected searchChanged(event: string | null) {
+    this.searchKey.set(event ?? null);
     if (!event) {
       this.currentContinueToken = undefined;
       this.list(false, event);
