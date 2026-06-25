@@ -88,6 +88,7 @@ export class OpenSearchListView {
   resourceVersion = signal<string | undefined>(undefined);
 
   selectedSearchFilter: any;
+  private searchKey = signal<string | null | undefined>(null);
   searchFilters = computed<FieldFilterDefinition[] | undefined>(() => {
     const ctx = this.context();
     return ctx.resourceDefinition?.ui?.listView?.filters
@@ -102,6 +103,7 @@ export class OpenSearchListView {
     const initialScopeValue = this.searchFilters()?.find((f) => f.default);
 
     return {
+      header: 'Accounts',
       searchConfig: {
         scopes: this.searchFilters()?.map((e) => ({
           value: e.value,
@@ -128,6 +130,16 @@ export class OpenSearchListView {
   constructor() {
     effect(() => {
       this.currentContinueToken = undefined;
+      // Seed scope from the default filter on first render, if any.
+      if (!this.selectedSearchFilter) {
+        const def = this.searchFilters()?.find((f) => f.default);
+        if (def?.property && def?.value !== undefined) {
+          this.selectedSearchFilter = {
+            property: def.property,
+            value: def.value,
+          };
+        }
+      }
       this.list(true);
     });
   }
@@ -157,6 +169,27 @@ export class OpenSearchListView {
     }
     this.isLoadingList = true;
 
+    // Remember the latest search term so scope changes can re-run the same query.
+    if (searchKey !== undefined) {
+      this.searchKey.set(searchKey);
+    }
+    const q = this.searchKey() ?? '';
+
+    // Build the URL query string from current scope + search text.
+    const scope = this.selectedSearchFilter;
+    addSearchParams({
+      q: q || undefined,
+      ...(scope?.property
+        ? { [scope.property]: scope.value ?? undefined }
+        : {}),
+    });
+
+    // Pass the scope as an exact-match filter to the OpenSearch backend.
+    const filter =
+      scope?.property && scope?.value !== undefined
+        ? `${scope.property}=${scope.value}`
+        : undefined;
+
     this.readResourcesProxy
       .forContext(this.LuigiClient())
       .list(
@@ -166,7 +199,8 @@ export class OpenSearchListView {
           cursor: this.currentContinueToken,
         },
         {
-          q: searchKey ?? '',
+          q,
+          filter,
           resource: this.resourceDefinition()?.entityCollection,
         },
       )
@@ -237,15 +271,29 @@ export class OpenSearchListView {
   }
 
   protected search(event: string | null) {
+    this.currentContinueToken = undefined;
     this.list(false, event);
+  }
+
+  protected searchCleared(event: string | null) {
+    if (!event) {
+      this.currentContinueToken = undefined;
+      this.list(false, event);
+    }
   }
 
   protected searchWithScope(
     event: { value: string; property: string } | undefined,
   ) {
-    console.log(event);
+    // Strip the previous scope's URL param if the property has changed.
+    const prev = this.selectedSearchFilter;
+    if (prev?.property && prev.property !== event?.property) {
+      addSearchParams({ [prev.property]: undefined });
+    }
+
     this.selectedSearchFilter = event;
-    this.list(false, event?.value);
+    this.currentContinueToken = undefined;
+    this.list(false);
   }
 }
 

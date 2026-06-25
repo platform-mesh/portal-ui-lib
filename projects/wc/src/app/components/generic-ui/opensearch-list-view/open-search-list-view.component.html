@@ -12,7 +12,8 @@
       (tableRowClicked)="navigateToResource($event)"
       (loadMoreResources)="loadMore()"
       (paginationLimitChanged)="onLimitChange($event)"
-      (searchChanged)="search($event)"
+      (searchSubmit)="search($event)"
+      (searchChanged)="searchCleared($event)"
       (scopeChanged)="searchWithScope($event)"
     />
   </ng-content>
