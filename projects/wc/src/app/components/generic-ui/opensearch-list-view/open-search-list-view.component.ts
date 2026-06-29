@@ -106,11 +106,7 @@ export class OpenSearchListView {
       header: 'Accounts',
       searchConfig: {
         placeholder: 'Search accounts...',
-        scopes: this.searchFilters()?.map((e) => ({
-          value: e.value,
-          label: e.label,
-          property: e.property,
-        })),
+        scopes: this.searchFilters(),
         initialScopeValue,
       },
       tableConfig: {
