@@ -183,3 +183,45 @@ describe('ListViewComponent', () => {
     });
   });
 });
+
+describe('ListViewComponent template', () => {
+  it('should render mfp-dashboard with data-testid="generic-list-view"', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: LuigiCoreService, useValue: mock() },
+        { provide: ErrorHandlerService, useValue: mock() },
+      ],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    }).overrideComponent(ListView, {
+      set: { imports: [], schemas: [CUSTOM_ELEMENTS_SCHEMA] },
+    });
+
+    const fixture = TestBed.createComponent(ListView);
+    const component = fixture.componentInstance;
+    component.context = (() => ({
+      resourceDefinition: {
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
+        version: 'v1alpha1',
+        ui: { listView: { fields: [] }, detailView: { fields: [] } },
+      },
+    })) as any;
+    component.LuigiClient = (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({ showAlert: vi.fn() }),
+      getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
+    })) as any;
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement.querySelector(
+      '[data-testid="generic-list-view"]',
+    );
+    expect(el).not.toBeNull();
+  });
+});

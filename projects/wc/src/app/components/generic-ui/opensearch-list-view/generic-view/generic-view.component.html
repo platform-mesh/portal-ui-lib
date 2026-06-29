@@ -1,4 +1,4 @@
-<ui5-dynamic-page test-id="generic-detail-view">
+<ui5-dynamic-page data-testid="generic-detail-view">
   <ui5-dynamic-page-title slot="titleArea">
     <ng-container *ngTemplateOutlet="pageTitle" />
 
@@ -15,6 +15,7 @@
       ) {
         @let buttonSettings = action.uiSettings?.buttonSettings;
         <ui5-button
+          [attr.data-testid]="'generic-detail-view-action-' + (buttonSettings?.text ?? $index)"
           [icon]="buttonSettings?.icon"
           [endIcon]="buttonSettings?.endIcon"
           [design]="buttonSettings?.design"
@@ -35,14 +36,14 @@
 
 <ng-template #pageTitle>
   <ui5-title
-    test-id="generic-detail-view-title"
+    data-testid="generic-detail-view-title"
     class="resource-title"
     slot="heading"
   >
     <ng-container *ngTemplateOutlet="resourceTitle" />
   </ui5-title>
   <ui5-text
-    test-id="generic-detail-view-subtitle"
+    data-testid="generic-detail-view-subtitle"
     class="resource-title-subheading"
     slot="subheading"
   >
@@ -60,6 +61,7 @@
 <ng-template #resourceTitle>
   @if (resourceTitleDefinition(); as resourceTitleDefinition) {
     <mfp-resource-field
+      [attr.data-testid]="'generic-detail-view-resource-title'"
       [fieldDefinition]="resourceTitleDefinition"
       [resource]="resource()"
     />
@@ -71,6 +73,7 @@
 <ng-template #resourceDescription>
   @if (resourceDescriptionDefinition(); as resourceDescriptionDefinition) {
     <mfp-resource-field
+      [attr.data-testid]="'generic-detail-view-resource-description'"
       [fieldDefinition]="resourceDescriptionDefinition"
       [resource]="resource()"
     ></mfp-resource-field>

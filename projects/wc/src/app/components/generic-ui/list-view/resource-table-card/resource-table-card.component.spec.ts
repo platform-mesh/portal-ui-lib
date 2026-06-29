@@ -724,3 +724,49 @@ describe('ResourceTableCard', () => {
     });
   });
 });
+
+describe('ResourceTableCard template', () => {
+  it('should render mfp-declarative-table-card with data-testid="generic-list-view-table"', () => {
+    const resourceServiceMock = mock<ResourceService>();
+    resourceServiceMock.list.mockReturnValue(
+      of({ items: [], resourceVersion: '1' }),
+    );
+    resourceServiceMock.resourceChangeSubscription.mockReturnValue(
+      of(undefined),
+    );
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ResourceService, useValue: resourceServiceMock },
+        {
+          provide: ErrorHandlerService,
+          useValue: mock<ErrorHandlerService>(),
+        },
+      ],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    });
+
+    const fixture = TestBed.createComponent(ResourceTableCard);
+    const component = fixture.componentInstance;
+    component.context = (() => ({
+      resourceDefinition: {
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
+        version: 'v1alpha1',
+        ui: { listView: { fields: [] }, detailView: { fields: [] } },
+      },
+    })) as any;
+    component.LuigiClient = (() => ({
+      linkManager: () => ({ navigate: vi.fn() }),
+      uxManager: () => ({ showAlert: vi.fn() }),
+      getNodeParams: vi.fn(),
+    })) as any;
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement.querySelector(
+      '[data-testid="generic-list-view-table"]',
+    );
+    expect(el).not.toBeNull();
+  });
+});

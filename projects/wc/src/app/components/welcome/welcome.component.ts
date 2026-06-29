@@ -20,7 +20,7 @@ interface Header {
 @Component({
   selector: 'pm-welcome',
   template: `
-    <div class="center-container">
+    <div class="center-container" data-testid="welcome-view">
       <img src="{{ header()?.logo }}" width="100" alt="" />
       <div class="message-box">Welcome to the {{ header()?.title }}!</div>
       @if (enhancedContext(); as enhancedContext) {
