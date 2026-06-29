@@ -4,26 +4,65 @@ describe('addSearchParams', () => {
   let replaceStateSpy: ReturnType<typeof vi.spyOn>;
 
   /**
-   * Reset jsdom's URL between tests so each one starts from a known state.
-   * We always go through `window.*` to avoid bare-global resolution differing
-   * between Node versions / runners (some runtimes expose a native `location`
-   * that shadows jsdom's instance).
+   * Deterministic, URL-backed `location`/`history` stubs.
+   *
+   * `addSearchParams` reads `location.href` and writes via
+   * `history.replaceState`. Relying on the runner's ambient jsdom location is
+   * fragile: some CI images / Node versions leave `window.location.href` empty
+   * (so `new URL('')` throws `Invalid URL`) or expose a native `location` that
+   * shadows jsdom's instance. Stubbing both globals against a single `href`
+   * string makes this suite behave identically on every environment.
    */
-  const setHref = (href: string) => {
-    window.history.replaceState(null, '', href);
+  let href: string;
+
+  const makeLocation = () => ({
+    get href() {
+      return href;
+    },
+    set href(value: string) {
+      href = new URL(value, 'http://localhost/').href;
+    },
+    get search() {
+      return new URL(href).search;
+    },
+    get pathname() {
+      return new URL(href).pathname;
+    },
+    get hash() {
+      return new URL(href).hash;
+    },
+    toString() {
+      return href;
+    },
+  });
+
+  const historyStub = {
+    replaceState: (_state: unknown, _title: string, url?: string | URL | null) => {
+      if (url != null) href = new URL(String(url), 'http://localhost/').href;
+    },
+    pushState: (_state: unknown, _title: string, url?: string | URL | null) => {
+      if (url != null) href = new URL(String(url), 'http://localhost/').href;
+    },
   };
 
-  /** Read the current URL's search params via the URL constructor. */
-  const params = () => new URL(window.location.href).searchParams;
+  /** Point the stubbed location at a given URL. */
+  const setHref = (value: string) => {
+    href = new URL(value, 'http://localhost/').href;
+  };
+
+  /** Read the current URL's search params. */
+  const params = () => new URL(href).searchParams;
 
   beforeEach(() => {
-    setHref('http://localhost/');
+    href = 'http://localhost/';
+    vi.stubGlobal('location', makeLocation());
+    vi.stubGlobal('history', historyStub);
     replaceStateSpy = vi.spyOn(window.history, 'replaceState');
   });
 
   afterEach(() => {
     replaceStateSpy.mockRestore();
-    setHref('http://localhost/');
+    vi.unstubAllGlobals();
   });
 
   it('should add a new search param when none exists', () => {

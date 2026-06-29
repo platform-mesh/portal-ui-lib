@@ -219,7 +219,10 @@ export class CreateResourceModal {
   }
 
   private shouldAddNamespaceControl() {
-    return this.isNamespacedResource();
+    return (
+      this.isNamespacedResource() &&
+      !this.resourceService.getNamespace(this.context())
+    );
   }
 
   private checkFormValidity(): boolean {

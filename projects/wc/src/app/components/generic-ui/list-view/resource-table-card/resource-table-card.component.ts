@@ -112,7 +112,11 @@ export class ResourceTableCard {
 
   createFormFields = computed(() => {
     let fields = this.resourceDefinition()?.ui?.createView?.fields || [];
-    if (this.hasUiCreateViewFields() && this.isNamespaced()) {
+    if (
+      this.hasUiCreateViewFields() &&
+      this.isNamespaced() &&
+      !this.resourceService.getNamespace(this.context())
+    ) {
       fields = [
         ...fields,
         {
