@@ -541,7 +541,7 @@ describe('OpenSearchResourceTableCard', () => {
       })) as any;
       f.componentInstance.LuigiClient = component.LuigiClient;
       f.detectChanges();
-      expect(f.componentInstance.selectedSearchFilter).toEqual(
+      expect(f.componentInstance.selectedSearchFilter()).toEqual(
         expect.objectContaining({
           property: 'owner',
           value: 'me',
@@ -593,7 +593,7 @@ describe('OpenSearchResourceTableCard', () => {
         property: 'owner',
         value: 'u-1',
       });
-      expect(component.selectedSearchFilter?.property).toBe('owner');
+      expect(component.selectedSearchFilter()?.property).toBe('owner');
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toEqual(
         expect.objectContaining({ filter: 'owner=u-1' }),
@@ -609,7 +609,7 @@ describe('OpenSearchResourceTableCard', () => {
       });
       resetStream();
       (component as any).onFilterTabChanged(undefined);
-      expect(component.selectedSearchFilter).toBeUndefined();
+      expect(component.selectedSearchFilter()).toBeUndefined();
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]?.filter).toBeUndefined();
     });

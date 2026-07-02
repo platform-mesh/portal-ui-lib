@@ -1,5 +1,6 @@
 import { addSearchParams } from '../../../../utils/set-search-params';
 import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
+import { resolveContextPlaceholders } from '../utils/resolve-context-placeholders';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,6 +10,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -89,7 +91,25 @@ export class OpenSearchResourceTableCard {
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
 
-  selectedSearchFilter: FieldFilterDefinition | undefined;
+  selectedSearchFilter = linkedSignal<
+    FieldFilterDefinition[] | undefined,
+    FieldFilterDefinition | undefined
+  >({
+    source: () => this.searchFilters(),
+    computation: (filters, prev) => {
+      const previous = prev?.value;
+      if (
+        previous &&
+        filters?.some(
+          (f) => f.property === previous.property && f.value === previous.value,
+        )
+      ) {
+        return previous;
+      }
+      const def = filters?.find((f) => f.default);
+      return def?.property && def?.value !== undefined ? def : undefined;
+    },
+  });
   private searchKey = signal<string | null | undefined>(null);
   searchFilters = computed<FieldFilterDefinition[] | undefined>(() => {
     const ctx = this.context();
@@ -131,13 +151,6 @@ export class OpenSearchResourceTableCard {
   constructor() {
     effect(() => {
       this.currentContinueToken = undefined;
-      // Seed scope from the default filter on first render, if any.
-      if (!this.selectedSearchFilter) {
-        const def = this.searchFilters()?.find((f) => f.default);
-        if (def?.property && def?.value !== undefined) {
-          this.selectedSearchFilter = def;
-        }
-      }
       this.list(true);
     });
   }
@@ -163,30 +176,25 @@ export class OpenSearchResourceTableCard {
 
   list(isInitialLoad: boolean, searchKey?: string | null) {
     // Cancel any in-flight request so this new one supersedes it. The latest
-    // user action (clear, scope change, submit) should always reach the
+    // user action (clear, filter change, submit) should always reach the
     // backend rather than being dropped behind a slow earlier request.
     this.listSubscription?.unsubscribe();
 
-    // Remember the latest search term so scope changes can re-run the same query.
+    // Remember the latest search term so filter changes can re-run the same query.
     if (searchKey !== undefined) {
       this.searchKey.set(searchKey);
     }
     const q = this.searchKey() ?? '';
 
-    // Build the URL query string from current scope + search text.
-    const scope = this.selectedSearchFilter;
+    const filter = this.selectedSearchFilter();
+    const filterParam =
+      filter?.property && filter?.value !== undefined
+        ? `${filter.property}=${filter.value}`
+        : undefined;
     addSearchParams({
       q: q || undefined,
-      ...(scope?.property
-        ? { [scope.property]: scope.value ?? undefined }
-        : {}),
+      filter: filterParam,
     });
-
-    // Pass the scope as an exact-match filter to the OpenSearch backend.
-    const filter =
-      scope?.property && scope?.value !== undefined
-        ? `${scope.property}=${scope.value}`
-        : undefined;
 
     this.listSubscription = this.readResourcesProxy
       .forContext(this.LuigiClient())
@@ -198,7 +206,7 @@ export class OpenSearchResourceTableCard {
         },
         {
           q,
-          filter,
+          filter: filterParam,
           resource: this.resourceDefinition()?.entityCollection,
         },
       )
@@ -300,37 +308,13 @@ export class OpenSearchResourceTableCard {
    */
   protected onFilterTabChanged(event: FieldFilterDefinition | undefined) {
     // Strip the previous filter's URL param if the property has changed.
-    const prev = this.selectedSearchFilter;
+    const prev = this.selectedSearchFilter();
     if (prev?.property && prev.property !== event?.property) {
       addSearchParams({ [prev.property]: undefined });
     }
 
-    this.selectedSearchFilter = event;
+    this.selectedSearchFilter.set(event);
     this.currentContinueToken = undefined;
     this.list(false);
   }
-}
-
-/**
- * Replaces `{context.<dot.path>}` placeholders in `value` with values from `ctx`.
- *
- *   "{context.userId}"                                → ctx.userId
- *   "/users/{context.userId}/orgs/{context.orgId}"    → "/users/u1/orgs/o2"
- *   "{context.user.email}"                            → ctx.user.email  (nested)
- *
- * If the resolved value is `undefined` or `null`, the original placeholder is left
- * in place (so it's visible in the UI rather than silently becoming "undefined").
- */
-function resolveContextPlaceholders(
-  value: string | undefined,
-  ctx: Record<string, any>,
-): string {
-  if (typeof value !== 'string') return '';
-
-  return value.replace(/\{context\.([\w.]+)\}/g, (match, path: string) => {
-    const resolved = path
-      .split('.')
-      .reduce<any>((acc, key) => (acc == null ? acc : acc[key]), ctx);
-    return resolved == null ? match : String(resolved);
-  });
 }
