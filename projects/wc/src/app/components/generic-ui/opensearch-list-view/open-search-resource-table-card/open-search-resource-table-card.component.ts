@@ -155,7 +155,6 @@ export class OpenSearchResourceTableCard {
     const ctx = this.context();
     return ctx.resourceDefinition?.ui?.listView?.filters
       ?.slice()
-      .sort((a, b) => Number(b.default ?? false) - Number(a.default ?? false))
       .map((filter) => ({
         ...filter,
         value: resolveContextPlaceholders(filter.value, ctx),
