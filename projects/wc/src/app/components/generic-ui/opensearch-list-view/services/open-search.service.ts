@@ -14,9 +14,8 @@ import { EMPTY, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface OpenSearchRequest {
-  q: string; // (required): free-text query
+  q: string; // (required): free-text query, may include Lucene syntax like `field:value AND field2:value2`
   resource?: string; // (optional): plural resource name; if omitted, searches across all resources
-  filter?: string; // filter.<field> (optional, repeatable): exact-match filters; requires resource
   limit?: number; // (optional): default 20, max 100
   cursor?: string; // (optional): opaque pagination cursor
 }
@@ -121,10 +120,6 @@ export class OpenSearchService {
       params = params.set('resource', request.resource);
     }
 
-    if (request.filter !== undefined) {
-      params = params.set('filter', request.filter);
-    }
-
     return params;
   }
 
@@ -139,6 +134,14 @@ export class OpenSearchService {
    * Returns a {@link ReadResources}-shaped adapter over this service so it can
    * be swapped for ResourceService behind a feature toggle. OpenSearch has no
    * subscription channel, so `subscribe` returns an EMPTY observable.
+   *
+   * The caller passes `params.filter` in the shape `"<property>=<value>"` (the
+   * shape produced by {@link OpenSearchResourceTableCard.list}). We translate
+   * that to OpenSearch's native Lucene URI-search syntax and fold it into the
+   * single `q` param — for example, `{ q: 'oprt', filter: 'metadata.namespace=default' }`
+   * becomes `q=oprt AND metadata.namespace:default` on the wire. Reserved
+   * Lucene characters in the value are escaped so unusual namespace names
+   * (e.g. `kube-system`, which contains a Lucene-reserved `-`) still work.
    */
   asReadResources(): ReadResources {
     return {
@@ -148,10 +151,9 @@ export class OpenSearchService {
         params: ReadResourcesParams,
       ): Observable<ReadResourcesResult> => {
         const request: OpenSearchRequest = {
-          q: params.q ?? '',
+          q: buildLuceneQuery(params.q ?? '', params.filter),
           resource:
             params.resource ?? nodeContext.resourceDefinition?.entityCollection,
-          filter: params.filter,
           limit: pagination.limit,
           cursor: pagination.cursor,
         };
@@ -167,4 +169,44 @@ export class OpenSearchService {
         EMPTY,
     };
   }
+}
+
+/**
+ * Lucene reserved characters that must be backslash-escaped inside term
+ * values. See the OpenSearch / Lucene query-string documentation. `\` must
+ * come first in the regex character class so its own escape isn't broken.
+ */
+const LUCENE_RESERVED = /([\\+\-!(){}\[\]^"~*?:/]|&&|\|\|)/g;
+
+/** Escape a value for use inside a Lucene `field:value` term clause. */
+function escapeLuceneValue(value: string): string {
+  return value.replace(LUCENE_RESERVED, '\\$1');
+}
+
+/**
+ * Combines a free-text search term and an optional `"<property>=<value>"`
+ * exact-match filter into a single Lucene URI-search query string.
+ *
+ * Rules:
+ * - No filter, no q → `""` (matches everything).
+ * - Only q → `q` verbatim.
+ * - Only filter → `property:escapedValue`.
+ * - Both → `q AND property:escapedValue`.
+ * - Malformed filter (no `=`, empty property, or empty value) → treated as
+ *   "no filter" and `q` is returned alone.
+ */
+export function buildLuceneQuery(
+  q: string,
+  filter: string | undefined,
+): string {
+  if (!filter) return q;
+
+  const eq = filter.indexOf('=');
+  if (eq <= 0 || eq === filter.length - 1) return q;
+
+  const property = filter.slice(0, eq);
+  const value = filter.slice(eq + 1);
+  const clause = `${property}:${escapeLuceneValue(value)}`;
+
+  return q ? `${q} AND ${clause}` : clause;
 }

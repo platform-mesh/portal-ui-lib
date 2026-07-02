@@ -1,4 +1,8 @@
-import { OpenSearchRequest, OpenSearchService } from './open-search.service';
+import {
+  OpenSearchRequest,
+  OpenSearchService,
+  buildLuceneQuery,
+} from './open-search.service';
 import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -75,7 +79,6 @@ describe('OpenSearchService', () => {
       const request: OpenSearchRequest = {
         q: 'foo',
         resource: 'testkinds',
-        filter: 'metadata.name=res1',
         limit: 5,
         cursor: 'prev',
       };
@@ -186,6 +189,142 @@ describe('OpenSearchService', () => {
       expect(events).toEqual([]);
       expect(completed).toBe(true);
       expect(subscribed).toBe(EMPTY);
+    });
+
+    /**
+     * The adapter folds the caller's `filter: "property=value"` shape into a
+     * single Lucene URI-search `q` param. These tests pin the wire shape end
+     * to end so a regression here (e.g. someone reintroducing a separate
+     * `filter=` param) fails loudly.
+     */
+    describe('filter → Lucene q translation', () => {
+      it('folds filter alone into q as property:value', async () => {
+        mockHttpClient.get.mockReturnValue(
+          of({ results: [], source: 'os', nextCursor: '' }) as any,
+        );
+
+        await firstValueFrom(
+          service.asReadResources().list(
+            baseContext,
+            {},
+            { q: '', resource: 'testkinds', filter: 'metadata.namespace=default' },
+          ),
+        );
+
+        const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
+        expect(params.get('q')).toBe('metadata.namespace:default');
+        // No stale `filter` param on the wire.
+        expect(params.has('filter')).toBe(false);
+      });
+
+      it('combines free-text q and filter with AND', async () => {
+        mockHttpClient.get.mockReturnValue(
+          of({ results: [], source: 'os', nextCursor: '' }) as any,
+        );
+
+        await firstValueFrom(
+          service.asReadResources().list(
+            baseContext,
+            {},
+            { q: 'oprt', resource: 'testkinds', filter: 'metadata.namespace=default' },
+          ),
+        );
+
+        const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
+        expect(params.get('q')).toBe('oprt AND metadata.namespace:default');
+      });
+
+      it('sends only q when filter is absent', async () => {
+        mockHttpClient.get.mockReturnValue(
+          of({ results: [], source: 'os', nextCursor: '' }) as any,
+        );
+
+        await firstValueFrom(
+          service.asReadResources().list(
+            baseContext,
+            {},
+            { q: 'oprt', resource: 'testkinds' },
+          ),
+        );
+
+        const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
+        expect(params.get('q')).toBe('oprt');
+        expect(params.has('filter')).toBe(false);
+      });
+
+      it('escapes Lucene-reserved characters in filter values', async () => {
+        // Hyphen is a Lucene reserved char (means "MUST NOT"). `kube-system`
+        // as a raw term would silently exclude documents matching `system`
+        // instead of finding a namespace literally called `kube-system`.
+        mockHttpClient.get.mockReturnValue(
+          of({ results: [], source: 'os', nextCursor: '' }) as any,
+        );
+
+        await firstValueFrom(
+          service.asReadResources().list(
+            baseContext,
+            {},
+            { q: '', resource: 'testkinds', filter: 'metadata.namespace=kube-system' },
+          ),
+        );
+
+        const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
+        expect(params.get('q')).toBe('metadata.namespace:kube\\-system');
+      });
+    });
+  });
+
+  /**
+   * Direct unit tests for the exported Lucene-composition helper. The
+   * adapter-level tests above already cover the happy path; these lock down
+   * edge cases (malformed filter, empty inputs, escaping rules).
+   */
+  describe('buildLuceneQuery', () => {
+    it('returns "" when both q and filter are empty', () => {
+      expect(buildLuceneQuery('', undefined)).toBe('');
+    });
+
+    it('returns q verbatim when filter is absent', () => {
+      expect(buildLuceneQuery('foo', undefined)).toBe('foo');
+    });
+
+    it('returns just the filter clause when q is empty', () => {
+      expect(buildLuceneQuery('', 'k=v')).toBe('k:v');
+    });
+
+    it('joins q and filter with AND', () => {
+      expect(buildLuceneQuery('foo', 'k=v')).toBe('foo AND k:v');
+    });
+
+    it('treats a filter without `=` as absent (returns q alone)', () => {
+      expect(buildLuceneQuery('foo', 'nofilter')).toBe('foo');
+    });
+
+    it('treats an empty-property filter as absent', () => {
+      // Leading `=` → property slice is "" → discarded.
+      expect(buildLuceneQuery('foo', '=v')).toBe('foo');
+    });
+
+    it('treats an empty-value filter as absent', () => {
+      // Trailing `=` → value slice is "" → discarded.
+      expect(buildLuceneQuery('foo', 'k=')).toBe('foo');
+    });
+
+    it('escapes reserved characters in the value', () => {
+      // `-` reserved (MUST NOT), `:` reserved (field separator), `*` reserved (wildcard).
+      expect(buildLuceneQuery('', 'k=a-b:c*')).toBe('k:a\\-b\\:c\\*');
+    });
+
+    it('splits on the FIRST `=` so values may contain `=`', () => {
+      // A value with `=` inside — the split is only on the leftmost `=`.
+      expect(buildLuceneQuery('', 'k=v=w')).toBe('k:v=w');
+    });
+
+    it('does not escape the property (dot is literal in field names)', () => {
+      // `metadata.namespace` is a Lucene field name, dots are not reserved.
+      expect(buildLuceneQuery('', 'metadata.namespace=default')).toBe(
+        'metadata.namespace:default',
+      );
     });
   });
 
