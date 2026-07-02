@@ -386,6 +386,47 @@ describe('ResourceTableCard', () => {
       ).toBeFalsy();
     });
 
+    const makeNamespacedCreateContext = () =>
+      (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          scope: 'Namespaced',
+          ui: {
+            createView: { fields: [{ property: 'metadata.name' }] },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+
+    it('should not add a metadata.namespace field when a namespace is already resolved', () => {
+      mockResourceService.getNamespace.mockReturnValue('default');
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = makeNamespacedCreateContext();
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      const properties = newComponent
+        .createFormFields()
+        .map((f) => f.property);
+      expect(properties).not.toContain('metadata.namespace');
+    });
+
+    it('should add a metadata.namespace field when no namespace is resolved', () => {
+      mockResourceService.getNamespace.mockReturnValue(undefined);
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = makeNamespacedCreateContext();
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      const properties = newComponent
+        .createFormFields()
+        .map((f) => f.property);
+      expect(properties).toContain('metadata.namespace');
+    });
+
     it('should set required error for empty required field', () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
@@ -722,5 +763,51 @@ describe('ResourceTableCard', () => {
         expect(newComponent.columns().length).toBe(2);
       });
     });
+  });
+});
+
+describe('ResourceTableCard template', () => {
+  it('should render mfp-declarative-table-card with data-testid="generic-list-view-table"', () => {
+    const resourceServiceMock = mock<ResourceService>();
+    resourceServiceMock.list.mockReturnValue(
+      of({ items: [], resourceVersion: '1' }),
+    );
+    resourceServiceMock.resourceChangeSubscription.mockReturnValue(
+      of(undefined),
+    );
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ResourceService, useValue: resourceServiceMock },
+        {
+          provide: ErrorHandlerService,
+          useValue: mock<ErrorHandlerService>(),
+        },
+      ],
+      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    });
+
+    const fixture = TestBed.createComponent(ResourceTableCard);
+    const component = fixture.componentInstance;
+    component.context = (() => ({
+      resourceDefinition: {
+        entityCollection: 'clusters',
+        entity: 'Cluster',
+        apiGroup: 'core_k8s_io',
+        version: 'v1alpha1',
+        ui: { listView: { fields: [] }, detailView: { fields: [] } },
+      },
+    })) as any;
+    component.LuigiClient = (() => ({
+      linkManager: () => ({ navigate: vi.fn() }),
+      uxManager: () => ({ showAlert: vi.fn() }),
+      getNodeParams: vi.fn(),
+    })) as any;
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement.querySelector(
+      '[data-testid="generic-list-view-table"]',
+    );
+    expect(el).not.toBeNull();
   });
 });

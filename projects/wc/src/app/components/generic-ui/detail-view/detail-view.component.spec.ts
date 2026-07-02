@@ -1548,7 +1548,7 @@ describe('DetailViewComponent template', () => {
     fixture.detectChanges();
 
     const el = fixture.nativeElement.shadowRoot?.querySelector(
-      '[test-id="generic-detail-view-download"]',
+      '[data-testid="generic-detail-view-download"]',
     );
     expect(el).toBeFalsy();
   });

@@ -1,12 +1,12 @@
 <ui5-dialog
-  test-id="delete-resource-dialog"
+  data-testid="delete-resource-dialog"
   [open]="dialogOpen()"
   (close)="close()"
 >
   <ui5-bar slot="header" design="Header">
-    <ui5-title test-id="delete-resource-dialog-title" slot="startContent">
+    <ui5-title data-testid="delete-resource-dialog-title" slot="startContent">
       <ui5-icon
-        test-id="delete-resource-dialog-alert"
+        data-testid="delete-resource-dialog-alert"
         name="alert"
         design="Critical"
       ></ui5-icon>
@@ -14,7 +14,7 @@
     </ui5-title>
   </ui5-bar>
   <section
-    test-id="delete-resource-dialog-content"
+    data-testid="delete-resource-dialog-content"
     class="content"
     [formGroup]="form"
   >
@@ -35,7 +35,7 @@
       <ui5-input
         class="input"
         placeholder="Type name"
-        test-id="delete-resource-input"
+        data-testid="delete-resource-input"
         [value]="form.controls.resource.value"
         (blur)="onFieldBlur('resource')"
         (change)="setFormControlValue($event, 'resource')"
@@ -47,7 +47,7 @@
   </section>
   <ui5-toolbar class="ui5-content-density-compact" slot="footer">
     <ui5-toolbar-button
-      test-id="delete-resource-confirm"
+      data-testid="delete-resource-confirm"
       class="dialogCloser"
       [disabled]="
         form.invalid ||
@@ -60,7 +60,7 @@
     >
     </ui5-toolbar-button>
     <ui5-toolbar-button
-      test-id="delete-resource-cancel"
+      data-testid="delete-resource-cancel"
       class="dialogCloser"
       design="Transparent"
       text="Cancel"

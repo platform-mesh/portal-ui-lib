@@ -24,7 +24,7 @@
     }
     <div class="resource-info-cell">
       <ui5-label>Workspace Path</ui5-label>
-      <div test-id="generic-detail-view-workspace-path">
+      <div data-testid="generic-detail-view-workspace-path">
         {{ workspacePath() }}
       </div>
     </div>
@@ -32,17 +32,17 @@
       @for (viewField of viewFields(); track viewField.property) {
         <div
           class="resource-info-cell"
-          [attr.test-id]="'generic-detail-view-field-' + viewField.property"
+          [attr.data-testid]="'generic-detail-view-field-' + viewField.property"
         >
           @if (viewField.group) {
             <ui5-label
-              [attr.test-id]="
+              [attr.data-testid]="
                 'generic-detail-view-field-' + viewField.property + '-label'
               "
               >{{ viewField.group.label ?? viewField.group.name }}</ui5-label
             >
             <div
-              [attr.test-id]="
+              [attr.data-testid]="
                 'generic-detail-view-field-' + viewField.property + '-value'
               "
             >
@@ -65,13 +65,13 @@
             </div>
           } @else {
             <ui5-label
-              [attr.test-id]="
+              [attr.data-testid]="
                 'generic-detail-view-field-' + viewField.property + '-label'
               "
               >{{ viewField.label }}</ui5-label
             >
             <div
-              [attr.test-id]="
+              [attr.data-testid]="
                 'generic-detail-view-field-' + viewField.property + '-value'
               "
             >

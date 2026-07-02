@@ -1,9 +1,9 @@
 @let configVM = config();
 @if (configVM.scene) {
-  <div class="page">
+  <div class="page" data-testid="error-view">
     <div class="container">
-      <ui5-illustrated-message [name]="configVM.scene">
-        <ui5-title slot="title" level="H1">{{
+      <ui5-illustrated-message data-testid="error-view-illustration" [name]="configVM.scene">
+        <ui5-title data-testid="error-view-title" slot="title" level="H1">{{
           configVM.illustratedMessageTitle
         }}</ui5-title>
         <div slot="subtitle">
@@ -11,7 +11,7 @@
         </div>
         <div>
           @for (button of configVM.buttons; track button.url) {
-            <ui5-button design="Transparent" (click)="goTo(button)">
+            <ui5-button [attr.data-testid]="'error-view-button-' + button.label" design="Transparent" (click)="goTo(button)">
               {{ button.label }}
             </ui5-button>
           }

@@ -6,7 +6,7 @@ import { ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
   template: `
     @if (resourceDefinition()?.ui?.logoUrl) {
       <img
-        test-id="generic-detail-view-logo"
+        data-testid="generic-detail-view-logo"
         class="resource-logo"
         src="{{ resourceDefinition()?.ui?.logoUrl }}"
         alt="Logo"
