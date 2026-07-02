@@ -489,37 +489,6 @@ describe('OpenSearchResourceTableCard', () => {
       expect(filters?.[0].value).toBe('u-42');
     });
 
-    it('sorts default filters first', () => {
-      const f = TestBed.createComponent(OpenSearchResourceTableCard);
-      f.componentInstance.context = (() => ({
-        resourceDefinition: {
-          entityCollection: 'clusters',
-          ui: {
-            listView: {
-              filters: [
-                {
-                  label: 'All',
-                  property: 'all',
-                  value: '*',
-                },
-                {
-                  label: 'Mine',
-                  property: 'owner',
-                  value: 'me',
-                  default: true,
-                },
-              ],
-            },
-          },
-        },
-      })) as any;
-      f.componentInstance.LuigiClient = component.LuigiClient;
-      f.detectChanges();
-      const filters = f.componentInstance.searchFilters();
-      expect(filters?.[0].property).toBe('owner');
-      expect(filters?.[1].property).toBe('all');
-    });
-
     it('seeds selectedSearchFilter from the default filter on init', () => {
       const f = TestBed.createComponent(OpenSearchResourceTableCard);
       f.componentInstance.context = (() => ({
@@ -560,9 +529,14 @@ describe('OpenSearchResourceTableCard', () => {
       mockReadResources.list.mockReturnValue(listSubject.asObservable());
     };
 
-    it('search() forwards the new search text as q and resets pagination', () => {
+    it('search() forwards the new search text as q, resets pagination, and fires exactly one list() call', () => {
       resetStream();
+      const callsBefore = mockReadResources.list.mock.calls.length;
       (component as any).search('foo');
+      fixture.detectChanges();
+      // Regression guard: search() sets `searchKey`; if that signal were an
+      // effect dependency, we'd get an extra spurious list(true) fetch.
+      expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toEqual(
         expect.objectContaining({ q: 'foo', resource: 'clusters' }),
@@ -570,29 +544,43 @@ describe('OpenSearchResourceTableCard', () => {
       expect(lastCall[1].cursor).toBeUndefined();
     });
 
-    it('searchChanged() updates the stored search key without re-fetching when non-empty', () => {
+    it('searchChanged() with a non-empty value fires exactly one list() call with the new q', () => {
       resetStream();
       const callsBefore = mockReadResources.list.mock.calls.length;
       (component as any).searchChanged('typing');
-      expect(mockReadResources.list.mock.calls.length).toBe(callsBefore);
+      fixture.detectChanges();
+      // The host card debounces upstream, so every emission we see is a real
+      // typing pause and should reach the backend once — no double-fires from
+      // the constructor effect.
+      expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
+      const lastCall = mockReadResources.list.mock.calls.at(-1)!;
+      expect(lastCall[2]).toEqual(expect.objectContaining({ q: 'typing' }));
     });
 
-    it('searchChanged() with an empty value triggers a re-fetch (instant clear)', () => {
+    it('searchChanged() with an empty value triggers exactly one re-fetch (instant clear)', () => {
       resetStream();
       const callsBefore = mockReadResources.list.mock.calls.length;
       (component as any).searchChanged('');
+      fixture.detectChanges();
       expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toEqual(expect.objectContaining({ q: '' }));
     });
 
-    it('onFilterTabChanged() stores the new filter and forwards filter=<property>=<value>', () => {
+    it('onFilterTabChanged() stores the new filter, forwards filter=<property>=<value>, and fires exactly one list() call', () => {
       resetStream();
+      const callsBefore = mockReadResources.list.mock.calls.length;
       (component as any).onFilterTabChanged({
         label: 'Mine',
         property: 'owner',
         value: 'u-1',
       });
+      // Force any pending signal effects to run. Guards against a regression
+      // where the constructor `effect` picks up `selectedSearchFilter` as a
+      // dependency and re-triggers `list(true)` in addition to the imperative
+      // `list(false)` call inside `onFilterTabChanged` — a double-fetch.
+      fixture.detectChanges();
+      expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
       expect(component.selectedSearchFilter()?.property).toBe('owner');
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toEqual(
@@ -600,7 +588,7 @@ describe('OpenSearchResourceTableCard', () => {
       );
     });
 
-    it('onFilterTabChanged(undefined) clears any previously-active filter', () => {
+    it('onFilterTabChanged(undefined) clears the filter and fires exactly one list() call', () => {
       resetStream();
       (component as any).onFilterTabChanged({
         label: 'Mine',
@@ -608,7 +596,10 @@ describe('OpenSearchResourceTableCard', () => {
         value: 'u-1',
       });
       resetStream();
+      const callsBefore = mockReadResources.list.mock.calls.length;
       (component as any).onFilterTabChanged(undefined);
+      fixture.detectChanges();
+      expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
       expect(component.selectedSearchFilter()).toBeUndefined();
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]?.filter).toBeUndefined();

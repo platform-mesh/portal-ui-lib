@@ -5,9 +5,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnInit,
   ViewEncapsulation,
   computed,
-  effect,
   inject,
   input,
   linkedSignal,
@@ -61,7 +61,7 @@ import { Subscription } from 'rxjs';
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OpenSearchResourceTableCard {
+export class OpenSearchResourceTableCard implements OnInit {
   private readResourcesProxy = inject(ReadResourcesProxyService);
   private errorHandlerService = inject(ErrorHandlerService);
   private destroyRef = inject(DestroyRef);
@@ -190,11 +190,8 @@ export class OpenSearchResourceTableCard {
   protected trackBy = (item: GenericResource) =>
     (item as any).metadata?.name ?? item.id;
 
-  constructor() {
-    effect(() => {
-      this.currentContinueToken = undefined;
-      this.list(true);
-    });
+  ngOnInit(): void {
+    this.list(true);
   }
 
   private resetPagination() {
@@ -329,17 +326,17 @@ export class OpenSearchResourceTableCard {
   }
 
   /**
-   * Fires on every (debounced) keystroke. Keep `searchKey` in sync so a scope
-   * change always uses the latest typed text, but only re-fetch when the user
-   * clears the input — submitting via {@link search} is the trigger for a real
-   * search request.
+   * Fires on every (debounced) keystroke from the host card's search input.
+   * The `mfp-declarative-table-card` applies a 300ms debounce upstream, so each
+   * emission represents a typing pause — cheap enough to translate directly
+   * into a backend `list()` call for "search-as-you-type" UX. Emissions also
+   * fire on the clear-icon click with an empty string, giving us the instant
+   * reset for free.
    */
   protected searchChanged(event: string | null) {
     this.searchKey.set(event ?? null);
-    if (!event) {
-      this.currentContinueToken = undefined;
-      this.list(false, event);
-    }
+    this.currentContinueToken = undefined;
+    this.list(false, event);
   }
 
   /**
