@@ -614,4 +614,193 @@ describe('OpenSearchResourceTableCard', () => {
       expect(lastCall[2]?.filter).toBeUndefined();
     });
   });
+
+  /**
+   * URL-refresh hydration: `q` and any `<property>=<value>` pair matching a
+   * filter tab are consulted at construction and pushed to the host card as
+   * `searchConfig.initialSearch` / `initialFilter`. These tests bypass the
+   * shared `beforeEach` fixture and construct their own because the URL must
+   * be set *before* the property initializers run — after mount is too late.
+   *
+   * URL shape note: filters are reflected as `?<filter.property>=<filter.value>`
+   * (one param per filter, e.g. `?metadata.namespace=default`), NOT as a nested
+   * `?filter=property=value` pair — the latter is what the backend receives,
+   * not the URL.
+   */
+  describe('URL hydration (q / filter query params)', () => {
+    // The shared `beforeEach` builds a fixture from a plain URL. Each test
+    // here overwrites location with `history.replaceState` and constructs a
+    // fresh component so the property initializer sees the crafted URL.
+    const setUrl = (search: string) => {
+      history.replaceState(null, '', `/tests${search}`);
+    };
+
+    const buildContextWithFilters = () =>
+      (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          ui: {
+            listView: {
+              filters: [
+                { label: 'Mine', property: 'owner', value: 'me' },
+                { label: 'All', property: 'owner', value: '*', default: true },
+              ],
+            },
+          },
+        },
+      })) as any;
+
+    const makeFresh = (ctx: any) => {
+      const f = TestBed.createComponent(OpenSearchResourceTableCard);
+      f.componentInstance.context = ctx;
+      f.componentInstance.LuigiClient = component.LuigiClient;
+      f.detectChanges();
+      return f;
+    };
+
+    afterEach(() => {
+      // Reset the URL so we don't leak state between tests.
+      history.replaceState(null, '', '/tests');
+    });
+
+    it('seeds searchKey from ?q= on init', () => {
+      setUrl('?q=demo-1');
+      const f = makeFresh(buildContextWithFilters());
+      const lastCall = mockReadResources.list.mock.calls.at(-1)!;
+      expect(lastCall[2]).toEqual(
+        expect.objectContaining({ q: 'demo-1' }),
+      );
+      // Cleanup: drain the fresh subscription so it doesn't leak into later tests.
+      f.destroy();
+    });
+
+    it('exposes initialSearch through config().searchConfig', () => {
+      setUrl('?q=demo-1');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.config().searchConfig?.initialSearch).toBe(
+        'demo-1',
+      );
+      f.destroy();
+    });
+
+    it('seeds selectedSearchFilter from ?<property>=<value> when it matches a tab', () => {
+      setUrl('?owner=me');
+      const f = makeFresh(buildContextWithFilters());
+      // "owner=me" wins over the resourceDefinition's `default: true` on the "All" tab.
+      expect(f.componentInstance.selectedSearchFilter()).toEqual(
+        expect.objectContaining({ property: 'owner', value: 'me' }),
+      );
+      const lastCall = mockReadResources.list.mock.calls.at(-1)!;
+      // Backend still receives the `property=value` string as the `filter` field.
+      expect(lastCall[2]).toEqual(
+        expect.objectContaining({ filter: 'owner=me' }),
+      );
+      f.destroy();
+    });
+
+    it('exposes initialFilter through config().searchConfig when matched', () => {
+      setUrl('?owner=me');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.config().searchConfig?.initialFilter).toEqual(
+        expect.objectContaining({ property: 'owner', value: 'me' }),
+      );
+      f.destroy();
+    });
+
+    it('falls back to default: true when the URL value does not match any tab', () => {
+      setUrl('?owner=ghost');
+      const f = makeFresh(buildContextWithFilters());
+      // No matching (property, value) → linkedSignal falls through to the `default: true` entry.
+      expect(f.componentInstance.selectedSearchFilter()).toEqual(
+        expect.objectContaining({ property: 'owner', value: '*' }),
+      );
+      // config().searchConfig.initialFilter is undefined (nothing to promote).
+      expect(f.componentInstance.config().searchConfig?.initialFilter).toBeUndefined();
+      f.destroy();
+    });
+
+    it('ignores URL params whose keys are not filter properties', () => {
+      // No filter tab has property `unrelated`, so this URL param is a plain
+      // app-level query string, not a filter. The default tab still wins.
+      setUrl('?unrelated=x');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.selectedSearchFilter()).toEqual(
+        expect.objectContaining({ property: 'owner', value: '*' }),
+      );
+      f.destroy();
+    });
+
+    it('encodes special characters in filter values (round-trip)', () => {
+      // A dot-in-property + slash-in-value case that used to be doubly ambiguous
+      // in the `?filter=property=value` shape — with property-as-key each is one
+      // clean query param and URLSearchParams handles the encoding for us.
+      setUrl(`?${encodeURIComponent('metadata.namespace')}=${encodeURIComponent('kube-system')}`);
+      const ctx = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          ui: {
+            listView: {
+              filters: [
+                {
+                  label: 'kube-system',
+                  property: 'metadata.namespace',
+                  value: 'kube-system',
+                },
+                {
+                  label: 'All',
+                  property: 'metadata.namespace',
+                  value: '*',
+                  default: true,
+                },
+              ],
+            },
+          },
+        },
+      })) as any;
+      const f = makeFresh(ctx);
+      expect(f.componentInstance.selectedSearchFilter()).toEqual(
+        expect.objectContaining({
+          property: 'metadata.namespace',
+          value: 'kube-system',
+        }),
+      );
+      f.destroy();
+    });
+
+    it('behaves normally when neither q nor a matching filter is present', () => {
+      setUrl('');
+      const f = makeFresh(buildContextWithFilters());
+      const searchConfig = f.componentInstance.config().searchConfig;
+      expect(searchConfig?.initialSearch).toBeUndefined();
+      expect(searchConfig?.initialFilter).toBeUndefined();
+      // Default filter still wins on empty URL.
+      expect(f.componentInstance.selectedSearchFilter()).toEqual(
+        expect.objectContaining({ property: 'owner', value: '*' }),
+      );
+      f.destroy();
+    });
+
+    it('does not re-seed from the URL after the user picks a different filter', () => {
+      setUrl('?owner=me');
+      const f = makeFresh(buildContextWithFilters());
+      // Verify initial seed took effect.
+      expect(f.componentInstance.selectedSearchFilter()?.value).toBe('me');
+
+      // User picks a different tab; the linkedSignal's `.set()` records it.
+      (f.componentInstance as any).onFilterTabChanged({
+        label: 'All',
+        property: 'owner',
+        value: '*',
+      });
+      expect(f.componentInstance.selectedSearchFilter()?.value).toBe('*');
+
+      // Simulate a Luigi context change that triggers searchFilters recomputation.
+      // The URL-seed flag has already latched, so `linkedSignal`'s computation
+      // must NOT push the user back to `owner=me`.
+      f.componentInstance.context = buildContextWithFilters();
+      f.detectChanges();
+      expect(f.componentInstance.selectedSearchFilter()?.value).toBe('*');
+      f.destroy();
+    });
+  });
 });

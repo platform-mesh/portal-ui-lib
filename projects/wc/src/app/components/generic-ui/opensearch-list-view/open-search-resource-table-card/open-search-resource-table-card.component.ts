@@ -41,8 +41,17 @@ import { Subscription } from 'rxjs';
  * - Uses {@link ReadResourcesProxyService} so the same UI can be backed by
  *   the GraphQL gateway OR by OpenSearch depending on the `os-provider`
  *   feature toggle.
- * - Owns the search-text + scope filter state (URL-roundtripped and forwarded
- *   to the OpenSearch backend as `q` and `filter=property=value`).
+ * - Owns the search-text + scope filter state. Each active filter is
+ *   reflected in the URL as `?<filter.property>=<filter.value>` (one clean
+ *   query param per filter), and the backend receives the same pair as
+ *   `filter=<property>=<value>` in the request body.
+ *
+ * On mount, `q` and any URL param whose key matches a filter tab's `property`
+ * (and whose value matches that tab's `value`) are pushed to the host card
+ * via `searchConfig.initialSearch` / `initialFilter` so a full page refresh
+ * re-hydrates the visible search input and selected filter tab. The host's
+ * seeds are one-shot; after that, user-driven changes flow through
+ * `searchChanged` / `filterTabChanged` as before.
  */
 @Component({
   selector: 'pm-open-search-resource-table-card',
@@ -59,6 +68,19 @@ export class OpenSearchResourceTableCard {
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
+
+  private readonly initialSearchFromUrl = this.readUrlSearchParam('q');
+  private readonly urlSnapshot: Record<string, string> = this.snapshotUrl();
+  /**
+   * Latches `false` once the `linkedSignal` below has had a chance to consume
+   * the URL-derived initial filter — prevents Luigi navigations that recompute
+   * `searchFilters()` from silently re-pushing the user back to the URL's
+   * filter after they've picked another one. Set to `true` initially so the
+   * first computation gets a chance to hydrate from the URL against the
+   * filter list (we can't know the answer statically — the URL uses each
+   * filter's `property` as the query key, so we need `searchFilters()` first).
+   */
+  private urlFilterAvailable = true;
 
   resources = signal<GenericResource[]>([]);
   resourceDefinition = computed(() => this.context().resourceDefinition);
@@ -106,11 +128,29 @@ export class OpenSearchResourceTableCard {
       ) {
         return previous;
       }
+      // First-render URL hydration: if the user landed on this page with a
+      // `?<filter.property>=<filter.value>` query and it matches one of the
+      // filter tabs, seed the selection from the URL instead of the
+      // resourceDefinition's `default: true` entry. The URL uses each
+      // filter's own `property` as the query key (not a nested
+      // `filter=property=value` shape), so we resolve by iterating candidates.
+      // Consumed once — subsequent recomputations fall through to the
+      // `default` path so a Luigi nav can't "undo" a later user pick by
+      // reasserting the URL filter.
+      if (this.urlFilterAvailable && filters) {
+        const match = this.matchUrlFilter(filters);
+        if (match) {
+          this.urlFilterAvailable = false;
+          return match;
+        }
+      }
       const def = filters?.find((f) => f.default);
       return def?.property && def?.value !== undefined ? def : undefined;
     },
   });
-  private searchKey = signal<string | null | undefined>(null);
+  private searchKey = signal<string | null | undefined>(
+    this.initialSearchFromUrl ?? null,
+  );
   searchFilters = computed<FieldFilterDefinition[] | undefined>(() => {
     const ctx = this.context();
     return ctx.resourceDefinition?.ui?.listView?.filters
@@ -124,8 +164,11 @@ export class OpenSearchResourceTableCard {
   config = computed<TableCardConfig>(() => {
     return {
       header: 'Accounts',
-      resourcesSearchable: true,
-      filterTabs: this.searchFilters(),
+      searchConfig: {
+        filterTabs: this.searchFilters(),
+        initialSearch: this.initialSearchFromUrl,
+        initialFilter: this.resolveInitialFilterTab(),
+      },
       tableConfig: {
         fields: this.columns(),
         totalItemsCount: this.totalItemsCount(),
@@ -191,9 +234,15 @@ export class OpenSearchResourceTableCard {
       filter?.property && filter?.value !== undefined
         ? `${filter.property}=${filter.value}`
         : undefined;
+    // Reflect the filter in the URL as `<property>=<value>` — one clean
+    // param per filter, so a refresh restores exactly what the user picked.
+    // The backend still receives the `property=value` string via the
+    // request-level `filter` field below; only the URL shape changed.
     addSearchParams({
       q: q || undefined,
-      filter: filterParam,
+      ...(filter?.property
+        ? { [filter.property]: filter.value ?? undefined }
+        : {}),
     });
 
     this.listSubscription = this.readResourcesProxy
@@ -300,9 +349,11 @@ export class OpenSearchResourceTableCard {
    * - When `event` is a `FieldFilterDefinition`, that filter becomes the
    *   active one — its `property=value` pair is forwarded to OpenSearch as
    *   the `filter` request param and reflected in the URL.
-   * - When `event` is `undefined`, the auto-prepended "All" tab was picked.
-   *   Any previously-active filter's URL param is stripped and no `filter`
-   *   parameter is sent to the backend, so the result set is unfiltered.
+   * - When `event` is `undefined`, the current filter is cleared. The host
+   *   card does not auto-prepend an "All" tab; hosts that want that
+   *   affordance author it as a regular `FieldFilterDefinition`. `undefined`
+   *   here means "no scope" — the URL filter param is stripped and the
+   *   backend query drops the `filter` field.
    *
    * Pagination is reset so the new filter result starts from the first page.
    */
@@ -316,5 +367,67 @@ export class OpenSearchResourceTableCard {
     this.selectedSearchFilter.set(event);
     this.currentContinueToken = undefined;
     this.list(false);
+  }
+
+  /**
+   * Reads a single `URLSearchParams` entry from the current `location.href`.
+   * Returns `undefined` for missing keys so downstream `?? default` chains
+   * work naturally. Extracted for testability (jsdom in vitest gives us a
+   * mutable `location`).
+   */
+  private readUrlSearchParam(key: string): string | undefined {
+    if (typeof location === 'undefined') return undefined;
+    return new URL(location.href).searchParams.get(key) ?? undefined;
+  }
+
+  /**
+   * Snapshot of the current URL's query string as a plain map, taken once at
+   * construction. Used by `matchUrlFilter` to distinguish user-supplied filter
+   * params from the ones we write back during the initial `list()`.
+   */
+  private snapshotUrl(): Record<string, string> {
+    if (typeof location === 'undefined') return {};
+    const out: Record<string, string> = {};
+    new URL(location.href).searchParams.forEach((value, key) => {
+      out[key] = value;
+    });
+    return out;
+  }
+
+  /**
+   * Finds the first filter tab whose `property` appears as a key in
+   * `urlSnapshot` AND whose `value` matches the snapshotted value. Returns
+   * `undefined` if no candidate matches — indicating the user's landing URL
+   * either doesn't carry a filter or names one the resourceDefinition doesn't
+   * publish.
+   *
+   * The URL uses each filter's own `property` as the query key (e.g.
+   * `?metadata.namespace=default`) — cleaner than nesting a `property=value`
+   * pair inside a single `filter` param, and avoids the double-`=` shape.
+   * Because we can only resolve which URL key is "the filter" after we have
+   * the filter definitions, this lookup lives here, not at construction; but
+   * it reads from `urlSnapshot`, not live `location`, so our own URL writes
+   * don't get re-read as if the user had typed them.
+   */
+  private matchUrlFilter(
+    filters: FieldFilterDefinition[],
+  ): FieldFilterDefinition | undefined {
+    return filters.find((f) => {
+      if (!f.property) return false;
+      const urlValue = this.urlSnapshot[f.property];
+      return urlValue !== undefined && urlValue === f.value;
+    });
+  }
+
+  /**
+   * Resolves any URL query-string filter against the current `searchFilters()`
+   * list, returning the matching entry (so the host card can render it as
+   * selected) or `undefined` if no filter tab matches. Fed to the host card's
+   * `searchConfig.initialFilter` seed.
+   */
+  private resolveInitialFilterTab(): FieldFilterDefinition | undefined {
+    const filters = this.searchFilters();
+    if (!filters?.length) return undefined;
+    return this.matchUrlFilter(filters);
   }
 }
