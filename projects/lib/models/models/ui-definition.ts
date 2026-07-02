@@ -1,4 +1,8 @@
-import { FormFieldDefinition, Scope, TableFieldDefinition } from '@openmfp/ngx';
+import {
+  FieldFilterDefinition,
+  FormFieldDefinition,
+  TableFieldDefinition,
+} from '@openmfp/ngx';
 
 export type {
   ButtonSettings,
@@ -38,10 +42,6 @@ export interface UIDefinition {
 
 export interface ListView extends UiView {
   filters?: FieldFilterDefinition[];
-}
-
-export interface FieldFilterDefinition extends Scope {
-  default?: boolean;
 }
 
 export interface DetailView extends UiView {

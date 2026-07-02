@@ -1,0 +1,9 @@
+<mfp-declarative-table-card
+  [resources]="resources()"
+  [config]="config()"
+  (tableRowClicked)="navigateToResource($event)"
+  (loadMoreResources)="loadMore()"
+  (paginationLimitChanged)="onLimitChange($event)"
+  (searchChanged)="searchChanged($event)"
+  (filterTabChanged)="onFilterTabChanged($event)"
+/>

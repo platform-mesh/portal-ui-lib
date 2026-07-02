@@ -1,20 +1,6 @@
-<pm-generic-view
-  [view]="'listView'"
-  [context]="context()"
-  [LuigiClient]="LuigiClient()"
-  [defaultTitle]="defaultTitle()"
-  [defaultDescription]="defaultDescription()"
->
-  <ng-content page-content>
-    <mfp-declarative-table-card
-      [resources]="resources()"
-      [config]="config()"
-      (tableRowClicked)="navigateToResource($event)"
-      (loadMoreResources)="loadMore()"
-      (paginationLimitChanged)="onLimitChange($event)"
-      (searchSubmit)="search($event)"
-      (searchChanged)="searchChanged($event)"
-      (scopeChanged)="searchWithScope($event)"
-    />
-  </ng-content>
-</pm-generic-view>
+<mfp-dashboard
+  [config]="dashboardConfig()"
+  [sections]="sections"
+  [cards]="cards()"
+  [availableCards]="availableCards"
+/>

@@ -47,6 +47,16 @@ In order to use the generic list view, you need to adjust the node’s `content-
   - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the table toolbar or row actions. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the view title. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, defaults to the plural form of the resource.
   - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition features. If not provided, a default description is generated.
+  - `"filters"`: Optional array of `FieldFilterDefinition` objects rendered as filter tabs above the table. Each entry defines a tab that scopes the list to rows whose `"property"` matches the given `"value"`. Properties per entry:
+    - `"label"`: Tab text shown to the user.
+    - `"property"`: Name of the resource property the filter applies to.
+    - `"value"`: Value compared against `"property"` when the filter is active. Use `"*"` to author an explicit "all" tab that matches every row.
+      - Supports **runtime interpolation from the Luigi context**: any occurrence of `{context.<dot.path>}` is replaced with the corresponding value from the current Luigi node context before the filter is applied. Examples:
+        - `"value": "{context.userId}"` → resolves to the current user's ID (e.g. `"u1"`).
+        - `"value": "/users/{context.userId}/orgs/{context.orgId}"` → multiple placeholders in one string are all resolved.
+        - `"value": "{context.user.email}"` → nested paths are supported.
+      - If a placeholder resolves to `undefined` or `null`, it is left literal in the output (so the user sees the placeholder rather than the string `"undefined"`) — a signal that the expected context key is missing.
+    - `"default"`: Optional boolean; when `true`, this tab is selected on initial render. If omitted on every entry, the first tab is selected by default.
 
 #### Detail View Configuration
 
