@@ -1,5 +1,5 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { addSearchParams } from '../../../../utils/set-search-params';
+import { addSearchParams } from '../../../../utils/url-params';
 import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
