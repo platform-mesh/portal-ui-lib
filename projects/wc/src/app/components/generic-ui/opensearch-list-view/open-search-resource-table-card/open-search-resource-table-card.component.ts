@@ -75,7 +75,6 @@ export class OpenSearchResourceTableCard implements OnInit {
 
   private readonly initialSearchFromUrl = readUrlSearchParam('q');
   private readonly urlSnapshot: Record<string, string> = snapshotUrl();
-  private urlFilterAvailable = true;
 
   resources = signal<GenericResource[]>([]);
   resourceDefinition = computed(() => this.context().resourceDefinition);
@@ -123,12 +122,10 @@ export class OpenSearchResourceTableCard implements OnInit {
       ) {
         return previous;
       }
-      if (this.urlFilterAvailable && filters) {
+
+      if (!prev && filters) {
         const match = this.matchUrlFilter(filters);
-        if (match) {
-          this.urlFilterAvailable = false;
-          return match;
-        }
+        if (match) return match;
       }
       const def = filters?.find((f) => f.default);
       return def?.property && def?.value !== undefined ? def : undefined;
