@@ -30,7 +30,10 @@ import {
   ResourceField,
   SectionConfig,
 } from '@openmfp/ngx';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  PlatformMeshFieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
   ErrorHandlerService,
@@ -431,7 +434,7 @@ export class DetailView {
 
   private getDetailViewQueryFields() {
     const resourceDefinition = this.getResourceDefinition();
-    const additionalFields: FieldDefinition[] = [
+    const additionalFields: PlatformMeshFieldDefinition[] = [
       { property: 'metadata.deletionTimestamp' },
     ];
 

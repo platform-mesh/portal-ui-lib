@@ -1,25 +1,28 @@
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
-type GroupBase = NonNullable<FieldDefinition['group']>;
+type GroupBase = NonNullable<PlatformMeshFieldDefinition['group']>;
 type ProcessedGroup = GroupBase & {
-  fields?: FieldDefinition[];
+  fields?: PlatformMeshFieldDefinition[];
 };
 
-export type ProcessedFieldDefinition = Omit<FieldDefinition, 'group'> & {
+export type ProcessedFieldDefinition = Omit<
+  PlatformMeshFieldDefinition,
+  'group'
+> & {
   group?: ProcessedGroup;
 };
 
 export const processGroupFields = (
-  fields: FieldDefinition[],
+  fields: PlatformMeshFieldDefinition[],
 ): ProcessedFieldDefinition[] => {
   return combineGroupFields(fields);
 };
 
 const collectGroupFields = (
-  fields: FieldDefinition[],
-): Record<string, FieldDefinition[]> => {
+  fields: PlatformMeshFieldDefinition[],
+): Record<string, PlatformMeshFieldDefinition[]> => {
   return fields.reduce(
-    (acc, f): Record<string, FieldDefinition[]> => {
+    (acc, f): Record<string, PlatformMeshFieldDefinition[]> => {
       if (!f.group?.name) {
         return acc;
       }
@@ -34,12 +37,12 @@ const collectGroupFields = (
       acc[key].push(fieldWithoutGroup);
       return acc;
     },
-    {} as Record<string, FieldDefinition[]>,
+    {} as Record<string, PlatformMeshFieldDefinition[]>,
   );
 };
 
 const combineGroupFields = (
-  fields: FieldDefinition[],
+  fields: PlatformMeshFieldDefinition[],
 ): ProcessedFieldDefinition[] => {
   const seenGroup = new Set<string>();
   const groupFields = collectGroupFields(fields);

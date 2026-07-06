@@ -26,7 +26,10 @@ import {
   FormFieldDefinition,
   FormFieldErrors,
 } from '@openmfp/ngx';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  PlatformMeshFieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceService,
@@ -49,7 +52,7 @@ import { firstValueFrom } from 'rxjs';
 })
 export class CreateResourceModal {
   context = input.required<ResourceNodeContext>();
-  fields = input<FieldDefinition[]>([]);
+  fields = input<PlatformMeshFieldDefinition[]>([]);
 
   resource = output<Resource>();
   updateResource = output<Resource>();
@@ -132,13 +135,13 @@ export class CreateResourceModal {
   }
 
   private async buildFormFieldsAsync(
-    fields: FieldDefinition[],
+    fields: PlatformMeshFieldDefinition[],
   ): Promise<FormFieldDefinition[]> {
     return Promise.all(fields.map((field) => this.toFormFieldAsync(field)));
   }
 
   private async toFormFieldAsync(
-    field: FieldDefinition,
+    field: PlatformMeshFieldDefinition,
   ): Promise<FormFieldDefinition> {
     const formField = this.toFormField(field);
 
@@ -155,7 +158,7 @@ export class CreateResourceModal {
     return formField;
   }
 
-  private toFormField(field: FieldDefinition): FormFieldDefinition {
+  private toFormField(field: PlatformMeshFieldDefinition): FormFieldDefinition {
     if (typeof field.property !== 'string') {
       throw new Error(
         `Form field property must be a string, got: ${JSON.stringify(field.property)}`,
@@ -181,7 +184,7 @@ export class CreateResourceModal {
   }
 
   private buildInitialValues(
-    fields: FieldDefinition[],
+    fields: PlatformMeshFieldDefinition[],
     resource?: Resource,
   ): Record<string, unknown> {
     if (!resource) return {};
@@ -197,7 +200,7 @@ export class CreateResourceModal {
     );
   }
 
-  private calculateFields(): FieldDefinition[] {
+  private calculateFields(): PlatformMeshFieldDefinition[] {
     const fields = this.fields().slice();
 
     if (this.shouldAddNamespaceControl()) {
@@ -229,7 +232,7 @@ export class CreateResourceModal {
     return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
   }
 
-  private isCreateFieldOnly(field: FieldDefinition): boolean {
+  private isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
     return (
       field.property === ResourceFieldNames.MetadataName ||
       field.property === ResourceFieldNames.SpecType ||

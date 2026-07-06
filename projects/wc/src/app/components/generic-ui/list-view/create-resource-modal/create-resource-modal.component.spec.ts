@@ -2,7 +2,7 @@ import { CreateResourceModal } from './create-resource-modal.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DeclarativeForm } from '@openmfp/ngx';
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
 import { mock } from 'vitest-mock-extended';
@@ -12,7 +12,7 @@ describe('CreateResourceModalComponent', () => {
   let fixture: ComponentFixture<CreateResourceModal>;
   let resourceService: ReturnType<typeof mock<ResourceService>>;
 
-  const testFields: FieldDefinition[] = [
+  const testFields: PlatformMeshFieldDefinition[] = [
     { property: 'metadata.name', required: true, label: 'Name' },
     { property: 'spec.description', required: false, label: 'Description' },
   ];
@@ -124,7 +124,7 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should set validation: onChange on other required fields', async () => {
-      const requiredFields: FieldDefinition[] = [
+      const requiredFields: PlatformMeshFieldDefinition[] = [
         { property: 'spec.type', required: true, label: 'Type' },
         { property: 'spec.description', required: false, label: 'Description' },
       ];
@@ -231,7 +231,7 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should store static values from field.values in formField.values', async () => {
-      const staticFields: FieldDefinition[] = [
+      const staticFields: PlatformMeshFieldDefinition[] = [
         {
           property: 'spec.type',
           label: 'Type',

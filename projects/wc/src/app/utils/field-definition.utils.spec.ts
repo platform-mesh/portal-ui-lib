@@ -1,5 +1,8 @@
 import { executeButtonAction, getFieldValue } from './field-definition.utils';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  PlatformMeshFieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 
 const getResourceValueByJsonPathMock = vi.fn();
 
@@ -26,7 +29,7 @@ describe('field-definition.utils', () => {
 
   describe('getFieldValue', () => {
     it('should return value from resource using jsonPath when resource exists', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
         value: 'default-value',
       };
@@ -41,7 +44,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should return according to indicated property', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
         value: 'fallback-value',
       };
@@ -56,7 +59,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should return field.value when resource is undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
         value: 'static-value',
       };
@@ -68,7 +71,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should return field.value when resource is null', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
         value: 'static-value',
       };
@@ -80,7 +83,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should return undefined when field.value is undefined and resource is undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
       };
 
@@ -90,7 +93,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should return empty string when field.value is empty string', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
         value: '',
       };
@@ -101,7 +104,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should prefer jsonPath value over field.value when jsonPath returns falsy but not null/undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'spec.enabled',
         value: 'default',
       };
@@ -120,7 +123,7 @@ describe('field-definition.utils', () => {
 
     it('should handle complex object as field value', () => {
       const complexValue = { nested: { data: 'value' } };
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'spec.config',
         value: complexValue as any,
       };
@@ -132,7 +135,7 @@ describe('field-definition.utils', () => {
 
     it('should handle array as field value', () => {
       const arrayValue = ['item1', 'item2', 'item3'];
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'spec.items',
         value: arrayValue as any,
       };
@@ -145,7 +148,7 @@ describe('field-definition.utils', () => {
 
   describe('executeButtonAction', () => {
     it('should navigate when action is navigate', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path/to/resource',
         uiSettings: {
           buttonSettings: {
@@ -169,7 +172,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should navigate with field.value when resource is undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.name',
         value: '/static/path',
         uiSettings: {
@@ -185,7 +188,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should openAsModal when action is openInModal', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'spec.modalPath',
         value: '/modal/path',
         uiSettings: {
@@ -216,7 +219,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should openAsModal with all modal settings', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/modal/path',
         uiSettings: {
           buttonSettings: {
@@ -242,7 +245,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should openAsModal with undefined modalSettings', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/modal/path',
         uiSettings: {
           buttonSettings: {
@@ -260,7 +263,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when buttonSettings is missing', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         label: 'Test Button',
         uiSettings: {},
@@ -272,7 +275,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when action is missing', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         property: 'metadata.link',
         uiSettings: {
@@ -286,7 +289,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when action is undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         label: 'My Button',
         uiSettings: {
@@ -302,7 +305,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when action is null', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         property: 'spec.action',
         uiSettings: {
@@ -318,7 +321,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when uiSettings is undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         label: 'Test',
       };
@@ -329,7 +332,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when path is empty string', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '',
         label: 'Empty Path Button',
         uiSettings: {
@@ -347,7 +350,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when path is whitespace only', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '   ',
         property: 'metadata.path',
         uiSettings: {
@@ -363,7 +366,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when path is not a string', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: 123 as any,
         label: 'Numeric Path',
         uiSettings: {
@@ -379,7 +382,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when path is undefined', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.link',
         uiSettings: {
           buttonSettings: {
@@ -394,7 +397,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error when path is null', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: null as any,
         label: 'Null Path',
         uiSettings: {
@@ -410,7 +413,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error for unsupported action', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/some/path',
         uiSettings: {
           buttonSettings: {
@@ -425,7 +428,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should throw error with field declaration for unsupported action', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'test',
         value: '/path',
         uiSettings: {
@@ -441,7 +444,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should use label in error message when available', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         label: 'My Custom Label',
         property: 'metadata.name',
         uiSettings: {},
@@ -453,7 +456,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should use property in error message when label is missing', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'spec.buttonPath',
         uiSettings: {},
       };
@@ -464,7 +467,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should use unknown in error message when both label and property are missing', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         uiSettings: {},
       };
@@ -475,7 +478,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should use unknown in error message when property is array', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: ['metadata', 'name'],
         uiSettings: {},
       };
@@ -486,7 +489,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should navigate with valid path', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/valid/path',
         uiSettings: {
           buttonSettings: {
@@ -501,7 +504,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should call linkManager once per action', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         value: '/path',
         uiSettings: {
           buttonSettings: {
@@ -516,7 +519,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should handle navigate action multiple times', () => {
-      const field1: FieldDefinition = {
+      const field1: PlatformMeshFieldDefinition = {
         value: '/path1',
         uiSettings: {
           buttonSettings: {
@@ -524,7 +527,7 @@ describe('field-definition.utils', () => {
           },
         },
       };
-      const field2: FieldDefinition = {
+      const field2: PlatformMeshFieldDefinition = {
         value: '/path2',
         uiSettings: {
           buttonSettings: {
@@ -542,7 +545,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should use fallback value when jsonPath returns null', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'metadata.link',
         value: '/fallback/path',
         uiSettings: {
@@ -564,7 +567,7 @@ describe('field-definition.utils', () => {
     });
 
     it('should include field JSON in unsupported action error message', () => {
-      const field: FieldDefinition = {
+      const field: PlatformMeshFieldDefinition = {
         property: 'test.property',
         value: '/path',
         label: 'Test Label',

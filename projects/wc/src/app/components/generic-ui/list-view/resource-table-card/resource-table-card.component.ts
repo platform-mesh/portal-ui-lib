@@ -29,7 +29,7 @@ import {
   TableCardFormState,
 } from '@openmfp/ngx';
 import {
-  FieldDefinition,
+  PlatformMeshFieldDefinition,
   Resource,
   ResourceListResult,
   ResourceSubscriptionResult,
@@ -324,7 +324,9 @@ export class ResourceTableCard {
       });
   }
 
-  private toFormFields(fields: FieldDefinition[]): FormFieldDefinition[] {
+  private toFormFields(
+    fields: PlatformMeshFieldDefinition[],
+  ): FormFieldDefinition[] {
     return (fields || []).map((field) => {
       if (typeof field.property !== 'string') {
         throw new Error(

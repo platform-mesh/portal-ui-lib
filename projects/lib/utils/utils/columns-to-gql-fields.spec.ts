@@ -1,5 +1,5 @@
 import { generateGraphQLFields } from './columns-to-gql-fields';
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 describe('columns-to-gql-fields', () => {
   describe('generateGraphQLFields', () => {
@@ -9,13 +9,15 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle single field with simple property', () => {
-      const fields: FieldDefinition[] = [{ property: 'name', label: 'Name' }];
+      const fields: PlatformMeshFieldDefinition[] = [
+        { property: 'name', label: 'Name' },
+      ];
       const result = generateGraphQLFields(fields);
       expect(result).toEqual(['name']);
     });
 
     it('should handle multiple fields with simple properties', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: 'name', label: 'Name' },
         { property: 'age', label: 'Age' },
       ];
@@ -24,7 +26,7 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle nested properties with dot notation', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: 'user.name', label: 'User Name' },
       ];
       const result = generateGraphQLFields(fields);
@@ -32,7 +34,7 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle deeply nested properties', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: 'user.profile.address.city', label: 'City' },
       ];
       const result = generateGraphQLFields(fields);
@@ -42,7 +44,7 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle array of properties', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: ['name', 'age'], label: 'User Info' },
       ];
       const result = generateGraphQLFields(fields);
@@ -50,7 +52,7 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle mixed array of simple and nested properties', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: ['name', 'user.profile.age'], label: 'Mixed Info' },
       ];
       const result = generateGraphQLFields(fields);
@@ -58,7 +60,7 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle multiple fields with mixed properties', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: 'name', label: 'Name' },
         { property: 'user.profile.age', label: 'Age' },
         { property: ['email', 'phone'], label: 'Contact' },
@@ -73,7 +75,7 @@ describe('columns-to-gql-fields', () => {
     });
 
     it('should handle empty or null property values', () => {
-      const fields: FieldDefinition[] = [
+      const fields: PlatformMeshFieldDefinition[] = [
         { property: '', label: 'Empty' },
         { property: null as any, label: 'Null' },
       ];
