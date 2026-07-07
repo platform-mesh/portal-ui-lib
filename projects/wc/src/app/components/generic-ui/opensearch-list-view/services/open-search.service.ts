@@ -199,7 +199,7 @@ export function buildLuceneQuery(
   q: string,
   filter: string | undefined,
 ): string {
-  if (!filter) return q;
+  if (!filter) return q || '*';
 
   const eq = filter.indexOf('=');
   if (eq <= 0 || eq === filter.length - 1) return q;

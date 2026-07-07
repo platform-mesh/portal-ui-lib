@@ -150,7 +150,7 @@ describe('OpenSearchService', () => {
 
       const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
       expect(params.get('resource')).toBe('testkinds');
-      expect(params.get('q')).toBe('');
+      expect(params.get('q')).toBe('*');
     });
 
     it('should handle a missing resourceDefinition gracefully when no resource is given', async () => {
@@ -280,8 +280,8 @@ describe('OpenSearchService', () => {
    * edge cases (malformed filter, empty inputs, escaping rules).
    */
   describe('buildLuceneQuery', () => {
-    it('returns "" when both q and filter are empty', () => {
-      expect(buildLuceneQuery('', undefined)).toBe('');
+    it('returns "*" when both q and filter are empty', () => {
+      expect(buildLuceneQuery('', undefined)).toBe('*');
     });
 
     it('returns q verbatim when filter is absent', () => {
