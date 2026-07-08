@@ -89,7 +89,7 @@
 
 <pm-create-resource-modal
   #createModal
-  [fields]="resourceFields()"
+  [fields]="resourceCreateEditFields()"
   (updateResource)="update($event)"
   [context]="context()"
 />

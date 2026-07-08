@@ -1,5 +1,5 @@
-import { UIDefinition } from './ui-definition';
-import { FieldDefinition, GenericResource } from '@openmfp/ngx';
+import { PlatformMeshFieldDefinition, UIDefinition } from './ui-definition';
+import { GenericResource } from '@openmfp/ngx';
 import { Condition, ObjectMeta } from 'kubernetes-types/meta/v1';
 
 export interface ResourceStatus {
@@ -35,7 +35,7 @@ export interface ResourceDefinition {
   name?: string;
   scope?: KubernetesScope;
   namespace?: string;
-  readyCondition?: FieldDefinition;
+  readyCondition?: PlatformMeshFieldDefinition;
   ui?: UIDefinition;
 }
 

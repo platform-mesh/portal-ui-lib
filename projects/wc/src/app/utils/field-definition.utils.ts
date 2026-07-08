@@ -1,9 +1,9 @@
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { FieldDefinition } from '@openmfp/ngx';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 
 export function getFieldValue<T>(
-  field: PlatformMeshFieldDefinition,
+  field: FieldDefinition,
   resource: T | undefined,
 ) {
   if (resource) {
@@ -15,7 +15,7 @@ export function getFieldValue<T>(
 
 export function executeButtonAction<T>(
   luigiClient: LuigiClient,
-  field: PlatformMeshFieldDefinition,
+  field: FieldDefinition,
   resource: T | undefined,
 ) {
   const buttonSettings = field.uiSettings?.buttonSettings;

@@ -1,10 +1,11 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
+import { flattenFieldTree, toFormFields } from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
 import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
   ResourceFieldNames,
-} from '../create-resource-modal/create-resource-modal.consts';
+} from '../../create-resource-modal/create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,14 +23,12 @@ import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   DeclarativeTableCard,
   FormFieldChangeEvent,
-  FormFieldDefinition,
   FormFieldErrors,
   ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
 } from '@openmfp/ngx';
 import {
-  PlatformMeshFieldDefinition,
   Resource,
   ResourceListResult,
   ResourceSubscriptionResult,
@@ -141,7 +140,7 @@ export class ResourceTableCard {
       },
       ...(this.hasUiCreateViewFields() && {
         createResourceFormConfig: {
-          fields: this.toFormFields(this.createFormFields()),
+          fields: toFormFields(this.createFormFields()),
         },
       }),
     };
@@ -300,7 +299,7 @@ export class ResourceTableCard {
         error = K8S_NAME_ERROR;
       }
     } else {
-      const field = this.toFormFields(this.createFormFields()).find(
+      const field = toFormFields(this.createFormFields()).find(
         (f) => f.name === name,
       );
       if (field?.required && !value) {
@@ -324,40 +323,14 @@ export class ResourceTableCard {
       });
   }
 
-  private toFormFields(
-    fields: PlatformMeshFieldDefinition[],
-  ): FormFieldDefinition[] {
-    return (fields || []).map((field) => {
-      if (typeof field.property !== 'string') {
-        throw new Error(
-          `Form field property must be a string, got: ${JSON.stringify(field.property)}`,
-        );
-      }
-
-      const formField: FormFieldDefinition = {
-        name: field.property,
-        label: field.label,
-        required: field.required,
-        values: field.values as string[] | undefined,
-      };
-
-      if (
-        field.required ||
-        field.property === ResourceFieldNames.MetadataName
-      ) {
-        formField.validation = 'onChange';
-      }
-
-      return formField;
-    });
-  }
-
   private getListQueryFields() {
     const additionalFields = [{ property: 'metadata.deletionTimestamp' }];
     if (this.isNamespaced()) {
       additionalFields.push({ property: 'metadata.namespace' });
     }
-    return generateGraphQLFields(this.columns().concat(additionalFields));
+    return generateGraphQLFields(
+      flattenFieldTree(this.columns()).concat(additionalFields),
+    );
   }
 
   private getResourceDefinition() {

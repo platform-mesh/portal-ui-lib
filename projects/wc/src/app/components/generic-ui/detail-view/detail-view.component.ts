@@ -1,6 +1,7 @@
 import { processGroupFields } from '../../../utils/proccess-fields';
-import { CreateResourceModal } from '../list-view/create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModal } from '../list-view/delete-resource-confirmation-modal/delete-resource-modal.component';
+import { flattenFieldTree } from '../../../utils/to-form-fields';
+import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
+import { DeleteResourceModal } from '../delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
 import { DashboardConfigService } from './dashboard-config.service';
@@ -103,6 +104,9 @@ export class DetailView {
 
   resourceFields = computed(
     () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
+  );
+  resourceCreateEditFields = computed(
+    () => this.resourceDefinition()?.ui?.createView?.fields ?? [],
   );
   resourceId = computed(() => this.context().resourceId);
   workspacePath = computed(() =>
@@ -345,7 +349,9 @@ export class DetailView {
   update(resource: Resource) {
     const resourceDefinition = this.getResourceDefinition();
     const resourceId = this.getResourceId();
-    const fields = generateGraphQLFields(this.resourceFields());
+    const fields = generateGraphQLFields(
+      flattenFieldTree(this.resourceCreateEditFields()),
+    );
     const resourceToUpdate: Resource = {
       ...resource,
       metadata: { name: resourceId },
@@ -449,7 +455,9 @@ export class DetailView {
     }
 
     return generateGraphQLFields(
-      this.resourceFields().concat(additionalFields),
+      flattenFieldTree(this.resourceCreateEditFields()).concat(
+        additionalFields,
+      ),
     );
   }
 
