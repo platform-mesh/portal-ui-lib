@@ -25,6 +25,25 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
       this.luigiCoreService.navigation().navigate(nextNode.initialRoute);
     }
 
+    this.accumulatePortalPermissions(prevNode, nextNode, currentContext);
     await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(nextNode);
+  }
+
+  private accumulatePortalPermissions(
+    prevNode: PortalLuigiNode,
+    nextNode: PortalLuigiNode,
+    currentContext: NodeContext,
+  ) {
+    const portalPermissions =
+      prevNode?.context?.portalPermissions ??
+      currentContext?.portalPermissions ??
+      {};
+
+    nextNode.context?.nodesPermissions?.forEach((permission) => {
+      portalPermissions[permission.resource] = permission.actions;
+    });
+
+    currentContext.portalPermissions = portalPermissions;
+    nextNode.context.portalPermissions = portalPermissions;
   }
 }

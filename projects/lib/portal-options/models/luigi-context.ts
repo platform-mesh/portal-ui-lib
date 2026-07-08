@@ -11,6 +11,11 @@ interface PortalEntityContext {
   };
 }
 
+export interface Permission {
+  actions: string[];
+  resource: string;
+}
+
 export interface PortalNodeContext extends NodeContext {
   portalContext: PortalContext;
   organizationId?: string;
@@ -24,4 +29,6 @@ export interface PortalNodeContext extends NodeContext {
   entityId?: string;
   entityContext?: PortalEntityContext;
   resourceDefinition?: ResourceDefinition;
+  nodesPermissions?: Permission[];
+  portalPermissions?: { [key: string]: string[] };
 }
