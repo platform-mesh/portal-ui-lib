@@ -30,6 +30,7 @@ export interface OpenSearchResourceSource extends Record<any, unknown> {
   default_fields: Record<string, unknown>;
   filterable_fields: Record<string, unknown>;
   semantic_fields: Record<string, unknown>;
+  custom_fields?: Record<string, unknown>;
 }
 
 export interface OpenSearchResource extends GenericResource {
@@ -99,6 +100,7 @@ export class OpenSearchService {
               ...r.source.default_fields,
               ...r.source.filterable_fields,
               ...r.source.semantic_fields,
+              ...r.source.custom_fields,
             }),
           })),
         })),
