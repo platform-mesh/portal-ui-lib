@@ -382,4 +382,91 @@ describe('NodeContextProcessingServiceImpl', () => {
       expect(mockContext.entityKind).toBe(differentKind);
     });
   });
+
+  describe('accamulatePortalPermissions', () => {
+    it('uses ctx.portalPermissions as base when it already exists', async () => {
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        portalPermissions: { pods: ['get'] },
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions?.pods).toEqual(['get']);
+    });
+
+    it('falls back to empty object when ctx.portalPermissions is absent', async () => {
+      const ctx: PortalNodeContext = { ...mockContext };
+      delete ctx.portalPermissions;
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions).toBeDefined();
+    });
+
+    it('merges ctx.nodesPermissions into portalPermissions', async () => {
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        nodesPermissions: [
+          { resource: 'pods', actions: ['get', 'list'] },
+          { resource: 'services', actions: ['get'] },
+        ],
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions).toEqual({
+        pods: ['get', 'list'],
+        services: ['get'],
+      });
+    });
+
+    it('leaves portalPermissions as empty object when ctx.nodesPermissions is absent', async () => {
+      const ctx: PortalNodeContext = { ...mockContext };
+      delete ctx.nodesPermissions;
+      delete ctx.portalPermissions;
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions).toEqual({});
+    });
+
+    it('sets ctx.portalPermissions with the merged result', async () => {
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        portalPermissions: { secrets: ['get'] },
+        nodesPermissions: [{ resource: 'pods', actions: ['list'] }],
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions).toEqual({
+        secrets: ['get'],
+        pods: ['list'],
+      });
+    });
+
+    it('overrides an existing resource entry with new actions', async () => {
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        portalPermissions: { pods: ['get'] },
+        nodesPermissions: [{ resource: 'pods', actions: ['get', 'list', 'create'] }],
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions?.pods).toEqual(['get', 'list', 'create']);
+    });
+
+    it('processNodeContext sets portalPermissions on ctx when nodesPermissions is present', async () => {
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        nodesPermissions: [{ resource: 'namespaces', actions: ['list'] }],
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions).toEqual({ namespaces: ['list'] });
+    });
+  });
 });
