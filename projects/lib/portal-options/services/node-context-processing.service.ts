@@ -52,6 +52,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       kind,
     );
 
+    this.accamulatePortalPermissions(ctx);
     try {
       const accountInfo = await firstValueFrom(
         this.accountInfoService.read({
@@ -108,5 +109,15 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     ctx.organizationId = `${organizationOriginClusterId}/${organization}`;
     ctx.entityId = `${accountOriginClusterId}/${entityId}`;
     ctx.kcpCA = btoa(accountInfo.spec.clusterInfo.ca);
+  }
+
+  private accamulatePortalPermissions(ctx: PortalNodeContext) {
+    const portalPermissions = ctx.portalPermissions ?? {};
+
+    ctx.nodesPermissions?.forEach((permission) => {
+      portalPermissions[permission.resource] = permission.actions;
+    });
+
+    ctx.portalPermissions = portalPermissions;
   }
 }

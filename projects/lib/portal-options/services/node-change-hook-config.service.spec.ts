@@ -52,4 +52,117 @@ describe('NodeChangeHookConfigServiceImpl', () => {
       mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
     ).toHaveBeenCalledWith(nextNode);
   });
+
+  describe('accumulatePortalPermissions', () => {
+    it('uses prevNode.context.portalPermissions as base when it exists', async () => {
+      const prevNode = { context: { portalPermissions: { pods: ['get'] } } } as any;
+      const nextNode = { context: {} } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({ pods: ['get'] });
+    });
+
+    it('falls back to currentContext.portalPermissions when prevNode has no portalPermissions', async () => {
+      const prevNode = { context: {} } as any;
+      const nextNode = { context: {} } as any;
+      const currentContext = { portalPermissions: { namespaces: ['list'] } } as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({ namespaces: ['list'] });
+    });
+
+    it('falls back to empty object when both prevNode and currentContext have no portalPermissions', async () => {
+      const prevNode = { context: {} } as any;
+      const nextNode = { context: {} } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({});
+    });
+
+    it('merges nextNode.context.nodesPermissions into portalPermissions', async () => {
+      const prevNode = {} as any;
+      const nextNode = {
+        context: {
+          nodesPermissions: [
+            { resource: 'pods', actions: ['get', 'list'] },
+            { resource: 'services', actions: ['get'] },
+          ],
+        },
+      } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({
+        pods: ['get', 'list'],
+        services: ['get'],
+      });
+    });
+
+    it('leaves portalPermissions as empty object when nextNode.context.nodesPermissions is absent', async () => {
+      const prevNode = {} as any;
+      const nextNode = { context: {} } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({});
+    });
+
+    it('sets currentContext.portalPermissions with the merged result', async () => {
+      const prevNode = { context: { portalPermissions: { secrets: ['get'] } } } as any;
+      const nextNode = {
+        context: {
+          nodesPermissions: [{ resource: 'pods', actions: ['list'] }],
+        },
+      } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({
+        secrets: ['get'],
+        pods: ['list'],
+      });
+    });
+
+    it('sets nextNode.context.portalPermissions to the same object as currentContext.portalPermissions', async () => {
+      const prevNode = {} as any;
+      const nextNode = {
+        context: {
+          nodesPermissions: [{ resource: 'pods', actions: ['get'] }],
+        },
+      } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(nextNode.context.portalPermissions).toBe(
+        currentContext.portalPermissions,
+      );
+    });
+
+    it('overrides an existing resource entry with new actions from nodesPermissions', async () => {
+      const prevNode = { context: { portalPermissions: { pods: ['get'] } } } as any;
+      const nextNode = {
+        context: {
+          nodesPermissions: [
+            { resource: 'pods', actions: ['get', 'list', 'create'] },
+          ],
+        },
+      } as any;
+      const currentContext = {} as any;
+
+      await service.nodeChangeHook(prevNode, nextNode, currentContext);
+
+      expect(currentContext.portalPermissions).toEqual({
+        pods: ['get', 'list', 'create'],
+      });
+    });
+  });
 });
