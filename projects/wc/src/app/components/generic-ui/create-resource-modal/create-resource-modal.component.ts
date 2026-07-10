@@ -4,6 +4,10 @@ import {
   ResourceFieldNames,
 } from './create-resource-modal.consts';
 import {
+  buildInitialValues,
+  toFormFieldsAsync,
+} from '../../../utils/to-form-fields';
+import {
   ChangeDetectionStrategy,
   Component,
   ViewEncapsulation,
@@ -26,13 +30,15 @@ import {
   FormFieldDefinition,
   FormFieldErrors,
 } from '@openmfp/ngx';
-import { FieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import {
+  PlatformMeshFieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
-  getResourceValueByJsonPath,
   getValueByPath,
   isNamespacedResource,
 } from '@platform-mesh/portal-ui-lib/utils';
@@ -49,7 +55,7 @@ import { firstValueFrom } from 'rxjs';
 })
 export class CreateResourceModal {
   context = input.required<ResourceNodeContext>();
-  fields = input<FieldDefinition[]>([]);
+  fields = input<PlatformMeshFieldDefinition[]>([]);
 
   resource = output<Resource>();
   updateResource = output<Resource>();
@@ -69,7 +75,7 @@ export class CreateResourceModal {
     const fields = this.calculateFields();
     this.originalResource.set(resource ?? null);
     const formFields = await this.buildFormFieldsAsync(fields);
-    const initialValues = this.buildInitialValues(fields, resource);
+    const initialValues = buildInitialValues(fields, resource);
 
     this.formFields.set(formFields);
     this.isFormValid.set(this.checkFormValidity());
@@ -131,73 +137,29 @@ export class CreateResourceModal {
     });
   }
 
-  private async buildFormFieldsAsync(
-    fields: FieldDefinition[],
+  private buildFormFieldsAsync(
+    fields: PlatformMeshFieldDefinition[],
   ): Promise<FormFieldDefinition[]> {
-    return Promise.all(fields.map((field) => this.toFormFieldAsync(field)));
+    return toFormFieldsAsync(fields, {
+      disabled: (field) => this.isCreateFieldOnly(field) && this.isEditMode(),
+      resolveDynamicValues: (field) => this.resolveDynamicValues(field),
+    });
   }
 
-  private async toFormFieldAsync(
-    field: FieldDefinition,
-  ): Promise<FormFieldDefinition> {
-    const formField = this.toFormField(field);
-
-    if (field.dynamicValuesDefinition) {
-      const def = field.dynamicValuesDefinition;
-      const resources = await firstValueFrom(
-        this.resourceService.list(def.operation, def.gqlQuery, this.context()),
-      );
-      formField.values = (resources as Resource[])
-        .map((r) => getValueByPath(r, def.value) as string)
-        .filter(Boolean);
-    }
-
-    return formField;
-  }
-
-  private toFormField(field: FieldDefinition): FormFieldDefinition {
-    if (typeof field.property !== 'string') {
-      throw new Error(
-        `Form field property must be a string, got: ${JSON.stringify(field.property)}`,
-      );
-    }
-
-    const formField: FormFieldDefinition = {
-      name: field.property,
-      label: field.label,
-      required: field.required,
-      disabled: this.isCreateFieldOnly(field) && this.isEditMode(),
-    };
-
-    if (field.values?.length) {
-      formField.values = field.values as string[];
-    }
-
-    if (field.required || field.property === ResourceFieldNames.MetadataName) {
-      formField.validation = 'onChange';
-    }
-
-    return formField;
-  }
-
-  private buildInitialValues(
-    fields: FieldDefinition[],
-    resource?: Resource,
-  ): Record<string, unknown> {
-    if (!resource) return {};
-    return fields.reduce(
-      (acc, field) => {
-        if (typeof field.property === 'string') {
-          acc[field.property as string] =
-            getResourceValueByJsonPath(resource, field) ?? '';
-        }
-        return acc;
-      },
-      {} as Record<string, unknown>,
+  private async resolveDynamicValues(
+    field: PlatformMeshFieldDefinition,
+  ): Promise<string[] | undefined> {
+    const def = field.dynamicValuesDefinition;
+    if (!def) return undefined;
+    const resources = await firstValueFrom(
+      this.resourceService.list(def.operation, def.gqlQuery, this.context()),
     );
+    return (resources as Resource[])
+      .map((r) => getValueByPath(r, def.value) as string)
+      .filter(Boolean);
   }
 
-  private calculateFields(): FieldDefinition[] {
+  private calculateFields(): PlatformMeshFieldDefinition[] {
     const fields = this.fields().slice();
 
     if (this.shouldAddNamespaceControl()) {
@@ -229,7 +191,7 @@ export class CreateResourceModal {
     return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
   }
 
-  private isCreateFieldOnly(field: FieldDefinition): boolean {
+  private isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
     return (
       field.property === ResourceFieldNames.MetadataName ||
       field.property === ResourceFieldNames.SpecType ||

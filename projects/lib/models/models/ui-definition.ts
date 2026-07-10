@@ -15,8 +15,9 @@ export type {
   ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 
-export type FieldDefinition = TableFieldDefinition &
-  Omit<FormFieldDefinition, 'name'> & {
+export type PlatformMeshFieldDefinition = TableFieldDefinition &
+  Omit<FormFieldDefinition, 'name' | 'label'> & {
+    label?: string;
     dynamicValuesDefinition?: {
       operation: string;
       gqlQuery: string;
@@ -26,10 +27,10 @@ export type FieldDefinition = TableFieldDefinition &
   };
 
 export interface UiView {
-  actions?: FieldDefinition[];
-  fields?: FieldDefinition[];
-  resourceDescription?: FieldDefinition;
-  resourceTitle?: FieldDefinition;
+  actions?: PlatformMeshFieldDefinition[];
+  fields?: PlatformMeshFieldDefinition[];
+  resourceDescription?: PlatformMeshFieldDefinition;
+  resourceTitle?: PlatformMeshFieldDefinition;
   backgroundImageUrl?: string;
 }
 

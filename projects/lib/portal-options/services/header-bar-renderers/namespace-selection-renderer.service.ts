@@ -8,7 +8,7 @@ import {
 } from '@openmfp/portal-ui-lib';
 import {
   ALL_NAMESPACE,
-  FieldDefinition,
+  PlatformMeshFieldDefinition,
   Resource,
   ResourceDefinition,
   ResourceListResult,
@@ -35,7 +35,7 @@ import {
   tap,
 } from 'rxjs/operators';
 
-const defaultColumns: FieldDefinition[] = [
+const defaultColumns: PlatformMeshFieldDefinition[] = [
   {
     label: 'Name',
     property: 'metadata.name',

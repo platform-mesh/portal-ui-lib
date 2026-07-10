@@ -1,6 +1,8 @@
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
-export const generateGraphQLFields = (uiFields: FieldDefinition[]): any[] => {
+export const generateGraphQLFields = (
+  uiFields: PlatformMeshFieldDefinition[],
+): any[] => {
   const graphQLFields = [];
   uiFields.map((field) => {
     if (field.property instanceof Array) {

@@ -1,5 +1,5 @@
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { FieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { FieldDefinition } from '@openmfp/ngx';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 
 export function getFieldValue<T>(
