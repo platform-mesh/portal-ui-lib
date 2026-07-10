@@ -16,7 +16,8 @@ export type {
 } from '@openmfp/ngx';
 
 export type PlatformMeshFieldDefinition = TableFieldDefinition &
-  Omit<FormFieldDefinition, 'name'> & {
+  Omit<FormFieldDefinition, 'name' | 'label'> & {
+    label?: string;
     dynamicValuesDefinition?: {
       operation: string;
       gqlQuery: string;

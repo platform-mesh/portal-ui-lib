@@ -70,7 +70,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 #### Create View Configuration
 
 - `"createView"`: Defines the form for creating/updating resources
-  - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value). Fields that represent **arrays of objects** (e.g. `status.conditions`) are declared with `"collectionProperty"` + a nested `"collection"` of sub-`FieldDefinition`s — see the [`collectionProperty` / `collection` reference](#field-definition-properties).
+  - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value). Fields that represent **arrays of objects** (e.g. `status.conditions`) are declared with a `"property"` pointing at the array + a nested `"propertyCollection"` of sub-`FieldDefinition`s — see the [`propertyCollection` reference](#field-definition-properties).
   - for namespaced resources, the create form automatically adds a required `metadata.namespace` field with dynamic namespace options **only when no namespace is already resolved** — i.e. no namespace is selected in the navigation context (`namespaceId`) and the URL search param `namespace` is `-all-` (or missing). When a namespace is already resolved it is reused on create, so the field is omitted.
 
 #### Field Definition Properties
@@ -127,13 +127,12 @@ Each field definition supports the following properties:
   - `"gqlQuery"`: GraphQL query string
   - `"value"`: JSON path to the actual value in the response
   - `"key"`: JSON path to the display value in the response
-- `"collectionProperty"`: JSON path to an **array of objects** on the resource (e.g. `"status.conditions"`). Pair with `"collection"` to declare that this field represents a repeatable object entry rather than a scalar.
-- `"collection"`: Array of `FieldDefinition` objects describing **one entry** of the array. Each sub-field is a full `FieldDefinition` (label, property, values, required, uiSettings, and even nested `collection`s if you need array-of-array-of-object).
+- `"propertyCollection"`: Array of `FieldDefinition` objects describing **one entry** of an array-of-objects field. Set it alongside `"property"` (which points at the array itself, e.g. `"status.conditions"`) to declare that this field represents a repeatable object entry rather than a scalar. Each sub-field is a full `FieldDefinition` (label, property, values, required, uiSettings, and even nested `propertyCollection`s if you need array-of-array-of-object).
   - **Sub-field `"property"` paths**: authored the same way as top-level properties. Two authoring styles are equivalent and produce the same on-wire payload:
-    - **Absolute** — the full JSON path (`"status.conditions.type"`). The generic UI strips the parent `collectionProperty` prefix internally so entries land as `{"type": "...", "status": "...", ...}` on the payload, not as flat dotted keys.
+    - **Absolute** — the full JSON path (`"status.conditions.type"`). The generic UI strips the parent collection's `property` prefix internally so entries land as `{"type": "...", "status": "...", ...}` on the payload, not as flat dotted keys.
     - **Relative** — just the leaf name (`"type"`). Nothing to strip; same outcome.
   - Sub-fields inherit the same UI features as top-level fields: `"required"` (with `"validation": "onChange"` auto-enabled for required sub-fields), `"values"` for static selects, `"dynamicValuesDefinition"` for async selects, `"uiSettings"` for display customisation, `"disabled"` behaviour in edit mode, etc.
-  - Nested `"collection"` is supported (array-of-objects-with-array-of-objects). The prefix-strip rule applies recursively — each nesting layer strips its own `collectionProperty`.
+  - Nested `"propertyCollection"` is supported (array-of-objects-with-array-of-objects). The prefix-strip rule applies recursively — each nesting layer strips its own collection `property`.
 
 ##### Example — an array of Kubernetes conditions
 
@@ -142,8 +141,8 @@ Declaring a `status.conditions` collection in `createView` (or in any other view
 ```json
 {
   "label": "Conditions",
-  "collectionProperty": "status.conditions",
-  "collection": [
+  "property": "status.conditions",
+  "propertyCollection": [
     { "label": "Type",    "property": "status.conditions.type" },
     { "label": "Status",  "property": "status.conditions.status" },
     { "label": "Reason",  "property": "status.conditions.reason" },
@@ -443,8 +442,8 @@ This example demonstrates various features including:
                     },
                     {
                       "label": "Conditions",
-                      "collectionProperty": "status.conditions",
-                      "collection": [
+                      "property": "status.conditions",
+                      "propertyCollection": [
                         {
                           "label": "Type",
                           "property": "status.conditions.type"

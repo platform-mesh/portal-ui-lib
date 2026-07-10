@@ -6,8 +6,8 @@ export function flattenFieldTree(
 ): PlatformMeshFieldDefinition[] {
   const result: PlatformMeshFieldDefinition[] = [];
   for (const field of fields ?? []) {
-    if (field.collection?.length) {
-      result.push(...flattenFieldTree(field.collection));
+    if (field.propertyCollection?.length) {
+      result.push(...flattenFieldTree(field.propertyCollection));
       continue;
     }
     result.push(field);
@@ -82,11 +82,11 @@ async function mapFieldsAsync(
         }
       }
 
-      if (field.collection?.length) {
-        formField.collection = await mapFieldsAsync(
-          field.collection,
+      if (field.propertyCollection?.length) {
+        formField.propertyCollection = await mapFieldsAsync(
+          field.propertyCollection,
           options,
-          field.collectionProperty,
+          collectionPath(field),
         );
       }
 
@@ -100,12 +100,12 @@ function buildFormField(
   options: ToFormFieldsOptions,
   parentCollectionPath: string | undefined,
 ): FormFieldDefinition {
-  const rawName = field.collectionProperty || (field.property as string);
+  const rawName = field.property as string;
   const name = stripParentPath(rawName, parentCollectionPath);
 
   const formField: FormFieldDefinition = {
     name,
-    label: field.label,
+    label: field.label ?? name,
     required: field.required,
   };
 
@@ -113,11 +113,11 @@ function buildFormField(
     formField.values = field.values as string[];
   }
 
-  if (field.collection?.length) {
-    formField.collection = mapFields(
-      field.collection,
+  if (field.propertyCollection?.length) {
+    formField.propertyCollection = mapFields(
+      field.propertyCollection,
       options,
-      field.collectionProperty,
+      collectionPath(field),
     );
   }
 
@@ -130,6 +130,13 @@ function buildFormField(
   }
 
   return formField;
+}
+
+/** The dot-path to a collection field's array — its own `property`. */
+function collectionPath(
+  field: PlatformMeshFieldDefinition,
+): string | undefined {
+  return typeof field.property === 'string' ? field.property : undefined;
 }
 
 function stripParentPath(
@@ -153,9 +160,9 @@ function stripParentPath(
  * - **Scalar fields** — copy the value at the field's `property` path from
  *   the resource under the same key. Missing values become `''` so the
  *   input renders empty rather than uncontrolled.
- * - **Collection fields** — read the array at the field's `collectionProperty`
- *   path from the resource. For every entry in that array, build a nested
- *   object whose keys are the sub-fields' `name`s **after prefix stripping**
+ * - **Collection fields** — read the array at the field's `property` path
+ *   from the resource. For every entry in that array, build a nested object
+ *   whose keys are the sub-fields' `property`s **after prefix stripping**
  *   (matching what `toFormFields` produced). This is what the collection
  *   editor expects on `initialEntries`.
  *
@@ -171,14 +178,15 @@ export function buildInitialValues(
 
   const result: Record<string, unknown> = {};
   for (const field of fields ?? []) {
-    if (field.collection?.length && field.collectionProperty) {
-      const rawArray = readPath(resource, field.collectionProperty);
+    const path = collectionPath(field);
+    if (field.propertyCollection?.length && path) {
+      const rawArray = readPath(resource, path);
       const entries = Array.isArray(rawArray) ? rawArray : [];
-      result[field.collectionProperty] = entries.map((entry) =>
+      result[path] = entries.map((entry) =>
         buildCollectionEntry(
           entry as Record<string, unknown>,
-          field.collection ?? [],
-          field.collectionProperty!,
+          field.propertyCollection ?? [],
+          path,
         ),
       );
       continue;
@@ -209,17 +217,16 @@ function buildCollectionEntry(
 
   const entry: Record<string, unknown> = {};
   for (const sub of subFields) {
-    if (sub.collection?.length && sub.collectionProperty) {
-      const key = stripParentPath(sub.collectionProperty, parentCollectionPath);
-      const rawArray =
-        readPath(sourceEntry, key) ??
-        readPath(sourceEntry, sub.collectionProperty);
+    const subPath = collectionPath(sub);
+    if (sub.propertyCollection?.length && subPath) {
+      const key = stripParentPath(subPath, parentCollectionPath);
+      const rawArray = readPath(sourceEntry, key) ?? readPath(sourceEntry, subPath);
       const entries = Array.isArray(rawArray) ? rawArray : [];
       entry[key] = entries.map((nested) =>
         buildCollectionEntry(
           nested as Record<string, unknown>,
-          sub.collection ?? [],
-          sub.collectionProperty!,
+          sub.propertyCollection ?? [],
+          subPath,
         ),
       );
       continue;

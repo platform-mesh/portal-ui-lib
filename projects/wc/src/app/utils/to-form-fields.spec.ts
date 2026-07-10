@@ -40,8 +40,8 @@ describe('flattenFieldTree', () => {
       { property: 'metadata.name' },
       {
         label: 'Conditions',
-        collectionProperty: 'status.conditions',
-        collection: [
+        property: 'status.conditions',
+        propertyCollection: [
           { property: 'status.conditions.type' },
           { property: 'status.conditions.status' },
         ],
@@ -61,12 +61,12 @@ describe('flattenFieldTree', () => {
   it('recurses into nested collections', () => {
     const fields = defs([
       {
-        collectionProperty: 'spec.stages',
-        collection: [
+        property: 'spec.stages',
+        propertyCollection: [
           { property: 'spec.stages.name' },
           {
-            collectionProperty: 'spec.stages.steps',
-            collection: [
+            property: 'spec.stages.steps',
+            propertyCollection: [
               { property: 'spec.stages.steps.command' },
               { property: 'spec.stages.steps.image' },
             ],
@@ -143,28 +143,28 @@ describe('toFormFields', () => {
   });
 
   describe('collections', () => {
-    it('promotes a collection field to a nested form field, using collectionProperty as name', () => {
+    it('promotes a collection field to a nested form field, using property as name', () => {
       const [formField] = toFormFields(
         defs([
           {
             label: 'Conditions',
-            collectionProperty: 'status.conditions',
-            collection: [{ property: 'status.conditions.type', label: 'Type' }],
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'status.conditions.type', label: 'Type' }],
           },
         ]),
       );
 
       expect(formField.name).toBe('status.conditions');
       expect(formField.label).toBe('Conditions');
-      expect(formField.collection).toBeDefined();
+      expect(formField.propertyCollection).toBeDefined();
     });
 
     it('strips the parent collection path from sub-field names when they start with it', () => {
       const [formField] = toFormFields(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [
+            property: 'status.conditions',
+            propertyCollection: [
               { property: 'status.conditions.type', label: 'Type' },
               { property: 'status.conditions.status', label: 'Status' },
             ],
@@ -172,7 +172,7 @@ describe('toFormFields', () => {
         ]),
       );
 
-      expect(formField.collection?.map((f) => f.name)).toEqual([
+      expect(formField.propertyCollection?.map((f) => f.name)).toEqual([
         'type',
         'status',
       ]);
@@ -183,8 +183,8 @@ describe('toFormFields', () => {
       const [formField] = toFormFields(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [
+            property: 'status.conditions',
+            propertyCollection: [
               { property: 'type', label: 'Type' },
               { property: 'status', label: 'Status' },
             ],
@@ -192,7 +192,7 @@ describe('toFormFields', () => {
         ]),
       );
 
-      expect(formField.collection?.map((f) => f.name)).toEqual([
+      expect(formField.propertyCollection?.map((f) => f.name)).toEqual([
         'type',
         'status',
       ]);
@@ -202,12 +202,12 @@ describe('toFormFields', () => {
       const [formField] = toFormFields(
         defs([
           {
-            collectionProperty: 'spec.stages',
-            collection: [
+            property: 'spec.stages',
+            propertyCollection: [
               { property: 'spec.stages.name', label: 'Stage name' },
               {
-                collectionProperty: 'spec.stages.steps',
-                collection: [
+                property: 'spec.stages.steps',
+                propertyCollection: [
                   { property: 'spec.stages.steps.command', label: 'Command' },
                 ],
               },
@@ -216,11 +216,11 @@ describe('toFormFields', () => {
         ]),
       );
 
-      const stage = formField.collection?.[0];
-      const steps = formField.collection?.[1];
+      const stage = formField.propertyCollection?.[0];
+      const steps = formField.propertyCollection?.[1];
       expect(stage?.name).toBe('name');
       expect(steps?.name).toBe('steps');
-      expect(steps?.collection?.[0].name).toBe('command');
+      expect(steps?.propertyCollection?.[0].name).toBe('command');
     });
 
     it('does not apply the disabled predicate result to sub-fields by parent property', () => {
@@ -231,17 +231,17 @@ describe('toFormFields', () => {
       const [formField] = toFormFields(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [{ property: 'status.conditions.type' }],
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'status.conditions.type' }],
           },
         ]),
         {
-          disabled: (f) => f.collectionProperty === 'status.conditions',
+          disabled: (f) => f.property === 'status.conditions',
         },
       );
 
       expect(formField.disabled).toBe(true);
-      expect(formField.collection?.[0].disabled).toBe(false);
+      expect(formField.propertyCollection?.[0].disabled).toBe(false);
     });
   });
 });
@@ -296,8 +296,8 @@ describe('toFormFieldsAsync', () => {
     const calls: string[] = [];
     const fields = defs([
       {
-        collectionProperty: 'spec.stages',
-        collection: [
+        property: 'spec.stages',
+        propertyCollection: [
           {
             property: 'spec.stages.name',
             dynamicValuesDefinition: {
@@ -319,9 +319,9 @@ describe('toFormFieldsAsync', () => {
     });
 
     expect(calls).toEqual(['spec.stages.name']);
-    expect(formField.collection?.[0].values).toEqual(['a', 'b']);
+    expect(formField.propertyCollection?.[0].values).toEqual(['a', 'b']);
     // Prefix-strip is still applied inside the async path.
-    expect(formField.collection?.[0].name).toBe('name');
+    expect(formField.propertyCollection?.[0].name).toBe('name');
   });
 
   it('propagates resolver rejections', async () => {
@@ -391,12 +391,12 @@ describe('buildInitialValues', () => {
   });
 
   describe('collections', () => {
-    it('reads the array at collectionProperty and maps entries via sub-field paths', () => {
+    it('reads the array at property and maps entries via sub-field paths', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [
+            property: 'status.conditions',
+            propertyCollection: [
               { property: 'status.conditions.type' },
               { property: 'status.conditions.status' },
               { property: 'status.conditions.reason' },
@@ -429,8 +429,8 @@ describe('buildInitialValues', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [{ property: 'status.conditions.type' }],
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'status.conditions.type' }],
           },
         ]),
         {
@@ -448,8 +448,8 @@ describe('buildInitialValues', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [
+            property: 'status.conditions',
+            propertyCollection: [
               { property: 'status.conditions.type' },
               { property: 'status.conditions.reason' },
             ],
@@ -466,8 +466,8 @@ describe('buildInitialValues', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [{ property: 'status.conditions.type' }],
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'status.conditions.type' }],
           },
         ]),
         { spec: {} },
@@ -479,8 +479,8 @@ describe('buildInitialValues', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [{ property: 'status.conditions.type' }],
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'status.conditions.type' }],
           },
         ]),
         { status: { conditions: 'oops' } },
@@ -492,12 +492,12 @@ describe('buildInitialValues', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'spec.stages',
-            collection: [
+            property: 'spec.stages',
+            propertyCollection: [
               { property: 'spec.stages.name' },
               {
-                collectionProperty: 'spec.stages.steps',
-                collection: [{ property: 'spec.stages.steps.command' }],
+                property: 'spec.stages.steps',
+                propertyCollection: [{ property: 'spec.stages.steps.command' }],
               },
             ],
           },
@@ -532,8 +532,8 @@ describe('buildInitialValues', () => {
       const result = buildInitialValues(
         defs([
           {
-            collectionProperty: 'status.conditions',
-            collection: [{ property: 'type' }, { property: 'status' }],
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'type' }, { property: 'status' }],
           },
         ]),
         {
