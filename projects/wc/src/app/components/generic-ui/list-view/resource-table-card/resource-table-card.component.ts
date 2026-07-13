@@ -1,5 +1,8 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { flattenFieldTree, toFormFields } from '../../../../utils/to-form-fields';
+import {
+  flattenFieldTree,
+  toFormFields,
+} from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
 import {
   K8S_NAME_ERROR,
@@ -54,6 +57,7 @@ import { finalize } from 'rxjs/operators';
   styles: `
     mfp-declarative-table-card {
       opacity: 80%;
+      padding-bottom: 5rem;
     }
   `,
   encapsulation: ViewEncapsulation.Emulated,
@@ -132,6 +136,7 @@ export class ResourceTableCard {
 
   config = computed<TableCardConfig>(() => {
     return {
+      header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
         fields: this.columns(),
         totalItemsCount: this.totalItemsCount(),
