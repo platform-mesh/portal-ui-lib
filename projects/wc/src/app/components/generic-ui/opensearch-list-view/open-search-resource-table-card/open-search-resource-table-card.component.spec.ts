@@ -1,5 +1,5 @@
-import { OpenSearchResourceTableCard } from './open-search-resource-table-card.component';
 import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
+import { OpenSearchResourceTableCard } from './open-search-resource-table-card.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -658,9 +658,7 @@ describe('OpenSearchResourceTableCard', () => {
       setUrl('?q=demo-1');
       const f = makeFresh(buildContextWithFilters());
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
-      expect(lastCall[2]).toEqual(
-        expect.objectContaining({ q: 'demo-1' }),
-      );
+      expect(lastCall[2]).toEqual(expect.objectContaining({ q: 'demo-1' }));
       // Cleanup: drain the fresh subscription so it doesn't leak into later tests.
       f.destroy();
     });
@@ -706,7 +704,9 @@ describe('OpenSearchResourceTableCard', () => {
         expect.objectContaining({ property: 'owner', value: '*' }),
       );
       // config().searchConfig.initialFilter is undefined (nothing to promote).
-      expect(f.componentInstance.config().searchConfig?.initialFilter).toBeUndefined();
+      expect(
+        f.componentInstance.config().searchConfig?.initialFilter,
+      ).toBeUndefined();
       f.destroy();
     });
 
@@ -725,7 +725,9 @@ describe('OpenSearchResourceTableCard', () => {
       // A dot-in-property + slash-in-value case that used to be doubly ambiguous
       // in the `?filter=property=value` shape — with property-as-key each is one
       // clean query param and URLSearchParams handles the encoding for us.
-      setUrl(`?${encodeURIComponent('metadata.namespace')}=${encodeURIComponent('kube-system')}`);
+      setUrl(
+        `?${encodeURIComponent('metadata.namespace')}=${encodeURIComponent('kube-system')}`,
+      );
       const ctx = (() => ({
         resourceDefinition: {
           entityCollection: 'clusters',
