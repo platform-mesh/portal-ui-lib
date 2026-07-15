@@ -44,6 +44,9 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
     });
 
     currentContext.portalPermissions = portalPermissions;
-    nextNode.context.portalPermissions = portalPermissions;
+
+    if (nextNode.context) {
+      nextNode.context.portalPermissions = portalPermissions;
+    }
   }
 }
