@@ -291,13 +291,13 @@ export class OpenSearchResourceTableCard implements OnInit {
 
   protected search(event: string | null) {
     this.currentContinueToken = undefined;
-    this.list(false, event);
+    this.list(true, event);
   }
 
   protected searchChanged(event: string | null) {
     this.searchKey.set(event ?? null);
     this.currentContinueToken = undefined;
-    this.list(false, event);
+    this.list(true, event);
   }
 
   protected onFilterTabChanged(event: FieldFilterDefinition | undefined) {
@@ -309,7 +309,7 @@ export class OpenSearchResourceTableCard implements OnInit {
 
     this.selectedSearchFilter.set(event);
     this.currentContinueToken = undefined;
-    this.list(false);
+    this.list(true);
   }
 
   private matchUrlFilter(
