@@ -99,13 +99,9 @@ export class OpenSearchResourceTableCard implements OnInit {
     return columns;
   });
 
-  totalItemsCount = computed(
-    () => this.resources().length + this.remainingItemCount(),
-  );
   paginationLimit = signal<number>(50);
-  remainingItemCount = signal<number>(0);
-  hasMore = signal<boolean>(false);
-  resourceVersion = signal<string | undefined>(undefined);
+  currentPage = signal<number>(this.pageFromUrl());
+  totalItemsCount = signal<number>(0);
 
   selectedSearchFilter = linkedSignal<
     FieldFilterDefinition[] | undefined,
@@ -155,12 +151,12 @@ export class OpenSearchResourceTableCard implements OnInit {
         fields: this.columns(),
         totalItemsCount: this.totalItemsCount(),
         paginationLimit: this.paginationLimit(),
-        hasMore: this.hasMore(),
+        currentPage: this.currentPage(),
+        loadMode: 'pager',
       },
     };
   });
 
-  private currentContinueToken: string | undefined = undefined;
   private listSubscription?: Subscription;
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
@@ -168,35 +164,36 @@ export class OpenSearchResourceTableCard implements OnInit {
     (item as any).metadata?.name ?? item.id;
 
   ngOnInit(): void {
-    this.list(true);
+    this.list();
   }
 
-  private resetPagination() {
-    this.currentContinueToken = undefined;
-    this.resources.update((v) => v.slice(0, this.paginationLimit()));
-    this.hasMore.set(this.resources().length < this.totalItemsCount());
+  private pageFromUrl(): number {
+    const raw = Number(readUrlSearchParam('page'));
+    return Number.isInteger(raw) && raw >= 1 ? raw : 1;
   }
 
   onLimitChange(limit: number) {
     this.paginationLimit.set(limit);
-    this.resetPagination();
+    this.goToPage(1);
   }
 
-  loadMore() {
-    if (!this.hasMore()) {
-      return;
-    }
-
-    this.list(false);
+  protected onPageChange(page: number) {
+    this.goToPage(page);
   }
 
-  list(isInitialLoad: boolean, searchKey?: string | null) {
+  private goToPage(page: number) {
+    this.currentPage.set(page);
+    this.list();
+  }
+
+  list(searchKey?: string | null) {
     this.listSubscription?.unsubscribe();
 
     if (searchKey !== undefined) {
       this.searchKey.set(searchKey);
     }
     const q = this.searchKey() ?? '';
+    const page = this.currentPage();
 
     const filter = this.selectedSearchFilter();
     const filterParam =
@@ -205,6 +202,7 @@ export class OpenSearchResourceTableCard implements OnInit {
         : undefined;
     addSearchParams({
       q: q || undefined,
+      page: page > 1 ? String(page) : undefined,
       ...(filter?.property
         ? { [filter.property]: filter.value ?? undefined }
         : {}),
@@ -216,7 +214,7 @@ export class OpenSearchResourceTableCard implements OnInit {
         this.context(),
         {
           limit: this.paginationLimit(),
-          cursor: this.currentContinueToken,
+          page,
         },
         {
           q,
@@ -227,23 +225,14 @@ export class OpenSearchResourceTableCard implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result: ReadResourcesResult) => {
-          if (isInitialLoad) {
-            this.resources.set(result.items ?? []);
-          } else {
-            this.resources.update((values) => {
-              const map = new Map(values.map((i) => [i.id, i]));
-              (result.items ?? []).forEach((i) => {
-                map.set(i.id, i);
-              });
-              return [...map.values()];
-            });
-          }
-          if (result.resourceVersion !== undefined) {
-            this.resourceVersion.set(result.resourceVersion);
-          }
-          this.hasMore.set(!!result.nextCursor);
-          this.currentContinueToken = result.nextCursor;
-          this.remainingItemCount.set(result.remainingItemCount || 0);
+          const items = result.items ?? [];
+          this.resources.set(items);
+          const limit = this.paginationLimit();
+          this.totalItemsCount.set(
+            (page - 1) * limit +
+              items.length +
+              (result.remainingItemCount ?? 0),
+          );
         },
         error: (error) => {
           this.errorHandlerService.handleError(error);
@@ -290,14 +279,14 @@ export class OpenSearchResourceTableCard implements OnInit {
   }
 
   protected search(event: string | null) {
-    this.currentContinueToken = undefined;
-    this.list(true, event);
+    this.currentPage.set(1);
+    this.list(event);
   }
 
   protected searchChanged(event: string | null) {
     this.searchKey.set(event ?? null);
-    this.currentContinueToken = undefined;
-    this.list(true, event);
+    this.currentPage.set(1);
+    this.list(event);
   }
 
   protected onFilterTabChanged(event: FieldFilterDefinition | undefined) {
@@ -308,8 +297,8 @@ export class OpenSearchResourceTableCard implements OnInit {
     }
 
     this.selectedSearchFilter.set(event);
-    this.currentContinueToken = undefined;
-    this.list(true);
+    this.currentPage.set(1);
+    this.list();
   }
 
   private matchUrlFilter(

@@ -18,6 +18,7 @@ export interface OpenSearchRequest {
   resource?: string; // (optional): plural resource name; if omitted, searches across all resources
   limit?: number; // (optional): default 20, max 100
   cursor?: string; // (optional): opaque pagination cursor
+  page?: number; // (optional): 1-based page number for page-based pagination
 }
 
 export interface OpenSearchResult {
@@ -118,6 +119,10 @@ export class OpenSearchService {
       params = params.set('cursor', request.cursor);
     }
 
+    if (request.page !== undefined) {
+      params = params.set('page', request.page.toString());
+    }
+
     if (request.resource !== undefined) {
       params = params.set('resource', request.resource);
     }
@@ -158,6 +163,7 @@ export class OpenSearchService {
             params.resource ?? nodeContext.resourceDefinition?.entityCollection,
           limit: pagination.limit,
           cursor: pagination.cursor,
+          page: pagination.page,
         };
 
         return this.listResources(nodeContext, request).pipe(
