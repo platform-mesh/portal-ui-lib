@@ -101,8 +101,7 @@ export class OpenSearchResourceTableCard implements OnInit {
 
   paginationLimit = signal<number>(50);
   currentPage = signal<number>(this.pageFromUrl());
-  private totalItems = signal<number>(0);
-  totalItemsCount = computed(() => this.totalItems());
+  totalItemsCount = signal<number>(0);
 
   selectedSearchFilter = linkedSignal<
     FieldFilterDefinition[] | undefined,
@@ -229,8 +228,10 @@ export class OpenSearchResourceTableCard implements OnInit {
           const items = result.items ?? [];
           this.resources.set(items);
           const limit = this.paginationLimit();
-          this.totalItems.set(
-            (page - 1) * limit + items.length + (result.remainingItemCount ?? 0),
+          this.totalItemsCount.set(
+            (page - 1) * limit +
+              items.length +
+              (result.remainingItemCount ?? 0),
           );
         },
         error: (error) => {
