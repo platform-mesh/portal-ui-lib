@@ -22,6 +22,8 @@ export interface ReadResourcesPagination {
   limit?: number;
   /** Unified pagination cursor — maps to `continue` for ResourceService and `cursor` for OpenSearch. */
   cursor?: string;
+  /** 1-based page number for page-based (pager) pagination. */
+  page?: number;
 }
 
 export interface ReadResourcesResult {

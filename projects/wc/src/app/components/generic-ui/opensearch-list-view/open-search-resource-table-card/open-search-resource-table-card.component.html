@@ -2,7 +2,7 @@
   [resources]="resources()"
   [config]="config()"
   (tableRowClicked)="navigateToResource($event)"
-  (loadMoreResources)="loadMore()"
+  (pageChange)="onPageChange($event)"
   (paginationLimitChanged)="onLimitChange($event)"
   (searchChanged)="searchChanged($event)"
   (filterTabChanged)="onFilterTabChanged($event)"

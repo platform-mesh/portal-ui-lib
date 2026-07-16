@@ -103,7 +103,7 @@ describe('OpenSearchResourceTableCard', () => {
       expect.objectContaining({ resourceDefinition: expect.any(Object) }),
       expect.objectContaining({
         limit: 50,
-        cursor: undefined,
+        page: 1,
       }),
       expect.objectContaining({
         q: '',
@@ -158,140 +158,109 @@ describe('OpenSearchResourceTableCard', () => {
       expect(f.componentInstance.columns()).toEqual([]);
     });
 
-    it('totalItemsCount should be resources.length + remainingItemCount', () => {
-      component.resources.set([{ id: 'a' }, { id: 'b' }] as any);
-      component.remainingItemCount.set(3);
-      expect(component.totalItemsCount()).toBe(5);
+    it('totalItemsCount estimates (page-1)*limit + items + remainingItemCount', () => {
+      // drain the init (page 1) call, then fetch page 2 on a fresh stream
+      listSubject.next({ items: [] });
+      listSubject.complete();
+      listSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(listSubject.asObservable());
+
+      (component as any).onPageChange(2);
+      listSubject.next({
+        items: [{ id: 'a' }, { id: 'b' }] as any,
+        remainingItemCount: 3,
+      });
+      listSubject.complete();
+      // (2-1)*50 + 2 items + 3 remaining = 55
+      expect(component.totalItemsCount()).toBe(55);
     });
 
-    it('config should reflect columns, pagination, and hasMore', () => {
+    it('config should reflect columns, pagination, currentPage, and pager mode', () => {
       component.paginationLimit.set(10);
-      component.hasMore.set(true);
+      component.currentPage.set(4);
       const cfg = component.config();
       expect(cfg.header).toBe('Accounts');
       expect(cfg.tableConfig?.paginationLimit).toBe(10);
-      expect(cfg.tableConfig?.hasMore).toBe(true);
+      expect(cfg.tableConfig?.currentPage).toBe(4);
+      expect(cfg.tableConfig?.loadMode).toBe('pager');
     });
   });
 
   describe('list', () => {
-    it('should set resources from result.items on initial load', () => {
+    it('should set resources from result.items', () => {
       listSubject.next({
         items: [{ id: 'r1' }, { id: 'r2' }] as any,
-        nextCursor: 'cur-1',
         remainingItemCount: 2,
-        resourceVersion: 'rv-1',
       });
       listSubject.complete();
 
       expect(component.resources().map((r) => r.id)).toEqual(['r1', 'r2']);
-      expect(component.hasMore()).toBe(true);
-      expect(component.remainingItemCount()).toBe(2);
-      expect(component.resourceVersion()).toBe('rv-1');
     });
 
-    it('should append/dedupe by id on non-initial load', () => {
-      // initial load
-      listSubject.next({
-        items: [{ id: 'r1', tag: 'old' } as any],
-        nextCursor: 'next',
-      });
+    it('should replace resources on each page load (no append)', () => {
+      // initial load (page 1)
+      listSubject.next({ items: [{ id: 'r1' } as any] });
       listSubject.complete();
 
       // reset stream for the next call
       listSubject = new Subject<ReadResourcesResult>();
       mockReadResources.list.mockReturnValue(listSubject.asObservable());
 
-      component.loadMore();
+      (component as any).onPageChange(2);
 
-      listSubject.next({
-        items: [{ id: 'r1', tag: 'new' } as any, { id: 'r2', tag: 'a' } as any],
-        nextCursor: undefined,
-      });
+      listSubject.next({ items: [{ id: 'r2' } as any, { id: 'r3' } as any] });
       listSubject.complete();
 
-      const ids = component.resources().map((r) => r.id);
-      expect(ids).toEqual(['r1', 'r2']);
-      // r1 was overwritten by the newer payload
-      expect(
-        (component.resources().find((r) => r.id === 'r1') as any).tag,
-      ).toBe('new');
-      expect(component.hasMore()).toBe(false);
+      expect(component.resources().map((r) => r.id)).toEqual(['r2', 'r3']);
+    });
+
+    it('should send the current page in the pagination argument', () => {
+      listSubject.next({ items: [], remainingItemCount: 0 });
+      listSubject.complete();
+      listSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(listSubject.asObservable());
+
+      (component as any).onPageChange(3);
+
+      const lastCall = mockReadResources.list.mock.calls.at(-1)!;
+      expect(lastCall[1]).toEqual(
+        expect.objectContaining({ page: 3, limit: 50 }),
+      );
     });
 
     it('should cancel the in-flight request when a new list() supersedes it', () => {
-      // The first call from init is still pending — issuing another list()
-      // cancels the first and starts a new HTTP request immediately. This is
-      // a behavioral change from the previous `isLoadingList` guard, which
-      // silently dropped concurrent calls.
       const callsBefore = mockReadResources.list.mock.calls.length;
-      component.list(false);
+      component.list();
       expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
     });
 
     it('should accept subsequent list() calls after the first completes', () => {
       const callsBefore = mockReadResources.list.mock.calls.length;
-      listSubject.next({ items: [], nextCursor: undefined });
+      listSubject.next({ items: [] });
       listSubject.complete();
 
-      // a fresh stream so the next call doesn't hit a completed subject
       listSubject = new Subject<ReadResourcesResult>();
       mockReadResources.list.mockReturnValue(listSubject.asObservable());
 
-      component.list(false);
+      component.list();
       expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
     });
 
-    it('should leave resourceVersion untouched when result omits it', () => {
-      component.resourceVersion.set('keep-me');
-      listSubject.next({
-        items: [],
-        nextCursor: undefined,
-        resourceVersion: undefined,
-      });
-      listSubject.complete();
-      expect(component.resourceVersion()).toBe('keep-me');
-    });
-
-    it('should default remainingItemCount to 0 when missing', () => {
-      listSubject.next({ items: [{ id: 'r1' }] as any, nextCursor: undefined });
-      listSubject.complete();
-      expect(component.remainingItemCount()).toBe(0);
-    });
-
-    it('should default to empty array when result.items is undefined on initial load', () => {
-      listSubject.next({ items: undefined as any, nextCursor: undefined });
+    it('should default to empty array when result.items is undefined', () => {
+      listSubject.next({ items: undefined as any });
       listSubject.complete();
       expect(component.resources()).toEqual([]);
     });
 
-    it('should default to empty array when result.items is undefined on load-more', () => {
-      // initial load with one item
-      listSubject.next({
-        items: [{ id: 'r1' } as any],
-        nextCursor: 'next',
-      });
-      listSubject.complete();
-
-      listSubject = new Subject<ReadResourcesResult>();
-      mockReadResources.list.mockReturnValue(listSubject.asObservable());
-
-      component.loadMore();
-      listSubject.next({ items: undefined as any, nextCursor: undefined });
-      listSubject.complete();
-
-      expect(component.resources().map((r) => r.id)).toEqual(['r1']);
-    });
-
     it('should forward errors to the ErrorHandlerService', () => {
       // drain the in-flight call from init so the next list() can fire
-      listSubject.next({ items: [], nextCursor: undefined });
+      listSubject.next({ items: [] });
       listSubject.complete();
 
       mockReadResources.list.mockReturnValue(
         throwError(() => new Error('boom')),
       );
-      component.list(false, 'x');
+      component.list('x');
       expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(
         expect.any(Error),
       );
@@ -299,7 +268,7 @@ describe('OpenSearchResourceTableCard', () => {
 
     it('should pass the searchKey through as q on search()', () => {
       // drain the in-flight call from init
-      listSubject.next({ items: [], nextCursor: undefined });
+      listSubject.next({ items: [] });
       listSubject.complete();
       listSubject = new Subject<ReadResourcesResult>();
       mockReadResources.list.mockReturnValue(listSubject.asObservable());
@@ -313,57 +282,44 @@ describe('OpenSearchResourceTableCard', () => {
     });
   });
 
-  describe('loadMore', () => {
-    it('should be a no-op when hasMore is false', () => {
-      // drain initial call
-      listSubject.next({ items: [], nextCursor: undefined });
+  describe('paging', () => {
+    it('onPageChange updates currentPage and issues a fresh list()', () => {
+      listSubject.next({ items: [], remainingItemCount: 0 });
       listSubject.complete();
-
-      const callsBefore = mockReadResources.list.mock.calls.length;
-      component.loadMore();
-      expect(mockReadResources.list.mock.calls.length).toBe(callsBefore);
-    });
-
-    it('should call list when hasMore is true', () => {
-      listSubject.next({
-        items: [{ id: 'r1' } as any],
-        nextCursor: 'next',
-      });
-      listSubject.complete();
-
-      const callsBefore = mockReadResources.list.mock.calls.length;
       listSubject = new Subject<ReadResourcesResult>();
       mockReadResources.list.mockReturnValue(listSubject.asObservable());
 
-      component.loadMore();
+      const callsBefore = mockReadResources.list.mock.calls.length;
+      (component as any).onPageChange(2);
+
+      expect(component.currentPage()).toBe(2);
       expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
+    });
+
+    it('search resets the page back to 1', () => {
+      component.currentPage.set(4);
+      listSubject.next({ items: [] });
+      listSubject.complete();
+      listSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(listSubject.asObservable());
+
+      (component as any).searchChanged('x');
+      expect(component.currentPage()).toBe(1);
     });
   });
 
   describe('onLimitChange', () => {
-    it('should update paginationLimit and trim resources to the new limit', () => {
-      component.resources.set([
-        { id: 'a' },
-        { id: 'b' },
-        { id: 'c' },
-        { id: 'd' },
-      ] as any);
-      component.remainingItemCount.set(0);
+    it('updates paginationLimit and resets to page 1', () => {
+      component.currentPage.set(3);
+      listSubject.next({ items: [] });
+      listSubject.complete();
+      listSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(listSubject.asObservable());
 
-      component.onLimitChange(2);
+      component.onLimitChange(20);
 
-      expect(component.paginationLimit()).toBe(2);
-      expect(component.resources().map((r) => r.id)).toEqual(['a', 'b']);
-      expect(component.hasMore()).toBe(false);
-    });
-
-    it('should set hasMore=true when items still exceed visible total after trim', () => {
-      component.resources.set([{ id: 'a' }, { id: 'b' }, { id: 'c' }] as any);
-      // totalItemsCount = visible (3) + remaining (5) = 8 → resources(3) < 8 → hasMore=true
-      component.remainingItemCount.set(5);
-
-      component.onLimitChange(3);
-      expect(component.hasMore()).toBe(true);
+      expect(component.paginationLimit()).toBe(20);
+      expect(component.currentPage()).toBe(1);
     });
   });
 
@@ -660,6 +616,22 @@ describe('OpenSearchResourceTableCard', () => {
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toEqual(expect.objectContaining({ q: 'demo-1' }));
       // Cleanup: drain the fresh subscription so it doesn't leak into later tests.
+      f.destroy();
+    });
+
+    it('seeds currentPage from ?page= on init and sends it to list()', () => {
+      setUrl('?page=3');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.currentPage()).toBe(3);
+      const lastCall = mockReadResources.list.mock.calls.at(-1)!;
+      expect(lastCall[1]).toEqual(expect.objectContaining({ page: 3 }));
+      f.destroy();
+    });
+
+    it('defaults currentPage to 1 when ?page= is absent or invalid', () => {
+      setUrl('?page=not-a-number');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.currentPage()).toBe(1);
       f.destroy();
     });
 
