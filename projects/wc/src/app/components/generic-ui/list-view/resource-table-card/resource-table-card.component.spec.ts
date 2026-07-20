@@ -123,8 +123,7 @@ describe('ResourceTableCard', () => {
       'core_k8s_io_v1alpha1_clusters',
       expectedFields,
       expectedContext,
-      false,
-      { continue: undefined, limit: 5 },
+      { pagination: { continue: undefined, limit: 5 } },
     );
   });
 

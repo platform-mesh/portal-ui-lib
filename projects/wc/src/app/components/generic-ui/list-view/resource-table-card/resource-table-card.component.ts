@@ -229,9 +229,11 @@ export class ResourceTableCard {
     }) as string;
 
     this.resourceService
-      .list(queryOperation, fields, this.context(), false, {
-        limit: this.paginationLimit(),
-        continue: this.currentContinueToken,
+      .list(queryOperation, fields, this.context(), {
+        pagination: {
+          limit: this.paginationLimit(),
+          continue: this.currentContinueToken,
+        },
       })
       .pipe(
         finalize(() => (this.isLoadingList = false)),
