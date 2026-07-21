@@ -154,13 +154,6 @@ export class ResourceTableCard {
               resolveDynamicValues: (field) => this.resolveDynamicValues(field),
             }),
         },
-        editResourceFormConfig: {
-          fields: () =>
-            toFormFields(this.createFormFields(), {
-              disabled: (field) => this.isCreateFieldOnly(field),
-              resolveDynamicValues: (field) => this.resolveDynamicValues(field),
-            }),
-        },
       }),
     };
   });
