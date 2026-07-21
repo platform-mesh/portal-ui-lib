@@ -125,9 +125,9 @@ Each field definition supports the following properties:
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
+  - `"gqlQueryVariables"` (optional): map of GraphQL query variables keyed by the `$var` name declared in `"gqlQuery"`. Each value may contain `{context.<dot.path>}` placeholders resolved against the current Luigi node context at runtime (e.g. `{context.namespaceId}`); values without a placeholder are sent verbatim. The variable's GraphQL type comes from the query string's own declaration, so it is not repeated here. Omitted entirely, no variables are sent and any `$vars` in the query stay `undefined`.
   - `"value"`: JSON path to the actual value in the response
   - `"key"`: JSON path to the display value in the response
-  - `"gqlQueryVariables"` (optional): map of GraphQL query variables keyed by the `$var` name declared in `"gqlQuery"`. Each value may contain `{context.<dot.path>}` placeholders resolved against the current Luigi node context at runtime (e.g. `{context.namespaceId}`); values without a placeholder are sent verbatim. The variable's GraphQL type comes from the query string's own declaration, so it is not repeated here. Omitted entirely, no variables are sent and any `$vars` in the query stay `undefined`.
 - `"propertyCollection"`: Array of `FieldDefinition` objects describing **one entry** of an array-of-objects field. Set it alongside `"property"` (which points at the array itself, e.g. `"status.conditions"`) to declare that this field represents a repeatable object entry rather than a scalar. Each sub-field is a full `FieldDefinition` (label, property, values, required, uiSettings, and even nested `propertyCollection`s if you need array-of-array-of-object).
   - **Sub-field `"property"` paths**: authored the same way as top-level properties. Two authoring styles are equivalent and produce the same on-wire payload:
     - **Absolute** — the full JSON path (`"status.conditions.type"`). The generic UI strips the parent collection's `property` prefix internally so entries land as `{"type": "...", "status": "...", ...}` on the payload, not as flat dotted keys.
@@ -176,7 +176,7 @@ Populating a select from a GraphQL query that takes variables. `userId` is resol
   "required": true,
   "dynamicValuesDefinition": {
     "operation": "inventory_v1alpha1_Regions_items",
-    "gqlQuery": "query (userId: String, $provider: String) { inventory { v1alpha1 { Regions(userId: $userId, provider: $provider) { items { metadata { name } } } } } }",
+    "gqlQuery": "query ($userId: String, $provider: String) { inventory { v1alpha1 { Regions(userId: $userId, provider: $provider) { items { metadata { name } } } } } }",
     "gqlQueryVariables": {
       "userId": "{context.userId}",
       "provider": "aws"
