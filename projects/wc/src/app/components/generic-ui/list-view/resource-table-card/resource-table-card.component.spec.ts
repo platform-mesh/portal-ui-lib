@@ -432,7 +432,7 @@ describe('ResourceTableCard', () => {
       expect(properties).toContain('metadata.namespace');
     });
 
-    it('should set required error for empty required field', () => {
+    it('should set required error for empty required field', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
       newComponent.context = (() => ({
@@ -449,7 +449,7 @@ describe('ResourceTableCard', () => {
       })) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      newComponent.onCreateFieldChange({
+      await newComponent.onCreateFieldChange({
         fieldProperty: 'spec.type',
         value: '',
       });

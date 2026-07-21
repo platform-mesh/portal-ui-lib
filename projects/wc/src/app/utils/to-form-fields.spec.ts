@@ -86,9 +86,9 @@ describe('flattenFieldTree', () => {
 // ---------------------------------------------------------------------------
 
 describe('toFormFields', () => {
-  it('returns [] for undefined / empty input', () => {
-    expect(toFormFields(undefined)).toEqual([]);
-    expect(toFormFields([])).toEqual([]);
+  it('returns [] for undefined / empty input', async () => {
+    expect(await toFormFields(undefined)).toEqual([]);
+    expect(await toFormFields([])).toEqual([]);
   });
 
   it('maps a scalar field: property → name, copies label / required', async () => {
@@ -265,7 +265,9 @@ describe('toFormFields', () => {
 describe('toFormFieldsAsync', () => {
   it('falls back to the sync mapping when no resolver is provided', async () => {
     const fields = defs([{ property: 'metadata.name' }]);
-    await expect(toFormFields(fields)).resolves.toEqual(toFormFields(fields));
+    await expect(toFormFields(fields)).resolves.toEqual(
+      await toFormFields(fields),
+    );
   });
 
   it('leaves fields alone when the resolver returns undefined', async () => {
