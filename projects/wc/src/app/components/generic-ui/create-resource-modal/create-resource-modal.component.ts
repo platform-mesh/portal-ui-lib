@@ -1,12 +1,12 @@
 import {
+  buildInitialValues,
+  toFormFields,
+} from '../../../utils/to-form-fields';
+import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
   ResourceFieldNames,
 } from './create-resource-modal.consts';
-import {
-  buildInitialValues,
-  toFormFieldsAsync,
-} from '../../../utils/to-form-fields';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -140,7 +140,7 @@ export class CreateResourceModal {
   private buildFormFieldsAsync(
     fields: PlatformMeshFieldDefinition[],
   ): Promise<FormFieldDefinition[]> {
-    return toFormFieldsAsync(fields, {
+    return toFormFields(fields, {
       disabled: (field) => this.isCreateFieldOnly(field) && this.isEditMode(),
       resolveDynamicValues: (field) => this.resolveDynamicValues(field),
     });
