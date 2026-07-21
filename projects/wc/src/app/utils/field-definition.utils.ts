@@ -1,6 +1,16 @@
+import { ResourceFieldNames } from '../components/generic-ui/create-resource-modal/create-resource-modal.consts';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@openmfp/ngx';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
+
+export function isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
+  return (
+    field.property === ResourceFieldNames.MetadataName ||
+    field.property === ResourceFieldNames.SpecType ||
+    field.property === ResourceFieldNames.MetadataNamespace
+  );
+}
 
 export function getFieldValue<T>(
   field: FieldDefinition,

@@ -189,14 +189,6 @@ export class ResourceTableCard {
       .filter(Boolean);
   }
 
-  private isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
-    return (
-      field.property === ResourceFieldNames.MetadataName ||
-      field.property === ResourceFieldNames.SpecType ||
-      field.property === ResourceFieldNames.MetadataNamespace
-    );
-  }
-
   private subscribeToResourceChange(version: string) {
     const fields = this.getListQueryFields();
     const resourceDefinition = this.context().resourceDefinition!;
