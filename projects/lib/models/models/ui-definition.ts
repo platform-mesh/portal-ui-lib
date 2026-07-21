@@ -21,6 +21,7 @@ export type PlatformMeshFieldDefinition = TableFieldDefinition &
     dynamicValuesDefinition?: {
       operation: string;
       gqlQuery: string;
+      gqlQueryVariables?: Record<string, string>;
       value: string;
       key: string;
     };

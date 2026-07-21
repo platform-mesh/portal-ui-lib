@@ -125,6 +125,7 @@ Each field definition supports the following properties:
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
+  - `"gqlQueryVariables"` (optional): map of GraphQL query variables keyed by the `$var` name declared in `"gqlQuery"`. Each value may contain `{context.<dot.path>}` placeholders resolved against the current Luigi node context at runtime (e.g. `{context.namespaceId}`); values without a placeholder are sent verbatim. The variable's GraphQL type comes from the query string's own declaration, so it is not repeated here. Omitted entirely, no variables are sent and any `$vars` in the query stay `undefined`.
   - `"value"`: JSON path to the actual value in the response
   - `"key"`: JSON path to the display value in the response
 - `"propertyCollection"`: Array of `FieldDefinition` objects describing **one entry** of an array-of-objects field. Set it alongside `"property"` (which points at the array itself, e.g. `"status.conditions"`) to declare that this field represents a repeatable object entry rather than a scalar. Each sub-field is a full `FieldDefinition` (label, property, values, required, uiSettings, and even nested `propertyCollection`s if you need array-of-array-of-object).
@@ -160,6 +161,28 @@ At runtime this produces, in the edit form, a stack of cards — one per element
       { "type": "Ready", "status": "True", "reason": "OK", "message": "…" },
       { "type": "Progressing", "status": "False", "reason": "Retry", "message": "…" }
     ]
+  }
+}
+```
+
+##### Example — dynamic values with query variables
+
+Populating a select from a GraphQL query that takes variables. `userId` is resolved from the Luigi context at runtime via a `{context.<dot.path>}` placeholder, while `provider` is a fixed literal:
+
+```json
+{
+  "label": "Region",
+  "property": "spec.region",
+  "required": true,
+  "dynamicValuesDefinition": {
+    "operation": "inventory.v1alpha1.Regions.items",
+    "gqlQuery": "query ($userId: String, $provider: String) { inventory { v1alpha1 { Regions(userId: $userId, provider: $provider) { items { metadata { name } } } } } }",
+    "gqlQueryVariables": {
+      "userId": "{context.userId}",
+      "provider": "aws"
+    },
+    "value": "metadata.name",
+    "key": "metadata.name"
   }
 }
 ```

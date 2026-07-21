@@ -831,9 +831,8 @@ describe('ResourceService', () => {
       );
 
       const res = await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext, false, {
-          limit: 5,
-          continue: undefined,
+        service.list('myList', ['name'], namespacedNodeContext, {
+          pagination: { limit: 5, continue: undefined },
         }),
       );
       expect(res.continue).toBe('token-abc');
@@ -857,9 +856,8 @@ describe('ResourceService', () => {
       );
 
       await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext, false, {
-          limit: 5,
-          continue: 'token-123',
+        service.list('myList', ['name'], namespacedNodeContext, {
+          pagination: { limit: 5, continue: 'token-123' },
         }),
       );
       expect(mockApollo.query).toHaveBeenCalled();
@@ -882,7 +880,9 @@ describe('ResourceService', () => {
       );
 
       await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext, true),
+        service.list('myList', ['name'], namespacedNodeContext, {
+          readFromParentKcpPath: true,
+        }),
       );
       expect(mockApolloFactory.apollo).toHaveBeenCalledWith(
         namespacedNodeContext,
@@ -2067,9 +2067,8 @@ describe('ResourceService', () => {
       );
 
       await firstValueFrom(
-        service.list('myList', ['name'], namespacedNodeContext, false, {
-          limit: 10,
-          continue: 'prev-token',
+        service.list('myList', ['name'], namespacedNodeContext, {
+          pagination: { limit: 10, continue: 'prev-token' },
         }),
       );
       const queryCall = mockApollo.query.mock.calls[0][0];
@@ -2098,13 +2097,7 @@ describe('ResourceService', () => {
       );
 
       await firstValueFrom(
-        service.list(
-          'myList',
-          ['name'],
-          namespacedNodeContext,
-          false,
-          undefined,
-        ),
+        service.list('myList', ['name'], namespacedNodeContext, {}),
       );
       const queryCall = mockApollo.query.mock.calls[0][0];
       expect(queryCall.variables.limit).toBeUndefined();

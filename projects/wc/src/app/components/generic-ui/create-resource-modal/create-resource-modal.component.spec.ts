@@ -227,7 +227,88 @@ describe('CreateResourceModalComponent', () => {
         'v1.Namespaces.items',
         'query { v1 { Namespaces { items { metadata { name } } } } }',
         namespacedContext,
+        { variables: {} },
       );
+    });
+
+    it('resolves dynamicValuesDefinition.gqlQueryVariables (context placeholder + literal) and passes them to list', async () => {
+      resourceService.list.mockReturnValue(of([]));
+
+      const ctx: any = {
+        resourceDefinition: { scope: 'Namespaced' },
+        namespaceId: 'team-a',
+        portalContext: { crdGatewayApiUrl: 'http://example.com' },
+      };
+      const fieldsWithVars: PlatformMeshFieldDefinition[] = [
+        {
+          property: 'spec.region',
+          label: 'Region',
+          required: true,
+          dynamicValuesDefinition: {
+            operation: 'inventory.v1alpha1.Regions.items',
+            gqlQuery:
+              'query ($namespace: String, $provider: String) { inventory { v1alpha1 { Regions(namespace: $namespace, provider: $provider) { items { metadata { name } } } } } }',
+            value: 'metadata.name',
+            key: 'metadata.name',
+            gqlQueryVariables: {
+              namespace: '{context.namespaceId}',
+              provider: 'aws',
+            },
+          },
+        },
+      ];
+
+      fixture.componentRef.setInput('fields', fieldsWithVars);
+      fixture.componentRef.setInput('context', ctx);
+      fixture.detectChanges();
+      await component.open();
+
+      const call = resourceService.list.mock.calls.find(
+        (c) => c[0] === 'inventory.v1alpha1.Regions.items',
+      )!;
+      expect(call[3]).toEqual({
+        variables: {
+          namespace: { type: 'String', value: 'team-a' },
+          provider: { type: 'String', value: 'aws' },
+        },
+      });
+    });
+
+    it('wraps each gqlQueryVariable as a String-typed list variable', async () => {
+      resourceService.list.mockReturnValue(of([]));
+
+      const ctx: any = {
+        resourceDefinition: { scope: 'Namespaced' },
+        namespaceId: 'team-a',
+        portalContext: { crdGatewayApiUrl: 'http://example.com' },
+      };
+      const fieldsWithVars: PlatformMeshFieldDefinition[] = [
+        {
+          property: 'spec.region',
+          label: 'Region',
+          dynamicValuesDefinition: {
+            operation: 'inventory.v1alpha1.Regions.items',
+            gqlQuery: 'query ($namespace: String) { x }',
+            value: 'metadata.name',
+            key: 'metadata.name',
+            gqlQueryVariables: {
+              namespace: '{context.namespaceId}',
+            },
+          },
+        },
+      ];
+
+      fixture.componentRef.setInput('fields', fieldsWithVars);
+      fixture.componentRef.setInput('context', ctx);
+      fixture.detectChanges();
+      await component.open();
+
+      const call = resourceService.list.mock.calls.find(
+        (c) => c[0] === 'inventory.v1alpha1.Regions.items',
+      )!;
+      expect(call[3]).toEqual({
+        variables: { namespace: { type: 'String', value: 'team-a' } },
+      });
     });
 
     it('should store static values from field.values in formField.values', async () => {

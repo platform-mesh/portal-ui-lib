@@ -45,6 +45,12 @@ export interface ResourceRequestParams {
   apiGroup?: string;
 }
 
+export interface ListOptions {
+  readFromParentKcpPath?: boolean;
+  pagination?: ResourcePagination;
+  variables?: VariableOptions;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -124,9 +130,14 @@ export class ResourceService {
     operation: string,
     fieldsOrRawQuery: any[] | string,
     nodeContext: ResourceNodeContext,
-    readFromParentKcpPath: boolean = false,
-    pagination?: ResourcePagination,
+    options: ListOptions = {},
   ): Observable<ResourceListResult | any> {
+    const {
+      readFromParentKcpPath = false,
+      pagination,
+      variables: extraVariables,
+    } = options;
+
     const isNamespaced = isNamespacedResource(nodeContext);
     const variables = {
       ...(isNamespaced && {
@@ -138,12 +149,14 @@ export class ResourceService {
       ...(pagination?.continue && {
         continue: { type: 'String', value: pagination?.continue },
       }),
+      ...extraVariables,
     };
 
     const resourceDefinition = nodeContext.resourceDefinition;
     if (!resourceDefinition) {
       return throwError(() => new Error('Resource definition is required'));
     }
+
     return fieldsOrRawQuery instanceof Array
       ? this.listWithFields(
           resourceDefinition,
@@ -594,7 +607,9 @@ export class ResourceService {
         params: ReadResourcesParams,
       ): Observable<ReadResourcesResult> => {
         const operation =
-          params.operation ?? nodeContext.resourceDefinition?.entityCollection ?? '';
+          params.operation ??
+          nodeContext.resourceDefinition?.entityCollection ??
+          '';
         const fields =
           params.fields ??
           nodeContext.resourceDefinition?.ui?.listView?.fields ??
@@ -604,19 +619,18 @@ export class ResourceService {
           continue: pagination.cursor,
         };
 
-        return this.list(
-          operation,
-          fields,
-          nodeContext,
-          params.readFromParentKcpPath ?? false,
-          resourcePagination,
-        ).pipe(
-          map((result: ResourceListResult): ReadResourcesResult => ({
-            items: result?.items ?? [],
-            nextCursor: result?.continue,
-            remainingItemCount: result?.remainingItemCount,
-            resourceVersion: result?.resourceVersion,
-          })),
+        return this.list(operation, fields, nodeContext, {
+          readFromParentKcpPath: params.readFromParentKcpPath ?? false,
+          pagination: resourcePagination,
+        }).pipe(
+          map(
+            (result: ResourceListResult): ReadResourcesResult => ({
+              items: result?.items ?? [],
+              nextCursor: result?.continue,
+              remainingItemCount: result?.remainingItemCount,
+              resourceVersion: result?.resourceVersion,
+            }),
+          ),
         );
       },
       subscribe: (
@@ -627,8 +641,8 @@ export class ResourceService {
           nodeContext.resourceDefinition?.entityCollection ?? '';
         const fields = Array.isArray(params.fields)
           ? params.fields
-          : (nodeContext.resourceDefinition?.ui?.listView?.fields as any[]) ??
-            [];
+          : ((nodeContext.resourceDefinition?.ui?.listView?.fields as any[]) ??
+            []);
 
         return this.resourceChangeSubscription(
           operation,

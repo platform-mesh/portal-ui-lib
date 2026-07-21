@@ -4,7 +4,7 @@ import {
   snapshotUrl,
 } from '../../../../utils/url-params';
 import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
-import { resolveContextPlaceholders } from '../utils/resolve-context-placeholders';
+import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   ChangeDetectionStrategy,
   Component,
