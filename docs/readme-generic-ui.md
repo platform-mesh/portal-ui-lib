@@ -175,7 +175,7 @@ Populating a select from a GraphQL query that takes variables. `userId` is resol
   "property": "spec.region",
   "required": true,
   "dynamicValuesDefinition": {
-    "operation": "inventory_v1alpha1_Regions_items",
+    "operation": "inventory.v1alpha1.Regions.items",
     "gqlQuery": "query ($userId: String, $provider: String) { inventory { v1alpha1 { Regions(userId: $userId, provider: $provider) { items { metadata { name } } } } } }",
     "gqlQueryVariables": {
       "userId": "{context.userId}",
