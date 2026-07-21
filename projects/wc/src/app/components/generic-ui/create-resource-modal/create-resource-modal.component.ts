@@ -7,6 +7,7 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from './create-resource-modal.consts';
+import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -151,8 +152,19 @@ export class CreateResourceModal {
   ): Promise<string[] | undefined> {
     const def = field.dynamicValuesDefinition;
     if (!def) return undefined;
+
+    const ctx = this.context();
+    const variables = Object.fromEntries(
+      Object.entries(def.gqlQueryVariables ?? {}).map(([name, value]) => [
+        name,
+        { type: 'String', value: resolveContextPlaceholders(value, ctx) },
+      ]),
+    );
+
     const resources = await firstValueFrom(
-      this.resourceService.list(def.operation, def.gqlQuery, this.context()),
+      this.resourceService.list(def.operation, def.gqlQuery, ctx, {
+        variables,
+      }),
     );
     return (resources as Resource[])
       .map((r) => getValueByPath(r, def.value) as string)
