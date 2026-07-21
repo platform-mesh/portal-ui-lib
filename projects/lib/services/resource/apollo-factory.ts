@@ -2,6 +2,7 @@ import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { AuthService } from '@openmfp/portal-ui-lib';
 import {
   type ApolloClientOptions,
   ApolloLink,
@@ -51,6 +52,7 @@ const noopZone = {
 export class ApolloFactory {
   private httpLink = inject(HttpLink);
   private gatewayService = inject(GatewayService);
+  private authService = inject(AuthService);
 
   public readonly apollo = (
     nodeContext: ResourceNodeContext,
@@ -60,6 +62,18 @@ export class ApolloFactory {
       noopZone,
       this.createApolloOptions(nodeContext, readFromParentKcpPath),
     );
+
+  /**
+   * The token must be resolved per request, never captured at client
+   * creation: a client built before the shell delivers the token would
+   * otherwise send "Bearer undefined" for its whole lifetime (silent 401s,
+   * empty views until a hard reload - apeirora/showroom#296). Prefer the
+   * live AuthService value so token refreshes are picked up too; fall back
+   * to the node context snapshot.
+   */
+  private resolveToken(nodeContext: ResourceNodeContext): string | undefined {
+    return this.authService.getToken() || nodeContext.token;
+  }
 
   private createApolloOptions(
     nodeContext: ResourceNodeContext,
@@ -76,7 +90,7 @@ export class ApolloFactory {
         uri: () =>
           this.gatewayService.getGatewayUrl(nodeContext, readFromParentKcpPath),
         headers: baseHeaders
-          .set('Authorization', `Bearer ${nodeContext.token}`)
+          .set('Authorization', `Bearer ${this.resolveToken(nodeContext)}`)
           .set('Accept', 'charset=utf-8'),
       };
     });
@@ -93,7 +107,7 @@ export class ApolloFactory {
         url: () =>
           this.gatewayService.getGatewayUrl(nodeContext, readFromParentKcpPath),
         headers: () => ({
-          Authorization: `Bearer ${nodeContext.token}`,
+          Authorization: `Bearer ${this.resolveToken(nodeContext)}`,
         }),
       }),
       this.httpLink.create({}),
