@@ -47,8 +47,8 @@ import { Subscription } from 'rxjs';
  *   feature toggle.
  * - Owns the search-text + scope filter state. Each active filter is
  *   reflected in the URL as `?<filter.property>=<filter.value>` (one clean
- *   query param per filter), and the backend receives the same pair as
- *   `filter=<property>=<value>` in the request body.
+ *   query param per filter), and the backend receives it as the search API's
+ *   native `filter.<field>=<value>` query param.
  *
  * On mount, `q` and any URL param whose key matches a filter tab's `property`
  * (and whose value matches that tab's `value`) are pushed to the host card

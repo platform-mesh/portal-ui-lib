@@ -14,11 +14,12 @@ import { EMPTY, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface OpenSearchRequest {
-  q: string; // (required): free-text query, may include Lucene syntax like `field:value AND field2:value2`
+  q: string; // (required): free-text query
   resource?: string; // (optional): plural resource name; if omitted, searches across all resources
   limit?: number; // (optional): default 20, max 100
   cursor?: string; // (optional): opaque pagination cursor
   page?: number; // (optional): 1-based page number for page-based pagination
+  filters?: Record<string, string>; // (optional, repeatable): exact-match filters, sent as `filter.<field>=<value>`; requires `resource`
 }
 
 export interface OpenSearchResult {
@@ -51,22 +52,6 @@ export interface OpenSearchResource extends GenericResource {
   source: OpenSearchResourceSource;
 }
 
-function expandDotNotation(fields: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(fields)) {
-    const parts = key.split('.');
-    let node = result;
-    for (let i = 0; i < parts.length - 1; i++) {
-      if (node[parts[i]] === undefined || typeof node[parts[i]] !== 'object') {
-        node[parts[i]] = {};
-      }
-      node = node[parts[i]] as Record<string, unknown>;
-    }
-    node[parts[parts.length - 1]] = value;
-  }
-  return result;
-}
-
 @Injectable({ providedIn: 'root' })
 export class OpenSearchService {
   private luigiCoreService = inject(LuigiCoreService);
@@ -97,7 +82,7 @@ export class OpenSearchService {
           ...response,
           results: response.results.map((r) => ({
             ...r,
-            ...expandDotNotation({
+            ...this.expandDotNotation({
               ...r.source.default_fields,
               ...r.source.filterable_fields,
               ...r.source.semantic_fields,
@@ -127,6 +112,10 @@ export class OpenSearchService {
       params = params.set('resource', request.resource);
     }
 
+    for (const [field, value] of Object.entries(request.filters ?? {})) {
+      params = params.set(`filter.${field}`, value);
+    }
+
     return params;
   }
 
@@ -142,13 +131,12 @@ export class OpenSearchService {
    * be swapped for ResourceService behind a feature toggle. OpenSearch has no
    * subscription channel, so `subscribe` returns an EMPTY observable.
    *
-   * The caller passes `params.filter` in the shape `"<property>=<value>"` (the
-   * shape produced by {@link OpenSearchResourceTableCard.list}). We translate
-   * that to OpenSearch's native Lucene URI-search syntax and fold it into the
-   * single `q` param — for example, `{ q: 'oprt', filter: 'metadata.namespace=default' }`
-   * becomes `q=oprt AND metadata.namespace:default` on the wire. Reserved
-   * Lucene characters in the value are escaped so unusual namespace names
-   * (e.g. `kube-system`, which contains a Lucene-reserved `-`) still work.
+   * The caller passes `params.filter` in the shape `"<field>=<value>"` (the
+   * shape produced by {@link OpenSearchResourceTableCard.list}). We forward it
+   * as the search API's native `filter.<field>=<value>` query param — for
+   * example, `{ q: 'oprt', filter: 'metadata.namespace=default' }` becomes
+   * `q=oprt&filter.metadata.namespace=default` on the wire. Per the API,
+   * `filter.<field>` requires `resource` to be set.
    */
   asReadResources(): ReadResources {
     return {
@@ -158,63 +146,62 @@ export class OpenSearchService {
         params: ReadResourcesParams,
       ): Observable<ReadResourcesResult> => {
         const request: OpenSearchRequest = {
-          q: buildLuceneQuery(params.q ?? '', params.filter),
+          q: params.q || '*',
           resource:
             params.resource ?? nodeContext.resourceDefinition?.entityCollection,
           limit: pagination.limit,
           cursor: pagination.cursor,
           page: pagination.page,
+          filters: this.parseFilter(params.filter),
         };
 
         return this.listResources(nodeContext, request).pipe(
-          map((result): ReadResourcesResult => ({
-            items: result?.results ?? [],
-            nextCursor: result?.nextCursor,
-          })),
+          map(
+            (result): ReadResourcesResult => ({
+              items: result?.results ?? [],
+              nextCursor: result?.nextCursor,
+            }),
+          ),
         );
       },
       subscribe: (): Observable<ReadResourcesSubscriptionResult | undefined> =>
         EMPTY,
     };
   }
-}
 
-/**
- * Lucene reserved characters that must be backslash-escaped inside term
- * values. See the OpenSearch / Lucene query-string documentation. `\` must
- * come first in the regex character class so its own escape isn't broken.
- */
-const LUCENE_RESERVED = /([\\+\-!(){}\[\]^"~*?:/]|&&|\|\|)/g;
+  /**
+   * Parses the `"<field>=<value>"` filter string used across the read-resources
+   * contract into a `{ field: value }` map suitable for `filter.<field>=<value>`
+   * query params. Returns an empty object for absent or malformed input (no `=`,
+   * empty field, or empty value).
+   */
+  private parseFilter(filter: string | undefined): Record<string, string> {
+    if (!filter) return {};
 
-/** Escape a value for use inside a Lucene `field:value` term clause. */
-function escapeLuceneValue(value: string): string {
-  return value.replace(LUCENE_RESERVED, '\\$1');
-}
+    const eq = filter.indexOf('=');
+    if (eq <= 0 || eq === filter.length - 1) return {};
 
-/**
- * Combines a free-text search term and an optional `"<property>=<value>"`
- * exact-match filter into a single Lucene URI-search query string.
- *
- * Rules:
- * - No filter, no q → `""` (matches everything).
- * - Only q → `q` verbatim.
- * - Only filter → `property:escapedValue`.
- * - Both → `q AND property:escapedValue`.
- * - Malformed filter (no `=`, empty property, or empty value) → treated as
- *   "no filter" and `q` is returned alone.
- */
-export function buildLuceneQuery(
-  q: string,
-  filter: string | undefined,
-): string {
-  if (!filter) return q || '*';
+    return { [filter.slice(0, eq)]: filter.slice(eq + 1) };
+  }
 
-  const eq = filter.indexOf('=');
-  if (eq <= 0 || eq === filter.length - 1) return q;
-
-  const property = filter.slice(0, eq);
-  const value = filter.slice(eq + 1);
-  const clause = `${property}:${escapeLuceneValue(value)}`;
-
-  return q ? `${q} AND ${clause}` : clause;
+  private expandDotNotation(
+    fields: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(fields)) {
+      const parts = key.split('.');
+      let node = result;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (
+          node[parts[i]] === undefined ||
+          typeof node[parts[i]] !== 'object'
+        ) {
+          node[parts[i]] = {};
+        }
+        node = node[parts[i]] as Record<string, unknown>;
+      }
+      node[parts[parts.length - 1]] = value;
+    }
+    return result;
+  }
 }
