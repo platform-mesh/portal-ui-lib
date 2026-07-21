@@ -67,9 +67,9 @@ export class ApolloFactory {
    * The token must be resolved per request, never captured at client
    * creation: a client built before the shell delivers the token would
    * otherwise send "Bearer undefined" for its whole lifetime (silent 401s,
-   * empty views until a hard reload - apeirora/showroom#296). Prefer the
-   * live AuthService value so token refreshes are picked up too; fall back
-   * to the node context snapshot.
+   * empty views until a hard reload). Prefer the live AuthService value so
+   * token refreshes are picked up too; fall back to the node context
+   * snapshot.
    */
   private resolveToken(nodeContext: ResourceNodeContext): string | undefined {
     return this.authService.getToken() || nodeContext.token;

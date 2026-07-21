@@ -125,8 +125,7 @@ describe('ApolloFactory', () => {
       subscribe: vi.fn().mockReturnValue(() => void 0),
     } as unknown as ReturnType<typeof createClient>);
 
-    // client created BEFORE any token exists (the sticky-401 scenario,
-    // apeirora/showroom#296)
+    // client created BEFORE any token exists (the sticky-401 scenario)
     const nodeContext = { token: undefined } as unknown as ResourceNodeContext;
     (factory as any).createApolloOptions(nodeContext, false);
     const clientOptions = createClientMock.mock.calls[0][0] as unknown as {
