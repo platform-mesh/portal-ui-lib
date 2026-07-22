@@ -99,7 +99,7 @@ export class OpenSearchResourceTableCard implements OnInit {
     return columns;
   });
 
-  paginationLimit = signal<number>(50);
+  paginationLimit = signal<number>(20);
   currentPage = signal<number>(this.pageFromUrl());
   totalItemsCount = signal<number>(0);
 

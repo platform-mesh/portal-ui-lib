@@ -102,7 +102,7 @@ describe('OpenSearchResourceTableCard', () => {
     expect(mockReadResources.list).toHaveBeenCalledWith(
       expect.objectContaining({ resourceDefinition: expect.any(Object) }),
       expect.objectContaining({
-        limit: 50,
+        limit: 20,
         page: 1,
       }),
       expect.objectContaining({
@@ -171,8 +171,8 @@ describe('OpenSearchResourceTableCard', () => {
         remainingItemCount: 3,
       });
       listSubject.complete();
-      // (2-1)*50 + 2 items + 3 remaining = 55
-      expect(component.totalItemsCount()).toBe(55);
+      // (2-1)*20 + 2 items + 3 remaining = 25
+      expect(component.totalItemsCount()).toBe(25);
     });
 
     it('config should reflect columns, pagination, currentPage, and pager mode', () => {
@@ -224,7 +224,7 @@ describe('OpenSearchResourceTableCard', () => {
 
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[1]).toEqual(
-        expect.objectContaining({ page: 3, limit: 50 }),
+        expect.objectContaining({ page: 3, limit: 20 }),
       );
     });
 
