@@ -28,13 +28,6 @@ export interface ToFormFieldsOptions {
   resolveDynamicValues?: DynamicValuesResolver;
 }
 
-export function toFormFields(
-  fields: readonly PlatformMeshFieldDefinition[] | undefined,
-  options: ToFormFieldsOptions = {},
-): FormFieldDefinition[] {
-  return mapFields(fields, options, undefined);
-}
-
 /**
  * Asynchronous variant of `toFormFields`. Resolves every field's
  * `dynamicValuesDefinition.values` in parallel via
@@ -42,12 +35,12 @@ export function toFormFields(
  * resolved too. Falls back to the synchronous mapping when the option is
  * not provided.
  */
-export async function toFormFieldsAsync(
+export async function toFormFields(
   fields: readonly PlatformMeshFieldDefinition[] | undefined,
   options: ToFormFieldsOptions = {},
 ): Promise<FormFieldDefinition[]> {
   if (!options.resolveDynamicValues) {
-    return toFormFields(fields, options);
+    return mapFields(fields, options, undefined);
   }
   return mapFieldsAsync(fields, options, undefined);
 }
@@ -220,7 +213,8 @@ function buildCollectionEntry(
     const subPath = collectionPath(sub);
     if (sub.propertyCollection?.length && subPath) {
       const key = stripParentPath(subPath, parentCollectionPath);
-      const rawArray = readPath(sourceEntry, key) ?? readPath(sourceEntry, subPath);
+      const rawArray =
+        readPath(sourceEntry, key) ?? readPath(sourceEntry, subPath);
       const entries = Array.isArray(rawArray) ? rawArray : [];
       entry[key] = entries.map((nested) =>
         buildCollectionEntry(
