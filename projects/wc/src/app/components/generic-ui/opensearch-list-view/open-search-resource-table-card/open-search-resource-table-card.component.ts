@@ -1,10 +1,10 @@
+import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   addSearchParams,
   readUrlSearchParam,
   snapshotUrl,
 } from '../../../../utils/url-params';
 import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
-import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -99,9 +99,10 @@ export class OpenSearchResourceTableCard implements OnInit {
     return columns;
   });
 
-  paginationLimit = signal<number>(20);
+  paginationLimit = signal<number>(this.limitFromUrl());
   currentPage = signal<number>(this.pageFromUrl());
-  totalItemsCount = signal<number>(0);
+  totalItemsCount = signal<number | undefined>(undefined);
+  hasMore = signal<boolean>(false);
 
   selectedSearchFilter = linkedSignal<
     FieldFilterDefinition[] | undefined,
@@ -150,6 +151,7 @@ export class OpenSearchResourceTableCard implements OnInit {
       tableConfig: {
         fields: this.columns(),
         totalItemsCount: this.totalItemsCount(),
+        hasMore: this.hasMore(),
         paginationLimit: this.paginationLimit(),
         currentPage: this.currentPage(),
         loadMode: 'pager',
@@ -170,6 +172,12 @@ export class OpenSearchResourceTableCard implements OnInit {
   private pageFromUrl(): number {
     const raw = Number(readUrlSearchParam('page'));
     return Number.isInteger(raw) && raw >= 1 ? raw : 1;
+  }
+
+  private limitFromUrl(): number {
+    const valid = [5, 10, 20, 50, 100];
+    const raw = Number(readUrlSearchParam('limit'));
+    return valid.includes(raw) ? raw : 20;
   }
 
   onLimitChange(limit: number) {
@@ -200,9 +208,11 @@ export class OpenSearchResourceTableCard implements OnInit {
       filter?.property && filter?.value !== undefined
         ? `${filter.property}=${filter.value}`
         : undefined;
+    const limit = this.paginationLimit();
     addSearchParams({
       q: q || undefined,
       page: page > 1 ? String(page) : undefined,
+      limit: limit !== 20 ? String(limit) : undefined,
       ...(filter?.property
         ? { [filter.property]: filter.value ?? undefined }
         : {}),
@@ -227,12 +237,17 @@ export class OpenSearchResourceTableCard implements OnInit {
         next: (result: ReadResourcesResult) => {
           const items = result.items ?? [];
           this.resources.set(items);
-          const limit = this.paginationLimit();
-          this.totalItemsCount.set(
-            (page - 1) * limit +
-              items.length +
-              (result.remainingItemCount ?? 0),
-          );
+          const hasNextCursor = !!result.nextCursor;
+          this.hasMore.set(hasNextCursor);
+          if (!hasNextCursor) {
+            this.totalItemsCount.set(
+              (page - 1) * limit +
+                items.length +
+                (result.remainingItemCount ?? 0),
+            );
+          } else {
+            this.totalItemsCount.set(undefined);
+          }
         },
         error: (error) => {
           this.errorHandlerService.handleError(error);
@@ -240,13 +255,13 @@ export class OpenSearchResourceTableCard implements OnInit {
       });
   }
 
-  navigateToResource(resource: GenericResource) {
+  navigateToResource(resource: any) {
     const resourceDefinition = this.getResourceDefinition();
     if (!resourceDefinition.ui?.detailView) {
       return;
     }
 
-    if (!resource.id) {
+    if (!resource.metadata?.name) {
       this.LuigiClient().uxManager().showAlert({
         text: 'Resource name is not defined',
         type: 'error',
@@ -261,7 +276,10 @@ export class OpenSearchResourceTableCard implements OnInit {
     addSearchParams({
       namespace: this.isNamespaced() ? ns : undefined,
     });
-    this.LuigiClient().linkManager().navigate(resource.id);
+
+    this.LuigiClient()
+      .linkManager()
+      .navigate((resource as any).metadata.name);
   }
 
   private getResourceDefinition() {
