@@ -27,11 +27,13 @@ import {
   stripTypename,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { gql } from 'apollo-angular';
+import type {
+  Fields,
+  NestedField,
+  QueryBuilderOptions,
+  VariableOptions,
+} from 'gql-query-builder';
 import * as gqlBuilder from 'gql-query-builder';
-import Fields from 'gql-query-builder/build/Fields';
-import IQueryBuilderOptions from 'gql-query-builder/build/IQueryBuilderOptions';
-import NestedField from 'gql-query-builder/build/NestedField';
-import VariableOptions from 'gql-query-builder/build/VariableOptions';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
@@ -540,10 +542,10 @@ export class ResourceService {
 
   private calcQueryOptions(
     innerFields: Fields,
-    wrappers: Partial<Omit<IQueryBuilderOptions, 'fields'>>[],
-  ): IQueryBuilderOptions {
+    wrappers: Partial<Omit<QueryBuilderOptions, 'fields'>>[],
+  ): QueryBuilderOptions {
     const filteredWrappers = wrappers.filter(
-      (wrapper): wrapper is Omit<IQueryBuilderOptions, 'fields'> =>
+      (wrapper): wrapper is Omit<QueryBuilderOptions, 'fields'> =>
         !!wrapper?.operation,
     );
 
@@ -558,7 +560,7 @@ export class ResourceService {
 
     let fields = innerFields;
     let nextWrapper = filteredWrappers.pop() as Omit<
-      IQueryBuilderOptions,
+      QueryBuilderOptions,
       'fields'
     >;
 
@@ -623,14 +625,12 @@ export class ResourceService {
           readFromParentKcpPath: params.readFromParentKcpPath ?? false,
           pagination: resourcePagination,
         }).pipe(
-          map(
-            (result: ResourceListResult): ReadResourcesResult => ({
-              items: result?.items ?? [],
-              nextCursor: result?.continue,
-              remainingItemCount: result?.remainingItemCount,
-              resourceVersion: result?.resourceVersion,
-            }),
-          ),
+          map((result: ResourceListResult): ReadResourcesResult => ({
+            items: result?.items ?? [],
+            nextCursor: result?.continue,
+            remainingItemCount: result?.remainingItemCount,
+            resourceVersion: result?.resourceVersion,
+          })),
         );
       },
       subscribe: (
