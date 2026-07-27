@@ -32,6 +32,7 @@ import {
   TableCardFormState,
 } from '@openmfp/ngx';
 import {
+  PlatformMeshFieldDefinition,
   Resource,
   ResourceListResult,
   ResourceSubscriptionResult,
@@ -44,9 +45,11 @@ import {
 import {
   buildResourcePath,
   generateGraphQLFields,
+  getValueByPath,
   isNamespacedResource,
   mergeListWithSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/utils';
+import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -145,7 +148,11 @@ export class ResourceTableCard {
       },
       ...(this.hasUiCreateViewFields() && {
         createResourceFormConfig: {
-          fields: toFormFields(this.createFormFields()),
+          fields: () =>
+            toFormFields(this.createFormFields(), {
+              disabled: (field) => false,
+              resolveDynamicValues: (field) => this.resolveDynamicValues(field),
+            }),
         },
       }),
     };
@@ -167,6 +174,19 @@ export class ResourceTableCard {
       const sub = this.subscribeToResourceChange(version);
       onCleanup(() => sub.unsubscribe());
     });
+  }
+
+  private async resolveDynamicValues(
+    field: PlatformMeshFieldDefinition,
+  ): Promise<string[] | undefined> {
+    const def = field.dynamicValuesDefinition;
+    if (!def) return undefined;
+    const resources = await firstValueFrom(
+      this.resourceService.list(def.operation, def.gqlQuery, this.context()),
+    );
+    return (resources as Resource[])
+      .map((r) => getValueByPath(r, def.value) as string)
+      .filter(Boolean);
   }
 
   private subscribeToResourceChange(version: string) {
@@ -294,7 +314,7 @@ export class ResourceTableCard {
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
-  onCreateFieldChange(event: FormFieldChangeEvent): void {
+  async onCreateFieldChange(event: FormFieldChangeEvent) {
     const name = event.fieldProperty;
     const value = String(event.value ?? '').trim();
     let error: string | null = null;
@@ -306,7 +326,7 @@ export class ResourceTableCard {
         error = K8S_NAME_ERROR;
       }
     } else {
-      const field = toFormFields(this.createFormFields()).find(
+      const field = (await toFormFields(this.createFormFields())).find(
         (f) => f.name === name,
       );
       if (field?.required && !value) {

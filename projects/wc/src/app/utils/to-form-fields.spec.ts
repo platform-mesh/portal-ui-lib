@@ -1,11 +1,9 @@
-import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
-
 import {
   buildInitialValues,
   flattenFieldTree,
   toFormFields,
-  toFormFieldsAsync,
 } from './to-form-fields';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 /**
  * Casts a literal array of partial field definitions to
@@ -88,14 +86,20 @@ describe('flattenFieldTree', () => {
 // ---------------------------------------------------------------------------
 
 describe('toFormFields', () => {
-  it('returns [] for undefined / empty input', () => {
-    expect(toFormFields(undefined)).toEqual([]);
-    expect(toFormFields([])).toEqual([]);
+  it('returns [] for undefined / empty input', async () => {
+    expect(await toFormFields(undefined)).toEqual([]);
+    expect(await toFormFields([])).toEqual([]);
   });
 
-  it('maps a scalar field: property → name, copies label / required', () => {
-    const [formField] = toFormFields(
-      defs([{ property: 'spec.displayName', label: 'Display Name', required: false }]),
+  it('maps a scalar field: property → name, copies label / required', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.displayName',
+          label: 'Display Name',
+          required: false,
+        },
+      ]),
     );
     expect(formField).toEqual({
       name: 'spec.displayName',
@@ -104,37 +108,43 @@ describe('toFormFields', () => {
     });
   });
 
-  it('copies non-empty `values` and preserves order', () => {
-    const [formField] = toFormFields(
+  it('copies non-empty `values` and preserves order', async () => {
+    const [formField] = await toFormFields(
       defs([{ property: 'spec.type', values: ['account', 'namespace'] }]),
     );
     expect(formField.values).toEqual(['account', 'namespace']);
   });
 
-  it('sets validation onChange for required fields', () => {
-    const [formField] = toFormFields(
+  it('sets validation onChange for required fields', async () => {
+    const [formField] = await toFormFields(
       defs([{ property: 'spec.displayName', required: true }]),
     );
     expect(formField.validation).toBe('onChange');
   });
 
-  it('sets validation onChange for metadata.name even when not required', () => {
-    const [formField] = toFormFields(defs([{ property: 'metadata.name' }]));
+  it('sets validation onChange for metadata.name even when not required', async () => {
+    const [formField] = await toFormFields(
+      defs([{ property: 'metadata.name' }]),
+    );
     expect(formField.validation).toBe('onChange');
   });
 
-  it('leaves validation unset when field is neither required nor metadata.name', () => {
-    const [formField] = toFormFields(defs([{ property: 'spec.displayName' }]));
+  it('leaves validation unset when field is neither required nor metadata.name', async () => {
+    const [formField] = await toFormFields(
+      defs([{ property: 'spec.displayName' }]),
+    );
     expect(formField.validation).toBeUndefined();
   });
 
-  it('leaves disabled unset when no predicate is supplied', () => {
-    const [formField] = toFormFields(defs([{ property: 'spec.displayName' }]));
+  it('leaves disabled unset when no predicate is supplied', async () => {
+    const [formField] = await toFormFields(
+      defs([{ property: 'spec.displayName' }]),
+    );
     expect(formField.disabled).toBeUndefined();
   });
 
-  it('writes disabled: true / false based on the predicate', () => {
-    const [name, displayName] = toFormFields(
+  it('writes disabled: true / false based on the predicate', async () => {
+    const [name, displayName] = await toFormFields(
       defs([{ property: 'metadata.name' }, { property: 'spec.displayName' }]),
       { disabled: (f) => f.property === 'metadata.name' },
     );
@@ -143,13 +153,15 @@ describe('toFormFields', () => {
   });
 
   describe('collections', () => {
-    it('promotes a collection field to a nested form field, using property as name', () => {
-      const [formField] = toFormFields(
+    it('promotes a collection field to a nested form field, using property as name', async () => {
+      const [formField] = await toFormFields(
         defs([
           {
             label: 'Conditions',
             property: 'status.conditions',
-            propertyCollection: [{ property: 'status.conditions.type', label: 'Type' }],
+            propertyCollection: [
+              { property: 'status.conditions.type', label: 'Type' },
+            ],
           },
         ]),
       );
@@ -159,8 +171,8 @@ describe('toFormFields', () => {
       expect(formField.propertyCollection).toBeDefined();
     });
 
-    it('strips the parent collection path from sub-field names when they start with it', () => {
-      const [formField] = toFormFields(
+    it('strips the parent collection path from sub-field names when they start with it', async () => {
+      const [formField] = await toFormFields(
         defs([
           {
             property: 'status.conditions',
@@ -178,9 +190,9 @@ describe('toFormFields', () => {
       ]);
     });
 
-    it('leaves sub-field names unchanged when they do not start with the parent path', () => {
+    it('leaves sub-field names unchanged when they do not start with the parent path', async () => {
       // Author style B: sub-field paths are already relative to the entry.
-      const [formField] = toFormFields(
+      const [formField] = await toFormFields(
         defs([
           {
             property: 'status.conditions',
@@ -198,8 +210,8 @@ describe('toFormFields', () => {
       ]);
     });
 
-    it('recursively promotes nested collections', () => {
-      const [formField] = toFormFields(
+    it('recursively promotes nested collections', async () => {
+      const [formField] = await toFormFields(
         defs([
           {
             property: 'spec.stages',
@@ -223,12 +235,12 @@ describe('toFormFields', () => {
       expect(steps?.propertyCollection?.[0].name).toBe('command');
     });
 
-    it('does not apply the disabled predicate result to sub-fields by parent property', () => {
+    it('does not apply the disabled predicate result to sub-fields by parent property', async () => {
       // The predicate receives *each* raw definition — the caller decides
       // per-field. Here we make the predicate `true` only for the outer
       // collection; sub-fields are their own definitions and should not
       // inherit the flag automatically.
-      const [formField] = toFormFields(
+      const [formField] = await toFormFields(
         defs([
           {
             property: 'status.conditions',
@@ -253,13 +265,13 @@ describe('toFormFields', () => {
 describe('toFormFieldsAsync', () => {
   it('falls back to the sync mapping when no resolver is provided', async () => {
     const fields = defs([{ property: 'metadata.name' }]);
-    await expect(toFormFieldsAsync(fields)).resolves.toEqual(
-      toFormFields(fields),
+    await expect(toFormFields(fields)).resolves.toEqual(
+      await toFormFields(fields),
     );
   });
 
   it('leaves fields alone when the resolver returns undefined', async () => {
-    const [formField] = await toFormFieldsAsync(
+    const [formField] = await toFormFields(
       defs([{ property: 'spec.type', values: ['account'] }]),
       { resolveDynamicValues: async () => undefined },
     );
@@ -282,7 +294,7 @@ describe('toFormFieldsAsync', () => {
       { property: 'spec.type', values: ['static-1'] },
     ]);
 
-    const [nsField, typeField] = await toFormFieldsAsync(fields, {
+    const [nsField, typeField] = await toFormFields(fields, {
       resolveDynamicValues: async (field) =>
         field.property === 'spec.namespace' ? ['dev', 'prod'] : undefined,
     });
@@ -311,7 +323,7 @@ describe('toFormFieldsAsync', () => {
       },
     ]);
 
-    const [formField] = await toFormFieldsAsync(fields, {
+    const [formField] = await toFormFields(fields, {
       resolveDynamicValues: async (field) => {
         calls.push(field.property as string);
         return ['a', 'b'];
@@ -325,7 +337,7 @@ describe('toFormFieldsAsync', () => {
   });
 
   it('propagates resolver rejections', async () => {
-    const promise = toFormFieldsAsync(
+    const promise = toFormFields(
       defs([
         {
           property: 'spec.namespace',
@@ -373,20 +385,19 @@ describe('buildInitialValues', () => {
   });
 
   it('defaults missing scalar paths to an empty string', () => {
-    const result = buildInitialValues(
-      defs([{ property: 'spec.notThere' }]),
-      { spec: {} },
-    );
+    const result = buildInitialValues(defs([{ property: 'spec.notThere' }]), {
+      spec: {},
+    });
     expect(result).toEqual({ 'spec.notThere': '' });
   });
 
   it('ignores scalar fields whose property is not a string', () => {
     // Array-valued `property` is used for tables (multi-column paths) — it
     // is not a valid form-field key. Skipping keeps the output clean.
-    const result = buildInitialValues(
-      defs([{ property: ['a', 'b'] }]),
-      { a: 1, b: 2 },
-    );
+    const result = buildInitialValues(defs([{ property: ['a', 'b'] }]), {
+      a: 1,
+      b: 2,
+    });
     expect(result).toEqual({});
   });
 

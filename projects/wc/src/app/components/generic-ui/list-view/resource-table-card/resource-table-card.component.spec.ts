@@ -302,7 +302,7 @@ describe('ResourceTableCard', () => {
       expect(component.hasUiCreateViewFields()).toBe(false);
     });
 
-    it('should include createResourceFormConfig in config when createView fields exist', () => {
+    it('should include createResourceFormConfig with a lazy fields thunk when createView fields exist', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
       newComponent.context = (() => ({
@@ -323,11 +323,17 @@ describe('ResourceTableCard', () => {
       })) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
+
       const formConfig = newComponent.config().createResourceFormConfig;
       expect(formConfig).toBeDefined();
-      expect(formConfig!.fields[0].name).toBe('metadata.name');
-      expect(formConfig!.fields[0].label).toBe('Name');
-      expect(formConfig!.fields[0].required).toBe(true);
+      // `fields` is a thunk resolved lazily on dialog open (fetches dynamic
+      // options on demand rather than prefetching them on render).
+      expect(typeof formConfig!.fields).toBe('function');
+
+      const resolved = await (formConfig!.fields as () => Promise<any[]>)();
+      expect(resolved[0].name).toBe('metadata.name');
+      expect(resolved[0].label).toBe('Name');
+      expect(resolved[0].required).toBe(true);
     });
 
     it('should not include createResourceFormConfig when no createView fields', () => {
@@ -426,7 +432,7 @@ describe('ResourceTableCard', () => {
       expect(properties).toContain('metadata.namespace');
     });
 
-    it('should set required error for empty required field', () => {
+    it('should set required error for empty required field', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
       newComponent.context = (() => ({
@@ -443,7 +449,7 @@ describe('ResourceTableCard', () => {
       })) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      newComponent.onCreateFieldChange({
+      await newComponent.onCreateFieldChange({
         fieldProperty: 'spec.type',
         value: '',
       });

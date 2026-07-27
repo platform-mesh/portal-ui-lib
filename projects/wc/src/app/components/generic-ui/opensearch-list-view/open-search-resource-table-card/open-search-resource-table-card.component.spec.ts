@@ -102,7 +102,7 @@ describe('OpenSearchResourceTableCard', () => {
     expect(mockReadResources.list).toHaveBeenCalledWith(
       expect.objectContaining({ resourceDefinition: expect.any(Object) }),
       expect.objectContaining({
-        limit: 50,
+        limit: 20,
         page: 1,
       }),
       expect.objectContaining({
@@ -158,8 +158,15 @@ describe('OpenSearchResourceTableCard', () => {
       expect(f.componentInstance.columns()).toEqual([]);
     });
 
-    it('totalItemsCount estimates (page-1)*limit + items + remainingItemCount', () => {
-      // drain the init (page 1) call, then fetch page 2 on a fresh stream
+    it('totalItemsCount is undefined while nextCursor is present (cursor-based pages)', () => {
+      listSubject.next({ items: [{ id: 'a' }] as any, nextCursor: 'abc' });
+      listSubject.complete();
+      expect(component.totalItemsCount()).toBeUndefined();
+      expect(component.hasMore()).toBe(true);
+    });
+
+    it('totalItemsCount equals (page-1)*limit + items.length on the last page', () => {
+      // drain init call then fetch page 2
       listSubject.next({ items: [] });
       listSubject.complete();
       listSubject = new Subject<ReadResourcesResult>();
@@ -168,21 +175,23 @@ describe('OpenSearchResourceTableCard', () => {
       (component as any).onPageChange(2);
       listSubject.next({
         items: [{ id: 'a' }, { id: 'b' }] as any,
-        remainingItemCount: 3,
+        nextCursor: undefined,
       });
       listSubject.complete();
-      // (2-1)*50 + 2 items + 3 remaining = 55
-      expect(component.totalItemsCount()).toBe(55);
+      // (2-1)*20 + 2 = 22
+      expect(component.totalItemsCount()).toBe(22);
+      expect(component.hasMore()).toBe(false);
     });
 
-    it('config should reflect columns, pagination, currentPage, and pager mode', () => {
+    it('config should reflect columns, pagination, currentPage, pager mode, and hasMore', () => {
       component.paginationLimit.set(10);
       component.currentPage.set(4);
+      component.hasMore.set(true);
       const cfg = component.config();
-      expect(cfg.header).toBe('Accounts');
       expect(cfg.tableConfig?.paginationLimit).toBe(10);
       expect(cfg.tableConfig?.currentPage).toBe(4);
       expect(cfg.tableConfig?.loadMode).toBe('pager');
+      expect(cfg.tableConfig?.hasMore).toBe(true);
     });
   });
 
@@ -224,7 +233,7 @@ describe('OpenSearchResourceTableCard', () => {
 
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[1]).toEqual(
-        expect.objectContaining({ page: 3, limit: 50 }),
+        expect.objectContaining({ page: 3, limit: 20 }),
       );
     });
 
@@ -339,7 +348,7 @@ describe('OpenSearchResourceTableCard', () => {
       expect(lc._navigate).not.toHaveBeenCalled();
     });
 
-    it('should navigate using resource.id when detailView exists', () => {
+    it('should navigate using resource metadata.name when detailView exists', () => {
       const lc = buildLuigiClient();
       component.LuigiClient = (() => lc) as any;
       // re-render with the new client
@@ -347,10 +356,10 @@ describe('OpenSearchResourceTableCard', () => {
 
       component.navigateToResource({
         id: 'r1',
-        metadata: { namespace: 'ns-1' },
+        metadata: { name: 'resource-1', namespace: 'ns-1' },
       } as any);
 
-      expect(lc._navigate).toHaveBeenCalledWith('r1');
+      expect(lc._navigate).toHaveBeenCalledWith('resource-1');
     });
 
     it('should navigate for cluster-scoped resources (no namespace search param)', () => {
@@ -369,7 +378,9 @@ describe('OpenSearchResourceTableCard', () => {
       f.componentInstance.LuigiClient = (() => lc) as any;
       f.detectChanges();
 
-      f.componentInstance.navigateToResource({ id: 'cluster-a' } as any);
+      f.componentInstance.navigateToResource({
+        metadata: { name: 'cluster-a' },
+      } as any);
 
       expect(lc._navigate).toHaveBeenCalledWith('cluster-a');
     });
@@ -625,6 +636,22 @@ describe('OpenSearchResourceTableCard', () => {
       expect(f.componentInstance.currentPage()).toBe(3);
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[1]).toEqual(expect.objectContaining({ page: 3 }));
+      f.destroy();
+    });
+
+    it('seeds paginationLimit from ?limit= on init when value is valid', () => {
+      setUrl('?limit=50');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.paginationLimit()).toBe(50);
+      const lastCall = mockReadResources.list.mock.calls.at(-1)!;
+      expect(lastCall[1]).toEqual(expect.objectContaining({ limit: 50 }));
+      f.destroy();
+    });
+
+    it('defaults paginationLimit to 20 when ?limit= is absent or invalid', () => {
+      setUrl('?limit=999');
+      const f = makeFresh(buildContextWithFilters());
+      expect(f.componentInstance.paginationLimit()).toBe(20);
       f.destroy();
     });
 
