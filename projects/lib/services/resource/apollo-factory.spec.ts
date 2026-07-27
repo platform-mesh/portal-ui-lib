@@ -3,7 +3,7 @@ import type { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { TestBed } from '@angular/core/testing';
 import { ApolloLink, InMemoryCache, execute } from '@apollo/client/core';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Apollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
 import { parse } from 'graphql';
@@ -22,6 +22,7 @@ describe('ApolloFactory', () => {
   let createClient: typeof import('graphql-sse').createClient;
   let factory: ApolloFactory;
   let luigiCoreServiceMock: any;
+  let authServiceMock: any;
   let httpLinkMock: any;
   let gatewayServiceMock: MockedObject<GatewayService>;
 
@@ -42,12 +43,16 @@ describe('ApolloFactory', () => {
       }),
       getGlobalContext: vi.fn().mockReturnValue({ token: 'fake-token' }),
     };
+    authServiceMock = {
+      getToken: vi.fn().mockReturnValue(undefined),
+    };
     gatewayServiceMock = mock<GatewayService>();
     TestBed.configureTestingModule({
       providers: [
         ApolloFactoryClass,
         { provide: HttpLink, useValue: httpLinkMock },
         { provide: LuigiCoreService, useValue: luigiCoreServiceMock },
+        { provide: AuthService, useValue: authServiceMock },
         { provide: GatewayServiceToken, useValue: gatewayServiceMock },
       ],
     });
@@ -109,6 +114,56 @@ describe('ApolloFactory', () => {
 
     const headers = clientOptions.headers();
     expect(headers).toEqual({ Authorization: 'Bearer fake-token' });
+  });
+
+  it('resolves the token per request, preferring the live AuthService value', () => {
+    const createClientMock = createClient as MockedFunction<
+      typeof createClient
+    >;
+    createClientMock.mockClear();
+    createClientMock.mockReturnValue({
+      subscribe: vi.fn().mockReturnValue(() => void 0),
+    } as unknown as ReturnType<typeof createClient>);
+
+    // client created BEFORE any token exists (the sticky-401 scenario)
+    const nodeContext = { token: undefined } as unknown as ResourceNodeContext;
+    (factory as any).createApolloOptions(nodeContext, false);
+    const clientOptions = createClientMock.mock.calls[0][0] as unknown as {
+      headers: () => Record<string, string>;
+    };
+
+    authServiceMock.getToken.mockReturnValue('live-token-1');
+    expect(clientOptions.headers()).toEqual({
+      Authorization: 'Bearer live-token-1',
+    });
+
+    // a refreshed token must be picked up by later requests on the SAME client
+    authServiceMock.getToken.mockReturnValue('live-token-2');
+    expect(clientOptions.headers()).toEqual({
+      Authorization: 'Bearer live-token-2',
+    });
+  });
+
+  it('falls back to the node context token when AuthService has none', () => {
+    const createClientMock = createClient as MockedFunction<
+      typeof createClient
+    >;
+    createClientMock.mockClear();
+    createClientMock.mockReturnValue({
+      subscribe: vi.fn().mockReturnValue(() => void 0),
+    } as unknown as ReturnType<typeof createClient>);
+
+    authServiceMock.getToken.mockReturnValue(undefined);
+    const nodeContext = {
+      token: 'context-token',
+    } as unknown as ResourceNodeContext;
+    (factory as any).createApolloOptions(nodeContext, false);
+    const clientOptions = createClientMock.mock.calls[0][0] as unknown as {
+      headers: () => Record<string, string>;
+    };
+    expect(clientOptions.headers()).toEqual({
+      Authorization: 'Bearer context-token',
+    });
   });
 
   it('should pass readFromParentKcpPath flag to SSE url resolver', () => {
