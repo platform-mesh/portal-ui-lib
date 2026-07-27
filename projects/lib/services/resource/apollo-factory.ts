@@ -72,7 +72,8 @@ export class ApolloFactory {
    * snapshot.
    */
   private resolveToken(nodeContext: ResourceNodeContext): string | undefined {
-    return this.authService.getToken() || nodeContext.token;
+    const token = this.authService.getToken();
+    return (typeof token === 'string' && token) ? token : nodeContext.token;
   }
 
   private createApolloOptions(
