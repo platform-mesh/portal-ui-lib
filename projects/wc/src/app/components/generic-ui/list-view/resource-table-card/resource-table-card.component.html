@@ -10,3 +10,9 @@
   (createFieldChange)="onCreateFieldChange($event)"
   (createSubmit)="onCreateSubmit($event)"
 />
+
+<pm-delete-resource-modal
+  #deleteModal
+  [context]="context()"
+  (resource)="delete($event)"
+/>

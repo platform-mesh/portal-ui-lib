@@ -9,6 +9,7 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from '../../create-resource-modal/create-resource-modal.consts';
+import { DeleteResourceModal } from '../../delete-resource-confirmation-modal/delete-resource-modal.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -55,7 +56,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'pm-resource-table-card',
   standalone: true,
-  imports: [DeclarativeTableCard],
+  imports: [DeclarativeTableCard, DeleteResourceModal],
   templateUrl: './resource-table-card.component.html',
   styles: `
     mfp-declarative-table-card {
@@ -76,6 +77,7 @@ export class ResourceTableCard {
 
   tableCard =
     viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
+  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
   resourceDefinition = computed(() => this.context().resourceDefinition);
@@ -101,6 +103,30 @@ export class ResourceTableCard {
     }
 
     return columns;
+  });
+  tableColumns = computed(() => {
+    const columns = this.columns();
+    if (!this.resourceDefinition()?.ui?.listView?.deletable) {
+      return columns;
+    }
+
+    return [
+      ...columns,
+      {
+        property: 'mfp_delete_action',
+        uiSettings: {
+          align: 'end' as const,
+          displayAs: 'button' as const,
+          buttonSettings: {
+            icon: 'decline',
+            design: 'Transparent' as const,
+            action: 'delete-resource',
+            tooltip: 'Delete',
+          },
+        },
+        group: { name: 'actions', label: '', multiline: false },
+      },
+    ];
   });
 
   totalItemsCount = computed(
@@ -141,7 +167,7 @@ export class ResourceTableCard {
     return {
       header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
-        fields: this.columns(),
+        fields: this.tableColumns(),
         totalItemsCount: this.totalItemsCount(),
         paginationLimit: this.paginationLimit(),
         hasMore: this.hasMore(),
@@ -311,6 +337,18 @@ export class ResourceTableCard {
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
+    if (
+      event.field.uiSettings?.buttonSettings?.action === 'delete-resource' &&
+      event.resource
+    ) {
+      event.event.stopPropagation();
+      if (!this.resourceService.isAvailable(event.resource)) {
+        return;
+      }
+      this.deleteModal()?.open(event.resource);
+      return;
+    }
+
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
@@ -346,6 +384,20 @@ export class ResourceTableCard {
           this.createFieldErrors.set({});
           this.tableCard().closeCreateDialog();
           console.debug('Resource created', result);
+        },
+      });
+  }
+
+  delete(resource: Resource): void {
+    this.resourceService
+      .delete(resource, this.getResourceDefinition(), this.context())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.deleteModal()?.close();
+        },
+        error: (error) => {
+          this.errorHandlerService.handleError(error);
         },
       });
   }

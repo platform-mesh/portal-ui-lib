@@ -230,6 +230,115 @@ describe('ResourceTableCard', () => {
     });
   });
 
+  describe('Delete resource', () => {
+    it('should add a delete action when list view is deletable', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = makeContext({
+        ui: { listView: { fields: [], deletable: true } },
+      });
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+
+      expect(newComponent.tableColumns()).toContainEqual(
+        expect.objectContaining({
+          property: 'mfp_delete_action',
+          uiSettings: expect.objectContaining({
+            buttonSettings: expect.objectContaining({
+              action: 'delete-resource',
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('should not add a delete action by default', () => {
+      expect(component.tableColumns()).toEqual(component.columns());
+    });
+
+    it('should open the existing delete modal from the delete action', () => {
+      const resource = { metadata: { name: 'test' } } as any;
+      const event = {
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent;
+      const open = vi.fn();
+      (component as any).deleteModal = () => ({ open });
+      mockResourceService.isAvailable.mockReturnValue(true);
+
+      component.executeAction({
+        event,
+        resource,
+        field: {
+          property: 'mfp_delete_action',
+          uiSettings: {
+            displayAs: 'button',
+            buttonSettings: { action: 'delete-resource' },
+          },
+        },
+      });
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(open).toHaveBeenCalledWith(resource);
+    });
+
+    it('should not open the delete modal for a resource pending deletion', () => {
+      const resource = {
+        metadata: {
+          name: 'test',
+          deletionTimestamp: '2026-07-29T10:00:00Z',
+        },
+      } as any;
+      const event = {
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent;
+      const open = vi.fn();
+      (component as any).deleteModal = () => ({ open });
+      mockResourceService.isAvailable.mockReturnValue(false);
+
+      component.executeAction({
+        event,
+        resource,
+        field: {
+          property: 'mfp_delete_action',
+          uiSettings: {
+            displayAs: 'button',
+            buttonSettings: { action: 'delete-resource' },
+          },
+        },
+      });
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockResourceService.isAvailable).toHaveBeenCalledWith(resource);
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('should delete the resource and close the modal', () => {
+      const resource = { metadata: { name: 'test' } } as any;
+      const close = vi.fn();
+      mockResourceService.delete.mockReturnValue(of(resource));
+      (component as any).deleteModal = () => ({ close });
+
+      component.delete(resource);
+
+      expect(mockResourceService.delete).toHaveBeenCalledWith(
+        resource,
+        component.resourceDefinition(),
+        component.context(),
+      );
+      expect(close).toHaveBeenCalled();
+    });
+
+    it('should handle delete errors', () => {
+      const resource = { metadata: { name: 'test' } } as any;
+      const error = new Error('delete failed');
+      mockResourceService.delete.mockReturnValue(throwError(() => error));
+
+      component.delete(resource);
+
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+    });
+  });
+
   describe('Pagination', () => {
     it('should update pagination limit when onLimitChange is called', () => {
       component.onLimitChange(10);
