@@ -1,0 +1,67 @@
+<section
+  class="persistent-panel"
+  role="complementary"
+  aria-labelledby="persistent-panel-title"
+  [attr.aria-hidden]="state() === 'hidden'"
+  [class.maximized]="state() === 'maximized'"
+  [class.open]="state() !== 'hidden'"
+>
+  <header class="persistent-panel-header">
+    <div>
+      <h2 id="persistent-panel-title">{{ title() }}</h2>
+      @if (closeError()) {
+      <p role="alert">{{ closeError() }}</p>
+      }
+    </div>
+    <div class="persistent-panel-actions">
+      <button
+        aria-label="Toggle panel size"
+        [attr.aria-pressed]="state() === 'maximized'"
+        title="Toggle panel size"
+        type="button"
+        (click)="toggleSize()"
+      >
+        @if (state() === 'maximized') { ◲ } @else { ◱ }
+      </button>
+      <button
+        aria-label="Collapse panel"
+        title="Collapse panel"
+        type="button"
+        (click)="collapse()"
+      >
+        —
+      </button>
+      <button
+        aria-label="Close panel"
+        title="Close panel"
+        type="button"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </div>
+  </header>
+  @if (source()) {
+  <iframe
+    #panelFrame
+    class="persistent-panel-frame"
+    referrerpolicy="no-referrer"
+    sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+    [src]="source()"
+    [title]="title()"
+    (load)="frameLoaded()"
+  ></iframe>
+  }
+</section>
+
+@if (state() === 'hidden' && source() && !closing()) {
+<button
+  #reopenButton
+  class="persistent-panel-reopen"
+  aria-label="Open provider panel"
+  type="button"
+  (click)="expand()"
+>
+  {{ title() }}
+</button>
+}
