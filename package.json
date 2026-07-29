@@ -53,7 +53,7 @@
     "@openmfp/portal-ui-lib": "0.194.14",
     "@vitest/coverage-v8": "4.1.10",
     "cpx2": "9.0.0",
-    "flatted": "3.4.2",
+    "flatted": "3.4.3",
     "immutable": "5.1.9",
     "jsdom": "29.1.1",
     "kubernetes-types": "1.30.0",
