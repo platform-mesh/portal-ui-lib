@@ -2,6 +2,7 @@ import { PersistentPanelComponent } from './persistent-panel';
 import {
   PersistentPanelConfig,
   PersistentPanelTarget,
+  persistentPanelTarget,
 } from './persistent-panel.types';
 import {
   ApplicationRef,
@@ -19,6 +20,7 @@ export class PersistentPanelService implements OnDestroy {
   private readonly environmentInjector = inject(EnvironmentInjector);
   private panelRef: ComponentRef<PersistentPanelComponent> | null = null;
   private target: PersistentPanelTarget = {};
+  private targetUpdateSequence = 0;
 
   open(config: PersistentPanelConfig, target: PersistentPanelTarget): void {
     this.target = target;
@@ -38,7 +40,18 @@ export class PersistentPanelService implements OnDestroy {
     this.panelRef.changeDetectorRef.detectChanges();
   }
 
-  updateTarget(target: PersistentPanelTarget): void {
+  beginTargetUpdate(): (context: Record<string, unknown>) => void {
+    const targetUpdateSequence = ++this.targetUpdateSequence;
+    return (context) => {
+      if (targetUpdateSequence !== this.targetUpdateSequence) {
+        return;
+      }
+      this.updateTarget(context);
+    };
+  }
+
+  private updateTarget(context: Record<string, unknown>): void {
+    const target = persistentPanelTarget({}, context);
     this.target = target;
     this.panelRef?.instance.updateTarget(target);
   }
@@ -48,6 +61,7 @@ export class PersistentPanelService implements OnDestroy {
   }
 
   destroy(): void {
+    this.targetUpdateSequence += 1;
     if (this.panelRef) {
       const host = this.panelRef.location.nativeElement as HTMLElement;
       this.appRef.detachView(this.panelRef.hostView);

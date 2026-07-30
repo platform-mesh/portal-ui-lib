@@ -9,9 +9,10 @@ describe('NodeChangeHookConfigServiceImpl', () => {
   let service: NodeChangeHookConfigServiceImpl;
   let mockLuigiCoreService: any;
   let mockCrdGatewayKcpPatchResolver: MockedObject<CrdGatewayKcpPatchResolver>;
+  let completeTargetUpdate: ReturnType<typeof vi.fn>;
   let mockPersistentPanelService: Pick<
     PersistentPanelService,
-    'currentTarget' | 'updateTarget'
+    'beginTargetUpdate'
   >;
 
   beforeEach(() => {
@@ -19,15 +20,14 @@ describe('NodeChangeHookConfigServiceImpl', () => {
       navigation: vi.fn().mockReturnValue({
         navigate: vi.fn(),
       }),
-      getGlobalContext: vi.fn().mockReturnValue({ organization: 'org1' }),
     };
 
     mockCrdGatewayKcpPatchResolver = {
       resolveCrdGatewayKcpPath: vi.fn(),
     } as unknown as MockedObject<CrdGatewayKcpPatchResolver>;
+    completeTargetUpdate = vi.fn();
     mockPersistentPanelService = {
-      currentTarget: vi.fn().mockReturnValue({}),
-      updateTarget: vi.fn(),
+      beginTargetUpdate: vi.fn().mockReturnValue(completeTargetUpdate),
     };
 
     TestBed.configureTestingModule({
@@ -68,20 +68,15 @@ describe('NodeChangeHookConfigServiceImpl', () => {
 
   describe('persistent provider panel context', () => {
     it('clears stale account scope when navigation returns to the organization', async () => {
-      mockPersistentPanelService.currentTarget = vi.fn().mockReturnValue({
-        organization: 'showroom',
-        account: 'ig-1',
-        workspacePath: 'root:orgs:showroom:ig-1',
-      });
-
       await service.nodeChangeHook(
         { context: { accountId: 'ig-1' } } as any,
         { context: { organization: 'showroom' } } as any,
         { organization: 'showroom' } as any,
       );
 
-      expect(mockPersistentPanelService.updateTarget).toHaveBeenCalledWith({
+      expect(completeTargetUpdate).toHaveBeenCalledWith({
         organization: 'showroom',
+        portalPermissions: {},
       });
     });
 
@@ -99,20 +94,28 @@ describe('NodeChangeHookConfigServiceImpl', () => {
         } as any,
       );
 
-      expect(mockPersistentPanelService.updateTarget).toHaveBeenCalledWith({
+      expect(completeTargetUpdate).toHaveBeenCalledWith({
         organization: 'showroom',
-        account: 'ig-1',
-        workspacePath: 'root:orgs:showroom:ig-1',
-        namespace: 'apps',
-        resource: { kind: 'Database', name: 'sample' },
+        accountId: 'ig-1',
+        kcpPath: 'root:orgs:showroom:ig-1',
+        namespaceId: 'apps',
+        entityKind: 'Database',
+        entityName: 'sample',
+        navigationContext: 'resource-details',
+        portalPermissions: {},
       });
     });
 
-    it('ignores a stale target from an earlier navigation that resolves last', async () => {
+    it('starts updates in navigation order and completes them after KCP resolution', async () => {
       let resolveFirstNavigation!: () => void;
       const firstNavigation = new Promise<void>((resolve) => {
         resolveFirstNavigation = resolve;
       });
+      const completeFirstTargetUpdate = vi.fn();
+      const completeSecondTargetUpdate = vi.fn();
+      vi.mocked(mockPersistentPanelService.beginTargetUpdate)
+        .mockReturnValueOnce(completeFirstTargetUpdate)
+        .mockReturnValueOnce(completeSecondTargetUpdate);
       mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath
         .mockReturnValueOnce(firstNavigation as any)
         .mockResolvedValueOnce({} as any);
@@ -122,19 +125,58 @@ describe('NodeChangeHookConfigServiceImpl', () => {
         { context: { accountId: 'account-a' } } as any,
         { organization: 'showroom' } as any,
       );
+
+      expect(completeFirstTargetUpdate).not.toHaveBeenCalled();
+
       await service.nodeChangeHook(
         {} as any,
         { context: { accountId: 'account-b' } } as any,
         { organization: 'showroom' } as any,
       );
+
+      expect(completeSecondTargetUpdate).toHaveBeenCalledWith({
+        organization: 'showroom',
+        accountId: 'account-b',
+        portalPermissions: {},
+      });
+
       resolveFirstNavigation();
       await staleUpdate;
 
-      expect(mockPersistentPanelService.updateTarget).toHaveBeenCalledTimes(1);
-      expect(mockPersistentPanelService.updateTarget).toHaveBeenCalledWith({
+      expect(completeFirstTargetUpdate).toHaveBeenCalledWith({
         organization: 'showroom',
-        account: 'account-b',
-        workspacePath: 'root:orgs:showroom:account-b',
+        accountId: 'account-a',
+        portalPermissions: {},
+      });
+    });
+
+    it('publishes the resolver-enriched path for a nested account', async () => {
+      mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockImplementation(
+        async (nextNode) => {
+          nextNode.context.kcpPath = 'root:orgs:showroom:parent:child';
+          nextNode.context.accountPath = 'parent:child';
+          return {
+            kcpPath: nextNode.context.kcpPath,
+            accountPath: nextNode.context.accountPath,
+          };
+        },
+      );
+
+      await service.nodeChangeHook(
+        {} as any,
+        { context: { accountId: 'child' } } as any,
+        {
+          organization: 'showroom',
+          kcpPath: 'root:orgs:showroom:parent',
+        } as any,
+      );
+
+      expect(completeTargetUpdate).toHaveBeenCalledWith({
+        organization: 'showroom',
+        accountId: 'child',
+        accountPath: 'parent:child',
+        kcpPath: 'root:orgs:showroom:parent:child',
+        portalPermissions: {},
       });
     });
   });

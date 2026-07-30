@@ -1,6 +1,5 @@
 import { PortalLuigiNode } from '../models/luigi-node';
 import { PersistentPanelService } from '../persistent-panel/persistent-panel.service';
-import { persistentPanelTarget } from '../persistent-panel/persistent-panel.types';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import {
@@ -14,14 +13,14 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
   private luigiCoreService = inject(LuigiCoreService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
   private persistentPanelService = inject(PersistentPanelService);
-  private navigationSequence = 0;
 
   async nodeChangeHook(
     prevNode: PortalLuigiNode,
     nextNode: PortalLuigiNode,
     currentContext: NodeContext,
   ) {
-    const navigationSequence = ++this.navigationSequence;
+    const updatePersistentPanelTarget =
+      this.persistentPanelService.beginTargetUpdate();
 
     if (
       nextNode.initialRoute &&
@@ -33,15 +32,10 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
 
     this.accumulatePortalPermissions(prevNode, nextNode, currentContext);
     await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(nextNode);
-    if (navigationSequence !== this.navigationSequence) {
-      return;
-    }
-    this.persistentPanelService.updateTarget(
-      persistentPanelTarget(this.luigiCoreService.getGlobalContext(), {
-        ...currentContext,
-        ...(nextNode.context ?? {}),
-      }),
-    );
+    updatePersistentPanelTarget({
+      ...currentContext,
+      ...(nextNode.context ?? {}),
+    });
   }
 
   private accumulatePortalPermissions(
