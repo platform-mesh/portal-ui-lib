@@ -48,6 +48,7 @@ describe('OpenSearchResourceTableCard', () => {
         withParams: vi.fn().mockReturnThis(),
       }),
       uxManager: () => ({ showAlert: vi.fn() }),
+      addNodeParams: vi.fn(),
       getNodeParams: vi.fn(),
       getActiveFeatureToggles: () => [],
     };
@@ -241,6 +242,36 @@ describe('OpenSearchResourceTableCard', () => {
       const callsBefore = mockReadResources.list.mock.calls.length;
       component.list();
       expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
+    });
+
+    it('does not re-write node params when list() re-runs with unchanged state', () => {
+      // Simulates Luigi's real round-trip: addNodeParams persists params that
+      // getNodeParams then reads back. Without the unchanged-guard, every list()
+      // would call addNodeParams, which triggers a Luigi navigate + context
+      // re-push, which re-runs list() — an infinite loop.
+      const store: Record<string, string> = {};
+      const lc = buildLuigiClient();
+      lc.addNodeParams.mockImplementation((params: Record<string, string>) => {
+        for (const [key, value] of Object.entries(params)) {
+          if (value === undefined) delete store[key];
+          else store[key] = value;
+        }
+      });
+      lc.getNodeParams.mockImplementation(() => store);
+
+      const f = TestBed.createComponent(OpenSearchResourceTableCard);
+      f.componentInstance.context = buildContext();
+      f.componentInstance.LuigiClient = (() => lc) as any;
+      f.detectChanges();
+
+      (f.componentInstance as any).search('needle');
+      const writesAfterSearch = lc.addNodeParams.mock.calls.length;
+
+      f.componentInstance.list();
+      f.componentInstance.list();
+
+      expect(lc.addNodeParams.mock.calls.length).toBe(writesAfterSearch);
+      f.destroy();
     });
 
     it('should accept subsequent list() calls after the first completes', () => {
@@ -574,25 +605,23 @@ describe('OpenSearchResourceTableCard', () => {
   });
 
   /**
-   * URL-refresh hydration: `q` and any `<property>=<value>` pair matching a
-   * filter tab are consulted at construction and pushed to the host card as
-   * `searchConfig.initialSearch` / `initialFilter`. These tests bypass the
-   * shared `beforeEach` fixture and construct their own because the URL must
-   * be set *before* the property initializers run — after mount is too late.
+   * Node-param hydration: `q` and any `<property>=<value>` pair matching a
+   * filter tab are read from Luigi's `getNodeParams()` at construction and
+   * pushed to the host card as `searchConfig.initialSearch` / `initialFilter`.
+   * These tests bypass the shared `beforeEach` fixture and construct their own
+   * because the client's node params must be stubbed *before* the property
+   * initializers run — after mount is too late.
    *
-   * URL shape note: filters are reflected as `?<filter.property>=<filter.value>`
-   * (one param per filter, e.g. `?metadata.namespace=default`), NOT as a nested
-   * `?filter=property=value` pair — the latter is what the backend receives,
-   * not the URL.
+   * Node-param shape note: filters are reflected as one node param per filter,
+   * `<filter.property>=<filter.value>` (e.g. `metadata.namespace=default`),
+   * NOT as a nested `filter=property=value` pair — the latter is what the
+   * backend receives, not the node param.
    */
-  describe('URL hydration (q / filter query params)', () => {
-    // The shared `beforeEach` builds a fixture from a plain URL. Each test
-    // here overwrites location with `history.replaceState` and constructs a
-    // fresh component so the property initializer sees the crafted URL.
-    const setUrl = (search: string) => {
-      history.replaceState(null, '', `/tests${search}`);
-    };
-
+  describe('URL hydration (q / filter node params)', () => {
+    // The shared `beforeEach` builds a fixture whose Luigi client returns no
+    // node params. Each test here builds a fresh component whose
+    // `getNodeParams` returns crafted params so the property initializer sees
+    // the hydration state.
     const buildContextWithFilters = () =>
       (() => ({
         resourceDefinition: {
@@ -608,72 +637,62 @@ describe('OpenSearchResourceTableCard', () => {
         },
       })) as any;
 
-    const makeFresh = (ctx: any) => {
+    const makeFresh = (ctx: any, params: Record<string, string> = {}) => {
+      const lc = buildLuigiClient();
+      lc.getNodeParams.mockReturnValue(params);
       const f = TestBed.createComponent(OpenSearchResourceTableCard);
       f.componentInstance.context = ctx;
-      f.componentInstance.LuigiClient = component.LuigiClient;
+      f.componentInstance.LuigiClient = (() => lc) as any;
       f.detectChanges();
       return f;
     };
 
-    afterEach(() => {
-      // Reset the URL so we don't leak state between tests.
-      history.replaceState(null, '', '/tests');
-    });
-
-    it('seeds searchKey from ?q= on init', () => {
-      setUrl('?q=demo-1');
-      const f = makeFresh(buildContextWithFilters());
+    it('seeds searchKey from the q node param on init', () => {
+      const f = makeFresh(buildContextWithFilters(), { q: 'demo-1' });
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toEqual(expect.objectContaining({ q: 'demo-1' }));
       // Cleanup: drain the fresh subscription so it doesn't leak into later tests.
       f.destroy();
     });
 
-    it('seeds currentPage from ?page= on init and sends it to list()', () => {
-      setUrl('?page=3');
-      const f = makeFresh(buildContextWithFilters());
+    it('seeds currentPage from the page node param on init and sends it to list()', () => {
+      const f = makeFresh(buildContextWithFilters(), { page: '3' });
       expect(f.componentInstance.currentPage()).toBe(3);
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[1]).toEqual(expect.objectContaining({ page: 3 }));
       f.destroy();
     });
 
-    it('seeds paginationLimit from ?limit= on init when value is valid', () => {
-      setUrl('?limit=50');
-      const f = makeFresh(buildContextWithFilters());
+    it('seeds paginationLimit from the limit node param on init when value is valid', () => {
+      const f = makeFresh(buildContextWithFilters(), { limit: '50' });
       expect(f.componentInstance.paginationLimit()).toBe(50);
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[1]).toEqual(expect.objectContaining({ limit: 50 }));
       f.destroy();
     });
 
-    it('defaults paginationLimit to 20 when ?limit= is absent or invalid', () => {
-      setUrl('?limit=999');
-      const f = makeFresh(buildContextWithFilters());
+    it('defaults paginationLimit to 20 when the limit node param is absent or invalid', () => {
+      const f = makeFresh(buildContextWithFilters(), { limit: '999' });
       expect(f.componentInstance.paginationLimit()).toBe(20);
       f.destroy();
     });
 
-    it('defaults currentPage to 1 when ?page= is absent or invalid', () => {
-      setUrl('?page=not-a-number');
-      const f = makeFresh(buildContextWithFilters());
+    it('defaults currentPage to 1 when the page node param is absent or invalid', () => {
+      const f = makeFresh(buildContextWithFilters(), { page: 'not-a-number' });
       expect(f.componentInstance.currentPage()).toBe(1);
       f.destroy();
     });
 
     it('exposes initialSearch through config().searchConfig', () => {
-      setUrl('?q=demo-1');
-      const f = makeFresh(buildContextWithFilters());
+      const f = makeFresh(buildContextWithFilters(), { q: 'demo-1' });
       expect(f.componentInstance.config().searchConfig?.initialSearch).toBe(
         'demo-1',
       );
       f.destroy();
     });
 
-    it('seeds selectedSearchFilter from ?<property>=<value> when it matches a tab', () => {
-      setUrl('?owner=me');
-      const f = makeFresh(buildContextWithFilters());
+    it('seeds selectedSearchFilter from a <property>=<value> node param when it matches a tab', () => {
+      const f = makeFresh(buildContextWithFilters(), { owner: 'me' });
       // "owner=me" wins over the resourceDefinition's `default: true` on the "All" tab.
       expect(f.componentInstance.selectedSearchFilter()).toEqual(
         expect.objectContaining({ property: 'owner', value: 'me' }),
@@ -687,17 +706,15 @@ describe('OpenSearchResourceTableCard', () => {
     });
 
     it('exposes initialFilter through config().searchConfig when matched', () => {
-      setUrl('?owner=me');
-      const f = makeFresh(buildContextWithFilters());
+      const f = makeFresh(buildContextWithFilters(), { owner: 'me' });
       expect(f.componentInstance.config().searchConfig?.initialFilter).toEqual(
         expect.objectContaining({ property: 'owner', value: 'me' }),
       );
       f.destroy();
     });
 
-    it('falls back to default: true when the URL value does not match any tab', () => {
-      setUrl('?owner=ghost');
-      const f = makeFresh(buildContextWithFilters());
+    it('falls back to default: true when the node param value does not match any tab', () => {
+      const f = makeFresh(buildContextWithFilters(), { owner: 'ghost' });
       // No matching (property, value) → linkedSignal falls through to the `default: true` entry.
       expect(f.componentInstance.selectedSearchFilter()).toEqual(
         expect.objectContaining({ property: 'owner', value: '*' }),
@@ -709,24 +726,20 @@ describe('OpenSearchResourceTableCard', () => {
       f.destroy();
     });
 
-    it('ignores URL params whose keys are not filter properties', () => {
-      // No filter tab has property `unrelated`, so this URL param is a plain
-      // app-level query string, not a filter. The default tab still wins.
-      setUrl('?unrelated=x');
-      const f = makeFresh(buildContextWithFilters());
+    it('ignores node params whose keys are not filter properties', () => {
+      // No filter tab has property `unrelated`, so this node param is a plain
+      // app-level param, not a filter. The default tab still wins.
+      const f = makeFresh(buildContextWithFilters(), { unrelated: 'x' });
       expect(f.componentInstance.selectedSearchFilter()).toEqual(
         expect.objectContaining({ property: 'owner', value: '*' }),
       );
       f.destroy();
     });
 
-    it('encodes special characters in filter values (round-trip)', () => {
+    it('round-trips dotted property keys and special values through node params', () => {
       // A dot-in-property + slash-in-value case that used to be doubly ambiguous
-      // in the `?filter=property=value` shape — with property-as-key each is one
-      // clean query param and URLSearchParams handles the encoding for us.
-      setUrl(
-        `?${encodeURIComponent('metadata.namespace')}=${encodeURIComponent('kube-system')}`,
-      );
+      // in the `?filter=property=value` shape — getNodeParams returns each as a
+      // decoded key/value pair, so no manual encoding is needed.
       const ctx = (() => ({
         resourceDefinition: {
           entityCollection: 'clusters',
@@ -749,7 +762,7 @@ describe('OpenSearchResourceTableCard', () => {
           },
         },
       })) as any;
-      const f = makeFresh(ctx);
+      const f = makeFresh(ctx, { 'metadata.namespace': 'kube-system' });
       expect(f.componentInstance.selectedSearchFilter()).toEqual(
         expect.objectContaining({
           property: 'metadata.namespace',
@@ -760,21 +773,19 @@ describe('OpenSearchResourceTableCard', () => {
     });
 
     it('behaves normally when neither q nor a matching filter is present', () => {
-      setUrl('');
-      const f = makeFresh(buildContextWithFilters());
+      const f = makeFresh(buildContextWithFilters(), {});
       const searchConfig = f.componentInstance.config().searchConfig;
       expect(searchConfig?.initialSearch).toBeUndefined();
       expect(searchConfig?.initialFilter).toBeUndefined();
-      // Default filter still wins on empty URL.
+      // Default filter still wins on empty node params.
       expect(f.componentInstance.selectedSearchFilter()).toEqual(
         expect.objectContaining({ property: 'owner', value: '*' }),
       );
       f.destroy();
     });
 
-    it('does not re-seed from the URL after the user picks a different filter', () => {
-      setUrl('?owner=me');
-      const f = makeFresh(buildContextWithFilters());
+    it('does not re-seed from node params after the user picks a different filter', () => {
+      const f = makeFresh(buildContextWithFilters(), { owner: 'me' });
       // Verify initial seed took effect.
       expect(f.componentInstance.selectedSearchFilter()?.value).toBe('me');
 
@@ -787,7 +798,7 @@ describe('OpenSearchResourceTableCard', () => {
       expect(f.componentInstance.selectedSearchFilter()?.value).toBe('*');
 
       // Simulate a Luigi context change that triggers searchFilters recomputation.
-      // The URL-seed flag has already latched, so `linkedSignal`'s computation
+      // The node-param-seed flag has already latched, so `linkedSignal`'s computation
       // must NOT push the user back to `owner=me`.
       f.componentInstance.context = buildContextWithFilters();
       f.detectChanges();

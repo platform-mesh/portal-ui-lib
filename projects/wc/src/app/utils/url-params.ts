@@ -19,6 +19,27 @@ export const readUrlSearchParam = (key: string): string | undefined => {
   return new URL(location.href).searchParams.get(key) ?? undefined;
 };
 
+/**
+ * Re~Foves search params from the URL. When `keys` is provided, only those keys
+ * are removed; when omitted, all search params are cleared. Uses
+ * `history.replaceState` so the navigation stack is not affected.
+ */
+export const clearSearchParams = (keys?: string[]) => {
+  const newUrl = new URL(location.href || 'http://localhost/');
+
+  const keysToRemove =
+    keys ??
+    (() => {
+      const existing: string[] = [];
+      newUrl.searchParams.forEach((_value, key) => existing.push(key));
+      return existing;
+    })();
+
+  keysToRemove.forEach((key) => newUrl.searchParams.delete(key));
+
+  history.replaceState(null, '', newUrl);
+};
+
 export const snapshotUrl = (): Record<string, string> => {
   if (typeof location === 'undefined') return {};
   const out: Record<string, string> = {};
