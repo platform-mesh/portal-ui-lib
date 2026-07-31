@@ -251,6 +251,13 @@ describe('ApolloFactory', () => {
   });
 
   describe('retry-once on 401', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     const makeFlakyHttpLink = (failures: number, error: unknown) => {
       const seenAuthHeaders: (string | null)[] = [];
       let attempts = 0;
@@ -270,9 +277,10 @@ describe('ApolloFactory', () => {
       return { link, getAttempts: () => attempts, seenAuthHeaders };
     };
 
-    // SetContextLink resolves its context through a promise, so results
-    // arrive on a later microtask — flush before asserting
-    const runQuery = async (link: ApolloLink) => {
+    // SetContextLink resolves its context through a promise and the retry
+    // is scheduled on a timer — advance fake time (which also flushes
+    // microtasks) before asserting
+    const startQuery = (link: ApolloLink) => {
       const result = {
         data: undefined as unknown,
         error: undefined as unknown,
@@ -289,7 +297,12 @@ describe('ApolloFactory', () => {
         error: (err: unknown) => (result.error = err),
         complete: () => (result.complete = true),
       });
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      return result;
+    };
+
+    const runQuery = async (link: ApolloLink) => {
+      const result = startQuery(link);
+      await vi.advanceTimersByTimeAsync(2000);
       return result;
     };
 
@@ -315,6 +328,32 @@ describe('ApolloFactory', () => {
       ]);
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({ data: { x: 1 } });
+      expect(result.complete).toBe(true);
+    });
+
+    it('waits before the retry so a token still in delivery can arrive', async () => {
+      // boot race sub-case: the first request can fire while the boot
+      // refresh is still in flight — an instant retry would lose again
+      const flaky = makeFlakyHttpLink(1, { status: 401 });
+      httpLinkMock.create.mockReturnValue(flaky.link);
+      authServiceMock.getToken
+        .mockReturnValueOnce(undefined)
+        .mockReturnValue('late-token');
+
+      const options = (factory as any).createApolloOptions({
+        token: undefined,
+      } as unknown as ResourceNodeContext);
+      const result = startQuery(options.link);
+
+      // first attempt has failed, the retry must NOT have fired yet
+      await vi.advanceTimersByTimeAsync(100);
+      expect(flaky.getAttempts()).toBe(1);
+      expect(result.error).toBeUndefined();
+
+      // after the delay window the single retry runs with the late token
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(flaky.getAttempts()).toBe(2);
+      expect(flaky.seenAuthHeaders[1]).toBe('Bearer late-token');
       expect(result.complete).toBe(true);
     });
 

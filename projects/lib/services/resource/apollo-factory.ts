@@ -46,6 +46,10 @@ const noopZone = {
   runOutsideAngular: (fn: any) => fn(),
 } as any;
 
+// Long enough for an in-flight boot refresh to land, short enough to be
+// invisible next to a reload.
+const AUTH_RETRY_DELAY_MS = 750;
+
 const isUnauthorized = (error: unknown): boolean => {
   const err = error as {
     status?: number;
@@ -118,13 +122,17 @@ export class ApolloFactory {
     return new ApolloLink((operation, forward) => {
       return new ApolloObservable((observer) => {
         let activeSub: { unsubscribe(): void } | undefined;
+        let retryTimer: ReturnType<typeof setTimeout> | undefined;
         const attempt = (isRetry: boolean) => {
           activeSub = forward(operation).subscribe({
             next: observer.next.bind(observer),
             complete: observer.complete.bind(observer),
             error: (error: unknown) => {
               if (!isRetry && isUnauthorized(error)) {
-                attempt(true);
+                retryTimer = setTimeout(
+                  () => attempt(true),
+                  AUTH_RETRY_DELAY_MS,
+                );
                 return;
               }
               observer.error(error);
@@ -132,7 +140,12 @@ export class ApolloFactory {
           });
         };
         attempt(false);
-        return () => activeSub?.unsubscribe();
+        return () => {
+          if (retryTimer !== undefined) {
+            clearTimeout(retryTimer);
+          }
+          activeSub?.unsubscribe();
+        };
       });
     });
   }
