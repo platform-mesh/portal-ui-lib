@@ -1,0 +1,98 @@
+:host {
+  --pm-panel-header-height: 3rem;
+  font-family: var(--sapFontFamily, '72', Arial, sans-serif);
+}
+
+.persistent-panel {
+  position: fixed;
+  top: var(--luigi__shellbar--height, 3.25rem);
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: none;
+  width: min(34rem, 100vw);
+  background: var(--sapBackgroundColor, #fff);
+  border-left: 1px solid var(--sapGroup_ContentBorderColor, #d9d9d9);
+  box-shadow: -0.25rem 0 1rem rgb(0 0 0 / 12%);
+}
+
+.persistent-panel.open {
+  display: grid;
+  grid-template-rows: var(--pm-panel-header-height) 1fr;
+}
+
+.persistent-panel.maximized {
+  left: 4.25rem;
+  width: auto;
+}
+
+.persistent-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem 0 1rem;
+  color: var(--sapShell_TextColor, #1d2d3e);
+  background: var(--sapShell_Background, #fff);
+  border-bottom: 1px solid var(--sapGroup_ContentBorderColor, #d9d9d9);
+}
+
+.persistent-panel-header h2 {
+  overflow: hidden;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.persistent-panel-header p {
+  margin: 0;
+  color: var(--sapNegativeTextColor, #aa0808);
+  font-size: 0.75rem;
+}
+
+.persistent-panel-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.persistent-panel-actions button,
+.persistent-panel-reopen {
+  min-width: 2rem;
+  min-height: 2rem;
+  color: var(--sapButton_TextColor, #0064d9);
+  background: transparent;
+  border: 0;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.persistent-panel-actions button:hover,
+.persistent-panel-reopen:hover {
+  background: var(--sapButton_Lite_Hover_Background, #eaecee);
+}
+
+.persistent-panel-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.persistent-panel-reopen {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  padding: 0.5rem 0.75rem;
+  color: var(--sapButton_Emphasized_TextColor, #fff);
+  background: var(--sapButton_Emphasized_Background, #0070f2);
+  box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 20%);
+}
+
+@media (max-width: 600px) {
+  .persistent-panel,
+  .persistent-panel.maximized {
+    left: 0;
+    width: 100vw;
+  }
+}
