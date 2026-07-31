@@ -1,4 +1,5 @@
 import { ResourceTableCard } from './resource-table-card.component';
+import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -231,31 +232,6 @@ describe('ResourceTableCard', () => {
   });
 
   describe('Delete resource', () => {
-    it('should add a delete action when list view is deletable', () => {
-      const newFixture = TestBed.createComponent(ResourceTableCard);
-      const newComponent = newFixture.componentInstance;
-      newComponent.context = makeContext({
-        ui: { listView: { fields: [], deletable: true } },
-      });
-      newComponent.LuigiClient = makeLuigiClient();
-      newFixture.detectChanges();
-
-      expect(newComponent.tableColumns()).toContainEqual(
-        expect.objectContaining({
-          property: 'mfp_delete_action',
-          uiSettings: expect.objectContaining({
-            buttonSettings: expect.objectContaining({
-              action: 'delete-resource',
-            }),
-          }),
-        }),
-      );
-    });
-
-    it('should not add a delete action by default', () => {
-      expect(component.tableColumns()).toEqual(component.columns());
-    });
-
     it('should open the existing delete modal from the delete action', () => {
       const resource = { metadata: { name: 'test' } } as any;
       const event = {
@@ -269,10 +245,10 @@ describe('ResourceTableCard', () => {
         event,
         resource,
         field: {
-          property: 'mfp_delete_action',
+          property: 'metadata.name',
           uiSettings: {
             displayAs: 'button',
-            buttonSettings: { action: 'delete-resource' },
+            buttonSettings: { action: DELETE_RESOURCE_ACTION },
           },
         },
       });
@@ -299,10 +275,10 @@ describe('ResourceTableCard', () => {
         event,
         resource,
         field: {
-          property: 'mfp_delete_action',
+          property: 'metadata.name',
           uiSettings: {
             displayAs: 'button',
-            buttonSettings: { action: 'delete-resource' },
+            buttonSettings: { action: DELETE_RESOURCE_ACTION },
           },
         },
       });

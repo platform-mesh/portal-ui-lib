@@ -44,7 +44,6 @@ export interface UIDefinition {
 
 export interface ListView extends UiView {
   filters?: FieldFilterDefinition[];
-  deletable?: boolean;
 }
 
 export interface DetailView extends UiView {

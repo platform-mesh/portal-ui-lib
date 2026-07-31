@@ -10,6 +10,7 @@ import {
   ResourceFieldNames,
 } from '../../create-resource-modal/create-resource-modal.consts';
 import { DeleteResourceModal } from '../../delete-resource-confirmation-modal/delete-resource-modal.component';
+import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -104,31 +105,6 @@ export class ResourceTableCard {
 
     return columns;
   });
-  tableColumns = computed(() => {
-    const columns = this.columns();
-    if (!this.resourceDefinition()?.ui?.listView?.deletable) {
-      return columns;
-    }
-
-    return [
-      ...columns,
-      {
-        property: 'mfp_delete_action',
-        uiSettings: {
-          align: 'end' as const,
-          displayAs: 'button' as const,
-          buttonSettings: {
-            icon: 'decline',
-            design: 'Transparent' as const,
-            action: 'delete-resource',
-            tooltip: 'Delete',
-          },
-        },
-        group: { name: 'actions', label: '', multiline: false },
-      },
-    ];
-  });
-
   totalItemsCount = computed(
     () => this.resources().length + this.remainingItemCount(),
   );
@@ -167,7 +143,7 @@ export class ResourceTableCard {
     return {
       header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
-        fields: this.tableColumns(),
+        fields: this.columns(),
         totalItemsCount: this.totalItemsCount(),
         paginationLimit: this.paginationLimit(),
         hasMore: this.hasMore(),
@@ -338,7 +314,7 @@ export class ResourceTableCard {
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
     if (
-      event.field.uiSettings?.buttonSettings?.action === 'delete-resource' &&
+      event.field.uiSettings?.buttonSettings?.action === DELETE_RESOURCE_ACTION &&
       event.resource
     ) {
       event.event.stopPropagation();
