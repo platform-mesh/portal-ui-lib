@@ -138,9 +138,31 @@ describe('PersistentPanelComponent', () => {
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
     const component = createPanel();
 
-    expect(component.minPanelWidth).toBe(400);
+    expect(component.minPanelWidth()).toBe(400);
     expect(component.panelWidth()).toBe(680);
     expect(component.maxPanelWidth()).toBe(1115);
+    component.ngOnDestroy();
+  });
+
+  it('keeps the panel and ARIA bounds inside a narrow large-text viewport', () => {
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      fontSize: '32px',
+    } as CSSStyleDeclaration);
+    let viewportWidth = 601;
+    vi.spyOn(window, 'innerWidth', 'get').mockImplementation(
+      () => viewportWidth,
+    );
+    const component = createPanel();
+
+    expect(component.minPanelWidth()).toBe(465);
+    expect(component.panelWidth()).toBe(465);
+    expect(component.maxPanelWidth()).toBe(465);
+
+    viewportWidth = 1600;
+    window.dispatchEvent(new Event('resize'));
+    expect(component.minPanelWidth()).toBe(640);
+    expect(component.panelWidth()).toBe(1088);
+    expect(component.maxPanelWidth()).toBe(1464);
     component.ngOnDestroy();
   });
 
@@ -154,11 +176,11 @@ describe('PersistentPanelComponent', () => {
     component.beginResize(pointerEvent(handle, 7, 0, { button: 1 }));
     component.beginResize(pointerEvent(handle, 7, 0, { isPrimary: false }));
     expect(component.resizing()).toBe(false);
-    expect(component.maxPanelWidth()).toBe(320);
+    expect(component.maxPanelWidth()).toBe(132);
 
     component.beginResize(pointerEvent(handle, 7, 0));
     component.resize(pointerEvent(handle, 8, 0));
-    expect(component.panelWidth()).toBe(320);
+    expect(component.panelWidth()).toBe(132);
     component.finishResize(pointerEvent(handle, 8, 0));
     expect(component.resizing()).toBe(true);
     component.finishResize(pointerEvent(handle, 7, 0));

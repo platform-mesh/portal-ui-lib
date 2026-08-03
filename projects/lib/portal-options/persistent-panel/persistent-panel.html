@@ -14,7 +14,7 @@
     aria-label="Resize provider panel"
     aria-orientation="vertical"
     aria-controls="persistent-panel-content"
-    [attr.aria-valuemin]="minPanelWidth"
+    [attr.aria-valuemin]="minPanelWidth()"
     [attr.aria-valuemax]="maxPanelWidth()"
     [attr.aria-valuenow]="panelWidth()"
     tabindex="0"

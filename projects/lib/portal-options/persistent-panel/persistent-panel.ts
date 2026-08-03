@@ -39,10 +39,15 @@ export class PersistentPanelComponent implements OnDestroy {
   readonly closing = signal(false);
   readonly closeError = signal('');
   readonly resizing = signal(false);
-  readonly minPanelWidth = this.dimensions.minimumWidth;
   readonly maxPanelWidth = signal(this.availablePanelWidth());
+  readonly minPanelWidth = computed(() =>
+    Math.min(this.dimensions.minimumWidth, this.maxPanelWidth()),
+  );
   readonly panelWidth = computed(() =>
-    Math.min(this.preferredPanelWidth(), this.maxPanelWidth()),
+    Math.max(
+      this.minPanelWidth(),
+      Math.min(this.preferredPanelWidth(), this.maxPanelWidth()),
+    ),
   );
 
   private readonly sanitizer = inject(DomSanitizer);
@@ -183,7 +188,7 @@ export class PersistentPanelComponent implements OnDestroy {
         width = this.panelWidth() - this.dimensions.keyboardStep;
         break;
       case 'Home':
-        width = this.minPanelWidth;
+        width = this.minPanelWidth();
         break;
       case 'End':
         width = this.maxPanelWidth();
@@ -309,15 +314,12 @@ export class PersistentPanelComponent implements OnDestroy {
 
   private setPanelWidth(width: number): void {
     this.preferredPanelWidth.set(
-      Math.min(Math.max(width, this.minPanelWidth), this.maxPanelWidth()),
+      Math.min(Math.max(width, this.minPanelWidth()), this.maxPanelWidth()),
     );
   }
 
   private availablePanelWidth(): number {
-    return Math.max(
-      this.minPanelWidth,
-      window.innerWidth - this.dimensions.navigationWidth,
-    );
+    return Math.max(1, window.innerWidth - this.dimensions.navigationWidth);
   }
 
   private readonly onWindowResize = (): void => {
