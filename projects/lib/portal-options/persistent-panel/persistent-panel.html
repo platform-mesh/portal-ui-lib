@@ -5,7 +5,26 @@
   [attr.aria-hidden]="state() === 'hidden'"
   [class.maximized]="state() === 'maximized'"
   [class.open]="state() !== 'hidden'"
+  [class.resizing]="resizing()"
+  [style.--pm-panel-width]="panelWidth() + 'px'"
 >
+  <div
+    class="persistent-panel-resizer"
+    role="separator"
+    aria-label="Resize provider panel"
+    aria-orientation="vertical"
+    aria-controls="persistent-panel-content"
+    [attr.aria-valuemin]="minPanelWidth"
+    [attr.aria-valuemax]="maxPanelWidth()"
+    [attr.aria-valuenow]="panelWidth()"
+    tabindex="0"
+    (pointerdown)="beginResize($event)"
+    (pointermove)="resize($event)"
+    (pointerup)="finishResize($event)"
+    (pointercancel)="finishResize($event)"
+    (lostpointercapture)="finishResize($event)"
+    (keydown)="resizeWithKeyboard($event)"
+  ></div>
   <header class="persistent-panel-header">
     <div>
       <h2 id="persistent-panel-title">{{ title() }}</h2>
@@ -44,6 +63,7 @@
   @if (source()) {
   <iframe
     #panelFrame
+    id="persistent-panel-content"
     class="persistent-panel-frame"
     referrerpolicy="no-referrer"
     sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"

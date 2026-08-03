@@ -10,10 +10,12 @@
   bottom: 0;
   z-index: 1000;
   display: none;
-  width: min(34rem, 100vw);
+  box-sizing: border-box;
+  width: var(--pm-panel-width, min(34rem, 100vw));
   background: var(--sapBackgroundColor, #fff);
   border-left: 1px solid var(--sapGroup_ContentBorderColor, #d9d9d9);
   box-shadow: -0.25rem 0 1rem rgb(0 0 0 / 12%);
+  clip-path: inset(0 0 0 -1.25rem);
 }
 
 .persistent-panel.open {
@@ -24,6 +26,26 @@
 .persistent-panel.maximized {
   left: 4.25rem;
   width: auto;
+}
+
+.persistent-panel-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -0.25rem;
+  z-index: 1;
+  width: 0.5rem;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.persistent-panel-resizer:focus-visible {
+  outline: 0.125rem solid var(--sapContent_FocusColor, #0064d9);
+  outline-offset: -0.125rem;
+}
+
+.persistent-panel.maximized .persistent-panel-resizer {
+  display: none;
 }
 
 .persistent-panel-header {
@@ -45,6 +67,10 @@
   white-space: nowrap;
 }
 
+.persistent-panel-header > div:first-child {
+  min-width: 0;
+}
+
 .persistent-panel-header p {
   margin: 0;
   color: var(--sapNegativeTextColor, #aa0808);
@@ -53,6 +79,7 @@
 
 .persistent-panel-actions {
   display: flex;
+  flex: 0 0 auto;
   gap: 0.25rem;
 }
 
@@ -78,6 +105,16 @@
   border: 0;
 }
 
+.persistent-panel.resizing,
+.persistent-panel.resizing .persistent-panel-resizer {
+  cursor: col-resize;
+}
+
+.persistent-panel.resizing .persistent-panel-frame {
+  pointer-events: none;
+  user-select: none;
+}
+
 .persistent-panel-reopen {
   position: fixed;
   right: 1rem;
@@ -94,5 +131,9 @@
   .persistent-panel.maximized {
     left: 0;
     width: 100vw;
+  }
+
+  .persistent-panel-resizer {
+    display: none;
   }
 }

@@ -10,12 +10,18 @@ import {
   ElementRef,
   OnDestroy,
   ViewChild,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 type PanelState = 'hidden' | 'expanded' | 'maximized';
+
+const DEFAULT_PANEL_WIDTH = 34 * 16;
+const MIN_PANEL_WIDTH = 20 * 16;
+const PORTAL_NAVIGATION_WIDTH = 4.25 * 16;
+const KEYBOARD_RESIZE_STEP = 2 * 16;
 
 @Component({
   selector: 'pm-persistent-panel',
@@ -29,11 +35,19 @@ export class PersistentPanelComponent implements OnDestroy {
   @ViewChild('panelFrame') panelFrame?: ElementRef<HTMLIFrameElement>;
   @ViewChild('reopenButton') reopenButton?: ElementRef<HTMLButtonElement>;
 
+  private readonly preferredPanelWidth = signal(DEFAULT_PANEL_WIDTH);
+
   readonly state = signal<PanelState>('hidden');
   readonly title = signal('');
   readonly source = signal<SafeResourceUrl | null>(null);
   readonly closing = signal(false);
   readonly closeError = signal('');
+  readonly resizing = signal(false);
+  readonly minPanelWidth = MIN_PANEL_WIDTH;
+  readonly maxPanelWidth = signal(this.availablePanelWidth());
+  readonly panelWidth = computed(() =>
+    Math.min(this.preferredPanelWidth(), this.maxPanelWidth()),
+  );
 
   private readonly sanitizer = inject(DomSanitizer);
   private config: PersistentPanelConfig | null = null;
@@ -45,15 +59,20 @@ export class PersistentPanelComponent implements OnDestroy {
   private destroyed = false;
   private ready = false;
   private returnFocusElement: HTMLElement | null = null;
+  private resizePointerId: number | null = null;
 
   constructor() {
     window.addEventListener('message', this.onMessage);
+    window.addEventListener('resize', this.onWindowResize);
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
     window.removeEventListener('message', this.onMessage);
+    window.removeEventListener('resize', this.onWindowResize);
     this.clearCloseTimeout();
+    this.resizePointerId = null;
+    this.resizing.set(false);
   }
 
   open(config: PersistentPanelConfig, target: PersistentPanelTarget): void {
@@ -121,6 +140,63 @@ export class PersistentPanelComponent implements OnDestroy {
     this.state.update((state) =>
       state === 'maximized' ? 'expanded' : 'maximized',
     );
+  }
+
+  beginResize(event: PointerEvent): void {
+    if (
+      this.state() !== 'expanded' ||
+      event.button !== 0 ||
+      event.isPrimary === false
+    ) {
+      return;
+    }
+    this.resizePointerId = event.pointerId;
+    this.resizing.set(true);
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  resize(event: PointerEvent): void {
+    if (event.pointerId !== this.resizePointerId) {
+      return;
+    }
+    this.setPanelWidth(window.innerWidth - event.clientX);
+    event.preventDefault();
+  }
+
+  finishResize(event: PointerEvent): void {
+    if (event.pointerId !== this.resizePointerId) {
+      return;
+    }
+    const handle = event.currentTarget as HTMLElement;
+    if (handle.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId);
+    }
+    this.resizePointerId = null;
+    this.resizing.set(false);
+    event.preventDefault();
+  }
+
+  resizeWithKeyboard(event: KeyboardEvent): void {
+    let width: number;
+    switch (event.key) {
+      case 'ArrowLeft':
+        width = this.panelWidth() + KEYBOARD_RESIZE_STEP;
+        break;
+      case 'ArrowRight':
+        width = this.panelWidth() - KEYBOARD_RESIZE_STEP;
+        break;
+      case 'Home':
+        width = MIN_PANEL_WIDTH;
+        break;
+      case 'End':
+        width = this.maxPanelWidth();
+        break;
+      default:
+        return;
+    }
+    this.setPanelWidth(width);
+    event.preventDefault();
   }
 
   close(): void {
@@ -234,6 +310,23 @@ export class PersistentPanelComponent implements OnDestroy {
       this.config.origin,
     );
   }
+
+  private setPanelWidth(width: number): void {
+    this.preferredPanelWidth.set(
+      Math.min(Math.max(width, MIN_PANEL_WIDTH), this.maxPanelWidth()),
+    );
+  }
+
+  private availablePanelWidth(): number {
+    return Math.max(
+      MIN_PANEL_WIDTH,
+      window.innerWidth - PORTAL_NAVIGATION_WIDTH,
+    );
+  }
+
+  private readonly onWindowResize = (): void => {
+    this.maxPanelWidth.set(this.availablePanelWidth());
+  };
 
   private readonly onMessage = (event: MessageEvent<unknown>): void => {
     const frame = this.panelFrame?.nativeElement;

@@ -14,6 +14,7 @@ const config = {
 describe('PersistentPanelComponent', () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('posts context and lifecycle messages only to the registered origin', () => {
@@ -57,6 +58,110 @@ describe('PersistentPanelComponent', () => {
     component.toggleSize();
     expect(component.state()).toBe('expanded');
     expect(component.source()).not.toBeNull();
+    component.ngOnDestroy();
+  });
+
+  it('resizes with a pointer and clamps the panel to the supported bounds', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    const component = createPanel();
+    const handle = resizeHandle();
+    component.open(config, {});
+
+    component.beginResize(pointerEvent(handle, 7, 656));
+    expect(handle.setPointerCapture).toHaveBeenCalledWith(7);
+    expect(component.resizing()).toBe(true);
+
+    component.resize(pointerEvent(handle, 7, 1199));
+    expect(component.panelWidth()).toBe(320);
+    component.resize(pointerEvent(handle, 7, 0));
+    expect(component.panelWidth()).toBe(1132);
+
+    component.finishResize(pointerEvent(handle, 7, 0));
+    expect(handle.releasePointerCapture).toHaveBeenCalledWith(7);
+    expect(component.resizing()).toBe(false);
+    expect(component.source()).not.toBeNull();
+    component.ngOnDestroy();
+  });
+
+  it('supports accessible keyboard resizing', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    const component = createPanel();
+    const preventDefault = vi.fn();
+
+    component.resizeWithKeyboard({
+      key: 'ArrowLeft',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(component.panelWidth()).toBe(576);
+
+    component.resizeWithKeyboard({
+      key: 'Home',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(component.panelWidth()).toBe(320);
+
+    component.resizeWithKeyboard({
+      key: 'End',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(component.panelWidth()).toBe(1132);
+    expect(preventDefault).toHaveBeenCalledTimes(3);
+    component.ngOnDestroy();
+  });
+
+  it('keeps the preferred width while clamping it to a resized viewport', () => {
+    let viewportWidth = 1200;
+    vi.spyOn(window, 'innerWidth', 'get').mockImplementation(
+      () => viewportWidth,
+    );
+    const component = createPanel();
+    component.resizeWithKeyboard({
+      key: 'End',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(component.panelWidth()).toBe(1132);
+
+    viewportWidth = 800;
+    window.dispatchEvent(new Event('resize'));
+    expect(component.panelWidth()).toBe(732);
+
+    viewportWidth = 1200;
+    window.dispatchEvent(new Event('resize'));
+    expect(component.panelWidth()).toBe(1132);
+    component.ngOnDestroy();
+  });
+
+  it('ignores unsupported resize input and releases lost pointer capture', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(200);
+    const component = createPanel();
+    const handle = resizeHandle(false);
+
+    component.beginResize(pointerEvent(handle, 7, 0));
+    component.open(config, {});
+    component.beginResize(pointerEvent(handle, 7, 0, { button: 1 }));
+    component.beginResize(pointerEvent(handle, 7, 0, { isPrimary: false }));
+    expect(component.resizing()).toBe(false);
+    expect(component.maxPanelWidth()).toBe(320);
+
+    component.beginResize(pointerEvent(handle, 7, 0));
+    component.resize(pointerEvent(handle, 8, 0));
+    expect(component.panelWidth()).toBe(320);
+    component.finishResize(pointerEvent(handle, 8, 0));
+    expect(component.resizing()).toBe(true);
+    component.finishResize(pointerEvent(handle, 7, 0));
+    expect(handle.releasePointerCapture).not.toHaveBeenCalled();
+    component.finishResize(pointerEvent(handle, 7, 0));
+
+    const preventDefault = vi.fn();
+    component.resizeWithKeyboard({
+      key: 'ArrowRight',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    component.resizeWithKeyboard({
+      key: 'PageDown',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
     component.ngOnDestroy();
   });
 
@@ -326,4 +431,29 @@ function frameWith(postMessage: ReturnType<typeof vi.fn>) {
 
 function nextMicrotask(): Promise<void> {
   return new Promise((resolve) => queueMicrotask(resolve));
+}
+
+function resizeHandle(hasCapture = true) {
+  return {
+    setPointerCapture: vi.fn(),
+    hasPointerCapture: vi.fn().mockReturnValue(hasCapture),
+    releasePointerCapture: vi.fn(),
+  };
+}
+
+function pointerEvent(
+  handle: ReturnType<typeof resizeHandle>,
+  pointerId: number,
+  clientX: number,
+  overrides: Partial<PointerEvent> = {},
+): PointerEvent {
+  return {
+    button: 0,
+    clientX,
+    currentTarget: handle,
+    isPrimary: true,
+    pointerId,
+    preventDefault: vi.fn(),
+    ...overrides,
+  } as unknown as PointerEvent;
 }
