@@ -23,11 +23,6 @@
   grid-template-rows: var(--pm-panel-header-height) 1fr;
 }
 
-.persistent-panel.maximized {
-  left: 4.25rem;
-  width: auto;
-}
-
 .persistent-panel-resizer {
   position: absolute;
   top: 0;

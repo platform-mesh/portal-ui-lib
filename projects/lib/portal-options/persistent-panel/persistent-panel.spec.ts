@@ -15,6 +15,7 @@ describe('PersistentPanelComponent', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('posts context and lifecycle messages only to the registered origin', () => {
@@ -74,7 +75,7 @@ describe('PersistentPanelComponent', () => {
     component.resize(pointerEvent(handle, 7, 1199));
     expect(component.panelWidth()).toBe(320);
     component.resize(pointerEvent(handle, 7, 0));
-    expect(component.panelWidth()).toBe(1132);
+    expect(component.panelWidth()).toBe(600);
 
     component.finishResize(pointerEvent(handle, 7, 0));
     expect(handle.releasePointerCapture).toHaveBeenCalledWith(7);
@@ -104,7 +105,7 @@ describe('PersistentPanelComponent', () => {
       key: 'End',
       preventDefault,
     } as unknown as KeyboardEvent);
-    expect(component.panelWidth()).toBe(1132);
+    expect(component.panelWidth()).toBe(600);
     expect(preventDefault).toHaveBeenCalledTimes(3);
     component.ngOnDestroy();
   });
@@ -119,16 +120,195 @@ describe('PersistentPanelComponent', () => {
       key: 'End',
       preventDefault: vi.fn(),
     } as unknown as KeyboardEvent);
-    expect(component.panelWidth()).toBe(1132);
+    expect(component.panelWidth()).toBe(600);
 
     viewportWidth = 800;
     window.dispatchEvent(new Event('resize'));
-    expect(component.panelWidth()).toBe(732);
+    expect(component.panelWidth()).toBe(400);
 
     viewportWidth = 1200;
     window.dispatchEvent(new Event('resize'));
-    expect(component.panelWidth()).toBe(1132);
+    expect(component.panelWidth()).toBe(600);
     component.ngOnDestroy();
+  });
+
+  it('limits the panel to half of the measured Portal main area', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1400);
+    const mainArea = portalLayoutElement('iframeContainer', 280);
+    const component = createPanel();
+
+    expect(component.maxPanelWidth()).toBe(560);
+    component.open(config, {});
+    expect(component.panelWidth()).toBe(544);
+    expect(mainArea.style.right).toBe('544px');
+
+    component.resizeWithKeyboard({
+      key: 'ArrowRight',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(component.panelWidth()).toBe(512);
+
+    component.toggleSize();
+    expect(component.state()).toBe('maximized');
+    expect(component.panelWidth()).toBe(560);
+    expect(mainArea.style.right).toBe('560px');
+
+    component.toggleSize();
+    expect(component.state()).toBe('expanded');
+    expect(component.panelWidth()).toBe(512);
+    expect(mainArea.style.right).toBe('512px');
+
+    component.ngOnDestroy();
+    expect(mainArea.style.right).toBe('');
+    mainArea.remove();
+  });
+
+  it('resizes and restores every Portal main-area layer', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    const mainArea = portalLayoutElement('iframeContainer', 200);
+    const spinner = portalLayoutElement('spinnerContainer appSpinner', 200);
+    const modalSpinner = portalLayoutElement('spinnerContainer', 200);
+    const tabs = portalLayoutElement('', 200, 'tabsContainer');
+    const splitView = portalLayoutElement('', 200, 'splitViewContainer');
+    const splitDragger = portalLayoutElement('', 200, 'splitViewDragger');
+    const splitBackdrop = portalLayoutElement(
+      '',
+      200,
+      'splitViewDraggerBackdrop',
+    );
+    mainArea.style.setProperty('right', '12px', 'important');
+    const component = createPanel();
+
+    component.open(config, {});
+    expect(component.maxPanelWidth()).toBe(500);
+    expect(component.panelWidth()).toBe(500);
+    expect(mainArea.style.right).toBe('500px');
+    expect(spinner.style.right).toBe('500px');
+    expect(tabs.style.right).toBe('500px');
+    expect(splitView.style.right).toBe('500px');
+    expect(splitDragger.style.right).toBe('500px');
+    expect(splitBackdrop.style.right).toBe('500px');
+    expect(modalSpinner.style.right).toBe('');
+
+    component.resizeWithKeyboard({
+      key: 'ArrowRight',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(component.panelWidth()).toBe(468);
+    expect(mainArea.style.right).toBe('468px');
+
+    component.collapse();
+    expect(mainArea.style.getPropertyValue('right')).toBe('12px');
+    expect(mainArea.style.getPropertyPriority('right')).toBe('important');
+    expect(spinner.style.right).toBe('');
+    expect(tabs.style.right).toBe('');
+    expect(splitView.style.right).toBe('');
+    expect(splitDragger.style.right).toBe('');
+    expect(splitBackdrop.style.right).toBe('');
+    expect(modalSpinner.style.right).toBe('');
+
+    component.expand();
+    expect(mainArea.style.right).toBe('468px');
+    component.close();
+    expect(mainArea.style.getPropertyValue('right')).toBe('12px');
+    expect(mainArea.style.getPropertyPriority('right')).toBe('important');
+    component.ngOnDestroy();
+    expect(mainArea.style.getPropertyValue('right')).toBe('12px');
+    expect(mainArea.style.getPropertyPriority('right')).toBe('important');
+
+    mainArea.remove();
+    spinner.remove();
+    tabs.remove();
+    splitView.remove();
+    splitDragger.remove();
+    splitBackdrop.remove();
+    modalSpinner.remove();
+  });
+
+  it('applies the current inset to Portal layers added after opening', async () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    const mainArea = portalLayoutElement('iframeContainer', 200);
+    const component = createPanel();
+    component.open(config, {});
+
+    const spinner = portalLayoutElement('spinnerContainer appSpinner', 200);
+    await nextMicrotask();
+    expect(spinner.style.right).toBe('500px');
+
+    component.ngOnDestroy();
+    mainArea.remove();
+    spinner.remove();
+  });
+
+  it('recomputes the limit when the Portal navigation resizes the main area', () => {
+    let notifyResize: ResizeObserverCallback = () => undefined;
+    class ResizeObserverMock {
+      constructor(callback: ResizeObserverCallback) {
+        notifyResize = callback;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    let mainAreaLeft = 200;
+    const mainArea = document.createElement('div');
+    mainArea.className = 'iframeContainer';
+    vi.spyOn(mainArea, 'getBoundingClientRect').mockImplementation(
+      () =>
+        ({
+          left: mainAreaLeft,
+        }) as DOMRect,
+    );
+    document.body.appendChild(mainArea);
+    const component = createPanel();
+    component.open(config, {});
+    expect(component.maxPanelWidth()).toBe(500);
+
+    mainAreaLeft = 400;
+    notifyResize([], {} as ResizeObserver);
+
+    expect(component.maxPanelWidth()).toBe(400);
+    expect(component.panelWidth()).toBe(400);
+    expect(mainArea.style.right).toBe('400px');
+
+    component.ngOnDestroy();
+    mainArea.remove();
+  });
+
+  it('restores the main area when crossing into mobile full-screen mode', () => {
+    let viewportWidth = 1200;
+    vi.spyOn(window, 'innerWidth', 'get').mockImplementation(
+      () => viewportWidth,
+    );
+    const mainArea = portalLayoutElement('iframeContainer', 200);
+    const component = createPanel();
+    component.open(config, {});
+    expect(mainArea.style.right).toBe('500px');
+
+    viewportWidth = 600;
+    window.dispatchEvent(new Event('resize'));
+    expect(mainArea.style.right).toBe('');
+
+    viewportWidth = 1200;
+    window.dispatchEvent(new Event('resize'));
+    expect(mainArea.style.right).toBe('500px');
+
+    component.ngOnDestroy();
+    mainArea.remove();
+  });
+
+  it('keeps the Portal layout unchanged in the mobile full-screen mode', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(600);
+    const mainArea = portalLayoutElement('iframeContainer', 0);
+    const component = createPanel();
+
+    component.open(config, {});
+    expect(component.maxPanelWidth()).toBe(600);
+    expect(mainArea.style.right).toBe('');
+
+    component.ngOnDestroy();
+    mainArea.remove();
   });
 
   it('derives panel bounds from the Portal root font size', () => {
@@ -139,8 +319,8 @@ describe('PersistentPanelComponent', () => {
     const component = createPanel();
 
     expect(component.minPanelWidth()).toBe(400);
-    expect(component.panelWidth()).toBe(680);
-    expect(component.maxPanelWidth()).toBe(1115);
+    expect(component.panelWidth()).toBe(600);
+    expect(component.maxPanelWidth()).toBe(600);
     component.ngOnDestroy();
   });
 
@@ -154,15 +334,15 @@ describe('PersistentPanelComponent', () => {
     );
     const component = createPanel();
 
-    expect(component.minPanelWidth()).toBe(465);
-    expect(component.panelWidth()).toBe(465);
-    expect(component.maxPanelWidth()).toBe(465);
+    expect(component.minPanelWidth()).toBe(300);
+    expect(component.panelWidth()).toBe(300);
+    expect(component.maxPanelWidth()).toBe(300);
 
     viewportWidth = 1600;
     window.dispatchEvent(new Event('resize'));
     expect(component.minPanelWidth()).toBe(640);
-    expect(component.panelWidth()).toBe(1088);
-    expect(component.maxPanelWidth()).toBe(1464);
+    expect(component.panelWidth()).toBe(800);
+    expect(component.maxPanelWidth()).toBe(800);
     component.ngOnDestroy();
   });
 
@@ -176,11 +356,11 @@ describe('PersistentPanelComponent', () => {
     component.beginResize(pointerEvent(handle, 7, 0, { button: 1 }));
     component.beginResize(pointerEvent(handle, 7, 0, { isPrimary: false }));
     expect(component.resizing()).toBe(false);
-    expect(component.maxPanelWidth()).toBe(132);
+    expect(component.maxPanelWidth()).toBe(200);
 
     component.beginResize(pointerEvent(handle, 7, 0));
     component.resize(pointerEvent(handle, 8, 0));
-    expect(component.panelWidth()).toBe(132);
+    expect(component.panelWidth()).toBe(200);
     component.finishResize(pointerEvent(handle, 8, 0));
     expect(component.resizing()).toBe(true);
     component.finishResize(pointerEvent(handle, 7, 0));
@@ -416,6 +596,14 @@ describe('PersistentPanelComponent', () => {
   });
 
   it('keeps the iframe visible when the provider reports cleanup failure', () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    let mainAreaLeft = 200;
+    const mainArea = document.createElement('div');
+    mainArea.className = 'iframeContainer';
+    vi.spyOn(mainArea, 'getBoundingClientRect').mockImplementation(
+      () => ({ left: mainAreaLeft }) as DOMRect,
+    );
+    document.body.appendChild(mainArea);
     const frameWindow = { postMessage: vi.fn() } as unknown as WindowProxy;
     const component = createPanel();
     component.panelFrame = new ElementRef({
@@ -430,6 +618,7 @@ describe('PersistentPanelComponent', () => {
       }),
     );
     component.close();
+    mainAreaLeft = 400;
 
     window.dispatchEvent(
       new MessageEvent('message', {
@@ -442,7 +631,10 @@ describe('PersistentPanelComponent', () => {
     expect(component.closing()).toBe(false);
     expect(component.source()).not.toBeNull();
     expect(component.state()).toBe('expanded');
+    expect(component.maxPanelWidth()).toBe(400);
+    expect(mainArea.style.right).toBe('400px');
     component.ngOnDestroy();
+    mainArea.remove();
   });
 });
 
@@ -491,4 +683,27 @@ function pointerEvent(
     preventDefault: vi.fn(),
     ...overrides,
   } as unknown as PointerEvent;
+}
+
+function portalLayoutElement(
+  className: string,
+  left: number,
+  id = '',
+): HTMLElement {
+  const element = document.createElement('div');
+  element.className = className;
+  element.id = id;
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+    bottom: 800,
+    height: 800,
+    left,
+    right: window.innerWidth,
+    top: 0,
+    width: window.innerWidth - left,
+    x: left,
+    y: 0,
+    toJSON: () => ({}),
+  });
+  document.body.appendChild(element);
+  return element;
 }

@@ -18,6 +18,21 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 type PanelState = 'hidden' | 'expanded' | 'maximized';
 
+const PORTAL_MAIN_AREA_SELECTOR = '.iframeContainer';
+const PORTAL_LAYOUT_SELECTORS = [
+  PORTAL_MAIN_AREA_SELECTOR,
+  '.spinnerContainer.appSpinner',
+  '#splitViewContainer',
+  '#splitViewDragger',
+  '#splitViewDraggerBackdrop',
+  '#tabsContainer',
+].join(',');
+
+interface InlineStyleValue {
+  value: string;
+  priority: string;
+}
+
 @Component({
   selector: 'pm-persistent-panel',
   imports: [CommonModule],
@@ -46,7 +61,12 @@ export class PersistentPanelComponent implements OnDestroy {
   readonly panelWidth = computed(() =>
     Math.max(
       this.minPanelWidth(),
-      Math.min(this.preferredPanelWidth(), this.maxPanelWidth()),
+      Math.min(
+        this.state() === 'maximized'
+          ? this.maxPanelWidth()
+          : this.preferredPanelWidth(),
+        this.maxPanelWidth(),
+      ),
     ),
   );
 
@@ -61,6 +81,29 @@ export class PersistentPanelComponent implements OnDestroy {
   private ready = false;
   private returnFocusElement: HTMLElement | null = null;
   private resizePointerId: number | null = null;
+  private observingPortalLayout = false;
+  private observedMainArea: HTMLElement | null = null;
+  private readonly portalLayoutStyles = new Map<
+    HTMLElement,
+    InlineStyleValue
+  >();
+  private readonly portalLayoutObserver = new MutationObserver(() => {
+    if (this.state() === 'hidden') {
+      return;
+    }
+    this.maxPanelWidth.set(this.availablePanelWidth());
+    this.syncPortalLayout();
+  });
+  private readonly mainAreaResizeObserver =
+    typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(() => {
+          if (this.state() === 'hidden') {
+            return;
+          }
+          this.maxPanelWidth.set(this.availablePanelWidth());
+          this.syncPortalLayout();
+        });
 
   constructor() {
     window.addEventListener('message', this.onMessage);
@@ -74,6 +117,9 @@ export class PersistentPanelComponent implements OnDestroy {
     this.clearCloseTimeout();
     this.resizePointerId = null;
     this.resizing.set(false);
+    this.portalLayoutObserver.disconnect();
+    this.mainAreaResizeObserver?.disconnect();
+    this.restorePortalLayout();
   }
 
   open(config: PersistentPanelConfig, target: PersistentPanelTarget): void {
@@ -102,7 +148,9 @@ export class PersistentPanelComponent implements OnDestroy {
         this.sanitizer.bypassSecurityTrustResourceUrl(config.url),
       );
     }
+    this.maxPanelWidth.set(this.availablePanelWidth());
     this.state.set('expanded');
+    this.syncPortalLayout();
     queueMicrotask(() => {
       if (this.destroyed) {
         return;
@@ -114,11 +162,14 @@ export class PersistentPanelComponent implements OnDestroy {
 
   updateTarget(target: PersistentPanelTarget): void {
     this.target = structuredClone(target);
+    this.maxPanelWidth.set(this.availablePanelWidth());
+    this.syncPortalLayout();
     this.publishTarget();
   }
 
   collapse(): void {
     this.state.set('hidden');
+    this.syncPortalLayout();
     queueMicrotask(() => {
       if (this.destroyed) {
         return;
@@ -128,7 +179,9 @@ export class PersistentPanelComponent implements OnDestroy {
   }
 
   expand(): void {
+    this.maxPanelWidth.set(this.availablePanelWidth());
     this.state.set('expanded');
+    this.syncPortalLayout();
     queueMicrotask(() => {
       if (this.destroyed) {
         return;
@@ -141,6 +194,7 @@ export class PersistentPanelComponent implements OnDestroy {
     this.state.update((state) =>
       state === 'maximized' ? 'expanded' : 'maximized',
     );
+    this.syncPortalLayout();
   }
 
   beginResize(event: PointerEvent): void {
@@ -210,6 +264,7 @@ export class PersistentPanelComponent implements OnDestroy {
     this.closing.set(true);
     this.closeError.set('');
     this.state.set('hidden');
+    this.syncPortalLayout();
     this.focusReturnTarget();
     this.requestCloseIfReady(requestId);
     this.closeTimeout = window.setTimeout(() => {
@@ -225,7 +280,9 @@ export class PersistentPanelComponent implements OnDestroy {
     this.closeRequestIdSent = null;
     this.closing.set(false);
     this.closeError.set('Provider cleanup is incomplete. Try closing again.');
+    this.maxPanelWidth.set(this.availablePanelWidth());
     this.state.set('expanded');
+    this.syncPortalLayout();
     queueMicrotask(() => {
       if (this.destroyed) {
         return;
@@ -251,6 +308,7 @@ export class PersistentPanelComponent implements OnDestroy {
     this.source.set(null);
     this.title.set('');
     this.state.set('hidden');
+    this.syncPortalLayout();
     this.focusReturnTarget();
     this.returnFocusElement = null;
   }
@@ -263,6 +321,8 @@ export class PersistentPanelComponent implements OnDestroy {
   }
 
   frameLoaded(): void {
+    this.maxPanelWidth.set(this.availablePanelWidth());
+    this.syncPortalLayout();
     this.publishTarget();
   }
 
@@ -316,14 +376,102 @@ export class PersistentPanelComponent implements OnDestroy {
     this.preferredPanelWidth.set(
       Math.min(Math.max(width, this.minPanelWidth()), this.maxPanelWidth()),
     );
+    this.syncPortalLayout();
   }
 
   private availablePanelWidth(): number {
-    return Math.max(1, window.innerWidth - this.dimensions.navigationWidth);
+    if (this.isMobileViewport()) {
+      return Math.max(1, window.innerWidth);
+    }
+    return Math.max(1, Math.floor(this.availableMainAreaWidth() / 2));
+  }
+
+  private availableMainAreaWidth(): number {
+    const mainArea = document.querySelector<HTMLElement>(
+      PORTAL_MAIN_AREA_SELECTOR,
+    );
+    if (mainArea) {
+      return Math.max(
+        1,
+        window.innerWidth - mainArea.getBoundingClientRect().left,
+      );
+    }
+    return Math.max(1, window.innerWidth);
+  }
+
+  private syncPortalLayout(): void {
+    if (this.state() === 'hidden' || this.isMobileViewport()) {
+      this.stopObservingPortalLayout();
+      this.restorePortalLayout();
+      return;
+    }
+
+    this.observePortalLayout();
+    const offset = `${this.panelWidth()}px`;
+    document
+      .querySelectorAll<HTMLElement>(PORTAL_LAYOUT_SELECTORS)
+      .forEach((element) => {
+        if (!this.portalLayoutStyles.has(element)) {
+          this.portalLayoutStyles.set(element, {
+            value: element.style.getPropertyValue('right'),
+            priority: element.style.getPropertyPriority('right'),
+          });
+        }
+        element.style.setProperty('right', offset);
+      });
+  }
+
+  private restorePortalLayout(): void {
+    this.portalLayoutStyles.forEach(({ value, priority }, element) => {
+      if (value) {
+        element.style.setProperty('right', value, priority);
+      } else {
+        element.style.removeProperty('right');
+      }
+    });
+    this.portalLayoutStyles.clear();
+  }
+
+  private observePortalLayout(): void {
+    this.observeMainAreaResize();
+    if (this.observingPortalLayout) {
+      return;
+    }
+    this.portalLayoutObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+    this.observingPortalLayout = true;
+  }
+
+  private stopObservingPortalLayout(): void {
+    this.portalLayoutObserver.disconnect();
+    this.mainAreaResizeObserver?.disconnect();
+    this.observedMainArea = null;
+    this.observingPortalLayout = false;
+  }
+
+  private observeMainAreaResize(): void {
+    const mainArea = document.querySelector<HTMLElement>(
+      PORTAL_MAIN_AREA_SELECTOR,
+    );
+    if (!this.mainAreaResizeObserver || mainArea === this.observedMainArea) {
+      return;
+    }
+    this.mainAreaResizeObserver.disconnect();
+    this.observedMainArea = mainArea;
+    if (mainArea) {
+      this.mainAreaResizeObserver.observe(mainArea);
+    }
+  }
+
+  private isMobileViewport(): boolean {
+    return window.innerWidth <= 600;
   }
 
   private readonly onWindowResize = (): void => {
     this.maxPanelWidth.set(this.availablePanelWidth());
+    this.syncPortalLayout();
   };
 
   private readonly onMessage = (event: MessageEvent<unknown>): void => {
@@ -376,7 +524,6 @@ function panelDimensions() {
   return {
     defaultWidth: 34 * rem,
     minimumWidth: 20 * rem,
-    navigationWidth: 4.25 * rem,
     keyboardStep: 2 * rem,
   };
 }
