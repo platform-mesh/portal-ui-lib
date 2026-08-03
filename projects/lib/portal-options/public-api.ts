@@ -6,3 +6,4 @@ export * from './services/node-change-hook-config.service';
 export * from './services/node-context-processing.service';
 export * from './services/router-config.service';
 export * from './services/user-profile-config.service';
+export * from './persistent-panel/open-persistent-panel.listener';
