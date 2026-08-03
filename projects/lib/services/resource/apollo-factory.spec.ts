@@ -47,6 +47,9 @@ describe('ApolloFactory', () => {
         accountId: '123',
       }),
       getGlobalContext: vi.fn().mockReturnValue({ token: 'fake-token' }),
+      // default: no shell store token — resolveToken must fall through to
+      // the node context
+      getAuthData: vi.fn().mockReturnValue(undefined),
     };
     authServiceMock = {
       getToken: vi.fn().mockReturnValue(undefined),
@@ -172,10 +175,6 @@ describe('ApolloFactory', () => {
   });
 
   describe('live Luigi store fallback', () => {
-    afterEach(() => {
-      delete (globalThis as any).Luigi;
-    });
-
     const sseHeaders = (nodeContext: ResourceNodeContext) => {
       const mockedCreateClient = createClient as MockedFunction<
         typeof createClient
@@ -197,11 +196,9 @@ describe('ApolloFactory', () => {
       // its own injector's AuthService never refreshed — the shell store is
       // the only live source
       authServiceMock.getToken.mockReturnValue(undefined);
-      (globalThis as any).Luigi = {
-        auth: () => ({
-          store: { getAuthData: () => ({ idToken: 'store-token' }) },
-        }),
-      };
+      luigiCoreServiceMock.getAuthData.mockReturnValue({
+        idToken: 'store-token',
+      });
       const headers = sseHeaders({
         token: undefined,
       } as unknown as ResourceNodeContext);
@@ -210,11 +207,9 @@ describe('ApolloFactory', () => {
 
     it('prefers the live AuthService token over the Luigi store', () => {
       authServiceMock.getToken.mockReturnValue('live-token');
-      (globalThis as any).Luigi = {
-        auth: () => ({
-          store: { getAuthData: () => ({ idToken: 'store-token' }) },
-        }),
-      };
+      luigiCoreServiceMock.getAuthData.mockReturnValue({
+        idToken: 'store-token',
+      });
       const headers = sseHeaders({
         token: 'context-token',
       } as unknown as ResourceNodeContext);
@@ -225,11 +220,9 @@ describe('ApolloFactory', () => {
       // after a scheduled refresh the snapshot holds the OLD token; the
       // store always holds the current one
       authServiceMock.getToken.mockReturnValue(undefined);
-      (globalThis as any).Luigi = {
-        auth: () => ({
-          store: { getAuthData: () => ({ idToken: 'store-token' }) },
-        }),
-      };
+      luigiCoreServiceMock.getAuthData.mockReturnValue({
+        idToken: 'store-token',
+      });
       const headers = sseHeaders({
         token: 'stale-context-token',
       } as unknown as ResourceNodeContext);
@@ -237,12 +230,12 @@ describe('ApolloFactory', () => {
     });
 
     it('survives a Luigi store that throws', () => {
+      // matches the real LuigiCoreService in iframe MFEs: the module-level
+      // Luigi global is undefined there, so getAuthData() throws
       authServiceMock.getToken.mockReturnValue(undefined);
-      (globalThis as any).Luigi = {
-        auth: () => {
-          throw new Error('not initialized');
-        },
-      };
+      luigiCoreServiceMock.getAuthData.mockImplementation(() => {
+        throw new Error('not initialized');
+      });
       const headers = sseHeaders({
         token: 'context-token',
       } as unknown as ResourceNodeContext);

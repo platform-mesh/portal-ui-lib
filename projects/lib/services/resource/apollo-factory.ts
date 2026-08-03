@@ -2,7 +2,7 @@ import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { AuthService } from '@openmfp/portal-ui-lib';
+import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   type ApolloClientOptions,
   ApolloLink,
@@ -71,6 +71,7 @@ export class ApolloFactory {
   private httpLink = inject(HttpLink);
   private gatewayService = inject(GatewayService);
   private authService = inject(AuthService);
+  private luigiCoreService = inject(LuigiCoreService);
 
   public readonly apollo = (
     nodeContext: ResourceNodeContext,
@@ -100,11 +101,12 @@ export class ApolloFactory {
   }
 
   // Web components run on the shell window; iframe-based MFEs have no
-  // window.Luigi and fall through to the node context.
+  // window.Luigi, so the service throws and we fall through to the node
+  // context. LuigiCoreService wraps the same shell global (stateless), so
+  // it is injector-safe for web-component bundles.
   private resolveLuigiStoreToken(): string | undefined {
     try {
-      return (globalThis as any).Luigi?.auth?.()?.store?.getAuthData?.()
-        ?.idToken;
+      return this.luigiCoreService.getAuthData()?.idToken;
     } catch {
       return undefined;
     }
@@ -124,6 +126,10 @@ export class ApolloFactory {
         let activeSub: { unsubscribe(): void } | undefined;
         let retryTimer: ReturnType<typeof setTimeout> | undefined;
         const attempt = (isRetry: boolean) => {
+          // A retry replaces the failed subscription; release the previous
+          // one explicitly instead of relying on the errored link having
+          // closed it downstream.
+          activeSub?.unsubscribe();
           activeSub = forward(operation).subscribe({
             next: observer.next.bind(observer),
             complete: observer.complete.bind(observer),
