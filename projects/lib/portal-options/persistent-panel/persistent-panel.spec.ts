@@ -131,6 +131,19 @@ describe('PersistentPanelComponent', () => {
     component.ngOnDestroy();
   });
 
+  it('derives panel bounds from the Portal root font size', () => {
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      fontSize: '20px',
+    } as CSSStyleDeclaration);
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1200);
+    const component = createPanel();
+
+    expect(component.minPanelWidth).toBe(400);
+    expect(component.panelWidth()).toBe(680);
+    expect(component.maxPanelWidth()).toBe(1115);
+    component.ngOnDestroy();
+  });
+
   it('ignores unsupported resize input and releases lost pointer capture', () => {
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(200);
     const component = createPanel();

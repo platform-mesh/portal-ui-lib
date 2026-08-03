@@ -18,11 +18,6 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 type PanelState = 'hidden' | 'expanded' | 'maximized';
 
-const DEFAULT_PANEL_WIDTH = 34 * 16;
-const MIN_PANEL_WIDTH = 20 * 16;
-const PORTAL_NAVIGATION_WIDTH = 4.25 * 16;
-const KEYBOARD_RESIZE_STEP = 2 * 16;
-
 @Component({
   selector: 'pm-persistent-panel',
   imports: [CommonModule],
@@ -35,7 +30,8 @@ export class PersistentPanelComponent implements OnDestroy {
   @ViewChild('panelFrame') panelFrame?: ElementRef<HTMLIFrameElement>;
   @ViewChild('reopenButton') reopenButton?: ElementRef<HTMLButtonElement>;
 
-  private readonly preferredPanelWidth = signal(DEFAULT_PANEL_WIDTH);
+  private readonly dimensions = panelDimensions();
+  private readonly preferredPanelWidth = signal(this.dimensions.defaultWidth);
 
   readonly state = signal<PanelState>('hidden');
   readonly title = signal('');
@@ -43,7 +39,7 @@ export class PersistentPanelComponent implements OnDestroy {
   readonly closing = signal(false);
   readonly closeError = signal('');
   readonly resizing = signal(false);
-  readonly minPanelWidth = MIN_PANEL_WIDTH;
+  readonly minPanelWidth = this.dimensions.minimumWidth;
   readonly maxPanelWidth = signal(this.availablePanelWidth());
   readonly panelWidth = computed(() =>
     Math.min(this.preferredPanelWidth(), this.maxPanelWidth()),
@@ -181,13 +177,13 @@ export class PersistentPanelComponent implements OnDestroy {
     let width: number;
     switch (event.key) {
       case 'ArrowLeft':
-        width = this.panelWidth() + KEYBOARD_RESIZE_STEP;
+        width = this.panelWidth() + this.dimensions.keyboardStep;
         break;
       case 'ArrowRight':
-        width = this.panelWidth() - KEYBOARD_RESIZE_STEP;
+        width = this.panelWidth() - this.dimensions.keyboardStep;
         break;
       case 'Home':
-        width = MIN_PANEL_WIDTH;
+        width = this.minPanelWidth;
         break;
       case 'End':
         width = this.maxPanelWidth();
@@ -313,14 +309,14 @@ export class PersistentPanelComponent implements OnDestroy {
 
   private setPanelWidth(width: number): void {
     this.preferredPanelWidth.set(
-      Math.min(Math.max(width, MIN_PANEL_WIDTH), this.maxPanelWidth()),
+      Math.min(Math.max(width, this.minPanelWidth), this.maxPanelWidth()),
     );
   }
 
   private availablePanelWidth(): number {
     return Math.max(
-      MIN_PANEL_WIDTH,
-      window.innerWidth - PORTAL_NAVIGATION_WIDTH,
+      this.minPanelWidth,
+      window.innerWidth - this.dimensions.navigationWidth,
     );
   }
 
@@ -367,4 +363,18 @@ export class PersistentPanelComponent implements OnDestroy {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function panelDimensions() {
+  const rootFontSize = Number.parseFloat(
+    window.getComputedStyle(document.documentElement).fontSize,
+  );
+  const rem =
+    Number.isFinite(rootFontSize) && rootFontSize > 0 ? rootFontSize : 16;
+  return {
+    defaultWidth: 34 * rem,
+    minimumWidth: 20 * rem,
+    navigationWidth: 4.25 * rem,
+    keyboardStep: 2 * rem,
+  };
 }
