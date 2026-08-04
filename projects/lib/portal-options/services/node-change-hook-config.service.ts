@@ -1,4 +1,5 @@
 import { PortalLuigiNode } from '../models/luigi-node';
+import { PersistentPanelService } from '../persistent-panel/persistent-panel.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
 import {
@@ -11,12 +12,16 @@ import {
 export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigService {
   private luigiCoreService = inject(LuigiCoreService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
+  private persistentPanelService = inject(PersistentPanelService);
 
   async nodeChangeHook(
     prevNode: PortalLuigiNode,
     nextNode: PortalLuigiNode,
     currentContext: NodeContext,
   ) {
+    const updatePersistentPanelTarget =
+      this.persistentPanelService.beginTargetUpdate();
+
     if (
       nextNode.initialRoute &&
       nextNode.virtualTree &&
@@ -27,6 +32,10 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
 
     this.accumulatePortalPermissions(prevNode, nextNode, currentContext);
     await this.crdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath(nextNode);
+    updatePersistentPanelTarget({
+      ...currentContext,
+      ...(nextNode.context ?? {}),
+    });
   }
 
   private accumulatePortalPermissions(
