@@ -2,7 +2,12 @@ import type { ApolloFactory } from './apollo-factory';
 import type { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { TestBed } from '@angular/core/testing';
-import { ApolloLink, InMemoryCache, execute } from '@apollo/client/core';
+import {
+  ApolloLink,
+  InMemoryCache,
+  Observable,
+  execute,
+} from '@apollo/client/core';
 import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Apollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
@@ -42,6 +47,9 @@ describe('ApolloFactory', () => {
         accountId: '123',
       }),
       getGlobalContext: vi.fn().mockReturnValue({ token: 'fake-token' }),
+      // default: no shell store token — resolveToken must fall through to
+      // the node context
+      getAuthData: vi.fn().mockReturnValue(undefined),
     };
     authServiceMock = {
       getToken: vi.fn().mockReturnValue(undefined),
@@ -163,6 +171,223 @@ describe('ApolloFactory', () => {
     };
     expect(clientOptions.headers()).toEqual({
       Authorization: 'Bearer context-token',
+    });
+  });
+
+  describe('live Luigi store fallback', () => {
+    const sseHeaders = (nodeContext: ResourceNodeContext) => {
+      const mockedCreateClient = createClient as MockedFunction<
+        typeof createClient
+      >;
+      mockedCreateClient.mockClear();
+      mockedCreateClient.mockReturnValue({
+        subscribe: vi.fn().mockReturnValue(() => void 0),
+      } as unknown as ReturnType<typeof createClient>);
+      (factory as any).createApolloOptions(nodeContext, false);
+      return (
+        mockedCreateClient.mock.calls[0][0] as unknown as {
+          headers: () => Record<string, string>;
+        }
+      ).headers;
+    };
+
+    it('falls back to the shell Luigi auth store when AuthService and node context have no token', () => {
+      // the fresh-login race: WC mounted with a token-less context snapshot,
+      // its own injector's AuthService never refreshed — the shell store is
+      // the only live source
+      authServiceMock.getToken.mockReturnValue(undefined);
+      luigiCoreServiceMock.getAuthData.mockReturnValue({
+        idToken: 'store-token',
+      });
+      const headers = sseHeaders({
+        token: undefined,
+      } as unknown as ResourceNodeContext);
+      expect(headers()).toEqual({ Authorization: 'Bearer store-token' });
+    });
+
+    it('prefers the live AuthService token over the Luigi store', () => {
+      authServiceMock.getToken.mockReturnValue('live-token');
+      luigiCoreServiceMock.getAuthData.mockReturnValue({
+        idToken: 'store-token',
+      });
+      const headers = sseHeaders({
+        token: 'context-token',
+      } as unknown as ResourceNodeContext);
+      expect(headers()).toEqual({ Authorization: 'Bearer live-token' });
+    });
+
+    it('prefers the Luigi store over the mount-time context snapshot', () => {
+      // after a scheduled refresh the snapshot holds the OLD token; the
+      // store always holds the current one
+      authServiceMock.getToken.mockReturnValue(undefined);
+      luigiCoreServiceMock.getAuthData.mockReturnValue({
+        idToken: 'store-token',
+      });
+      const headers = sseHeaders({
+        token: 'stale-context-token',
+      } as unknown as ResourceNodeContext);
+      expect(headers()).toEqual({ Authorization: 'Bearer store-token' });
+    });
+
+    it('survives a Luigi store that throws', () => {
+      // matches the real LuigiCoreService in iframe MFEs: the module-level
+      // Luigi global is undefined there, so getAuthData() throws
+      authServiceMock.getToken.mockReturnValue(undefined);
+      luigiCoreServiceMock.getAuthData.mockImplementation(() => {
+        throw new Error('not initialized');
+      });
+      const headers = sseHeaders({
+        token: 'context-token',
+      } as unknown as ResourceNodeContext);
+      expect(headers()).toEqual({ Authorization: 'Bearer context-token' });
+    });
+  });
+
+  describe('retry-once on 401', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const makeFlakyHttpLink = (failures: number, error: unknown) => {
+      const seenAuthHeaders: (string | null)[] = [];
+      let attempts = 0;
+      const link = new ApolloLink((operation) => {
+        return new Observable((observer: any) => {
+          attempts++;
+          const headers = operation.getContext().headers;
+          seenAuthHeaders.push(headers?.get?.('Authorization') ?? null);
+          if (attempts <= failures) {
+            observer.error(error);
+          } else {
+            observer.next({ data: { x: 1 } });
+            observer.complete();
+          }
+        });
+      });
+      return { link, getAttempts: () => attempts, seenAuthHeaders };
+    };
+
+    // SetContextLink resolves its context through a promise and the retry
+    // is scheduled on a timer — advance fake time (which also flushes
+    // microtasks) before asserting
+    const startQuery = (link: ApolloLink) => {
+      const result = {
+        data: undefined as unknown,
+        error: undefined as unknown,
+        complete: false,
+      };
+      (
+        execute(
+          link,
+          { query: parse('query Q { x }') } as any,
+          { client: {} } as any,
+        ) as any
+      ).subscribe({
+        next: (value: unknown) => (result.data = value),
+        error: (err: unknown) => (result.error = err),
+        complete: () => (result.complete = true),
+      });
+      return result;
+    };
+
+    const runQuery = async (link: ApolloLink) => {
+      const result = startQuery(link);
+      await vi.advanceTimersByTimeAsync(2000);
+      return result;
+    };
+
+    it('retries exactly once on 401 and re-resolves the token for the retry', async () => {
+      // simulates the fresh-login incident: first request leaves before the
+      // token exists (Bearer undefined -> 401), the retry picks up the live
+      // token and succeeds
+      const flaky = makeFlakyHttpLink(1, { status: 401 });
+      httpLinkMock.create.mockReturnValue(flaky.link);
+      authServiceMock.getToken
+        .mockReturnValueOnce(undefined)
+        .mockReturnValue('fresh-token');
+
+      const options = (factory as any).createApolloOptions({
+        token: undefined,
+      } as unknown as ResourceNodeContext);
+      const result = await runQuery(options.link);
+
+      expect(flaky.getAttempts()).toBe(2);
+      expect(flaky.seenAuthHeaders).toEqual([
+        'Bearer undefined',
+        'Bearer fresh-token',
+      ]);
+      expect(result.error).toBeUndefined();
+      expect(result.data).toEqual({ data: { x: 1 } });
+      expect(result.complete).toBe(true);
+    });
+
+    it('waits before the retry so a token still in delivery can arrive', async () => {
+      // boot race sub-case: the first request can fire while the boot
+      // refresh is still in flight — an instant retry would lose again
+      const flaky = makeFlakyHttpLink(1, { status: 401 });
+      httpLinkMock.create.mockReturnValue(flaky.link);
+      authServiceMock.getToken
+        .mockReturnValueOnce(undefined)
+        .mockReturnValue('late-token');
+
+      const options = (factory as any).createApolloOptions({
+        token: undefined,
+      } as unknown as ResourceNodeContext);
+      const result = startQuery(options.link);
+
+      // first attempt has failed, the retry must NOT have fired yet
+      await vi.advanceTimersByTimeAsync(100);
+      expect(flaky.getAttempts()).toBe(1);
+      expect(result.error).toBeUndefined();
+
+      // after the delay window the single retry runs with the late token
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(flaky.getAttempts()).toBe(2);
+      expect(flaky.seenAuthHeaders[1]).toBe('Bearer late-token');
+      expect(result.complete).toBe(true);
+    });
+
+    it('does not retry non-401 errors', async () => {
+      const flaky = makeFlakyHttpLink(1, { status: 500 });
+      httpLinkMock.create.mockReturnValue(flaky.link);
+
+      const options = (factory as any).createApolloOptions({
+        token: 't',
+      } as unknown as ResourceNodeContext);
+      const result = await runQuery(options.link);
+
+      expect(flaky.getAttempts()).toBe(1);
+      expect(result.error).toEqual({ status: 500 });
+    });
+
+    it('surfaces the error when the retry also gets 401', async () => {
+      const flaky = makeFlakyHttpLink(2, { status: 401 });
+      httpLinkMock.create.mockReturnValue(flaky.link);
+
+      const options = (factory as any).createApolloOptions({
+        token: 't',
+      } as unknown as ResourceNodeContext);
+      const result = await runQuery(options.link);
+
+      expect(flaky.getAttempts()).toBe(2);
+      expect(result.error).toEqual({ status: 401 });
+    });
+
+    it('recognizes a 401 wrapped as networkError', async () => {
+      const flaky = makeFlakyHttpLink(1, { networkError: { status: 401 } });
+      httpLinkMock.create.mockReturnValue(flaky.link);
+
+      const options = (factory as any).createApolloOptions({
+        token: 't',
+      } as unknown as ResourceNodeContext);
+      const result = await runQuery(options.link);
+
+      expect(flaky.getAttempts()).toBe(2);
+      expect(result.error).toBeUndefined();
+      expect(result.complete).toBe(true);
     });
   });
 

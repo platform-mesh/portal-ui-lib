@@ -2,7 +2,7 @@ import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { AuthService } from '@openmfp/portal-ui-lib';
+import { AuthService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   type ApolloClientOptions,
   ApolloLink,
@@ -46,6 +46,24 @@ const noopZone = {
   runOutsideAngular: (fn: any) => fn(),
 } as any;
 
+// Long enough for an in-flight boot refresh to land, short enough to be
+// invisible next to a reload.
+const AUTH_RETRY_DELAY_MS = 750;
+
+const isUnauthorized = (error: unknown): boolean => {
+  const err = error as {
+    status?: number;
+    statusCode?: number;
+    networkError?: { status?: number; statusCode?: number };
+  };
+  return [
+    err?.status,
+    err?.statusCode,
+    err?.networkError?.status,
+    err?.networkError?.statusCode,
+  ].includes(401);
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -53,6 +71,7 @@ export class ApolloFactory {
   private httpLink = inject(HttpLink);
   private gatewayService = inject(GatewayService);
   private authService = inject(AuthService);
+  private luigiCoreService = inject(LuigiCoreService);
 
   public readonly apollo = (
     nodeContext: ResourceNodeContext,
@@ -67,12 +86,74 @@ export class ApolloFactory {
    * The token must be resolved per request, never captured at client
    * creation: a client built before the shell delivers the token would
    * otherwise send "Bearer undefined" for its whole lifetime (silent 401s,
-   * empty views until a hard reload). Prefer the live AuthService value so
-   * token refreshes are picked up too; fall back to the node context
-   * snapshot.
+   * empty views until a hard reload). Prefer live sources over the node
+   * context, which is a mount-time snapshot: in web-component bundles the
+   * injected AuthService belongs to a separate injector that never runs a
+   * refresh, so the shell's Luigi auth store is the only value that tracks
+   * the boot refresh and later scheduled refreshes.
    */
   private resolveToken(nodeContext: ResourceNodeContext): string | undefined {
-    return this.authService.getToken() || nodeContext.token;
+    return (
+      this.authService.getToken() ||
+      this.resolveLuigiStoreToken() ||
+      nodeContext.token
+    );
+  }
+
+  // Web components run on the shell window; iframe-based MFEs have no
+  // window.Luigi, so the service throws and we fall through to the node
+  // context. LuigiCoreService wraps the same shell global (stateless), so
+  // it is injector-safe for web-component bundles.
+  private resolveLuigiStoreToken(): string | undefined {
+    try {
+      return this.luigiCoreService.getAuthData()?.idToken;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Retries an operation exactly once when the gateway answers 401. The
+   * Authorization header is rebuilt by the context link on the retry, so a
+   * request that raced ahead of token delivery (or whose token expired in
+   * flight) heals itself instead of leaving the view empty until a manual
+   * reload. 401 means the request was rejected before execution, so this
+   * is safe for mutations too.
+   */
+  private createAuthRetryLink(): ApolloLink {
+    return new ApolloLink((operation, forward) => {
+      return new ApolloObservable((observer) => {
+        let activeSub: { unsubscribe(): void } | undefined;
+        let retryTimer: ReturnType<typeof setTimeout> | undefined;
+        const attempt = (isRetry: boolean) => {
+          // A retry replaces the failed subscription; release the previous
+          // one explicitly instead of relying on the errored link having
+          // closed it downstream.
+          activeSub?.unsubscribe();
+          activeSub = forward(operation).subscribe({
+            next: observer.next.bind(observer),
+            complete: observer.complete.bind(observer),
+            error: (error: unknown) => {
+              if (!isRetry && isUnauthorized(error)) {
+                retryTimer = setTimeout(
+                  () => attempt(true),
+                  AUTH_RETRY_DELAY_MS,
+                );
+                return;
+              }
+              observer.error(error);
+            },
+          });
+        };
+        attempt(false);
+        return () => {
+          if (retryTimer !== undefined) {
+            clearTimeout(retryTimer);
+          }
+          activeSub?.unsubscribe();
+        };
+      });
+    });
   }
 
   private createApolloOptions(
@@ -113,7 +194,13 @@ export class ApolloFactory {
       this.httpLink.create({}),
     );
 
-    const link = ApolloLink.from([contextLink, splitClient]);
+    // Retry sits outermost so a retry re-runs the context link and picks
+    // up a freshly resolved token.
+    const link = ApolloLink.from([
+      this.createAuthRetryLink(),
+      contextLink,
+      splitClient,
+    ]);
     const cache = new InMemoryCache();
 
     return {
