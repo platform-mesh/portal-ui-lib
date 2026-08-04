@@ -1,5 +1,4 @@
 :host {
-  --pm-panel-header-height: 3rem;
   font-family: var(--sapFontFamily, '72', Arial, sans-serif);
 }
 
@@ -11,16 +10,31 @@
   z-index: 1000;
   display: none;
   box-sizing: border-box;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  max-height: none;
   width: var(--pm-panel-width, min(34rem, 100vw));
-  background: var(--sapBackgroundColor, #fff);
-  border-left: 1px solid var(--sapGroup_ContentBorderColor, #d9d9d9);
-  box-shadow: -0.25rem 0 1rem rgb(0 0 0 / 12%);
-  clip-path: inset(0 0 0 -1.25rem);
+  background: var(--sapGroup_ContentBackground, #fff);
+  border-radius: var(--sapElement_BorderCornerRadius, 0.75rem) 0 0
+    var(--sapElement_BorderCornerRadius, 0.75rem);
+  box-shadow: var(
+    --sapContent_Shadow3,
+    0 0 0 0.0625rem rgb(34 53 72 / 48%),
+    0 1.25rem 5rem rgb(34 53 72 / 30%)
+  );
+}
+
+:host-context(.lui-breadcrumb) .persistent-panel {
+  top: calc(
+    var(--luigi__shellbar--height, 3.25rem) +
+      var(--luigi__breadcrumb--height, 2.75rem)
+  );
 }
 
 .persistent-panel.open {
   display: grid;
-  grid-template-rows: var(--pm-panel-header-height) 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .persistent-panel-resizer {
@@ -52,12 +66,17 @@
 .persistent-panel-resizer:hover::after,
 .persistent-panel-resizer:focus-visible::after,
 .persistent-panel.resizing .persistent-panel-resizer::after {
-  opacity: 0.65;
+  opacity: 1;
 }
 
 .persistent-panel-resizer:focus-visible {
-  outline: 0.125rem solid var(--sapContent_FocusColor, #0064d9);
-  outline-offset: -0.125rem;
+  outline: 0;
+}
+
+.persistent-panel-resizer:focus-visible::after {
+  outline: var(--sapContent_FocusWidth, 0.125rem) solid
+    var(--sapContent_FocusColor, #0032a5);
+  outline-offset: 0.125rem;
 }
 
 .persistent-panel.maximized .persistent-panel-resizer {
@@ -65,60 +84,45 @@
 }
 
 .persistent-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 0.75rem 0 1rem;
-  color: var(--sapShell_TextColor, #1d2d3e);
-  background: var(--sapShell_Background, #fff);
-  border-bottom: 1px solid var(--sapGroup_ContentBorderColor, #d9d9d9);
+  min-width: 0;
+  border-radius: var(--sapElement_BorderCornerRadius, 0.75rem) 0 0;
 }
 
-.persistent-panel-header h2 {
+.persistent-panel-title-area,
+.persistent-panel-title-element {
+  min-width: 0;
+}
+
+.persistent-panel-title {
   overflow: hidden;
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.persistent-panel-header > div:first-child {
-  min-width: 0;
-}
-
-.persistent-panel-header p {
-  margin: 0;
-  color: var(--sapNegativeTextColor, #aa0808);
-  font-size: 0.75rem;
-}
-
-.persistent-panel-actions {
+.persistent-panel-body {
   display: flex;
-  flex: 0 0 auto;
-  gap: 0.25rem;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
-.persistent-panel-actions button,
-.persistent-panel-reopen {
-  min-width: 2rem;
-  min-height: 2rem;
-  color: var(--sapButton_TextColor, #0064d9);
-  background: transparent;
-  border: 0;
-  border-radius: 0.25rem;
-  cursor: pointer;
-}
-
-.persistent-panel-actions button:hover,
-.persistent-panel-reopen:hover {
-  background: var(--sapButton_Lite_Hover_Background, #eaecee);
+.persistent-panel-error {
+  flex: none;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  color: var(--sapNegativeTextColor, #aa0808);
+  background: var(--sapErrorBackground, #ffeaf4);
+  font-size: var(--sapFontSmallSize, 0.75rem);
 }
 
 .persistent-panel-frame {
+  min-height: 0;
+  flex: 1;
   width: 100%;
-  height: 100%;
   border: 0;
+  border-bottom-left-radius: var(--sapElement_BorderCornerRadius, 0.75rem);
 }
 
 .persistent-panel.resizing,
@@ -136,10 +140,10 @@
   right: 1rem;
   bottom: 1rem;
   z-index: 1000;
-  padding: 0.5rem 0.75rem;
-  color: var(--sapButton_Emphasized_TextColor, #fff);
-  background: var(--sapButton_Emphasized_Background, #0070f2);
-  box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 20%);
+  overflow: hidden;
+  max-width: calc(100vw - 2rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {
@@ -147,9 +151,17 @@
   .persistent-panel.maximized {
     left: 0;
     width: 100vw;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .persistent-panel-resizer {
     display: none;
+  }
+
+  .persistent-panel-header,
+  .persistent-panel-body,
+  .persistent-panel-frame {
+    border-radius: 0;
   }
 }
