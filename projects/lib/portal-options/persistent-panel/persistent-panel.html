@@ -1,64 +1,108 @@
 <section
-  class="persistent-panel"
+  class="persistent-panel fd-dialog__content"
   role="complementary"
   aria-labelledby="persistent-panel-title"
   [attr.aria-hidden]="state() === 'hidden'"
   [class.maximized]="state() === 'maximized'"
   [class.open]="state() !== 'hidden'"
+  [class.resizing]="resizing()"
+  [style.--pm-panel-width]="panelWidth() + 'px'"
 >
-  <header class="persistent-panel-header">
-    <div>
-      <h2 id="persistent-panel-title">{{ title() }}</h2>
-      @if (closeError()) {
-      <p role="alert">{{ closeError() }}</p>
-      }
+  <div
+    class="persistent-panel-resizer"
+    role="separator"
+    aria-label="Resize provider panel"
+    aria-orientation="vertical"
+    aria-controls="persistent-panel-content"
+    [attr.aria-valuemin]="minPanelWidth()"
+    [attr.aria-valuemax]="maxPanelWidth()"
+    [attr.aria-valuenow]="panelWidth()"
+    tabindex="0"
+    (pointerdown)="beginResize($event)"
+    (pointermove)="resize($event)"
+    (pointerup)="finishResize($event)"
+    (pointercancel)="finishResize($event)"
+    (lostpointercapture)="finishResize($event)"
+    (keydown)="resizeWithKeyboard($event)"
+  ></div>
+  <header
+    class="persistent-panel-header fd-dialog__header fd-bar fd-bar--header"
+  >
+    <div class="fd-bar__left persistent-panel-title-area">
+      <div class="fd-bar__element persistent-panel-title-element">
+        <h2
+          id="persistent-panel-title"
+          class="fd-title fd-title--h5 persistent-panel-title"
+        >
+          {{ title() }}
+        </h2>
+      </div>
     </div>
-    <div class="persistent-panel-actions">
-      <button
-        aria-label="Toggle panel size"
-        [attr.aria-pressed]="state() === 'maximized'"
-        title="Toggle panel size"
-        type="button"
-        (click)="toggleSize()"
-      >
-        @if (state() === 'maximized') { ◲ } @else { ◱ }
-      </button>
-      <button
-        aria-label="Collapse panel"
-        title="Collapse panel"
-        type="button"
-        (click)="collapse()"
-      >
-        —
-      </button>
-      <button
-        aria-label="Close panel"
-        title="Close panel"
-        type="button"
-        (click)="close()"
-      >
-        ×
-      </button>
+    <div class="fd-bar__right persistent-panel-actions">
+      <div class="fd-bar__element">
+        <button
+          class="fd-button fd-button--transparent fd-button--compact"
+          aria-label="Toggle panel size"
+          [attr.aria-pressed]="state() === 'maximized'"
+          title="Toggle panel size"
+          type="button"
+          (click)="toggleSize()"
+        >
+          <i
+            class="sap-icon"
+            [class.sap-icon--exitfullscreen]="state() === 'maximized'"
+            [class.sap-icon--full-screen]="state() !== 'maximized'"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </div>
+      <div class="fd-bar__element">
+        <button
+          class="fd-button fd-button--transparent fd-button--compact"
+          aria-label="Collapse panel"
+          title="Collapse panel"
+          type="button"
+          (click)="collapse()"
+        >
+          <i class="sap-icon sap-icon--collapse" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="fd-bar__element">
+        <button
+          class="fd-button fd-button--transparent fd-button--compact"
+          aria-label="Close panel"
+          title="Close panel"
+          type="button"
+          (click)="close()"
+        >
+          <i class="sap-icon sap-icon--decline" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
   </header>
-  @if (source()) {
-  <iframe
-    #panelFrame
-    class="persistent-panel-frame"
-    referrerpolicy="no-referrer"
-    sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-    [src]="source()"
-    [title]="title()"
-    (load)="frameLoaded()"
-  ></iframe>
-  }
+  <div class="persistent-panel-body fd-dialog__body">
+    @if (closeError()) {
+    <p class="persistent-panel-error" role="alert">{{ closeError() }}</p>
+    } @if (source()) {
+    <iframe
+      #panelFrame
+      id="persistent-panel-content"
+      class="persistent-panel-frame"
+      referrerpolicy="no-referrer"
+      sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+      [src]="source()"
+      [title]="title()"
+      (load)="frameLoaded()"
+    ></iframe>
+    }
+  </div>
 </section>
 
 @if (state() === 'hidden' && source() && !closing()) {
 <button
   #reopenButton
-  class="persistent-panel-reopen"
-  aria-label="Open provider panel"
+  class="persistent-panel-reopen fd-button fd-button--emphasized fd-button--compact"
+  [attr.aria-label]="'Open ' + title()"
   type="button"
   (click)="expand()"
 >
