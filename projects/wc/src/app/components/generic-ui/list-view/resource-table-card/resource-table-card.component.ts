@@ -9,6 +9,8 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from '../../create-resource-modal/create-resource-modal.consts';
+import { DeleteResourceModal } from '../../delete-resource-confirmation-modal/delete-resource-modal.component';
+import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -55,7 +57,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'pm-resource-table-card',
   standalone: true,
-  imports: [DeclarativeTableCard],
+  imports: [DeclarativeTableCard, DeleteResourceModal],
   templateUrl: './resource-table-card.component.html',
   styles: `
     mfp-declarative-table-card {
@@ -76,6 +78,7 @@ export class ResourceTableCard {
 
   tableCard =
     viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
+  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
   resourceDefinition = computed(() => this.context().resourceDefinition);
@@ -102,7 +105,6 @@ export class ResourceTableCard {
 
     return columns;
   });
-
   totalItemsCount = computed(
     () => this.resources().length + this.remainingItemCount(),
   );
@@ -311,6 +313,18 @@ export class ResourceTableCard {
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
+    if (
+      event.field.uiSettings?.buttonSettings?.action === DELETE_RESOURCE_ACTION &&
+      event.resource
+    ) {
+      event.event.stopPropagation();
+      if (!this.resourceService.isAvailable(event.resource)) {
+        return;
+      }
+      this.deleteModal()?.open(event.resource);
+      return;
+    }
+
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
@@ -346,6 +360,20 @@ export class ResourceTableCard {
           this.createFieldErrors.set({});
           this.tableCard().closeCreateDialog();
           console.debug('Resource created', result);
+        },
+      });
+  }
+
+  delete(resource: Resource): void {
+    this.resourceService
+      .delete(resource, this.getResourceDefinition(), this.context())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.deleteModal()?.close();
+        },
+        error: (error) => {
+          this.errorHandlerService.handleError(error);
         },
       });
   }

@@ -44,7 +44,20 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"listView"`: Defines how resources are displayed in table format
   - `"fields"`: Array of `FieldDefinition` objects defining table columns. Each field's `"label"` becomes the column header, and `"property"` is a JSON path to the resource property. Fields can be grouped using the `"group"` property to display related information in a single column. The `"uiSettings"` property allows customization of rendering (format, actions, styling).
-  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the table toolbar or row actions. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
+  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete-resource"` to open the resource deletion confirmation dialog. For example:
+    ```json
+    {
+      "label": "Delete",
+      "uiSettings": {
+        "displayAs": "button",
+        "buttonSettings": {
+          "action": "delete-resource",
+          "icon": "delete",
+          "design": "Negative"
+        }
+      }
+    }
+    ```
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the view title. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, defaults to the plural form of the resource.
   - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition features. If not provided, a default description is generated.
   - `"filters"`: Optional array of `FieldFilterDefinition` objects rendered as filter tabs above the table. Each entry defines a tab that scopes the list to rows whose `"property"` equals the given `"value"` (sent to the OpenSearch backend as `<property>=<value>`). The strip renders exactly what you author — if you want an "All / no filter" affordance, add it as a regular entry (for example `{ "label": "All", "property": "<some-field>", "value": "*" }`). Properties per entry:
@@ -111,7 +124,7 @@ Each field definition supports the following properties:
     - `"endIcon"`: UI5 icon name to display at the end of the button
     - `"design"`: Button design variant (options: `"Default"`, `"Positive"`, `"Negative"`, `"Transparent"`, `"Emphasized"`, `"Attention"`)
     - `"tooltip"`: Tooltip text shown on hover
-    - `"action"`: Action to perform when button is clicked (options: `"openInModal"`, `"navigate"`), the url used is taken from the field specified `property` or static `value`
+    - `"action"`: Action to perform when button is clicked. `"openInModal"` and `"navigate"` use the URL from the field's `property` or static `value`; `"delete-resource"` is supported for `listView.actions` and opens the resource deletion confirmation dialog.
     - `"modalSettings"`: Configuration for modal when `action: "openInModal"`:
       - `"title"`: Modal title
       - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
