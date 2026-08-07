@@ -18,7 +18,7 @@ export default defineConfig({
   },
   resolve: {
     alias: [
-      { find: /^gridstack(\/.+)?$/, replacement: '/test-stubs/empty.js' },
+      { find: /^gridstack(\/.+)?$/, replacement: '/test-stubs/gridstack.js' },
     ],
   },
 });

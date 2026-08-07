@@ -1,23 +1,66 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { flattenFieldTree, toFormFields } from '../../../../utils/to-form-fields';
+import {
+  flattenFieldTree,
+  toFormFields,
+} from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
-import { K8S_NAME_ERROR, K8S_NAME_RE, ResourceFieldNames } from '../../create-resource-modal/create-resource-modal.consts';
+import {
+  K8S_NAME_ERROR,
+  K8S_NAME_RE,
+  ResourceFieldNames,
+} from '../../create-resource-modal/create-resource-modal.consts';
+import { DeleteResourceModal } from '../../delete-resource-confirmation-modal/delete-resource-modal.component';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
-import { ChangeDetectionStrategy, Component, DestroyRef, ViewEncapsulation, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ViewEncapsulation,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { DeclarativeTableCard, FormFieldChangeEvent, FormFieldErrors, ResourceFieldButtonClickEvent, TableCardConfig, TableCardFormState } from '@openmfp/ngx';
-import { PlatformMeshFieldDefinition, Resource, ResourceListResult, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
-import { ErrorHandlerService, ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { buildResourcePath, generateGraphQLFields, getValueByPath, isNamespacedResource, mergeListWithSubscriptionResult, permissionKey } from '@platform-mesh/portal-ui-lib/utils';
+import {
+  DeclarativeTableCard,
+  FormFieldChangeEvent,
+  FormFieldErrors,
+  ResourceFieldButtonClickEvent,
+  TableCardConfig,
+  TableCardFormState,
+} from '@openmfp/ngx';
+import {
+  PlatformMeshFieldDefinition,
+  Resource,
+  ResourceListResult,
+  ResourceSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/models';
+import {
+  ErrorHandlerService,
+  ResourceNodeContext,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import {
+  buildResourcePath,
+  generateGraphQLFields,
+  getValueByPath,
+  isNamespacedResource,
+  mergeListWithSubscriptionResult,
+  permissionKey,
+} from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-resource-table-card',
   standalone: true,
-  imports: [DeclarativeTableCard],
   providers: [InstancePermissionsStore],
+  imports: [DeclarativeTableCard, DeleteResourceModal],
   templateUrl: './resource-table-card.component.html',
   styles: `
     mfp-declarative-table-card {
@@ -39,6 +82,7 @@ export class ResourceTableCard {
 
   tableCard =
     viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
+  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
   tableResources = computed(() =>
@@ -68,7 +112,6 @@ export class ResourceTableCard {
 
     return columns;
   });
-
   totalItemsCount = computed(
     () => this.resources().length + this.remainingItemCount(),
   );
@@ -293,6 +336,19 @@ export class ResourceTableCard {
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
+    if (
+      event.field.uiSettings?.buttonSettings?.action ===
+        DELETE_RESOURCE_ACTION &&
+      event.resource
+    ) {
+      event.event.stopPropagation();
+      if (!this.resourceService.isAvailable(event.resource)) {
+        return;
+      }
+      this.deleteModal()?.open(event.resource);
+      return;
+    }
+
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
@@ -328,6 +384,20 @@ export class ResourceTableCard {
           this.createFieldErrors.set({});
           this.tableCard().closeCreateDialog();
           console.debug('Resource created', result);
+        },
+      });
+  }
+
+  delete(resource: Resource): void {
+    this.resourceService
+      .delete(resource, this.getResourceDefinition(), this.context())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.deleteModal()?.close();
+        },
+        error: (error) => {
+          this.errorHandlerService.handleError(error);
         },
       });
   }

@@ -1,3 +1,4 @@
+import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ResourceDefinition, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
@@ -237,6 +238,90 @@ describe('ResourceTableCard', () => {
         text: 'Resource name is not defined',
         type: 'error',
       });
+    });
+  });
+
+  describe('Delete resource', () => {
+    it('should open the existing delete modal from the delete action', () => {
+      const resource = { metadata: { name: 'test' } } as any;
+      const event = {
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent;
+      const open = vi.fn();
+      (component as any).deleteModal = () => ({ open });
+      mockResourceService.isAvailable.mockReturnValue(true);
+
+      component.executeAction({
+        event,
+        resource,
+        field: {
+          property: 'metadata.name',
+          uiSettings: {
+            displayAs: 'button',
+            buttonSettings: { action: DELETE_RESOURCE_ACTION },
+          },
+        },
+      });
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(open).toHaveBeenCalledWith(resource);
+    });
+
+    it('should not open the delete modal for a resource pending deletion', () => {
+      const resource = {
+        metadata: {
+          name: 'test',
+          deletionTimestamp: '2026-07-29T10:00:00Z',
+        },
+      } as any;
+      const event = {
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent;
+      const open = vi.fn();
+      (component as any).deleteModal = () => ({ open });
+      mockResourceService.isAvailable.mockReturnValue(false);
+
+      component.executeAction({
+        event,
+        resource,
+        field: {
+          property: 'metadata.name',
+          uiSettings: {
+            displayAs: 'button',
+            buttonSettings: { action: DELETE_RESOURCE_ACTION },
+          },
+        },
+      });
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(mockResourceService.isAvailable).toHaveBeenCalledWith(resource);
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('should delete the resource and close the modal', () => {
+      const resource = { metadata: { name: 'test' } } as any;
+      const close = vi.fn();
+      mockResourceService.delete.mockReturnValue(of(resource));
+      (component as any).deleteModal = () => ({ close });
+
+      component.delete(resource);
+
+      expect(mockResourceService.delete).toHaveBeenCalledWith(
+        resource,
+        component.resourceDefinition(),
+        component.context(),
+      );
+      expect(close).toHaveBeenCalled();
+    });
+
+    it('should handle delete errors', () => {
+      const resource = { metadata: { name: 'test' } } as any;
+      const error = new Error('delete failed');
+      mockResourceService.delete.mockReturnValue(throwError(() => error));
+
+      component.delete(resource);
+
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
     });
   });
 
