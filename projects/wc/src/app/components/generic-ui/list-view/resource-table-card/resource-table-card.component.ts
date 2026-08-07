@@ -9,9 +9,7 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from '../../create-resource-modal/create-resource-modal.consts';
-import { DeleteResourceModal } from '../../delete-resource-confirmation-modal/delete-resource-modal.component';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
-import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,6 +26,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   DeclarativeTableCard,
+  DeleteResourceConfirmationConfig,
   FormFieldChangeEvent,
   FormFieldErrors,
   ResourceFieldButtonClickEvent,
@@ -60,7 +59,7 @@ import { finalize } from 'rxjs/operators';
   selector: 'pm-resource-table-card',
   standalone: true,
   providers: [InstancePermissionsStore],
-  imports: [DeclarativeTableCard, DeleteResourceModal],
+  imports: [DeclarativeTableCard],
   templateUrl: './resource-table-card.component.html',
   styles: `
     mfp-declarative-table-card {
@@ -82,7 +81,6 @@ export class ResourceTableCard {
 
   tableCard =
     viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
-  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
   tableResources = computed(() =>
@@ -146,7 +144,7 @@ export class ResourceTableCard {
     return fields;
   });
 
-  config = computed<TableCardConfig>(() => {
+  config = computed<TableCardConfig<Resource>>(() => {
     return {
       header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
@@ -164,6 +162,7 @@ export class ResourceTableCard {
             }),
         },
       }),
+      deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
     };
   });
 
@@ -336,19 +335,6 @@ export class ResourceTableCard {
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
-    if (
-      event.field.uiSettings?.buttonSettings?.action ===
-        DELETE_RESOURCE_ACTION &&
-      event.resource
-    ) {
-      event.event.stopPropagation();
-      if (!this.resourceService.isAvailable(event.resource)) {
-        return;
-      }
-      this.deleteModal()?.open(event.resource);
-      return;
-    }
-
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
@@ -394,7 +380,7 @@ export class ResourceTableCard {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.deleteModal()?.close();
+          this.tableCard().closeDeleteDialog();
         },
         error: (error) => {
           this.errorHandlerService.handleError(error);
@@ -432,5 +418,22 @@ export class ResourceTableCard {
       name: resource.metadata.name,
       namespace: resource.metadata.namespace,
     });
+  }
+
+  private getDeleteConfig(
+    resource: Resource,
+  ): DeleteResourceConfirmationConfig {
+    const resourceDefinition = this.getResourceDefinition();
+    const name = resource.metadata?.name?.toLowerCase() ?? '';
+    return {
+      title: `Delete ${name}`,
+      message: `<p>Are you sure you want to delete ${resourceDefinition?.entity} <b>${name}</b>?</p>
+        <p class="dialog__message--critical">This action <b>cannot</b> be undone.</p>
+        <p>Please type <b>${name}</b> to confirm:</p>`,
+      confirmationText: name,
+      confirmationPlaceholder: 'Type name',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    };
   }
 }

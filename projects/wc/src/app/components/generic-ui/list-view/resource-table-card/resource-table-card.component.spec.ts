@@ -1,14 +1,20 @@
-import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
+import { ResourceTableCard } from './resource-table-card.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ResourceDefinition, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
-import { ErrorHandlerService, InstancePermissionsService, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  ResourceDefinition,
+  ResourceSubscriptionResult,
+} from '@platform-mesh/portal-ui-lib/models';
+import {
+  ErrorHandlerService,
+  InstancePermissionsService,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import * as utils from '@platform-mesh/portal-ui-lib/utils';
 import { Subject, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
-import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
-import { ResourceTableCard } from './resource-table-card.component';
 
 describe('ResourceTableCard', () => {
   let component: ResourceTableCard;
@@ -258,7 +264,7 @@ describe('ResourceTableCard', () => {
           property: 'metadata.name',
           uiSettings: {
             displayAs: 'button',
-            buttonSettings: { action: DELETE_RESOURCE_ACTION },
+            buttonSettings: { action: 'delete' },
           },
         },
       });
@@ -288,7 +294,7 @@ describe('ResourceTableCard', () => {
           property: 'metadata.name',
           uiSettings: {
             displayAs: 'button',
-            buttonSettings: { action: DELETE_RESOURCE_ACTION },
+            buttonSettings: { action: 'delete' },
           },
         },
       });
