@@ -46,6 +46,7 @@ import {
 import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
+  permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -122,6 +123,18 @@ export class DetailView {
   isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
+  private instancePermissions = computed(() => {
+    const resource = this.resource();
+    const resourceDefinition = this.getResourceDefinition();
+
+    return this.context().portalPermissions?.[
+      permissionKey({
+        resource: resourceDefinition?.entity,
+        name: resource?.metadata?.name,
+        namespace: resource?.metadata?.namespace,
+      })
+    ];
+  });
 
   dashboardConfig = computed(() => {
     const customActions: ButtonSettings[] = [];
@@ -137,15 +150,23 @@ export class DetailView {
     }
 
     if (this.resource()) {
-      customActions.push(
-        { action: 'edit', text: 'Edit', icon: 'edit', design: 'Default' },
-        {
+      if (this.canDoAction('update')) {
+        customActions.push({
+          action: 'edit',
+          text: 'Edit',
+          icon: 'edit',
+          design: 'Default',
+        });
+      }
+
+      if (this.canDoAction('delete')) {
+        customActions.push({
           action: 'delete',
           text: 'Delete',
           icon: 'delete',
           design: 'Negative',
-        },
-      );
+        });
+      }
     }
 
     const backgroundImageUrl = this.isDemoEnabled()
@@ -473,6 +494,10 @@ export class DetailView {
     }
 
     return resourceId;
+  }
+
+  private canDoAction(action: string): boolean {
+    return this.instancePermissions()?.includes(action) ?? true;
   }
 
   protected dashboardConfigurationChanged(config: {

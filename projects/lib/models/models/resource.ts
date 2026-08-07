@@ -37,6 +37,8 @@ export interface ResourceDefinition {
   namespace?: string;
   readyCondition?: PlatformMeshFieldDefinition;
   ui?: UIDefinition;
+  checkActionsForResource?: string[];
+  checkActionsForInstance?: { entityContextKey: string; actions: string[] };
 }
 
 export const ResourceOperationTypeMap = {

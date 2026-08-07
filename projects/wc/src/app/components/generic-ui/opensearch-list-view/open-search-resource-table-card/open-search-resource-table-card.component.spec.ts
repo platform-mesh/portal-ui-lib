@@ -1,3 +1,4 @@
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
 import { OpenSearchResourceTableCard } from './open-search-resource-table-card.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -5,6 +6,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   ErrorHandlerService,
+  InstancePermissionsService,
   ReadResources,
   ReadResourcesResult,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -19,6 +21,8 @@ describe('OpenSearchResourceTableCard', () => {
   let mockLuigiCoreService: any;
   let mockReadResourcesProxy: { forContext: ReturnType<typeof vi.fn> };
   let mockReadResources: MockedObject<ReadResources>;
+  let mockInstancePermissionsService: MockedObject<InstancePermissionsService>;
+  let mockInstancePermissionsLocalStore: MockedObject<InstancePermissionsStore>;
   let listSubject: Subject<ReadResourcesResult>;
 
   const buildContext = (overrides: Partial<any> = {}) =>
@@ -65,6 +69,14 @@ describe('OpenSearchResourceTableCard', () => {
       forContext: vi.fn().mockReturnValue(mockReadResources),
     };
 
+    mockInstancePermissionsService = mock();
+    mockInstancePermissionsService.checkInstances.mockReturnValue(
+      listSubject.asObservable() as any,
+    );
+    mockInstancePermissionsLocalStore = mock();
+    // Default: all instances already cached → early-return in effect
+    mockInstancePermissionsLocalStore.missing.mockReturnValue([]);
+
     TestBed.configureTestingModule({
       providers: [
         { provide: LuigiCoreService, useValue: mockLuigiCoreService },
@@ -72,6 +84,14 @@ describe('OpenSearchResourceTableCard', () => {
         {
           provide: ReadResourcesProxyService,
           useValue: mockReadResourcesProxy,
+        },
+        {
+          provide: InstancePermissionsService,
+          useValue: mockInstancePermissionsService,
+        },
+        {
+          provide: InstancePermissionsStore,
+          useValue: mockInstancePermissionsLocalStore,
         },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],

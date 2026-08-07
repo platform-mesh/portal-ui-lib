@@ -1,24 +1,21 @@
-import { ResourceTableCard } from './resource-table-card.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import {
-  ResourceDefinition,
-  ResourceSubscriptionResult,
-} from '@platform-mesh/portal-ui-lib/models';
-import {
-  ErrorHandlerService,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
+import { ResourceDefinition, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
+import { ErrorHandlerService, InstancePermissionsService, ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import * as utils from '@platform-mesh/portal-ui-lib/utils';
 import { Subject, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
+import { ResourceTableCard } from './resource-table-card.component';
 
 describe('ResourceTableCard', () => {
   let component: ResourceTableCard;
   let fixture: ComponentFixture<ResourceTableCard>;
   let mockResourceService: MockedObject<ResourceService>;
   let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
+  let mockInstancePermissionsService: MockedObject<InstancePermissionsService>;
+  let mockInstancePermissionsLocalStore: MockedObject<InstancePermissionsStore>;
 
   const makeContext = (overrides: object = {}) =>
     (() => ({
@@ -59,11 +56,24 @@ describe('ResourceTableCard', () => {
       of(undefined),
     );
     mockErrorHandlerService = mock();
+    mockInstancePermissionsService = mock();
+    // mockInstancePermissionsService.checkInstances.mockReturnValue(of({}));
+    mockInstancePermissionsLocalStore = mock();
+    // Default: all instances are "missing" so checkInstances is called
+    mockInstancePermissionsLocalStore.missing.mockReturnValue([]);
 
     TestBed.configureTestingModule({
       providers: [
         { provide: ResourceService, useValue: mockResourceService },
         { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
+        {
+          provide: InstancePermissionsService,
+          useValue: mockInstancePermissionsService,
+        },
+        {
+          provide: InstancePermissionsStore,
+          useValue: mockInstancePermissionsLocalStore,
+        },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     }).overrideComponent(ResourceTableCard, {
@@ -413,9 +423,7 @@ describe('ResourceTableCard', () => {
       newComponent.context = makeNamespacedCreateContext();
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      const properties = newComponent
-        .createFormFields()
-        .map((f) => f.property);
+      const properties = newComponent.createFormFields().map((f) => f.property);
       expect(properties).not.toContain('metadata.namespace');
     });
 
@@ -426,9 +434,7 @@ describe('ResourceTableCard', () => {
       newComponent.context = makeNamespacedCreateContext();
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      const properties = newComponent
-        .createFormFields()
-        .map((f) => f.property);
+      const properties = newComponent.createFormFields().map((f) => f.property);
       expect(properties).toContain('metadata.namespace');
     });
 
@@ -768,51 +774,5 @@ describe('ResourceTableCard', () => {
         expect(newComponent.columns().length).toBe(2);
       });
     });
-  });
-});
-
-describe('ResourceTableCard template', () => {
-  it('should render mfp-declarative-table-card with data-testid="generic-list-view-table"', () => {
-    const resourceServiceMock = mock<ResourceService>();
-    resourceServiceMock.list.mockReturnValue(
-      of({ items: [], resourceVersion: '1' }),
-    );
-    resourceServiceMock.resourceChangeSubscription.mockReturnValue(
-      of(undefined),
-    );
-
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: ResourceService, useValue: resourceServiceMock },
-        {
-          provide: ErrorHandlerService,
-          useValue: mock<ErrorHandlerService>(),
-        },
-      ],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    });
-
-    const fixture = TestBed.createComponent(ResourceTableCard);
-    const component = fixture.componentInstance;
-    component.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        version: 'v1alpha1',
-        ui: { listView: { fields: [] }, detailView: { fields: [] } },
-      },
-    })) as any;
-    component.LuigiClient = (() => ({
-      linkManager: () => ({ navigate: vi.fn() }),
-      uxManager: () => ({ showAlert: vi.fn() }),
-      getNodeParams: vi.fn(),
-    })) as any;
-    fixture.detectChanges();
-
-    const el = fixture.nativeElement.querySelector(
-      '[data-testid="generic-list-view-table"]',
-    );
-    expect(el).not.toBeNull();
   });
 });

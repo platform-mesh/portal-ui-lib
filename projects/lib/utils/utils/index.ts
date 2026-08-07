@@ -2,6 +2,7 @@ export * from './build-graphql-input-type-name';
 export * from './build-resource-list-operation';
 export * from './columns-to-gql-fields';
 export * from './get-value-by-path';
+export * from './instance-permission-key';
 export * from './is-local-setup';
 export * from './is-namespaced-resource';
 export * from './merge-list-with-subscription-result';

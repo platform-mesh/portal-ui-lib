@@ -1,54 +1,15 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import {
-  flattenFieldTree,
-  toFormFields,
-} from '../../../../utils/to-form-fields';
+import { flattenFieldTree, toFormFields } from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
-import {
-  K8S_NAME_ERROR,
-  K8S_NAME_RE,
-  ResourceFieldNames,
-} from '../../create-resource-modal/create-resource-modal.consts';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  ViewEncapsulation,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { K8S_NAME_ERROR, K8S_NAME_RE, ResourceFieldNames } from '../../create-resource-modal/create-resource-modal.consts';
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
+import { ChangeDetectionStrategy, Component, DestroyRef, ViewEncapsulation, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import {
-  DeclarativeTableCard,
-  FormFieldChangeEvent,
-  FormFieldErrors,
-  ResourceFieldButtonClickEvent,
-  TableCardConfig,
-  TableCardFormState,
-} from '@openmfp/ngx';
-import {
-  PlatformMeshFieldDefinition,
-  Resource,
-  ResourceListResult,
-  ResourceSubscriptionResult,
-} from '@platform-mesh/portal-ui-lib/models';
-import {
-  ErrorHandlerService,
-  ResourceNodeContext,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
-import {
-  buildResourcePath,
-  generateGraphQLFields,
-  getValueByPath,
-  isNamespacedResource,
-  mergeListWithSubscriptionResult,
-} from '@platform-mesh/portal-ui-lib/utils';
+import { DeclarativeTableCard, FormFieldChangeEvent, FormFieldErrors, ResourceFieldButtonClickEvent, TableCardConfig, TableCardFormState } from '@openmfp/ngx';
+import { PlatformMeshFieldDefinition, Resource, ResourceListResult, ResourceSubscriptionResult } from '@platform-mesh/portal-ui-lib/models';
+import { ErrorHandlerService, ResourceNodeContext, ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { buildResourcePath, generateGraphQLFields, getValueByPath, isNamespacedResource, mergeListWithSubscriptionResult, permissionKey } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
@@ -56,6 +17,7 @@ import { finalize } from 'rxjs/operators';
   selector: 'pm-resource-table-card',
   standalone: true,
   imports: [DeclarativeTableCard],
+  providers: [InstancePermissionsStore],
   templateUrl: './resource-table-card.component.html',
   styles: `
     mfp-declarative-table-card {
@@ -69,6 +31,7 @@ import { finalize } from 'rxjs/operators';
 export class ResourceTableCard {
   private resourceService = inject(ResourceService);
   private errorHandlerService = inject(ErrorHandlerService);
+  private instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
 
   LuigiClient = input.required<LuigiClient>();
@@ -78,6 +41,9 @@ export class ResourceTableCard {
     viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
 
   resources = signal<Resource[]>([]);
+  tableResources = computed(() =>
+    this.resources().map((r) => ({ ...r, id: this.generateResourceId(r) })),
+  );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
@@ -173,6 +139,22 @@ export class ResourceTableCard {
       if (!version) return;
       const sub = this.subscribeToResourceChange(version);
       onCleanup(() => sub.unsubscribe());
+    });
+
+    effect(() => {
+      const rows = this.resources();
+      const rd = this.resourceDefinition();
+
+      if (!rd?.checkActionsForInstance?.actions.length || !rows.length) {
+        return;
+      }
+
+      const namespaced = this.isNamespaced();
+      const instances = rows.map((r) => ({
+        name: r.metadata.name,
+        namespace: namespaced ? r.metadata.namespace : undefined,
+      }));
+      this.instancePermissionsStore.sync(this.context(), rd, instances);
     });
   }
 
@@ -370,5 +352,15 @@ export class ResourceTableCard {
       throw new Error('Resource definition is not defined');
     }
     return resourceDefinition;
+  }
+
+  private generateResourceId(resource: Resource): string {
+    const resourceDefinition = this.getResourceDefinition();
+
+    return permissionKey({
+      resource: resourceDefinition.entity,
+      name: resource.metadata.name,
+      namespace: resource.metadata.namespace,
+    });
   }
 }
