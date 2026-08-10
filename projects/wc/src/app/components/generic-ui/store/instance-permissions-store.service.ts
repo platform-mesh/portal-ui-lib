@@ -6,13 +6,16 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
-import {
-  InstancePermissionResponse,
-  InstancePermissionsService,
-  ResourceNodeContext,
-} from '@platform-mesh/portal-ui-lib/services';
+import { PermissionsDefinition } from '@platform-mesh/portal-ui-lib/models/models';
+import { InstancePermissionResponse, InstancePermissionsService, ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import { permissionKey } from '@platform-mesh/portal-ui-lib/utils';
+
+
+
+
+
+
+
 
 /**
  * Per-component instance-permissions store.
@@ -38,13 +41,13 @@ export class InstancePermissionsStore {
    */
   sync(
     nodeContext: ResourceNodeContext,
-    resourceDefinition: ResourceDefinition,
+    permissionsDefinition: PermissionsDefinition,
     instances: { name: string; namespace?: string }[],
   ): void {
-    const toRequest = this.missing(resourceDefinition.entity, instances);
+    const toRequest = this.missing(permissionsDefinition.resource, instances);
     if (!toRequest.length) return;
     this.instancePermissionsService
-      .checkInstances(nodeContext, resourceDefinition, toRequest)
+      .checkInstances(nodeContext, permissionsDefinition, toRequest)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((res) => this.merge(res));
   }

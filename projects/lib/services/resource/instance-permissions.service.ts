@@ -2,16 +2,16 @@ import { ResourceNodeContext } from './resource-node-context';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
+import {
+  PermissionsDefinition,
+  ResourceDefinition,
+} from '@platform-mesh/portal-ui-lib/models';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 export interface InstanceCheck {
   resource: string;
-  apiGroup: string;
-  entityCollection: string;
-  version: string;
-  scope?: string;
+  group: string;
   namespace?: string;
   name: string;
   actions: string[];
@@ -38,13 +38,10 @@ export class InstancePermissionsService {
 
   private requestChecks(
     nodeContext: ResourceNodeContext,
-    resourceDefinition: ResourceDefinition,
+    permissionsDefinition: PermissionsDefinition,
     instances: { name: string; namespace?: string }[],
   ): Observable<InstancePermissionResponse[]> {
-    if (
-      !resourceDefinition.checkActionsForInstance?.actions.length ||
-      !instances.length
-    ) {
+    if (!permissionsDefinition?.entityActions.length || !instances.length) {
       return of([]);
     }
 
@@ -56,18 +53,12 @@ export class InstancePermissionsService {
       return of([]);
     }
 
-    const actions = resourceDefinition.checkActionsForInstance.actions;
-    const isNamespaced = resourceDefinition.scope === 'Namespaced';
-
     const checks: InstanceCheck[] = instances.map((instance) => ({
-      resource: resourceDefinition.entity,
-      apiGroup: resourceDefinition.apiGroup ?? '',
-      entityCollection: resourceDefinition.entityCollection,
-      version: resourceDefinition.version,
-      scope: resourceDefinition.scope ?? 'Cluster',
+      resource: permissionsDefinition.resource,
+      group: permissionsDefinition.group,
       name: instance.name,
-      namespace: isNamespaced ? instance.namespace : undefined,
-      actions,
+      namespace: instance.namespace,
+      actions: permissionsDefinition.entityActions,
     }));
 
     const body: ResourceCheckRequest = {
@@ -88,17 +79,17 @@ export class InstancePermissionsService {
 
   checkInstance(
     nodeContext: ResourceNodeContext,
-    resourceDefinition: ResourceDefinition,
+    permissionsDefinition: PermissionsDefinition,
     instance: { name: string; namespace?: string },
   ): Observable<InstancePermissionResponse[]> {
-    return this.requestChecks(nodeContext, resourceDefinition, [instance]);
+    return this.requestChecks(nodeContext, permissionsDefinition, [instance]);
   }
 
   checkInstances(
     nodeContext: ResourceNodeContext,
-    resourceDefinition: ResourceDefinition,
+    permissionsDefinition: PermissionsDefinition,
     instances: { name: string; namespace?: string }[],
   ): Observable<InstancePermissionResponse[]> {
-    return this.requestChecks(nodeContext, resourceDefinition, instances);
+    return this.requestChecks(nodeContext, permissionsDefinition, instances);
   }
 }

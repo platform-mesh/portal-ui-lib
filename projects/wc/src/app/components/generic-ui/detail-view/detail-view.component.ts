@@ -129,7 +129,7 @@ export class DetailView {
 
     return this.context().portalPermissions?.[
       permissionKey({
-        resource: resourceDefinition?.entity,
+        resource: resourceDefinition?.permissionsDefinition?.resource,
         name: resource?.metadata?.name,
         namespace: resource?.metadata?.namespace,
       })

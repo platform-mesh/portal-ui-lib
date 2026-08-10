@@ -93,7 +93,7 @@ export class ResourceTableCard {
   private canCreate = computed(
     () =>
       this.context().portalPermissions?.[
-        this.resourceDefinition()?.entity ?? ''
+        this.resourceDefinition()?.permissionsDefinition?.resource ?? ''
       ]?.includes('create') ?? true,
   );
   columns = computed(() => {
@@ -195,7 +195,7 @@ export class ResourceTableCard {
       const rows = this.resources();
       const rd = this.resourceDefinition();
 
-      if (!rd?.checkActionsForInstance?.actions.length || !rows.length) {
+      if (!rd?.permissionsDefinition?.entityActions.length || !rows.length) {
         return;
       }
 
@@ -204,7 +204,7 @@ export class ResourceTableCard {
         name: r.metadata.name,
         namespace: namespaced ? r.metadata.namespace : undefined,
       }));
-      this.instancePermissionsStore.sync(this.context(), rd, instances);
+      this.instancePermissionsStore.sync(this.context(), rd.permissionsDefinition!, instances);
     });
   }
 
@@ -420,16 +420,9 @@ export class ResourceTableCard {
 
   private generateResourceId(resource: Resource): string {
     const resourceDefinition = this.getResourceDefinition();
-    console.log(
-      permissionKey({
-        resource: resourceDefinition.entity,
-        name: resource.metadata.name,
-        namespace: resource.metadata.namespace,
-      }),
-    );
 
     return permissionKey({
-      resource: resourceDefinition.entity,
+      resource: resourceDefinition.permissionsDefinition?.resource,
       name: resource.metadata.name,
       namespace: resource.metadata.namespace,
     });

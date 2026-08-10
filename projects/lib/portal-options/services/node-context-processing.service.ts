@@ -126,12 +126,12 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   ) {
     const resourceDefinition = ctx.resourceDefinition;
 
-    if (!resourceDefinition || !resourceDefinition?.checkActionsForInstance) {
+    if (!resourceDefinition || !resourceDefinition?.permissionsDefinition) {
       return;
     }
 
     const name =
-      ctx[resourceDefinition.checkActionsForInstance.entityContextKey];
+      ctx[resourceDefinition.permissionsDefinition.entityContextKey];
 
     if (!name) {
       return;
@@ -142,7 +142,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       .getSearchParams().namespace;
 
     return this.instancePermissionsService
-      .checkInstance(ctx, resourceDefinition, { name, namespace })
+      .checkInstance(ctx, resourceDefinition.permissionsDefinition!, { name, namespace })
       .subscribe((result) => {
         const portalPermissions = ctx.portalPermissions ?? {};
 

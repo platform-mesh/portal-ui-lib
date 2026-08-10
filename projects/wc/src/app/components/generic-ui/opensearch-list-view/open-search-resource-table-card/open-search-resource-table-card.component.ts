@@ -178,7 +178,7 @@ export class OpenSearchResourceTableCard implements OnInit {
       const rows = this.resources();
       const rd = this.resourceDefinition();
 
-      if (!rd?.checkActionsForInstance?.actions.length || !rows.length) {
+      if (!rd?.permissionsDefinition?.entityActions.length || !rows.length) {
         return;
       }
 
@@ -187,7 +187,7 @@ export class OpenSearchResourceTableCard implements OnInit {
         name: (r as any).metadata?.name ?? r.id,
         namespace: namespaced ? (r as any).metadata?.namespace : undefined,
       }));
-      this.instancePermissionsStore.sync(this.context(), rd, instances);
+      this.instancePermissionsStore.sync(this.context(), rd.permissionsDefinition!, instances);
     });
   }
 
@@ -365,7 +365,7 @@ export class OpenSearchResourceTableCard implements OnInit {
     const resourceDefinition = this.getResourceDefinition();
 
     return permissionKey({
-      resource: resourceDefinition.entity,
+      resource: resourceDefinition.permissionsDefinition?.resource,
       name: resource.metadata.name,
       namespace: resource.metadata.namespace,
     });

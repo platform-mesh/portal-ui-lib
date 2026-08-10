@@ -27,6 +27,14 @@ export interface Resource extends GenericResource {
   accessibleName?: string;
 }
 
+export interface PermissionsDefinition {
+  group: string;
+  resource: string;
+  entityActions: string[];
+  resourceActions: string[];
+  entityContextKey: string;
+}
+
 export interface ResourceDefinition {
   apiGroup?: string;
   version: string;
@@ -37,8 +45,7 @@ export interface ResourceDefinition {
   namespace?: string;
   readyCondition?: PlatformMeshFieldDefinition;
   ui?: UIDefinition;
-  checkActionsForResource?: string[];
-  checkActionsForInstance?: { entityContextKey: string; actions: string[] };
+  permissionsDefinition?: PermissionsDefinition;
 }
 
 export const ResourceOperationTypeMap = {
