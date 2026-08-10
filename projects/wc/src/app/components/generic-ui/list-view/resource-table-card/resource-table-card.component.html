@@ -1,7 +1,8 @@
 <mfp-declarative-table-card
   data-testid="generic-list-view-table"
-  [resources]="resources()"
+  [resources]="tableResources()"
   [config]="config()"
+  [permissions]="instancePermissionsStore.permissions()"
   [createFormState]="createFormState()"
   (tableRowClicked)="navigateToResource($event)"
   (loadMoreResources)="loadMore()"

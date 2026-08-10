@@ -73,7 +73,7 @@ import { finalize } from 'rxjs/operators';
 export class ResourceTableCard {
   private resourceService = inject(ResourceService);
   private errorHandlerService = inject(ErrorHandlerService);
-  private instancePermissionsStore = inject(InstancePermissionsStore);
+  protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
 
   LuigiClient = input.required<LuigiClient>();
@@ -89,6 +89,12 @@ export class ResourceTableCard {
   resourceDefinition = computed(() => this.context().resourceDefinition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
+  );
+  private canCreate = computed(
+    () =>
+      this.context().portalPermissions?.[
+        this.resourceDefinition()?.entity ?? ''
+      ]?.includes('create') ?? true,
   );
   columns = computed(() => {
     let columns = this.resourceDefinition()?.ui?.listView?.fields ?? [];
@@ -153,15 +159,17 @@ export class ResourceTableCard {
         paginationLimit: this.paginationLimit(),
         hasMore: this.hasMore(),
       },
-      ...(this.hasUiCreateViewFields() && {
-        createResourceFormConfig: {
-          fields: () =>
-            toFormFields(this.createFormFields(), {
-              disabled: (field) => false,
-              resolveDynamicValues: (field) => this.resolveDynamicValues(field),
-            }),
-        },
-      }),
+      ...(this.hasUiCreateViewFields() &&
+        this.canCreate() && {
+          createResourceFormConfig: {
+            fields: () =>
+              toFormFields(this.createFormFields(), {
+                disabled: (field) => false,
+                resolveDynamicValues: (field) =>
+                  this.resolveDynamicValues(field),
+              }),
+          },
+        }),
       deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
     };
   });
@@ -412,6 +420,13 @@ export class ResourceTableCard {
 
   private generateResourceId(resource: Resource): string {
     const resourceDefinition = this.getResourceDefinition();
+    console.log(
+      permissionKey({
+        resource: resourceDefinition.entity,
+        name: resource.metadata.name,
+        namespace: resource.metadata.namespace,
+      }),
+    );
 
     return permissionKey({
       resource: resourceDefinition.entity,

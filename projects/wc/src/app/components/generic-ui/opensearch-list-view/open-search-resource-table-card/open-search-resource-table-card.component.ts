@@ -73,7 +73,7 @@ import { Subscription } from 'rxjs';
 export class OpenSearchResourceTableCard implements OnInit {
   private readResourcesProxy = inject(ReadResourcesProxyService);
   private errorHandlerService = inject(ErrorHandlerService);
-  private instancePermissionsStore = inject(InstancePermissionsStore);
+  protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
 
   LuigiClient = input.required<LuigiClient>();

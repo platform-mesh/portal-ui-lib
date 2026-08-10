@@ -1,6 +1,7 @@
 <mfp-declarative-table-card
   [resources]="resources()"
   [config]="config()"
+  [permissions]="instancePermissionsStore.permissions()"
   (tableRowClicked)="navigateToResource($event)"
   (pageChange)="onPageChange($event)"
   (paginationLimitChanged)="onLimitChange($event)"
