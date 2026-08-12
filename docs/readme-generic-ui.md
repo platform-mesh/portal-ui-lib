@@ -35,6 +35,25 @@ In order to use the generic list view, you need to adjust the node’s `content-
       }
     }
     ```
+  - `"resourceDefinition"` also accepts an optional `permissionsDefinition` object that enables instance and resource levels permission checks and gating:
+    - `group`: API group of the resource (e.g. `"core.platform-mesh.io"`)
+    - `resource`: plural resource name used as the permission key (e.g. `"HttpBins"`)
+    - `entityActions`: array of actions checked per instance (e.g. `["get", "update", "delete"]`). Controls whether edit/delete buttons are shown on the detail view. When empty, no per-instance checks are performed.
+    - `resourceActions`: array of resource-level actions (e.g. `["create", "list", "watch"]`).
+    - `entityContextKey`: the context key used to resolve the current entity name for the permission lookup.
+    ```json
+    {
+      "permissionsDefinition": {
+        "group": "core.platform-mesh.io",
+        "resource": "HttpBins",
+        "entityActions": ["get", "update", "delete"],
+        "resourceActions": ["create", "list", "watch"],
+        "entityContextKey": "httpbindId"
+      }
+    }
+    ```
+
+    When permissions are known for a resource, the list view hides the create button when `create` is missing, skips list requests when `list` is missing, and does not open the live-update subscription when `watch` is missing. If permissions for the resource are unknown, everything is shown (fail-open).
 
     - in the `"ui"` part of the `"resourceDefinition"` we can specify:
       - `"logoUrl"`: resource type logo shown in the view header
@@ -102,6 +121,7 @@ Each field definition supports the following properties:
     | 'encode'
 - `"jsonPathExpression"`: Alternative JSONPath expression for complex data access (takes precedence over `property`)
 - `"required"`: Boolean flag indicating if the field is mandatory (for create views)
+- `"requirePermission"`: Optional verb (e.g. `"update"`, `"delete"`) that gates rendering of this field per row. The field is shown when the verb is granted for the row, or while the row's permissions are still unknown; it is hidden once the row's permissions are known and the verb is absent. Fields without `requirePermission` always render. Commonly used on `displayAs: "button"` action fields to hide edit/delete buttons the user is not allowed to use.
 - `"values"`: Array of predefined values for selection
 - `"value"`: Static value for field
 - `"group"`: Object for grouping related fields together:

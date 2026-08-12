@@ -1,10 +1,3 @@
-import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
-import {
-  addSearchParams,
-  readUrlSearchParam,
-  snapshotUrl,
-} from '../../../../utils/url-params';
-import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,6 +5,7 @@ import {
   OnInit,
   ViewEncapsulation,
   computed,
+  effect,
   inject,
   input,
   linkedSignal,
@@ -25,6 +19,7 @@ import {
   GenericResource,
   TableCardConfig,
 } from '@openmfp/ngx';
+import { Resource } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
   ReadResourcesResult,
@@ -33,8 +28,18 @@ import {
 import {
   getResourceValueByJsonPath,
   isNamespacedResource,
+  permissionKey,
+  resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { Subscription } from 'rxjs';
+import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
+import {
+  addSearchParams,
+  readUrlSearchParam,
+  snapshotUrl,
+} from '../../../../utils/url-params';
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
+import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
 
 /**
  * Open-search–backed list-view card. Loaded inside `<mfp-dashboard>` via
@@ -61,6 +66,7 @@ import { Subscription } from 'rxjs';
   selector: 'pm-open-search-resource-table-card',
   standalone: true,
   imports: [DeclarativeTableCard],
+  providers: [InstancePermissionsStore],
   templateUrl: './open-search-resource-table-card.component.html',
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +74,7 @@ import { Subscription } from 'rxjs';
 export class OpenSearchResourceTableCard implements OnInit {
   private readResourcesProxy = inject(ReadResourcesProxyService);
   private errorHandlerService = inject(ErrorHandlerService);
+  protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
 
   LuigiClient = input.required<LuigiClient>();
@@ -77,6 +84,9 @@ export class OpenSearchResourceTableCard implements OnInit {
   private readonly urlSnapshot: Record<string, string> = snapshotUrl();
 
   resources = signal<GenericResource[]>([]);
+  tableResources = computed(() =>
+    this.resources().map((r) => ({ ...r, id: this.generateResourceId(r) })),
+  );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   columns = computed(() => {
     let columns = this.resourceDefinition()?.ui?.listView?.fields ?? [];
@@ -162,8 +172,25 @@ export class OpenSearchResourceTableCard implements OnInit {
   private listSubscription?: Subscription;
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
-  protected trackBy = (item: GenericResource) =>
-    (item as any).metadata?.name ?? item.id;
+  protected trackBy = (item: Resource) => item.metadata?.name ?? item.id;
+
+  constructor() {
+    effect(() => {
+      const rows = this.resources();
+      const rd = this.resourceDefinition();
+
+      if (!rd?.permissionsDefinition?.entityActions.length || !rows.length) {
+        return;
+      }
+
+      const namespaced = this.isNamespaced();
+      const instances = rows.map((r) => ({
+        name: (r as any).metadata?.name ?? r.id,
+        namespace: namespaced ? (r as any).metadata?.namespace : undefined,
+      }));
+      this.instancePermissionsStore.sync(this.context(), rd.permissionsDefinition!, instances);
+    });
+  }
 
   ngOnInit(): void {
     this.list();
@@ -195,6 +222,7 @@ export class OpenSearchResourceTableCard implements OnInit {
   }
 
   list(searchKey?: string | null) {
+    if (!this.canDo('list')) return;
     this.listSubscription?.unsubscribe();
 
     if (searchKey !== undefined) {
@@ -333,5 +361,23 @@ export class OpenSearchResourceTableCard implements OnInit {
     const filters = this.searchFilters();
     if (!filters?.length) return undefined;
     return this.matchUrlFilter(filters);
+  }
+
+  private generateResourceId(resource: any): string {
+    const resourceDefinition = this.getResourceDefinition();
+
+    return permissionKey({
+      resource: resourceDefinition.permissionsDefinition?.resource,
+      name: resource.metadata.name,
+      namespace: resource.metadata.namespace,
+    });
+  }
+
+  private canDo(verb: string): boolean {
+    return resourceActionAllowed(
+      this.context().portalPermissions,
+      this.resourceDefinition()?.permissionsDefinition?.resource,
+      verb,
+    );
   }
 }

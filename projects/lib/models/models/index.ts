@@ -1,5 +1,6 @@
-export * from './resource';
 export { GenericResource } from '@openmfp/ngx';
 export * from './account-info';
 export * from './logical-cluster';
+export * from './permissions';
+export * from './resource';
 export * from './ui-definition';

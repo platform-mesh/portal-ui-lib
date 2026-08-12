@@ -1,7 +1,8 @@
 <mfp-declarative-table-card
   data-testid="generic-list-view-table"
-  [resources]="resources()"
+  [resources]="tableResources()"
   [config]="config()"
+  [permissions]="instancePermissionsStore.permissions()"
   [createFormState]="createFormState()"
   (tableRowClicked)="navigateToResource($event)"
   (loadMoreResources)="loadMore()"
@@ -9,10 +10,5 @@
   (actionButtonClick)="executeAction($event)"
   (createFieldChange)="onCreateFieldChange($event)"
   (createSubmit)="onCreateSubmit($event)"
-/>
-
-<pm-delete-resource-modal
-  #deleteModal
-  [context]="context()"
-  (resource)="delete($event)"
+  (deleteSubmit)="delete($event)"
 />
