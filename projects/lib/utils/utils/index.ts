@@ -7,6 +7,7 @@ export * from './is-local-setup';
 export * from './is-namespaced-resource';
 export * from './merge-list-with-subscription-result';
 export * from './parse-raw-gql-query';
+export * from './resource-action-allowed';
 export * from './resource-field-by-path';
 export * from './resource-sanitizer';
 export * from './set-property-by-path';

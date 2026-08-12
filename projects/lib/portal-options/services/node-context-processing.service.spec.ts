@@ -3,11 +3,13 @@ import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
 import { TestBed } from '@angular/core/testing';
-import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
+import { AccountInfo, PermissionsDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
+  InstancePermissionsService,
   OrganizationReadyService,
 } from '@platform-mesh/portal-ui-lib/services';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
@@ -17,6 +19,8 @@ describe('NodeContextProcessingServiceImpl', () => {
   let crdGatewayKcpPatchResolver: MockedObject<CrdGatewayKcpPatchResolver>;
   let accountInfoService: MockedObject<AccountInfoService>;
   let organizationReadyService: MockedObject<OrganizationReadyService>;
+  let instancePermissionsService: MockedObject<InstancePermissionsService>;
+  let luigiCoreService: MockedObject<LuigiCoreService>;
 
   const mockEntityId = 'entity-123';
   const mockKind = 'account';
@@ -46,6 +50,15 @@ describe('NodeContextProcessingServiceImpl', () => {
     crdGatewayKcpPatchResolver = mock<CrdGatewayKcpPatchResolver>();
     accountInfoService = mock<AccountInfoService>();
     organizationReadyService = mock<OrganizationReadyService>();
+    instancePermissionsService = mock<InstancePermissionsService>();
+    luigiCoreService = mock<LuigiCoreService>();
+
+    // Default: checkInstance returns an empty array
+    instancePermissionsService.checkInstance.mockReturnValue(of([]));
+    // Default: routing().getSearchParams() returns empty object
+    luigiCoreService.routing.mockReturnValue({
+      getSearchParams: () => ({}),
+    } as any);
 
     mockEntityNode = {
       defineEntity: {
@@ -73,6 +86,11 @@ describe('NodeContextProcessingServiceImpl', () => {
           provide: OrganizationReadyService,
           useValue: organizationReadyService,
         },
+        {
+          provide: InstancePermissionsService,
+          useValue: instancePermissionsService,
+        },
+        { provide: LuigiCoreService, useValue: luigiCoreService },
       ],
     });
 
@@ -467,6 +485,154 @@ describe('NodeContextProcessingServiceImpl', () => {
       await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
 
       expect(ctx.portalPermissions).toEqual({ namespaces: ['list'] });
+    });
+  });
+
+  describe('getEntityPermissions', () => {
+    const makePermissionsDefinition = (overrides: Partial<PermissionsDefinition> = {}): PermissionsDefinition => ({
+      group: 'core.k8s.io',
+      resource: 'clusters',
+      entityActions: ['get', 'update', 'delete'],
+      resourceActions: ['create'],
+      entityContextKey: 'entityName',
+      ...overrides,
+    });
+
+    it('does nothing when ctx has no resourceDefinition', async () => {
+      const ctx: PortalNodeContext = { ...mockContext };
+      delete (ctx as any).resourceDefinition;
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(instancePermissionsService.checkInstance).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when resourceDefinition has no permissionsDefinition', async () => {
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(instancePermissionsService.checkInstance).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when ctx[entityContextKey] resolves to a falsy value', async () => {
+      // Use a key that processNodeContext does NOT populate ('customKey'),
+      // so it remains undefined when getEntityPermissions reads it.
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          permissionsDefinition: makePermissionsDefinition({ entityContextKey: 'customKey' as any }),
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(instancePermissionsService.checkInstance).not.toHaveBeenCalled();
+    });
+
+    it('calls checkInstance with permissionsDefinition and the resolved name', async () => {
+      // entityContextKey = 'entityName'; processNodeContext sets ctx.entityName = mockEntityId
+      // before getEntityPermissions runs, so name resolves to mockEntityId
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(instancePermissionsService.checkInstance).toHaveBeenCalledWith(
+        expect.objectContaining({ entityName: mockEntityId }),
+        pd,
+        expect.objectContaining({ name: mockEntityId }),
+      );
+    });
+
+    it('passes namespace from routing().getSearchParams() to checkInstance', async () => {
+      luigiCoreService.routing.mockReturnValue({
+        getSearchParams: () => ({ namespace: 'default' }),
+      } as any);
+
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(instancePermissionsService.checkInstance).toHaveBeenCalledWith(
+        expect.any(Object),
+        pd,
+        { name: mockEntityId, namespace: 'default' },
+      );
+    });
+
+    it('merges returned permissions into ctx.portalPermissions keyed by permissionKey', async () => {
+      instancePermissionsService.checkInstance.mockReturnValue(
+        of([
+          { resource: 'clusters', name: mockEntityId, actions: ['get', 'update'] },
+        ]),
+      );
+
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      // permissionKey({ resource: 'clusters', name: mockEntityId }) = 'clusters/entity-123'
+      expect(ctx.portalPermissions?.[`clusters/${mockEntityId}`]).toEqual(['get', 'update']);
+    });
+
+    it('initialises portalPermissions to {} when undefined before merging instance permissions', async () => {
+      instancePermissionsService.checkInstance.mockReturnValue(
+        of([{ resource: 'clusters', name: mockEntityId, actions: ['get'] }]),
+      );
+
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+        } as any,
+      };
+      delete (ctx as any).portalPermissions;
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.portalPermissions).toBeDefined();
+      expect(ctx.portalPermissions?.[`clusters/${mockEntityId}`]).toEqual(['get']);
     });
   });
 });

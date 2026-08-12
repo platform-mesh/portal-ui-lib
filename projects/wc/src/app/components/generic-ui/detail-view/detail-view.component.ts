@@ -46,6 +46,7 @@ import {
 import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
+  isNamespacedResource,
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
@@ -123,6 +124,8 @@ export class DetailView {
   isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
+
+  private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private instancePermissions = computed(() => {
     const resource = this.resource();
     const resourceDefinition = this.getResourceDefinition();
@@ -433,7 +436,7 @@ export class DetailView {
       a.click();
 
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       void this.LuigiClient()
         .uxManager()
         .showAlert({
@@ -469,6 +472,10 @@ export class DetailView {
       additionalFields.push(
         resourceDefinition.ui.detailView.resourceDescription,
       );
+    }
+
+    if (this.isNamespaced()) {
+      additionalFields.push({ property: 'metadata.namespace' });
     }
 
     if (resourceDefinition.ui?.detailView?.resourceTitle) {

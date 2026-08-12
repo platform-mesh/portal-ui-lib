@@ -51,6 +51,7 @@ import {
   isNamespacedResource,
   mergeListWithSubscriptionResult,
   permissionKey,
+  resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
@@ -89,12 +90,6 @@ export class ResourceTableCard {
   resourceDefinition = computed(() => this.context().resourceDefinition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
-  );
-  private canCreate = computed(
-    () =>
-      this.context().portalPermissions?.[
-        this.resourceDefinition()?.permissionsDefinition?.resource ?? ''
-      ]?.includes('create') ?? true,
   );
   columns = computed(() => {
     let columns = this.resourceDefinition()?.ui?.listView?.fields ?? [];
@@ -160,7 +155,7 @@ export class ResourceTableCard {
         hasMore: this.hasMore(),
       },
       ...(this.hasUiCreateViewFields() &&
-        this.canCreate() && {
+        this.canDo('create') && {
           createResourceFormConfig: {
             fields: () =>
               toFormFields(this.createFormFields(), {
@@ -187,6 +182,7 @@ export class ResourceTableCard {
     effect((onCleanup) => {
       const version = this.resourceVersion();
       if (!version) return;
+      if (!this.canDo('watch')) return;
       const sub = this.subscribeToResourceChange(version);
       onCleanup(() => sub.unsubscribe());
     });
@@ -204,7 +200,11 @@ export class ResourceTableCard {
         name: r.metadata.name,
         namespace: namespaced ? r.metadata.namespace : undefined,
       }));
-      this.instancePermissionsStore.sync(this.context(), rd.permissionsDefinition!, instances);
+      this.instancePermissionsStore.sync(
+        this.context(),
+        rd.permissionsDefinition!,
+        instances,
+      );
     });
   }
 
@@ -269,6 +269,7 @@ export class ResourceTableCard {
   }
 
   list(isInitialLoad: boolean = false) {
+    if (!this.canDo('list')) return;
     if (this.isLoadingList) return;
     this.isLoadingList = true;
 
@@ -426,6 +427,14 @@ export class ResourceTableCard {
       name: resource.metadata.name,
       namespace: resource.metadata.namespace,
     });
+  }
+
+  private canDo(verb: string): boolean {
+    return resourceActionAllowed(
+      this.context().portalPermissions,
+      this.resourceDefinition()?.permissionsDefinition?.resource,
+      verb,
+    );
   }
 
   private getDeleteConfig(

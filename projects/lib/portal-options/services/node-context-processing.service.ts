@@ -60,7 +60,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     );
 
     this.accamulatePortalPermissions(ctx);
-    this.getEntityPermissions(entityNode, ctx, entityId);
+    this.getEntityPermissions(ctx);
     try {
       const accountInfo = await firstValueFrom(
         this.accountInfoService.read({
@@ -119,19 +119,14 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     ctx.kcpCA = btoa(accountInfo.spec.clusterInfo.ca);
   }
 
-  private getEntityPermissions(
-    portalContext: PortalLuigiNode,
-    ctx: PortalNodeContext,
-    entityId: string,
-  ) {
+  private getEntityPermissions(ctx: PortalNodeContext) {
     const resourceDefinition = ctx.resourceDefinition;
 
     if (!resourceDefinition || !resourceDefinition?.permissionsDefinition) {
       return;
     }
 
-    const name =
-      ctx[resourceDefinition.permissionsDefinition.entityContextKey];
+    const name = ctx[resourceDefinition.permissionsDefinition.entityContextKey];
 
     if (!name) {
       return;
@@ -142,7 +137,10 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       .getSearchParams().namespace;
 
     return this.instancePermissionsService
-      .checkInstance(ctx, resourceDefinition.permissionsDefinition!, { name, namespace })
+      .checkInstance(ctx, resourceDefinition.permissionsDefinition!, {
+        name,
+        namespace,
+      })
       .subscribe((result) => {
         const portalPermissions = ctx.portalPermissions ?? {};
 

@@ -1,11 +1,3 @@
-import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
-import {
-  addSearchParams,
-  readUrlSearchParam,
-  snapshotUrl,
-} from '../../../../utils/url-params';
-import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
-import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -37,8 +29,17 @@ import {
   getResourceValueByJsonPath,
   isNamespacedResource,
   permissionKey,
+  resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { Subscription } from 'rxjs';
+import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
+import {
+  addSearchParams,
+  readUrlSearchParam,
+  snapshotUrl,
+} from '../../../../utils/url-params';
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
+import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
 
 /**
  * Open-search–backed list-view card. Loaded inside `<mfp-dashboard>` via
@@ -221,6 +222,7 @@ export class OpenSearchResourceTableCard implements OnInit {
   }
 
   list(searchKey?: string | null) {
+    if (!this.canDo('list')) return;
     this.listSubscription?.unsubscribe();
 
     if (searchKey !== undefined) {
@@ -369,5 +371,13 @@ export class OpenSearchResourceTableCard implements OnInit {
       name: resource.metadata.name,
       namespace: resource.metadata.namespace,
     });
+  }
+
+  private canDo(verb: string): boolean {
+    return resourceActionAllowed(
+      this.context().portalPermissions,
+      this.resourceDefinition()?.permissionsDefinition?.resource,
+      verb,
+    );
   }
 }

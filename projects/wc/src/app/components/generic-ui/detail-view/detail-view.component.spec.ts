@@ -1553,3 +1553,172 @@ describe('DetailViewComponent template', () => {
     expect(el).toBeFalsy();
   });
 });
+
+describe('DetailViewComponent — instancePermissions and canDoAction', () => {
+  let mockResourceService: any;
+  let mockGatewayService: any;
+  let envConfigServiceMock: MockedObject<EnvConfigService>;
+  let accountInfoServiceMock: MockedObject<AccountInfoService>;
+  let errorHandlerServiceMock: MockedObject<ErrorHandlerService>;
+
+  const makeContextWithPermissions = (
+    resource: string | undefined,
+    name: string,
+    portalPermissions: Record<string, string[]>,
+  ) =>
+    (() => ({
+      resourceId: name,
+      token: 'abc123',
+      portalPermissions,
+      resourceDefinition: {
+        version: 'v1alpha1',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
+        ...(resource
+          ? {
+              permissionsDefinition: {
+                group: 'core.k8s.io',
+                resource,
+                entityActions: ['get', 'update', 'delete'],
+                resourceActions: [],
+                entityContextKey: 'entityName',
+              },
+            }
+          : {}),
+        ui: { detailView: { fields: [] } },
+      },
+      entityName: name,
+      parentNavigationContexts: ['project'],
+    })) as any;
+
+  const makeLuigiClient = () =>
+    (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({ showAlert: vi.fn() }),
+      getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
+    })) as any;
+
+  beforeEach(() => {
+    envConfigServiceMock = mock();
+    accountInfoServiceMock = mock();
+    errorHandlerServiceMock = mock();
+    mockResourceService = {
+      read: vi.fn().mockReturnValue(of({ metadata: { name: 'c1' } })),
+      readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
+      delete: vi.fn().mockReturnValue(of({})),
+      update: vi.fn().mockReturnValue(of({})),
+    };
+    mockGatewayService = {
+      resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ResourceService, useValue: mockResourceService },
+        { provide: AccountInfoService, useValue: accountInfoServiceMock },
+        { provide: GatewayService, useValue: mockGatewayService },
+        { provide: EnvConfigService, useValue: envConfigServiceMock },
+        { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
+      ],
+    }).overrideComponent(DetailView, {
+      set: { template: '<div></div>' },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should show edit and delete when instancePermissions allows update and delete', () => {
+    // permissionKey({ resource: 'clusters', name: 'c1' }) = 'clusters/c1'
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContextWithPermissions('clusters', 'c1', {
+      'clusters/c1': ['get', 'update', 'delete'],
+    });
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+    component.resource.set({ metadata: { name: 'c1' } } as any);
+    const actions = component.dashboardConfig().customActions;
+    expect(actions.some((a) => a.action === 'edit')).toBe(true);
+    expect(actions.some((a) => a.action === 'delete')).toBe(true);
+  });
+
+  it('should hide edit action when instancePermissions does not include update', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContextWithPermissions('clusters', 'c1', {
+      'clusters/c1': ['get', 'delete'],
+    });
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+    component.resource.set({ metadata: { name: 'c1' } } as any);
+    const actions = component.dashboardConfig().customActions;
+    expect(actions.some((a) => a.action === 'edit')).toBe(false);
+    expect(actions.some((a) => a.action === 'delete')).toBe(true);
+  });
+
+  it('should hide delete action when instancePermissions does not include delete', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContextWithPermissions('clusters', 'c1', {
+      'clusters/c1': ['get', 'update'],
+    });
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+    component.resource.set({ metadata: { name: 'c1' } } as any);
+    const actions = component.dashboardConfig().customActions;
+    expect(actions.some((a) => a.action === 'edit')).toBe(true);
+    expect(actions.some((a) => a.action === 'delete')).toBe(false);
+  });
+
+  it('should show edit and delete when no permissionsDefinition (defaults to allowed)', () => {
+    // No permissionsDefinition — instancePermissions returns undefined → canDoAction returns true
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContextWithPermissions(undefined, 'c1', {});
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+    component.resource.set({ metadata: { name: 'c1' } } as any);
+    const actions = component.dashboardConfig().customActions;
+    expect(actions.some((a) => a.action === 'edit')).toBe(true);
+    expect(actions.some((a) => a.action === 'delete')).toBe(true);
+  });
+
+  it('should include namespace in permissionKey lookup for namespaced resource', () => {
+    // permissionKey({ resource: 'clusters', namespace: 'ns1', name: 'pod-1' }) = 'clusters/ns1/pod-1'
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContextWithPermissions('clusters', 'pod-1', {
+      'clusters/ns1/pod-1': ['get', 'update', 'delete'],
+    });
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+    component.resource.set({ metadata: { name: 'pod-1', namespace: 'ns1' } } as any);
+    const actions = component.dashboardConfig().customActions;
+    expect(actions.some((a) => a.action === 'edit')).toBe(true);
+    expect(actions.some((a) => a.action === 'delete')).toBe(true);
+  });
+
+  it('should default to allowed when portalPermissions key does not match (fail-open)', () => {
+    // Key mismatch: portalPermissions has cluster-scoped key but resource has namespace
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContextWithPermissions('clusters', 'pod-1', {
+      'clusters/pod-1': ['get', 'update', 'delete'],
+    });
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+    // resource with namespace: key becomes 'clusters/ns1/pod-1' — not found in map
+    component.resource.set({ metadata: { name: 'pod-1', namespace: 'ns1' } } as any);
+    const actions = component.dashboardConfig().customActions;
+    // instancePermissions() returns undefined → canDoAction defaults to true (fail-open)
+    expect(actions.some((a) => a.action === 'edit')).toBe(true);
+  });
+});

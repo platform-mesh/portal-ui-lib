@@ -2,10 +2,7 @@ import { ResourceNodeContext } from './resource-node-context';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import {
-  PermissionsDefinition,
-  ResourceDefinition,
-} from '@platform-mesh/portal-ui-lib/models';
+import { PermissionsDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -18,7 +15,6 @@ export interface InstanceCheck {
 }
 
 export interface ResourceCheckRequest {
-  token?: string;
   organization: string;
   accountPath?: string;
   checks: InstanceCheck[];
@@ -62,7 +58,6 @@ export class InstancePermissionsService {
     }));
 
     const body: ResourceCheckRequest = {
-      token,
       organization,
       accountPath,
       checks,
