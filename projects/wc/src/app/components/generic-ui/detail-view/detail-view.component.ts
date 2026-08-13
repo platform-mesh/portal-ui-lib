@@ -28,6 +28,7 @@ import {
   ButtonSettings,
   CardConfig,
   Dashboard,
+  EN_DEFAULTS,
   ResourceField,
   SectionConfig,
 } from '@openmfp/ngx';
@@ -139,7 +140,7 @@ export class DetailView {
     ];
   });
 
-  dashboardConfig = computed(() => {
+  customActions = computed(() => {
     const customActions: ButtonSettings[] = [];
 
     if (this.showDownloadKubeconfig()) {
@@ -172,6 +173,18 @@ export class DetailView {
       }
     }
 
+    return customActions;
+  });
+
+  i18n = computed(() => {
+    return {
+      ...EN_DEFAULTS,
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+    };
+  });
+
+  dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled()
       ? ''
       : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
@@ -182,7 +195,6 @@ export class DetailView {
       description: this.resourceDescriptionDefinition(),
       editable: true,
       backgroundImageUrl,
-      customActions,
     };
   });
 

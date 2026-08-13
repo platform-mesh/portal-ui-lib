@@ -1215,7 +1215,7 @@ describe('DetailViewComponent', () => {
 
       newFixture.detectChanges();
 
-      const actions = newComponent.dashboardConfig().customActions;
+      const actions = newComponent.customActions();
       expect(actions.some((a) => a.action === 'download-kubeconfig')).toBe(
         true,
       );
@@ -1248,7 +1248,7 @@ describe('DetailViewComponent', () => {
         getActiveFeatureToggles: () => [],
       })) as any;
       newFixture.detectChanges();
-      const actions = newComponent.dashboardConfig().customActions;
+      const actions = newComponent.customActions();
       expect(actions.some((a) => a.action === 'edit')).toBe(false);
       expect(actions.some((a) => a.action === 'delete')).toBe(false);
     });
@@ -1645,7 +1645,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1659,7 +1659,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(false);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1673,7 +1673,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(false);
   });
@@ -1686,7 +1686,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1700,8 +1700,10 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     });
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
-    component.resource.set({ metadata: { name: 'pod-1', namespace: 'ns1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    component.resource.set({
+      metadata: { name: 'pod-1', namespace: 'ns1' },
+    } as any);
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1716,8 +1718,10 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     // resource with namespace: key becomes 'clusters/ns1/pod-1' — not found in map
-    component.resource.set({ metadata: { name: 'pod-1', namespace: 'ns1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    component.resource.set({
+      metadata: { name: 'pod-1', namespace: 'ns1' },
+    } as any);
+    const actions = component.customActions();
     // instancePermissions() returns undefined → canDoAction defaults to true (fail-open)
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
   });
