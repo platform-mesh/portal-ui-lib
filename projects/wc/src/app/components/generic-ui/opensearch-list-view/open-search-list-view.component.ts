@@ -6,7 +6,14 @@ import {
   input,
 } from '@angular/core';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
-import { CARD_TYPES, CardConfig, Dashboard, SectionConfig } from '@openmfp/ngx';
+import {
+  ButtonSettings,
+  CARD_TYPES,
+  CardConfig,
+  Dashboard,
+  EN_DEFAULTS,
+  SectionConfig,
+} from '@openmfp/ngx';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 
 import { OpenSearchResourceTableCard } from './open-search-resource-table-card/open-search-resource-table-card.component';
@@ -64,17 +71,24 @@ export class OpenSearchListView {
 
   availableCards: CardConfig[] = [];
 
+  customActions: ButtonSettings[] = [];
+
+  i18n = computed(() => {
+    return {
+      ...EN_DEFAULTS,
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+    };
+  });
+
   dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled()
       ? ''
       : (this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
         '/assets/pm_background.png');
     return {
-      title: this.resourceTitleDefinition(),
-      description: this.resourceDescriptionDefinition(),
       backgroundImageUrl,
       editable: false,
-      customActions: [],
     };
   });
 }

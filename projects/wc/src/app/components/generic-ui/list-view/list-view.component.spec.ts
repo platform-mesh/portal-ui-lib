@@ -162,7 +162,7 @@ describe('ListViewComponent', () => {
     });
 
     it('should have no custom actions', () => {
-      expect(component.dashboardConfig().customActions.length).toBe(0);
+      expect(component.customActions.length).toBe(0);
     });
   });
 

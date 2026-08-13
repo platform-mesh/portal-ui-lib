@@ -52,7 +52,7 @@ describe('OpenSearchListView', () => {
 
   describe('dashboardConfig', () => {
     it('falls back to entityCollection for the title when resourceTitle.label is missing', () => {
-      expect(component.dashboardConfig().title).toBe('clusters');
+      expect(component.i18n().title).toBe('clusters');
     });
 
     it('uses resourceDefinition.ui.listView.resourceTitle.label when set', () => {
@@ -64,11 +64,11 @@ describe('OpenSearchListView', () => {
       });
       f.componentInstance.LuigiClient = component.LuigiClient;
       f.detectChanges();
-      expect(f.componentInstance.dashboardConfig().title).toBe('Custom title');
+      expect(f.componentInstance.i18n().title).toBe('Custom title');
     });
 
     it('falls back to the default description sentence when resourceDescription.label is missing', () => {
-      expect(component.dashboardConfig().description).toBe(
+      expect(component.i18n().description).toBe(
         'This page displays the created clusters in your environment',
       );
     });
@@ -84,7 +84,7 @@ describe('OpenSearchListView', () => {
       });
       f.componentInstance.LuigiClient = component.LuigiClient;
       f.detectChanges();
-      expect(f.componentInstance.dashboardConfig().description).toBe(
+      expect(f.componentInstance.i18n().description).toBe(
         'My description',
       );
     });
@@ -107,9 +107,8 @@ describe('OpenSearchListView', () => {
     });
 
     it('is not editable and has no custom actions', () => {
-      const cfg = component.dashboardConfig();
-      expect(cfg.editable).toBe(false);
-      expect(cfg.customActions).toEqual([]);
+      expect(component.dashboardConfig().editable).toBe(false);
+      expect(component.customActions).toEqual([]);
     });
   });
 
