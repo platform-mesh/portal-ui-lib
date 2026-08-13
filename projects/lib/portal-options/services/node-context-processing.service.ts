@@ -2,13 +2,18 @@ import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { Injectable, inject } from '@angular/core';
-import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
+import {
+  LuigiCoreService,
+  NodeContextProcessingService,
+} from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
   ErrorHandlerService,
+  InstancePermissionsService,
   OrganizationReadyService,
 } from '@platform-mesh/portal-ui-lib/services';
+import { permissionKey } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({
@@ -17,8 +22,10 @@ import { firstValueFrom } from 'rxjs';
 export class NodeContextProcessingServiceImpl implements NodeContextProcessingService {
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
   private accountInfoService = inject(AccountInfoService);
+  private instancePermissionsService = inject(InstancePermissionsService);
   private organizationReadyService = inject(OrganizationReadyService);
   private errorHandlerService = inject(ErrorHandlerService);
+  private luigiCoreService = inject(LuigiCoreService);
 
   public async processNodeContext(
     dynamicEntityId: string,
@@ -53,6 +60,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     );
 
     this.accamulatePortalPermissions(ctx);
+    this.getEntityPermissions(ctx);
     try {
       const accountInfo = await firstValueFrom(
         this.accountInfoService.read({
@@ -109,6 +117,40 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     ctx.organizationId = `${organizationOriginClusterId}/${organization}`;
     ctx.entityId = `${accountOriginClusterId}/${entityId}`;
     ctx.kcpCA = btoa(accountInfo.spec.clusterInfo.ca);
+  }
+
+  private getEntityPermissions(ctx: PortalNodeContext) {
+    const resourceDefinition = ctx.resourceDefinition;
+
+    if (!resourceDefinition || !resourceDefinition?.permissionsDefinition) {
+      return;
+    }
+
+    const name = ctx[resourceDefinition.permissionsDefinition.entityContextKey];
+
+    if (!name) {
+      return;
+    }
+
+    const namespace = this.luigiCoreService
+      .routing()
+      .getSearchParams().namespace;
+
+    return this.instancePermissionsService
+      .checkInstance(ctx, resourceDefinition.permissionsDefinition!, {
+        name,
+        namespace,
+      })
+      .subscribe((result) => {
+        const portalPermissions = ctx.portalPermissions ?? {};
+
+        result.forEach((permission) => {
+          portalPermissions[`${permissionKey(permission)}`] =
+            permission.actions;
+        });
+
+        ctx.portalPermissions = portalPermissions;
+      });
   }
 
   private accamulatePortalPermissions(ctx: PortalNodeContext) {

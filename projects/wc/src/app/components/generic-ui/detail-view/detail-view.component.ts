@@ -28,6 +28,7 @@ import {
   ButtonSettings,
   CardConfig,
   Dashboard,
+  EN_DEFAULTS,
   ResourceField,
   SectionConfig,
 } from '@openmfp/ngx';
@@ -46,6 +47,8 @@ import {
 import {
   generateGraphQLFields,
   getResourceValueByJsonPath,
+  isNamespacedResource,
+  permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -123,7 +126,21 @@ export class DetailView {
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
   );
 
-  dashboardConfig = computed(() => {
+  private isNamespaced = computed(() => isNamespacedResource(this.context()));
+  private instancePermissions = computed(() => {
+    const resource = this.resource();
+    const resourceDefinition = this.getResourceDefinition();
+
+    return this.context().portalPermissions?.[
+      permissionKey({
+        resource: resourceDefinition?.permissionsDefinition?.resource,
+        name: resource?.metadata?.name,
+        namespace: resource?.metadata?.namespace,
+      })
+    ];
+  });
+
+  customActions = computed(() => {
     const customActions: ButtonSettings[] = [];
 
     if (this.showDownloadKubeconfig()) {
@@ -137,17 +154,37 @@ export class DetailView {
     }
 
     if (this.resource()) {
-      customActions.push(
-        { action: 'edit', text: 'Edit', icon: 'edit', design: 'Default' },
-        {
+      if (this.canDoAction('update')) {
+        customActions.push({
+          action: 'edit',
+          text: 'Edit',
+          icon: 'edit',
+          design: 'Default',
+        });
+      }
+
+      if (this.canDoAction('delete')) {
+        customActions.push({
           action: 'delete',
           text: 'Delete',
           icon: 'delete',
           design: 'Negative',
-        },
-      );
+        });
+      }
     }
 
+    return customActions;
+  });
+
+  i18n = computed(() => {
+    return {
+      ...EN_DEFAULTS,
+      title: this.resourceTitleDefinition(),
+      description: this.resourceDescriptionDefinition(),
+    };
+  });
+
+  dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled()
       ? ''
       : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
@@ -158,7 +195,6 @@ export class DetailView {
       description: this.resourceDescriptionDefinition(),
       editable: true,
       backgroundImageUrl,
-      customActions,
     };
   });
 
@@ -412,7 +448,7 @@ export class DetailView {
       a.click();
 
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       void this.LuigiClient()
         .uxManager()
         .showAlert({
@@ -450,6 +486,10 @@ export class DetailView {
       );
     }
 
+    if (this.isNamespaced()) {
+      additionalFields.push({ property: 'metadata.namespace' });
+    }
+
     if (resourceDefinition.ui?.detailView?.resourceTitle) {
       additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
     }
@@ -473,6 +513,10 @@ export class DetailView {
     }
 
     return resourceId;
+  }
+
+  private canDoAction(action: string): boolean {
+    return this.instancePermissions()?.includes(action) ?? true;
   }
 
   protected dashboardConfigurationChanged(config: {

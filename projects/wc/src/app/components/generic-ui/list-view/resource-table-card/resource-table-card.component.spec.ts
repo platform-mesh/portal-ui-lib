@@ -1,5 +1,5 @@
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import { ResourceTableCard } from './resource-table-card.component';
-import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -8,6 +8,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
+  InstancePermissionsService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import * as utils from '@platform-mesh/portal-ui-lib/utils';
@@ -20,6 +21,8 @@ describe('ResourceTableCard', () => {
   let fixture: ComponentFixture<ResourceTableCard>;
   let mockResourceService: MockedObject<ResourceService>;
   let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
+  let mockInstancePermissionsService: MockedObject<InstancePermissionsService>;
+  let mockInstancePermissionsLocalStore: MockedObject<InstancePermissionsStore>;
 
   const makeContext = (overrides: object = {}) =>
     (() => ({
@@ -60,11 +63,25 @@ describe('ResourceTableCard', () => {
       of(undefined),
     );
     mockErrorHandlerService = mock();
+    mockInstancePermissionsService = mock();
+    // Default: checkInstances returns empty array so InstancePermissionsStore doesn't blow up
+    mockInstancePermissionsService.checkInstances.mockReturnValue(of([]));
+    mockInstancePermissionsLocalStore = mock();
+    // Default: all instances are "missing" so checkInstances is called
+    mockInstancePermissionsLocalStore.missing.mockReturnValue([]);
 
     TestBed.configureTestingModule({
       providers: [
         { provide: ResourceService, useValue: mockResourceService },
         { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
+        {
+          provide: InstancePermissionsService,
+          useValue: mockInstancePermissionsService,
+        },
+        {
+          provide: InstancePermissionsStore,
+          useValue: mockInstancePermissionsLocalStore,
+        },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     }).overrideComponent(ResourceTableCard, {
@@ -232,67 +249,37 @@ describe('ResourceTableCard', () => {
   });
 
   describe('Delete resource', () => {
-    it('should open the existing delete modal from the delete action', () => {
+    it('should delegate non-delete button actions to executeButtonAction', () => {
+      // executeAction now always calls executeButtonAction - delete is handled
+      // by DeclarativeTableCard via deleteResourceConfirmationConfig, not here
       const resource = { metadata: { name: 'test' } } as any;
       const event = {
         stopPropagation: vi.fn(),
       } as unknown as MouseEvent;
-      const open = vi.fn();
-      (component as any).deleteModal = () => ({ open });
-      mockResourceService.isAvailable.mockReturnValue(true);
 
-      component.executeAction({
-        event,
-        resource,
-        field: {
-          property: 'metadata.name',
-          uiSettings: {
-            displayAs: 'button',
-            buttonSettings: { action: DELETE_RESOURCE_ACTION },
+      // A non-delete action (e.g. navigate) should not throw
+      expect(() =>
+        component.executeAction({
+          event,
+          resource,
+          field: {
+            property: 'metadata.name',
+            uiSettings: {
+              displayAs: 'button',
+              buttonSettings: { action: 'navigate' },
+            },
           },
-        },
-      });
-
-      expect(event.stopPropagation).toHaveBeenCalled();
-      expect(open).toHaveBeenCalledWith(resource);
+        }),
+      ).not.toThrow();
     });
 
-    it('should not open the delete modal for a resource pending deletion', () => {
-      const resource = {
-        metadata: {
-          name: 'test',
-          deletionTimestamp: '2026-07-29T10:00:00Z',
-        },
-      } as any;
-      const event = {
-        stopPropagation: vi.fn(),
-      } as unknown as MouseEvent;
-      const open = vi.fn();
-      (component as any).deleteModal = () => ({ open });
-      mockResourceService.isAvailable.mockReturnValue(false);
-
-      component.executeAction({
-        event,
-        resource,
-        field: {
-          property: 'metadata.name',
-          uiSettings: {
-            displayAs: 'button',
-            buttonSettings: { action: DELETE_RESOURCE_ACTION },
-          },
-        },
-      });
-
-      expect(event.stopPropagation).toHaveBeenCalled();
-      expect(mockResourceService.isAvailable).toHaveBeenCalledWith(resource);
-      expect(open).not.toHaveBeenCalled();
-    });
-
-    it('should delete the resource and close the modal', () => {
+    it('should delete the resource and close the dialog via tableCard', () => {
       const resource = { metadata: { name: 'test' } } as any;
-      const close = vi.fn();
+      const closeDeleteDialog = vi.fn();
       mockResourceService.delete.mockReturnValue(of(resource));
-      (component as any).deleteModal = () => ({ close });
+      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(
+        () => ({ closeDeleteDialog }),
+      );
 
       component.delete(resource);
 
@@ -301,7 +288,7 @@ describe('ResourceTableCard', () => {
         component.resourceDefinition(),
         component.context(),
       );
-      expect(close).toHaveBeenCalled();
+      expect(closeDeleteDialog).toHaveBeenCalled();
     });
 
     it('should handle delete errors', () => {
@@ -312,6 +299,30 @@ describe('ResourceTableCard', () => {
       component.delete(resource);
 
       expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+    });
+
+    it('should build the delete confirmation config from the resource via config()', () => {
+      const deleteConfig = component.config().deleteResourceConfirmationConfig!({
+        metadata: { name: 'My-Cluster' },
+      } as any);
+
+      // name is lower-cased and used as the confirmation text
+      expect(deleteConfig.title).toBe('Delete my-cluster');
+      expect(deleteConfig.confirmationText).toBe('my-cluster');
+      expect(deleteConfig.message).toContain('<b>my-cluster</b>');
+      expect(deleteConfig.message).toContain('Cluster');
+      expect(deleteConfig.confirmLabel).toBe('Delete');
+      expect(deleteConfig.cancelLabel).toBe('Cancel');
+      expect(deleteConfig.confirmationPlaceholder).toBe('Type name');
+    });
+
+    it('should fall back to an empty confirmation name when metadata.name is missing', () => {
+      const deleteConfig = component.config().deleteResourceConfirmationConfig!({
+        metadata: {},
+      } as any);
+
+      expect(deleteConfig.title).toBe('Delete ');
+      expect(deleteConfig.confirmationText).toBe('');
     });
   });
 
@@ -498,9 +509,7 @@ describe('ResourceTableCard', () => {
       newComponent.context = makeNamespacedCreateContext();
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      const properties = newComponent
-        .createFormFields()
-        .map((f) => f.property);
+      const properties = newComponent.createFormFields().map((f) => f.property);
       expect(properties).not.toContain('metadata.namespace');
     });
 
@@ -511,9 +520,7 @@ describe('ResourceTableCard', () => {
       newComponent.context = makeNamespacedCreateContext();
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      const properties = newComponent
-        .createFormFields()
-        .map((f) => f.property);
+      const properties = newComponent.createFormFields().map((f) => f.property);
       expect(properties).toContain('metadata.namespace');
     });
 
@@ -854,50 +861,384 @@ describe('ResourceTableCard', () => {
       });
     });
   });
-});
 
-describe('ResourceTableCard template', () => {
-  it('should render mfp-declarative-table-card with data-testid="generic-list-view-table"', () => {
-    const resourceServiceMock = mock<ResourceService>();
-    resourceServiceMock.list.mockReturnValue(
-      of({ items: [], resourceVersion: '1' }),
-    );
-    resourceServiceMock.resourceChangeSubscription.mockReturnValue(
-      of(undefined),
-    );
-
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: ResourceService, useValue: resourceServiceMock },
-        {
-          provide: ErrorHandlerService,
-          useValue: mock<ErrorHandlerService>(),
+  describe('Permissions', () => {
+    it('should include createResourceFormConfig when canCreate=true (no permissionsDefinition)', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: {
+            createView: { fields: [{ property: 'metadata.name' }] },
+            listView: { fields: [] },
+          },
+          // no permissionsDefinition — canCreate defaults to true
         },
-      ],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA],
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(newComponent.config().createResourceFormConfig).toBeDefined();
     });
 
-    const fixture = TestBed.createComponent(ResourceTableCard);
-    const component = fixture.componentInstance;
-    component.context = (() => ({
-      resourceDefinition: {
-        entityCollection: 'clusters',
-        entity: 'Cluster',
-        apiGroup: 'core_k8s_io',
-        version: 'v1alpha1',
-        ui: { listView: { fields: [] }, detailView: { fields: [] } },
-      },
-    })) as any;
-    component.LuigiClient = (() => ({
-      linkManager: () => ({ navigate: vi.fn() }),
-      uxManager: () => ({ showAlert: vi.fn() }),
-      getNodeParams: vi.fn(),
-    })) as any;
-    fixture.detectChanges();
+    it('should omit createResourceFormConfig when portalPermissions does not include create', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        portalPermissions: { clusters: ['get'] }, // no 'create'
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          permissionsDefinition: {
+            group: 'core.k8s.io',
+            resource: 'clusters',
+            entityActions: ['get', 'delete'],
+            resourceActions: ['create'],
+            entityContextKey: 'entityName',
+          },
+          ui: {
+            createView: { fields: [{ property: 'metadata.name' }] },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(newComponent.config().createResourceFormConfig).toBeUndefined();
+    });
 
-    const el = fixture.nativeElement.querySelector(
-      '[data-testid="generic-list-view-table"]',
-    );
-    expect(el).not.toBeNull();
+    it('should include createResourceFormConfig when portalPermissions includes create', () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        portalPermissions: { clusters: ['get', 'create'] },
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          permissionsDefinition: {
+            group: 'core.k8s.io',
+            resource: 'clusters',
+            entityActions: ['get', 'delete'],
+            resourceActions: ['create'],
+            entityContextKey: 'entityName',
+          },
+          ui: {
+            createView: { fields: [{ property: 'metadata.name' }] },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(newComponent.config().createResourceFormConfig).toBeDefined();
+    });
+
+    it('should generate tableResources id using permissionsDefinition.resource via permissionKey', () => {
+      mockResourceService.list.mockReturnValue(
+        of({
+          items: [{ metadata: { name: 'c1', namespace: 'ns1' } }],
+          resourceVersion: '1',
+        }),
+      );
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          scope: 'Namespaced',
+          permissionsDefinition: {
+            group: 'core.k8s.io',
+            resource: 'clusters',
+            entityActions: ['get'],
+            resourceActions: [],
+            entityContextKey: 'entityName',
+          },
+          ui: { listView: { fields: [] } },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      // permissionKey({ resource: 'clusters', namespace: 'ns1', name: 'c1' }) = 'clusters/ns1/c1'
+      expect(newComponent.tableResources()[0].id).toBe('clusters/ns1/c1');
+    });
+
+    it('should generate tableResources id without resource prefix when no permissionsDefinition', () => {
+      mockResourceService.list.mockReturnValue(
+        of({
+          items: [{ metadata: { name: 'c1' } }],
+          resourceVersion: '1',
+        }),
+      );
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: { listView: { fields: [] } },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      // permissionKey({ resource: undefined, name: 'c1' }) = 'c1'
+      expect(newComponent.tableResources()[0].id).toBe('c1');
+    });
+
+    it('should NOT call instancePermissionsService.checkInstances when permissionsDefinition is absent', () => {
+      mockResourceService.list.mockReturnValue(
+        of({ items: [{ metadata: { name: 'c1' } }], resourceVersion: '1' }),
+      );
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: { listView: { fields: [] } },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(mockInstancePermissionsService.checkInstances).not.toHaveBeenCalled();
+    });
+
+    it('should NOT call instancePermissionsService.checkInstances when entityActions is empty', () => {
+      mockResourceService.list.mockReturnValue(
+        of({ items: [{ metadata: { name: 'c1' } }], resourceVersion: '1' }),
+      );
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          permissionsDefinition: {
+            group: 'core.k8s.io',
+            resource: 'clusters',
+            entityActions: [],
+            resourceActions: [],
+            entityContextKey: 'entityName',
+          },
+          ui: { listView: { fields: [] } },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(mockInstancePermissionsService.checkInstances).not.toHaveBeenCalled();
+    });
+
+    it('should call instancePermissionsService.checkInstances with correct args when entityActions are set', () => {
+      const pd = {
+        group: 'core.k8s.io',
+        resource: 'clusters',
+        entityActions: ['get', 'delete'],
+        resourceActions: [],
+        entityContextKey: 'entityName',
+      };
+      mockResourceService.list.mockReturnValue(
+        of({ items: [{ metadata: { name: 'c1' } }], resourceVersion: '1' }),
+      );
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        organization: 'my-org',
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+          ui: { listView: { fields: [] } },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      expect(mockInstancePermissionsService.checkInstances).toHaveBeenCalledWith(
+        expect.any(Object),
+        pd,
+        expect.arrayContaining([expect.objectContaining({ name: 'c1' })]),
+      );
+    });
+
+    describe('list() guard (canDo("list"))', () => {
+      const makePermissionedContext = (perms: Record<string, string[]> | undefined) =>
+        (() => ({
+          portalPermissions: perms,
+          resourceDefinition: {
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
+            version: 'v1alpha1',
+            permissionsDefinition: {
+              group: 'core.k8s.io',
+              resource: 'clusters',
+              entityActions: [],
+              resourceActions: ['list'],
+              entityContextKey: 'entityName',
+            },
+            ui: { listView: { fields: [] } },
+          },
+        })) as any;
+
+      it('does NOT call resourceService.list when portalPermissions has the resource entry without "list"', () => {
+        mockResourceService.list.mockClear();
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makePermissionedContext({ clusters: ['get'] });
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+        expect(mockResourceService.list).not.toHaveBeenCalled();
+      });
+
+      it('keeps isLoadingList false when list() is blocked by missing "list" permission', () => {
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makePermissionedContext({ clusters: ['get'] });
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+        // Calling list() directly should still be a no-op
+        newComponent.list();
+        expect((newComponent as any).isLoadingList).toBe(false);
+      });
+
+      it('calls resourceService.list when "list" verb is present in portalPermissions', () => {
+        mockResourceService.list.mockClear();
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: '1' }),
+        );
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makePermissionedContext({ clusters: ['list', 'get'] });
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+        expect(mockResourceService.list).toHaveBeenCalled();
+      });
+
+      it('calls resourceService.list when portalPermissions has no entry for the resource (fail-open)', () => {
+        mockResourceService.list.mockClear();
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: '1' }),
+        );
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        // No entry for 'clusters' → fail-open → list proceeds
+        newComponent.context = makePermissionedContext({ other: ['get'] });
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+        expect(mockResourceService.list).toHaveBeenCalled();
+      });
+
+      it('calls resourceService.list when portalPermissions is undefined (fail-open)', () => {
+        mockResourceService.list.mockClear();
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: '1' }),
+        );
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makePermissionedContext(undefined);
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+        expect(mockResourceService.list).toHaveBeenCalled();
+      });
+    });
+
+    describe('watch effect guard (canDo("watch"))', () => {
+      const makeWatchContext = (perms: Record<string, string[]> | undefined) =>
+        (() => ({
+          portalPermissions: perms,
+          resourceDefinition: {
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
+            version: 'v1alpha1',
+            permissionsDefinition: {
+              group: 'core.k8s.io',
+              resource: 'clusters',
+              entityActions: [],
+              resourceActions: ['list', 'watch'],
+              entityContextKey: 'entityName',
+            },
+            ui: { listView: { fields: [] } },
+          },
+        })) as any;
+
+      it('does NOT open a watch subscription when portalPermissions lacks "watch" for the resource', () => {
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: 'v1' }),
+        );
+        mockResourceService.resourceChangeSubscription.mockClear();
+
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makeWatchContext({ clusters: ['list'] }); // 'watch' absent
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+
+        // resourceVersion is now set ('v1') but the watch effect should have bailed out
+        expect(newComponent.resourceVersion()).toBe('v1');
+        expect(mockResourceService.resourceChangeSubscription).not.toHaveBeenCalled();
+      });
+
+      it('opens the watch subscription when "watch" is present in portalPermissions', () => {
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: 'v1' }),
+        );
+        mockResourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
+
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makeWatchContext({ clusters: ['list', 'watch'] });
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+
+        expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalled();
+      });
+
+      it('opens the watch subscription when portalPermissions has no entry for the resource (fail-open)', () => {
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: 'v1' }),
+        );
+        mockResourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
+
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makeWatchContext({ other: ['get'] }); // no 'clusters' entry
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+
+        expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalled();
+      });
+
+      it('opens the watch subscription when portalPermissions is undefined (fail-open)', () => {
+        mockResourceService.list.mockReturnValue(
+          of({ items: [], resourceVersion: 'v1' }),
+        );
+        mockResourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
+
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = makeWatchContext(undefined);
+        newComponent.LuigiClient = makeLuigiClient();
+        newFixture.detectChanges();
+
+        expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalled();
+      });
+    });
   });
 });

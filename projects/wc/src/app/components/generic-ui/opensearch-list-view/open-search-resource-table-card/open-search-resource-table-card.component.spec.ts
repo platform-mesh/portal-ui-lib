@@ -1,3 +1,4 @@
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import { ReadResourcesProxyService } from '../services/read-resources-proxy.service';
 import { OpenSearchResourceTableCard } from './open-search-resource-table-card.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -5,10 +6,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   ErrorHandlerService,
+  InstancePermissionsService,
   ReadResources,
   ReadResourcesResult,
 } from '@platform-mesh/portal-ui-lib/services';
-import { Subject, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
@@ -19,6 +21,8 @@ describe('OpenSearchResourceTableCard', () => {
   let mockLuigiCoreService: any;
   let mockReadResourcesProxy: { forContext: ReturnType<typeof vi.fn> };
   let mockReadResources: MockedObject<ReadResources>;
+  let mockInstancePermissionsService: MockedObject<InstancePermissionsService>;
+  let mockInstancePermissionsLocalStore: MockedObject<InstancePermissionsStore>;
   let listSubject: Subject<ReadResourcesResult>;
 
   const buildContext = (overrides: Partial<any> = {}) =>
@@ -65,6 +69,14 @@ describe('OpenSearchResourceTableCard', () => {
       forContext: vi.fn().mockReturnValue(mockReadResources),
     };
 
+    mockInstancePermissionsService = mock();
+    mockInstancePermissionsService.checkInstances.mockReturnValue(
+      listSubject.asObservable() as any,
+    );
+    mockInstancePermissionsLocalStore = mock();
+    // Default: all instances already cached → early-return in effect
+    mockInstancePermissionsLocalStore.missing.mockReturnValue([]);
+
     TestBed.configureTestingModule({
       providers: [
         { provide: LuigiCoreService, useValue: mockLuigiCoreService },
@@ -72,6 +84,14 @@ describe('OpenSearchResourceTableCard', () => {
         {
           provide: ReadResourcesProxyService,
           useValue: mockReadResourcesProxy,
+        },
+        {
+          provide: InstancePermissionsService,
+          useValue: mockInstancePermissionsService,
+        },
+        {
+          provide: InstancePermissionsStore,
+          useValue: mockInstancePermissionsLocalStore,
         },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -793,6 +813,229 @@ describe('OpenSearchResourceTableCard', () => {
       f.detectChanges();
       expect(f.componentInstance.selectedSearchFilter()?.value).toBe('*');
       f.destroy();
+    });
+  });
+
+  describe('Permissions', () => {
+    it('should generate tableResources id using permissionsDefinition.resource via permissionKey', () => {
+      const freshSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+      const f = TestBed.createComponent(OpenSearchResourceTableCard);
+      f.componentInstance.context = buildContext({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          scope: 'Namespaced',
+          permissionsDefinition: {
+            group: 'core.k8s.io',
+            resource: 'clusters',
+            entityActions: ['get'],
+            resourceActions: [],
+            entityContextKey: 'entityName',
+          },
+          ui: { listView: { fields: [] }, detailView: { fields: [] } },
+        },
+      });
+      f.componentInstance.LuigiClient = component.LuigiClient;
+      f.detectChanges();
+
+      freshSubject.next({
+        items: [{ id: 'r1', metadata: { name: 'c1', namespace: 'ns1' } } as any],
+      });
+      freshSubject.complete();
+      f.detectChanges();
+
+      // permissionKey({ resource: 'clusters', namespace: 'ns1', name: 'c1' }) = 'clusters/ns1/c1'
+      expect(f.componentInstance.tableResources()[0].id).toBe('clusters/ns1/c1');
+      f.destroy();
+    });
+
+    it('should generate tableResources id without resource prefix when no permissionsDefinition', () => {
+      const freshSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+      const f = TestBed.createComponent(OpenSearchResourceTableCard);
+      f.componentInstance.context = buildContext({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: { listView: { fields: [] }, detailView: { fields: [] } },
+        },
+      });
+      f.componentInstance.LuigiClient = component.LuigiClient;
+      f.detectChanges();
+
+      freshSubject.next({ items: [{ id: 'r1', metadata: { name: 'c1' } } as any] });
+      freshSubject.complete();
+      f.detectChanges();
+
+      // permissionKey({ resource: undefined, name: 'c1' }) = 'c1'
+      expect(f.componentInstance.tableResources()[0].id).toBe('c1');
+      f.destroy();
+    });
+
+    it('should NOT call instancePermissionsService.checkInstances when permissionsDefinition is absent', () => {
+      const freshSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+      const f = TestBed.createComponent(OpenSearchResourceTableCard);
+      f.componentInstance.context = buildContext({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: { listView: { fields: [] } },
+        },
+      });
+      f.componentInstance.LuigiClient = component.LuigiClient;
+      f.detectChanges();
+
+      freshSubject.next({ items: [{ id: 'r1', metadata: { name: 'c1' } } as any] });
+      freshSubject.complete();
+      f.detectChanges();
+
+      expect(mockInstancePermissionsService.checkInstances).not.toHaveBeenCalled();
+      f.destroy();
+    });
+
+    it('should call instancePermissionsService.checkInstances when entityActions are set', () => {
+      // The component uses providers: [InstancePermissionsStore] which creates its own store
+      // that uses the module-provided InstancePermissionsService mock.
+      mockInstancePermissionsService.checkInstances.mockReturnValue(of([]));
+      const pd = {
+        group: 'core.k8s.io',
+        resource: 'clusters',
+        entityActions: ['get', 'delete'],
+        resourceActions: [],
+        entityContextKey: 'entityName',
+      };
+      const freshSubject = new Subject<ReadResourcesResult>();
+      mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+      const f = TestBed.createComponent(OpenSearchResourceTableCard);
+      f.componentInstance.context = buildContext({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+          ui: { listView: { fields: [] } },
+        },
+      });
+      f.componentInstance.LuigiClient = component.LuigiClient;
+      f.detectChanges();
+
+      freshSubject.next({ items: [{ id: 'r1', metadata: { name: 'c1' } } as any] });
+      freshSubject.complete();
+      f.detectChanges();
+
+      expect(mockInstancePermissionsService.checkInstances).toHaveBeenCalledWith(
+        expect.any(Object),
+        pd,
+        expect.arrayContaining([expect.objectContaining({ name: 'c1' })]),
+      );
+      f.destroy();
+    });
+
+    describe('list() guard (canDo("list"))', () => {
+      const makeListGuardContext = (perms: Record<string, string[]> | undefined) =>
+        buildContext({
+          portalPermissions: perms,
+          resourceDefinition: {
+            entityCollection: 'clusters',
+            entity: 'Cluster',
+            apiGroup: 'core_k8s_io',
+            version: 'v1alpha1',
+            permissionsDefinition: {
+              group: 'core.k8s.io',
+              resource: 'clusters',
+              entityActions: [],
+              resourceActions: ['list'],
+              entityContextKey: 'entityName',
+            },
+            ui: { listView: { fields: [] }, detailView: { fields: [] } },
+          },
+        });
+
+      it('does NOT call readResourcesProxy.list when portalPermissions has the resource entry without "list"', () => {
+        const freshSubject = new Subject<ReadResourcesResult>();
+        mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+        const f = TestBed.createComponent(OpenSearchResourceTableCard);
+        f.componentInstance.context = makeListGuardContext({ clusters: ['get'] });
+        f.componentInstance.LuigiClient = component.LuigiClient;
+
+        const callsBefore = mockReadResources.list.mock.calls.length;
+        f.detectChanges(); // triggers ngOnInit → list()
+        expect(mockReadResources.list.mock.calls.length).toBe(callsBefore);
+        f.destroy();
+      });
+
+      it('calls readResourcesProxy.list when "list" verb is present in portalPermissions', () => {
+        const freshSubject = new Subject<ReadResourcesResult>();
+        mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+        const f = TestBed.createComponent(OpenSearchResourceTableCard);
+        f.componentInstance.context = makeListGuardContext({ clusters: ['list', 'get'] });
+        f.componentInstance.LuigiClient = component.LuigiClient;
+
+        const callsBefore = mockReadResources.list.mock.calls.length;
+        f.detectChanges();
+        expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
+        f.destroy();
+      });
+
+      it('calls readResourcesProxy.list when portalPermissions has no entry for the resource (fail-open)', () => {
+        const freshSubject = new Subject<ReadResourcesResult>();
+        mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+        const f = TestBed.createComponent(OpenSearchResourceTableCard);
+        // No entry for 'clusters' → fail-open
+        f.componentInstance.context = makeListGuardContext({ other: ['get'] });
+        f.componentInstance.LuigiClient = component.LuigiClient;
+
+        const callsBefore = mockReadResources.list.mock.calls.length;
+        f.detectChanges();
+        expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
+        f.destroy();
+      });
+
+      it('calls readResourcesProxy.list when portalPermissions is undefined (fail-open)', () => {
+        const freshSubject = new Subject<ReadResourcesResult>();
+        mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+        const f = TestBed.createComponent(OpenSearchResourceTableCard);
+        f.componentInstance.context = makeListGuardContext(undefined);
+        f.componentInstance.LuigiClient = component.LuigiClient;
+
+        const callsBefore = mockReadResources.list.mock.calls.length;
+        f.detectChanges();
+        expect(mockReadResources.list.mock.calls.length).toBe(callsBefore + 1);
+        f.destroy();
+      });
+
+      it('does NOT call readResourcesProxy.list on explicit list() call when "list" is denied', () => {
+        // Initial ngOnInit is blocked; subsequent explicit call must also be blocked.
+        const freshSubject = new Subject<ReadResourcesResult>();
+        mockReadResources.list.mockReturnValue(freshSubject.asObservable());
+
+        const f = TestBed.createComponent(OpenSearchResourceTableCard);
+        f.componentInstance.context = makeListGuardContext({ clusters: ['get'] });
+        f.componentInstance.LuigiClient = component.LuigiClient;
+        f.detectChanges();
+
+        const callsBefore = mockReadResources.list.mock.calls.length;
+        f.componentInstance.list();
+        expect(mockReadResources.list.mock.calls.length).toBe(callsBefore);
+        f.destroy();
+      });
     });
   });
 });

@@ -9,8 +9,7 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from '../../create-resource-modal/create-resource-modal.consts';
-import { DeleteResourceModal } from '../../delete-resource-confirmation-modal/delete-resource-modal.component';
-import { DELETE_RESOURCE_ACTION } from './resource-table-card.consts';
+import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -27,6 +26,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   DeclarativeTableCard,
+  DeleteResourceConfirmationConfig,
   FormFieldChangeEvent,
   FormFieldErrors,
   ResourceFieldButtonClickEvent,
@@ -50,6 +50,8 @@ import {
   getValueByPath,
   isNamespacedResource,
   mergeListWithSubscriptionResult,
+  permissionKey,
+  resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
@@ -57,7 +59,8 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'pm-resource-table-card',
   standalone: true,
-  imports: [DeclarativeTableCard, DeleteResourceModal],
+  providers: [InstancePermissionsStore],
+  imports: [DeclarativeTableCard],
   templateUrl: './resource-table-card.component.html',
   styles: `
     mfp-declarative-table-card {
@@ -71,6 +74,7 @@ import { finalize } from 'rxjs/operators';
 export class ResourceTableCard {
   private resourceService = inject(ResourceService);
   private errorHandlerService = inject(ErrorHandlerService);
+  protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
 
   LuigiClient = input.required<LuigiClient>();
@@ -78,9 +82,11 @@ export class ResourceTableCard {
 
   tableCard =
     viewChild.required<DeclarativeTableCard<Resource>>(DeclarativeTableCard);
-  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   resources = signal<Resource[]>([]);
+  tableResources = computed(() =>
+    this.resources().map((r) => ({ ...r, id: this.generateResourceId(r) })),
+  );
   resourceDefinition = computed(() => this.context().resourceDefinition);
   hasUiCreateViewFields = computed(
     () => !!this.resourceDefinition()?.ui?.createView?.fields?.length,
@@ -139,7 +145,7 @@ export class ResourceTableCard {
     return fields;
   });
 
-  config = computed<TableCardConfig>(() => {
+  config = computed<TableCardConfig<Resource>>(() => {
     return {
       header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
@@ -148,15 +154,18 @@ export class ResourceTableCard {
         paginationLimit: this.paginationLimit(),
         hasMore: this.hasMore(),
       },
-      ...(this.hasUiCreateViewFields() && {
-        createResourceFormConfig: {
-          fields: () =>
-            toFormFields(this.createFormFields(), {
-              disabled: (field) => false,
-              resolveDynamicValues: (field) => this.resolveDynamicValues(field),
-            }),
-        },
-      }),
+      ...(this.hasUiCreateViewFields() &&
+        this.canDo('create') && {
+          createResourceFormConfig: {
+            fields: () =>
+              toFormFields(this.createFormFields(), {
+                disabled: (field) => false,
+                resolveDynamicValues: (field) =>
+                  this.resolveDynamicValues(field),
+              }),
+          },
+        }),
+      deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
     };
   });
 
@@ -173,8 +182,29 @@ export class ResourceTableCard {
     effect((onCleanup) => {
       const version = this.resourceVersion();
       if (!version) return;
+      if (!this.canDo('watch')) return;
       const sub = this.subscribeToResourceChange(version);
       onCleanup(() => sub.unsubscribe());
+    });
+
+    effect(() => {
+      const rows = this.resources();
+      const rd = this.resourceDefinition();
+
+      if (!rd?.permissionsDefinition?.entityActions.length || !rows.length) {
+        return;
+      }
+
+      const namespaced = this.isNamespaced();
+      const instances = rows.map((r) => ({
+        name: r.metadata.name,
+        namespace: namespaced ? r.metadata.namespace : undefined,
+      }));
+      this.instancePermissionsStore.sync(
+        this.context(),
+        rd.permissionsDefinition!,
+        instances,
+      );
     });
   }
 
@@ -239,6 +269,7 @@ export class ResourceTableCard {
   }
 
   list(isInitialLoad: boolean = false) {
+    if (!this.canDo('list')) return;
     if (this.isLoadingList) return;
     this.isLoadingList = true;
 
@@ -313,18 +344,6 @@ export class ResourceTableCard {
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
-    if (
-      event.field.uiSettings?.buttonSettings?.action === DELETE_RESOURCE_ACTION &&
-      event.resource
-    ) {
-      event.event.stopPropagation();
-      if (!this.resourceService.isAvailable(event.resource)) {
-        return;
-      }
-      this.deleteModal()?.open(event.resource);
-      return;
-    }
-
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
@@ -370,7 +389,7 @@ export class ResourceTableCard {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.deleteModal()?.close();
+          this.tableCard().closeDeleteDialog();
         },
         error: (error) => {
           this.errorHandlerService.handleError(error);
@@ -398,5 +417,40 @@ export class ResourceTableCard {
       throw new Error('Resource definition is not defined');
     }
     return resourceDefinition;
+  }
+
+  private generateResourceId(resource: Resource): string {
+    const resourceDefinition = this.getResourceDefinition();
+
+    return permissionKey({
+      resource: resourceDefinition.permissionsDefinition?.resource,
+      name: resource.metadata.name,
+      namespace: resource.metadata.namespace,
+    });
+  }
+
+  private canDo(verb: string): boolean {
+    return resourceActionAllowed(
+      this.context().portalPermissions,
+      this.resourceDefinition()?.permissionsDefinition?.resource,
+      verb,
+    );
+  }
+
+  private getDeleteConfig(
+    resource: Resource,
+  ): DeleteResourceConfirmationConfig {
+    const resourceDefinition = this.getResourceDefinition();
+    const name = resource.metadata?.name?.toLowerCase() ?? '';
+    return {
+      title: `Delete ${name}`,
+      message: `<p>Are you sure you want to delete ${resourceDefinition?.entity} <b>${name}</b>?</p>
+        <p class="dialog__message--critical">This action <b>cannot</b> be undone.</p>
+        <p>Please type <b>${name}</b> to confirm:</p>`,
+      confirmationText: name,
+      confirmationPlaceholder: 'Type name',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    };
   }
 }

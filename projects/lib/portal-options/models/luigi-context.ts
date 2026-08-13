@@ -1,6 +1,5 @@
 import { NodeContext } from '@openmfp/portal-ui-lib';
-import { ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
-
+import { Permission, ResourceDefinition } from '@platform-mesh/portal-ui-lib/models';
 export interface PortalContext extends Record<string, any> {
   crdGatewayApiUrl: string;
 }
@@ -9,11 +8,6 @@ interface PortalEntityContext {
   account: {
     id: string;
   };
-}
-
-export interface Permission {
-  actions: string[];
-  resource: string;
 }
 
 export interface PortalNodeContext extends NodeContext {
