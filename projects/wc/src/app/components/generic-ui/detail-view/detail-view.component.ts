@@ -494,10 +494,14 @@ export class DetailView {
       additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
     }
 
+    // The query must cover the fields the detail view renders
+    // (ui.detailView.fields), not only the createView fields: detail-only
+    // properties would otherwise never be fetched and silently render empty.
+    // Duplicate selections are merged by GraphQL.
     return generateGraphQLFields(
-      flattenFieldTree(this.resourceCreateEditFields()).concat(
-        additionalFields,
-      ),
+      flattenFieldTree(this.resourceFields())
+        .concat(flattenFieldTree(this.resourceCreateEditFields()))
+        .concat(additionalFields),
     );
   }
 

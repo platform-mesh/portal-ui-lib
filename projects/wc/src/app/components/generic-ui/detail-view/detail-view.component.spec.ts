@@ -1470,6 +1470,42 @@ describe('DetailViewComponent', () => {
       });
     });
   });
+
+  describe('getDetailViewQueryFields', () => {
+    it('should include detailView-only fields in the read query', () => {
+      mockResourceService.read.mockClear();
+
+      const localFixture = TestBed.createComponent(DetailView);
+      const localComponent = localFixture.componentInstance;
+      localComponent.context = (() => ({
+        ...component.context(),
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
+          ui: {
+            createView: {
+              fields: [{ property: 'metadata.name' }],
+            },
+            detailView: {
+              fields: [
+                { property: 'metadata.name' },
+                { property: 'spec.detailOnlyField' },
+              ],
+            },
+          },
+        },
+      })) as any;
+      localComponent.LuigiClient = component.LuigiClient;
+      localFixture.detectChanges();
+
+      expect(mockResourceService.read).toHaveBeenCalled();
+      const fields = mockResourceService.read.mock.calls[0][2];
+      expect(JSON.stringify(fields)).toContain('detailOnlyField');
+      expect(JSON.stringify(fields)).toContain('name');
+    });
+  });
 });
 
 describe('DetailViewComponent template', () => {
@@ -1725,4 +1761,5 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     // instancePermissions() returns undefined → canDoAction defaults to true (fail-open)
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
   });
+
 });
