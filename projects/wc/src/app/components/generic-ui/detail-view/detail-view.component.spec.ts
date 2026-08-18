@@ -1472,7 +1472,7 @@ describe('DetailViewComponent', () => {
   });
 
   describe('getDetailViewQueryFields', () => {
-    it('should include detailView-only fields in the read query', () => {
+    it('should build the read query from detailView fields', () => {
       mockResourceService.read.mockClear();
 
       const localFixture = TestBed.createComponent(DetailView);
@@ -1486,7 +1486,7 @@ describe('DetailViewComponent', () => {
           apiGroup: 'core_k8s_io',
           ui: {
             createView: {
-              fields: [{ property: 'metadata.name' }],
+              fields: [{ property: 'spec.createOnlyField' }],
             },
             detailView: {
               fields: [
@@ -1501,9 +1501,10 @@ describe('DetailViewComponent', () => {
       localFixture.detectChanges();
 
       expect(mockResourceService.read).toHaveBeenCalled();
-      const fields = mockResourceService.read.mock.calls[0][2];
-      expect(JSON.stringify(fields)).toContain('detailOnlyField');
-      expect(JSON.stringify(fields)).toContain('name');
+      const fields = JSON.stringify(mockResourceService.read.mock.calls[0][2]);
+      expect(fields).toContain('detailOnlyField');
+      expect(fields).toContain('name');
+      expect(fields).not.toContain('createOnlyField');
     });
   });
 });

@@ -105,7 +105,7 @@ export class DetailView {
       this.defaultDescription(),
   );
 
-  resourceFields = computed(
+  resourceDetailFields = computed(
     () => this.resourceDefinition()?.ui?.detailView?.fields ?? [],
   );
   resourceCreateEditFields = computed(
@@ -115,7 +115,7 @@ export class DetailView {
   workspacePath = computed(() =>
     this.gatewayService.resolveKcpPath(this.context()),
   );
-  viewFields = computed(() => processGroupFields(this.resourceFields()));
+  viewFields = computed(() => processGroupFields(this.resourceDetailFields()));
   showDownloadKubeconfig = computed(
     () =>
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
@@ -494,14 +494,11 @@ export class DetailView {
       additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
     }
 
-    // The query must cover the fields the detail view renders
-    // (ui.detailView.fields), not only the createView fields: detail-only
-    // properties would otherwise never be fetched and silently render empty.
-    // Duplicate selections are merged by GraphQL.
+    // The query covers exactly what the detail view renders
+    // (ui.detailView.fields); createView is a separate field set and is not
+    // part of the detail read.
     return generateGraphQLFields(
-      flattenFieldTree(this.resourceFields())
-        .concat(flattenFieldTree(this.resourceCreateEditFields()))
-        .concat(additionalFields),
+      flattenFieldTree(this.resourceDetailFields()).concat(additionalFields),
     );
   }
 
