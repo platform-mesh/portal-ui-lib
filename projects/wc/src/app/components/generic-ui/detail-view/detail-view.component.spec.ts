@@ -303,22 +303,27 @@ describe('DetailViewComponent', () => {
       });
     });
 
-    it('should open edit resource modal', () => {
+    it('should refetch the resource with createView fields and open the edit modal', () => {
       const mockCreateModal = {
         open: vi.fn(),
       };
       (component as any).createModal = () => mockCreateModal;
 
-      const resource: any = {
+      const fetchedResource = {
         metadata: { name: 'test-resource' },
+        spec: { createOnlyField: 'current-value' },
       };
+      mockResourceService.read.mockClear();
+      mockResourceService.read.mockReturnValue(of(fetchedResource));
+
       const event = new MouseEvent('click');
       const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
 
-      component.openEditResourceModal(event, resource);
+      component.openEditResourceModal(event);
 
       expect(stopPropagationSpy).toHaveBeenCalled();
-      expect(mockCreateModal.open).toHaveBeenCalledWith(resource);
+      expect(mockResourceService.read).toHaveBeenCalled();
+      expect(mockCreateModal.open).toHaveBeenCalledWith(fetchedResource);
     });
 
     it('should delete resource successfully', () => {
@@ -1275,7 +1280,7 @@ describe('DetailViewComponent', () => {
         event,
         action: { action: 'edit' },
       } as any);
-      expect(openEditSpy).toHaveBeenCalledWith(event, resource);
+      expect(openEditSpy).toHaveBeenCalledWith(event);
     });
 
     it('should call openDeleteResourceModal for delete action when resource exists', () => {

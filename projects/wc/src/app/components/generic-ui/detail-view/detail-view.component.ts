@@ -51,7 +51,7 @@ import {
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { take, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-detail-view',
@@ -237,7 +237,7 @@ export class DetailView {
         this.downloadKubeConfig();
         break;
       case 'edit':
-        if (resource) this.openEditResourceModal(event, resource);
+        if (resource) this.openEditResourceModal(event);
         break;
       case 'delete':
         if (resource) this.openDeleteResourceModal(event, resource);
@@ -344,9 +344,29 @@ export class DetailView {
     this.deleteModal()?.open(resourceToDelete);
   }
 
-  openEditResourceModal(event: MouseEvent, resource: Resource) {
+  openEditResourceModal(event: MouseEvent) {
     event.stopPropagation?.();
-    this.createModal()?.open(resource);
+    const resourceDefinition = this.getResourceDefinition();
+    // The edit form works on createView.fields, which the detail read does
+    // not fetch - refetch the resource with exactly that selection so the
+    // form is prefilled with current values.
+    const fields = generateGraphQLFields(
+      flattenFieldTree(this.resourceCreateEditFields()),
+    );
+
+    this.resourceService
+      .read(
+        this.getResourceId(),
+        resourceDefinition,
+        fields,
+        this.context(),
+        resourceDefinition.entity.toLowerCase() === 'account',
+      )
+      .pipe(take(1))
+      .subscribe({
+        next: (resource) => void this.createModal()?.open(resource),
+        error: (error) => this.errorHandlerService.handleError(error),
+      });
   }
 
   delete(resource: Resource) {
