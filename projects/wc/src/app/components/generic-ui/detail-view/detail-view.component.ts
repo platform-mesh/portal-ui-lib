@@ -33,6 +33,7 @@ import {
   SectionConfig,
 } from '@openmfp/ngx';
 import {
+  DownloadKubeconfigFromSecretRefAction,
   PlatformMeshFieldDefinition,
   Resource,
 } from '@platform-mesh/portal-ui-lib/models';
@@ -40,11 +41,13 @@ import {
   AccountInfoService,
   ErrorHandlerService,
   GatewayService,
+  KubeconfigSecretService,
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
+  decodeBase64,
   generateGraphQLFields,
   getResourceValueByJsonPath,
   isNamespacedResource,
@@ -52,6 +55,8 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 import { take, tap } from 'rxjs/operators';
+
+const SECRET_REF_ACTION_PREFIX = 'download-kubeconfig-from-secret-ref:';
 
 @Component({
   selector: 'pm-detail-view',
@@ -74,6 +79,7 @@ export class DetailView {
   private resourceService = inject(ResourceService);
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
+  private kubeconfigSecretService = inject(KubeconfigSecretService);
   private errorHandlerService = inject(ErrorHandlerService);
   private dashboardConfigService = inject(DashboardConfigService);
   private destroyRef = inject(DestroyRef);
@@ -121,6 +127,15 @@ export class DetailView {
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
       false,
   );
+  secretRefActions = computed(
+    () =>
+      this.resourceDefinition()?.ui?.detailView?.actions?.filter(
+        (action): action is DownloadKubeconfigFromSecretRefAction =>
+          'type' in action &&
+          action.type === 'downloadKubeconfigFromSecretRef' &&
+          typeof action.nameProperty === 'string',
+      ) ?? [],
+  );
   isDownloadingKubeConfig = signal(false);
   isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
@@ -152,6 +167,21 @@ export class DetailView {
         tooltip: 'Download kubeconfig',
       });
     }
+
+    this.secretRefActions().forEach((configuredAction, index) => {
+      if (!this.resolveSecretReference(configuredAction)) {
+        return;
+      }
+
+      customActions.push({
+        text: 'Download kubeconfig',
+        icon: 'download-from-cloud',
+        design: 'Default',
+        tooltip: 'Download kubeconfig',
+        ...configuredAction.button,
+        action: `${SECRET_REF_ACTION_PREFIX}${index}`,
+      });
+    });
 
     if (this.resource()) {
       if (this.canDoAction('update')) {
@@ -232,6 +262,12 @@ export class DetailView {
     action: ButtonSettings;
   }): void {
     const resource = this.resource();
+    const secretRefAction = this.getSecretRefAction(action.action);
+    if (secretRefAction) {
+      void this.downloadKubeconfigFromSecretRef(secretRefAction);
+      return;
+    }
+
     switch (action.action) {
       case 'download-kubeconfig':
         this.downloadKubeConfig();
@@ -459,20 +495,55 @@ export class DetailView {
       };
 
       const kubeConfig = kubeConfigTemplate(kubeconfigProps);
-      const blob = new Blob([kubeConfig], { type: 'application/plain' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'kubeconfig.yaml';
-      a.click();
-
-      URL.revokeObjectURL(url);
-    } catch (error: any) {
+      this.downloadFile(kubeConfig, 'kubeconfig.yaml');
+    } catch (error: unknown) {
       void this.LuigiClient()
         .uxManager()
         .showAlert({
-          text: `Failed to download kubeconfig: ${error.message}`,
+          text: `Failed to download kubeconfig: ${this.getErrorMessage(error)}`,
+          type: 'error',
+        });
+    } finally {
+      this.isDownloadingKubeConfig.set(false);
+    }
+  }
+
+  async downloadKubeconfigFromSecretRef(
+    action: DownloadKubeconfigFromSecretRefAction,
+  ) {
+    if (this.isDownloadingKubeConfig()) {
+      return;
+    }
+
+    try {
+      this.isDownloadingKubeConfig.set(true);
+      const secretRef = this.resolveSecretReference(action);
+      if (!secretRef) {
+        throw new Error('Kubeconfig Secret reference is not available');
+      }
+
+      const dataKey = action.dataKey?.trim() || 'kubeconfig';
+      const encodedKubeconfig = await firstValueFrom(
+        this.kubeconfigSecretService.readEncodedKubeconfig(
+          secretRef.name,
+          secretRef.namespace,
+          dataKey,
+          this.context(),
+        ),
+      );
+      if (!encodedKubeconfig) {
+        throw new Error(`Kubeconfig data key "${dataKey}" is not available`);
+      }
+
+      this.downloadFile(
+        decodeBase64(encodedKubeconfig),
+        action.filename?.trim() || 'kubeconfig.yaml',
+      );
+    } catch (error: unknown) {
+      void this.LuigiClient()
+        .uxManager()
+        .showAlert({
+          text: `Failed to download kubeconfig: ${this.getErrorMessage(error)}`,
           type: 'error',
         });
     } finally {
@@ -514,6 +585,15 @@ export class DetailView {
       additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
     }
 
+    this.secretRefActions().forEach((action) => {
+      if (action.nameProperty.trim()) {
+        additionalFields.push({ property: action.nameProperty });
+      }
+      if (action.namespaceProperty?.trim()) {
+        additionalFields.push({ property: action.namespaceProperty });
+      }
+    });
+
     // The query covers exactly what the detail view renders
     // (ui.detailView.fields); createView is a separate field set and is not
     // part of the detail read.
@@ -538,6 +618,66 @@ export class DetailView {
 
   private canDoAction(action: string): boolean {
     return this.instancePermissions()?.includes(action) ?? true;
+  }
+
+  private getSecretRefAction(
+    buttonAction: string,
+  ): DownloadKubeconfigFromSecretRefAction | undefined {
+    if (!buttonAction.startsWith(SECRET_REF_ACTION_PREFIX)) {
+      return undefined;
+    }
+
+    const index = Number(buttonAction.slice(SECRET_REF_ACTION_PREFIX.length));
+    return Number.isInteger(index) ? this.secretRefActions()[index] : undefined;
+  }
+
+  private resolveSecretReference(
+    action: DownloadKubeconfigFromSecretRefAction,
+  ): { name: string; namespace: string } | undefined {
+    const resource = this.resource();
+    if (!resource) {
+      return undefined;
+    }
+
+    const name = this.readStringProperty(resource, action.nameProperty);
+    const namespace =
+      (action.namespaceProperty
+        ? this.readStringProperty(resource, action.namespaceProperty)
+        : undefined) ??
+      this.readNonEmptyString(resource.metadata?.namespace) ??
+      this.readNonEmptyString(this.context().namespaceId);
+
+    return name && namespace ? { name, namespace } : undefined;
+  }
+
+  private readStringProperty(resource: Resource, property: string) {
+    if (!property.trim()) {
+      return undefined;
+    }
+
+    return this.readNonEmptyString(
+      getResourceValueByJsonPath(resource, { property }),
+    );
+  }
+
+  private readNonEmptyString(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  }
+
+  private downloadFile(contents: string, filename: string): void {
+    const blob = new Blob([contents], { type: 'application/yaml' });
+    const url = URL.createObjectURL(blob);
+
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
   protected dashboardConfigurationChanged(config: {

@@ -41,6 +41,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
     - `entityActions`: array of actions checked per instance (e.g. `["get", "update", "delete"]`). Controls whether edit/delete buttons are shown on the detail view. When empty, no per-instance checks are performed.
     - `resourceActions`: array of resource-level actions (e.g. `["create", "list", "watch"]`).
     - `entityContextKey`: the context key used to resolve the current entity name for the permission lookup.
+
     ```json
     {
       "permissionsDefinition": {
@@ -94,7 +95,28 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"detailView"`: Defines how a page view for individual resource is displayed
   - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for a compact display of related data.
-  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the detail view header. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
+  - `"actions"`: Array of typed detail actions. The supported action
+    `"downloadKubeconfigFromSecretRef"` reads a core Kubernetes Secret in the
+    current workspace and downloads one base64-encoded data key as YAML. The
+    action is hidden until the configured Secret name and namespace resolve.
+    `namespaceProperty` is optional; when omitted or empty, the resource
+    namespace and then the current navigation namespace are used.
+    ```json
+    {
+      "type": "downloadKubeconfigFromSecretRef",
+      "nameProperty": "status.kubeconfig.secretRef.name",
+      "namespaceProperty": "status.kubeconfig.secretRef.namespace",
+      "dataKey": "kubeconfig",
+      "filename": "kubeconfig.yaml",
+      "button": {
+        "text": "Download kubeconfig",
+        "icon": "download-from-cloud",
+        "design": "Default"
+      }
+    }
+    ```
+    The referenced properties are automatically included in the detail query.
+    The gateway and workspace RBAC must authorize reading the referenced Secret.
   - `"showDownloadKubeconfig"`: Boolean to enable/disable download kubeconfig button (default: `false`).
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the resource title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, defaults to the resource ID or display name.
   - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition properties. If not provided, a default description is generated.
@@ -177,9 +199,9 @@ Declaring a `status.conditions` collection in `createView` (or in any other view
   "label": "Conditions",
   "property": "status.conditions",
   "propertyCollection": [
-    { "label": "Type",    "property": "status.conditions.type" },
-    { "label": "Status",  "property": "status.conditions.status" },
-    { "label": "Reason",  "property": "status.conditions.reason" },
+    { "label": "Type", "property": "status.conditions.type" },
+    { "label": "Status", "property": "status.conditions.status" },
+    { "label": "Reason", "property": "status.conditions.reason" },
     { "label": "Message", "property": "status.conditions.message" }
   ]
 }
@@ -192,7 +214,12 @@ At runtime this produces, in the edit form, a stack of cards — one per element
   "status": {
     "conditions": [
       { "type": "Ready", "status": "True", "reason": "OK", "message": "…" },
-      { "type": "Progressing", "status": "False", "reason": "Retry", "message": "…" }
+      {
+        "type": "Progressing",
+        "status": "False",
+        "reason": "Retry",
+        "message": "…"
+      }
     ]
   }
 }

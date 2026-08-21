@@ -1,4 +1,5 @@
 import {
+  ButtonSettings,
   FieldFilterDefinition,
   FormFieldDefinition,
   TableFieldDefinition,
@@ -27,8 +28,20 @@ export type PlatformMeshFieldDefinition = TableFieldDefinition &
     };
   };
 
+export interface DownloadKubeconfigFromSecretRefAction {
+  type: 'downloadKubeconfigFromSecretRef';
+  nameProperty: string;
+  namespaceProperty?: string;
+  dataKey?: string;
+  filename?: string;
+  button?: Omit<ButtonSettings, 'action'>;
+}
+
+export type UiAction =
+  DownloadKubeconfigFromSecretRefAction | PlatformMeshFieldDefinition;
+
 export interface UiView {
-  actions?: PlatformMeshFieldDefinition[];
+  actions?: UiAction[];
   fields?: PlatformMeshFieldDefinition[];
   resourceDescription?: PlatformMeshFieldDefinition;
   resourceTitle?: PlatformMeshFieldDefinition;

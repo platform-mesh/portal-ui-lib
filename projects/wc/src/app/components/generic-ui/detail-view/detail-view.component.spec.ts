@@ -8,6 +8,7 @@ import {
   AccountInfoService,
   ErrorHandlerService,
   GatewayService,
+  KubeconfigSecretService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
@@ -21,12 +22,18 @@ describe('DetailViewComponent', () => {
   let mockGatewayService: any;
   let envConfigServiceMock: MockedObject<EnvConfigService>;
   let accountInfoServiceMock: MockedObject<AccountInfoService>;
+  let kubeconfigSecretServiceMock: {
+    readEncodedKubeconfig: ReturnType<typeof vi.fn>;
+  };
   let luigiClientLinkManagerNavigate = vi.fn();
   let errorHandlerServiceMock: MockedObject<ErrorHandlerService>;
 
   beforeEach(() => {
     envConfigServiceMock = mock();
     accountInfoServiceMock = mock();
+    kubeconfigSecretServiceMock = {
+      readEncodedKubeconfig: vi.fn().mockReturnValue(of(undefined)),
+    };
 
     const accountInfo: AccountInfo = {
       metadata: {
@@ -73,6 +80,10 @@ describe('DetailViewComponent', () => {
         { provide: ResourceService, useValue: mockResourceService },
         { provide: AccountInfoService, useValue: accountInfoServiceMock },
         { provide: GatewayService, useValue: mockGatewayService },
+        {
+          provide: KubeconfigSecretService,
+          useValue: kubeconfigSecretServiceMock,
+        },
         { provide: EnvConfigService, useValue: envConfigServiceMock },
         { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
       ],
@@ -124,6 +135,7 @@ describe('DetailViewComponent', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     delete (global as any).URL.createObjectURL;
   });
 
@@ -720,6 +732,270 @@ describe('DetailViewComponent', () => {
       text: 'Failed to download kubeconfig: boom',
       type: 'error',
     });
+  });
+
+  it('should include configured Secret reference properties in the detail query', () => {
+    mockResourceService.read.mockClear();
+    const newFixture = TestBed.createComponent(DetailView);
+    const newComponent = newFixture.componentInstance;
+
+    newComponent.context = (() => ({
+      ...component.context(),
+      resourceDefinition: {
+        ...component.context().resourceDefinition,
+        ui: {
+          detailView: {
+            fields: [],
+            actions: [
+              {
+                type: 'downloadKubeconfigFromSecretRef',
+                nameProperty: 'status.kubeconfig.secretRef.name',
+                namespaceProperty: 'status.kubeconfig.secretRef.namespace',
+              },
+            ],
+          },
+        },
+      },
+    })) as any;
+    newComponent.LuigiClient = component.LuigiClient;
+
+    newFixture.detectChanges();
+
+    const fields = JSON.stringify(mockResourceService.read.mock.calls[0][2]);
+    expect(fields).toContain('status');
+    expect(fields).toContain('kubeconfig');
+    expect(fields).toContain('secretRef');
+    expect(fields).toContain('name');
+    expect(fields).toContain('namespace');
+  });
+
+  it('should hide a Secret-backed kubeconfig action while its reference is empty', () => {
+    const newFixture = TestBed.createComponent(DetailView);
+    const newComponent = newFixture.componentInstance;
+    mockResourceService.read.mockReturnValueOnce(
+      of({ metadata: { name: 'cluster-1', namespace: 'default' } }),
+    );
+    newComponent.context = (() => ({
+      ...component.context(),
+      resourceDefinition: {
+        ...component.context().resourceDefinition,
+        ui: {
+          detailView: {
+            fields: [],
+            actions: [
+              {
+                type: 'downloadKubeconfigFromSecretRef',
+                nameProperty: 'status.kubeconfig.secretRef.name',
+              },
+            ],
+          },
+        },
+      },
+    })) as any;
+    newComponent.LuigiClient = component.LuigiClient;
+    newFixture.detectChanges();
+
+    expect(
+      newComponent
+        .customActions()
+        .some((action) =>
+          action.action.startsWith('download-kubeconfig-from-secret-ref:'),
+        ),
+    ).toBe(false);
+  });
+
+  it('should expose configured button settings when the Secret reference is ready', () => {
+    const newFixture = TestBed.createComponent(DetailView);
+    const newComponent = newFixture.componentInstance;
+    mockResourceService.read.mockReturnValueOnce(
+      of({
+        metadata: { name: 'cluster-1', namespace: 'default' },
+        status: {
+          kubeconfig: {
+            secretRef: {
+              name: 'cluster-kubeconfig',
+              namespace: 'provider-ns',
+            },
+          },
+        },
+      }),
+    );
+    newComponent.context = (() => ({
+      ...component.context(),
+      resourceDefinition: {
+        ...component.context().resourceDefinition,
+        ui: {
+          detailView: {
+            fields: [],
+            actions: [
+              {
+                type: 'downloadKubeconfigFromSecretRef',
+                nameProperty: 'status.kubeconfig.secretRef.name',
+                namespaceProperty: 'status.kubeconfig.secretRef.namespace',
+                button: {
+                  text: 'Download cluster access',
+                  design: 'Emphasized',
+                },
+              },
+            ],
+          },
+        },
+      },
+    })) as any;
+    newComponent.LuigiClient = component.LuigiClient;
+    newFixture.detectChanges();
+
+    expect(
+      newComponent
+        .customActions()
+        .find((action) =>
+          action.action.startsWith('download-kubeconfig-from-secret-ref:'),
+        ),
+    ).toEqual(
+      expect.objectContaining({
+        text: 'Download cluster access',
+        design: 'Emphasized',
+        action: 'download-kubeconfig-from-secret-ref:0',
+      }),
+    );
+  });
+
+  it('should decode and download kubeconfig data from the referenced Secret', async () => {
+    const action = {
+      type: 'downloadKubeconfigFromSecretRef',
+      nameProperty: 'status.kubeconfig.secretRef.name',
+      namespaceProperty: 'status.kubeconfig.secretRef.namespace',
+      dataKey: 'config',
+      filename: 'cluster.yaml',
+    } as const;
+    component.resource.set({
+      metadata: { name: 'cluster-1', namespace: 'default' },
+      status: {
+        kubeconfig: {
+          secretRef: { name: 'cluster-kubeconfig', namespace: 'provider-ns' },
+        },
+      },
+    } as any);
+    kubeconfigSecretServiceMock.readEncodedKubeconfig.mockReturnValue(
+      of(btoa('apiVersion: v1')),
+    );
+    const blobConstructor = vi.fn(function (parts, options) {
+      return { parts, options };
+    });
+    vi.stubGlobal('Blob', blobConstructor);
+    const anchor = document.createElement('a');
+    vi.spyOn(anchor, 'click');
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob-url');
+    global.URL.revokeObjectURL = vi.fn();
+
+    await component.downloadKubeconfigFromSecretRef(action);
+
+    expect(
+      kubeconfigSecretServiceMock.readEncodedKubeconfig,
+    ).toHaveBeenCalledWith(
+      'cluster-kubeconfig',
+      'provider-ns',
+      'config',
+      component.context(),
+    );
+    expect(blobConstructor).toHaveBeenCalledWith(['apiVersion: v1'], {
+      type: 'application/yaml',
+    });
+    expect(anchor.download).toBe('cluster.yaml');
+    expect(anchor.click).toHaveBeenCalled();
+    expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob-url');
+  });
+
+  it('should use the resource namespace when the Secret reference omits it', async () => {
+    const action = {
+      type: 'downloadKubeconfigFromSecretRef',
+      nameProperty: 'status.kubeconfig.secretRef.name',
+      namespaceProperty: 'status.kubeconfig.secretRef.namespace',
+    } as const;
+    component.resource.set({
+      metadata: { name: 'cluster-1', namespace: 'claim-namespace' },
+      status: {
+        kubeconfig: { secretRef: { name: 'cluster-kubeconfig' } },
+      },
+    } as any);
+    kubeconfigSecretServiceMock.readEncodedKubeconfig.mockReturnValue(
+      of(btoa('apiVersion: v1')),
+    );
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob-url');
+    global.URL.revokeObjectURL = vi.fn();
+
+    await component.downloadKubeconfigFromSecretRef(action);
+
+    expect(
+      kubeconfigSecretServiceMock.readEncodedKubeconfig,
+    ).toHaveBeenCalledWith(
+      'cluster-kubeconfig',
+      'claim-namespace',
+      'kubeconfig',
+      component.context(),
+    );
+  });
+
+  it('should report a missing kubeconfig data key without exposing Secret data', async () => {
+    const showAlertSpy = vi.fn();
+    component.LuigiClient = (() => ({
+      uxManager: () => ({ showAlert: showAlertSpy }),
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+      }),
+      getActiveFeatureToggles: () => [],
+    })) as any;
+    component.resource.set({
+      metadata: { name: 'cluster-1', namespace: 'default' },
+      status: {
+        kubeconfig: { secretRef: { name: 'cluster-kubeconfig' } },
+      },
+    } as any);
+    kubeconfigSecretServiceMock.readEncodedKubeconfig.mockReturnValue(
+      of(undefined),
+    );
+
+    await component.downloadKubeconfigFromSecretRef({
+      type: 'downloadKubeconfigFromSecretRef',
+      nameProperty: 'status.kubeconfig.secretRef.name',
+    });
+
+    expect(showAlertSpy).toHaveBeenCalledWith({
+      text: 'Failed to download kubeconfig: Kubeconfig data key "kubeconfig" is not available',
+      type: 'error',
+    });
+  });
+
+  it('should dispatch a configured Secret-backed kubeconfig action', () => {
+    const configuredAction = {
+      type: 'downloadKubeconfigFromSecretRef',
+      nameProperty: 'status.kubeconfig.secretRef.name',
+    } as const;
+    const newFixture = TestBed.createComponent(DetailView);
+    const newComponent = newFixture.componentInstance;
+    newComponent.context = (() => ({
+      ...component.context(),
+      resourceDefinition: {
+        ...component.context().resourceDefinition,
+        ui: {
+          detailView: { fields: [], actions: [configuredAction] },
+        },
+      },
+    })) as any;
+    newComponent.LuigiClient = component.LuigiClient;
+    newFixture.detectChanges();
+    const downloadSpy = vi
+      .spyOn(newComponent, 'downloadKubeconfigFromSecretRef')
+      .mockResolvedValue(undefined);
+
+    newComponent.onActionButtonClick({
+      event: new MouseEvent('click'),
+      action: { action: 'download-kubeconfig-from-secret-ref:0' },
+    } as any);
+
+    expect(downloadSpy).toHaveBeenCalledWith(configuredAction);
   });
 
   it('should call resource service with correct parameters for account kind', () => {
@@ -1767,5 +2043,4 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     // instancePermissions() returns undefined → canDoAction defaults to true (fail-open)
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
   });
-
 });
