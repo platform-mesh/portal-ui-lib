@@ -35,12 +35,17 @@ In order to use the generic list view, you need to adjust the node’s `content-
       }
     }
     ```
+  - `"availableWhenNotReady"`: Optional boolean (default: `false`). When set to
+    `true`, a resource remains available for navigation and actions while its
+    `readyCondition` evaluates to false. A resource with
+    `metadata.deletionTimestamp` remains unavailable regardless of this setting.
   - `"resourceDefinition"` also accepts an optional `permissionsDefinition` object that enables instance and resource levels permission checks and gating:
     - `group`: API group of the resource (e.g. `"core.platform-mesh.io"`)
     - `resource`: plural resource name used as the permission key (e.g. `"HttpBins"`)
     - `entityActions`: array of actions checked per instance (e.g. `["get", "update", "delete"]`). Controls whether edit/delete buttons are shown on the detail view. When empty, no per-instance checks are performed.
     - `resourceActions`: array of resource-level actions (e.g. `["create", "list", "watch"]`).
     - `entityContextKey`: the context key used to resolve the current entity name for the permission lookup.
+
     ```json
     {
       "permissionsDefinition": {
@@ -177,9 +182,9 @@ Declaring a `status.conditions` collection in `createView` (or in any other view
   "label": "Conditions",
   "property": "status.conditions",
   "propertyCollection": [
-    { "label": "Type",    "property": "status.conditions.type" },
-    { "label": "Status",  "property": "status.conditions.status" },
-    { "label": "Reason",  "property": "status.conditions.reason" },
+    { "label": "Type", "property": "status.conditions.type" },
+    { "label": "Status", "property": "status.conditions.status" },
+    { "label": "Reason", "property": "status.conditions.reason" },
     { "label": "Message", "property": "status.conditions.message" }
   ]
 }
@@ -192,7 +197,12 @@ At runtime this produces, in the edit form, a stack of cards — one per element
   "status": {
     "conditions": [
       { "type": "Ready", "status": "True", "reason": "OK", "message": "…" },
-      { "type": "Progressing", "status": "False", "reason": "Retry", "message": "…" }
+      {
+        "type": "Progressing",
+        "status": "False",
+        "reason": "Retry",
+        "message": "…"
+      }
     ]
   }
 }

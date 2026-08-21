@@ -44,6 +44,11 @@ export interface ResourceDefinition {
   scope?: KubernetesScope;
   namespace?: string;
   readyCondition?: PlatformMeshFieldDefinition;
+  /**
+   * Keep resources usable while their ready condition is false. Resources that
+   * are pending deletion remain unavailable.
+   */
+  availableWhenNotReady?: boolean;
   ui?: UIDefinition;
   permissionsDefinition?: PermissionsDefinition;
 }
