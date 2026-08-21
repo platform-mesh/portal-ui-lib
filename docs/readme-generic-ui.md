@@ -95,28 +95,25 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"detailView"`: Defines how a page view for individual resource is displayed
   - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for a compact display of related data.
-  - `"actions"`: Array of typed detail actions. The supported action
-    `"downloadKubeconfigFromSecretRef"` reads a core Kubernetes Secret in the
-    current workspace and downloads one base64-encoded data key as YAML. The
-    action is hidden until the configured Secret name and namespace resolve.
-    `namespaceProperty` is optional; when omitted or empty, the resource
-    namespace and then the current navigation namespace are used.
+  - `"actions"`: Array of `FieldDefinition` objects with `uiSettings.buttonSettings` that render as action buttons in the detail view header. Supported actions are `navigate`, `openInModal`, and `downloadKubeconfigFromSecretRef`; unsupported identifiers are ignored. `displayAs` is optional for header actions, but must be `button` when provided. The existing `navigate` and `openInModal` actions use the URL from the field's `property` or static `value`. The `downloadKubeconfigFromSecretRef` action reads a core Kubernetes Secret in the current workspace and downloads one base64-encoded data key as YAML. Its `property` must resolve to the Secret name. For cross-namespace references, `buttonSettings.namespaceProperty` must resolve to the Secret namespace. For namespace-local references, omit `namespaceProperty`; the resource namespace and then the current navigation namespace are used. The action is hidden until all configured reference fields resolve. A configured but absent or blank namespace never falls back to another namespace.
     ```json
     {
-      "type": "downloadKubeconfigFromSecretRef",
-      "nameProperty": "status.kubeconfig.secretRef.name",
-      "namespaceProperty": "status.kubeconfig.secretRef.namespace",
-      "dataKey": "kubeconfig",
-      "filename": "kubeconfig.yaml",
-      "button": {
-        "text": "Download kubeconfig",
-        "icon": "download-from-cloud",
-        "design": "Default"
+      "property": "status.kubeconfig.secretRef.name",
+      "uiSettings": {
+        "buttonSettings": {
+          "action": "downloadKubeconfigFromSecretRef",
+          "text": "Download cluster kubeconfig",
+          "icon": "download-from-cloud",
+          "design": "Default",
+          "tooltip": "Download cluster kubeconfig",
+          "namespaceProperty": "status.kubeconfig.secretRef.namespace",
+          "dataKey": "kubeconfig",
+          "filename": "kubeconfig.yaml"
+        }
       }
     }
     ```
-    The referenced properties are automatically included in the detail query.
-    The gateway and workspace RBAC must authorize reading the referenced Secret.
+    `buttonSettings.action: "downloadKubeconfigFromSecretRef"` is reserved for this operation; configurations using it must provide a valid `property`, or the action is ignored. `namespaceProperty` is optional; for example, a namespace-local SimpleCluster reference uses `"property": "status.kubeconfigSecretRef.name"` and omits `namespaceProperty`. `dataKey` defaults to `kubeconfig` and `filename` defaults to `kubeconfig.yaml`. Only configured reference fields are included in the detail query. The gateway and workspace RBAC must authorize reading the referenced Secret. Because Kubernetes Secret `data` is a map, the read returns that Secret's complete data map before the client selects `dataKey`; use a dedicated kubeconfig Secret and least-privilege Secret-read RBAC.
   - `"showDownloadKubeconfig"`: Boolean to enable/disable download kubeconfig button (default: `false`).
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the resource title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, defaults to the resource ID or display name.
   - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition properties. If not provided, a default description is generated.

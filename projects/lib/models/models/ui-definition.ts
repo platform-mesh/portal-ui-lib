@@ -3,6 +3,7 @@ import {
   FieldFilterDefinition,
   FormFieldDefinition,
   TableFieldDefinition,
+  UiSettings,
 } from '@openmfp/ngx';
 
 export type {
@@ -28,20 +29,72 @@ export type PlatformMeshFieldDefinition = TableFieldDefinition &
     };
   };
 
-export interface DownloadKubeconfigFromSecretRefAction {
-  type: 'downloadKubeconfigFromSecretRef';
-  nameProperty: string;
-  namespaceProperty?: string;
+export const DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION =
+  'downloadKubeconfigFromSecretRef';
+
+export interface DownloadKubeconfigFromSecretRefButtonSettings extends ButtonSettings {
+  action: typeof DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION;
   dataKey?: string;
   filename?: string;
-  button?: Omit<ButtonSettings, 'action'>;
+  namespaceProperty?: string;
 }
 
-export type UiAction =
-  DownloadKubeconfigFromSecretRefAction | PlatformMeshFieldDefinition;
+type DetailViewActionUiSettings<T extends ButtonSettings> = Omit<
+  UiSettings,
+  'buttonSettings' | 'displayAs'
+> & {
+  displayAs?: 'button';
+  buttonSettings: T;
+};
+
+export type GenericActionButtonSettings = Omit<ButtonSettings, 'action'> & {
+  action: 'navigate' | 'openInModal';
+};
+
+type GenericActionTarget =
+  | {
+      value: string;
+      property?: string;
+      jsonPathExpression?: string;
+    }
+  | {
+      value?: string;
+      property: string;
+      jsonPathExpression?: string;
+    }
+  | {
+      value?: string;
+      property: string[];
+      jsonPathExpression: string;
+    };
+
+export type GenericAction = Omit<
+  PlatformMeshFieldDefinition,
+  | 'uiSettings'
+  | 'value'
+  | 'property'
+  | 'jsonPathExpression'
+  | 'propertyCollection'
+> &
+  GenericActionTarget & {
+    propertyCollection?: never;
+    uiSettings: DetailViewActionUiSettings<GenericActionButtonSettings>;
+  };
+
+export type DownloadKubeconfigFromSecretRefAction = Omit<
+  PlatformMeshFieldDefinition,
+  'property' | 'propertyCollection' | 'uiSettings'
+> & {
+  /** JSON path to the referenced Secret name. */
+  property: string;
+  propertyCollection?: never;
+  uiSettings: DetailViewActionUiSettings<DownloadKubeconfigFromSecretRefButtonSettings>;
+};
+
+export type UiAction = DownloadKubeconfigFromSecretRefAction | GenericAction;
 
 export interface UiView {
-  actions?: UiAction[];
+  actions?: PlatformMeshFieldDefinition[];
   fields?: PlatformMeshFieldDefinition[];
   resourceDescription?: PlatformMeshFieldDefinition;
   resourceTitle?: PlatformMeshFieldDefinition;

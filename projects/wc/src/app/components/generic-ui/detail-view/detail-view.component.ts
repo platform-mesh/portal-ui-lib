@@ -1,3 +1,8 @@
+import { downloadFile } from '../../../utils/download-file';
+import {
+  executeButtonAction,
+  getFieldValue,
+} from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { flattenFieldTree } from '../../../utils/to-form-fields';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
@@ -47,16 +52,28 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
-  decodeBase64,
   generateGraphQLFields,
   getResourceValueByJsonPath,
   isNamespacedResource,
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { firstValueFrom } from 'rxjs';
-import { take, tap } from 'rxjs/operators';
+import { Subject, firstValueFrom } from 'rxjs';
+import { take, takeUntil, tap } from 'rxjs/operators';
 
-const SECRET_REF_ACTION_PREFIX = 'download-kubeconfig-from-secret-ref:';
+const CONFIGURED_ACTION_PREFIX = 'portal-ui-configured-action:';
+const GRAPHQL_PROPERTY_PATH_PATTERN =
+  /^[_A-Za-z][_0-9A-Za-z]*(?:\.[_A-Za-z][_0-9A-Za-z]*)*$/;
+
+type ConfiguredActionDefinition = PlatformMeshFieldDefinition & {
+  uiSettings: {
+    buttonSettings: ButtonSettings;
+  };
+};
+
+interface ConfiguredActionEntry {
+  definition: ConfiguredActionDefinition;
+  buttonSettings: ButtonSettings;
+}
 
 @Component({
   selector: 'pm-detail-view',
@@ -83,6 +100,8 @@ export class DetailView {
   private errorHandlerService = inject(ErrorHandlerService);
   private dashboardConfigService = inject(DashboardConfigService);
   private destroyRef = inject(DestroyRef);
+  private resourceReadGeneration = 0;
+  private readonly cancelKubeconfigRead = new Subject<void>();
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
   private createModal = viewChild<CreateResourceModal>('createModal');
   private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
@@ -127,14 +146,58 @@ export class DetailView {
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
       false,
   );
-  secretRefActions = computed(
-    () =>
-      this.resourceDefinition()?.ui?.detailView?.actions?.filter(
-        (action): action is DownloadKubeconfigFromSecretRefAction =>
-          'type' in action &&
-          action.type === 'downloadKubeconfigFromSecretRef' &&
-          typeof action.nameProperty === 'string',
-      ) ?? [],
+  configuredActions = computed<ConfiguredActionDefinition[]>(() => {
+    const actions = this.resourceDefinition()?.ui?.detailView?.actions;
+    return Array.isArray(actions)
+      ? actions.filter(
+          (action): action is ConfiguredActionDefinition =>
+            !!action?.uiSettings?.buttonSettings,
+        )
+      : [];
+  });
+  configuredActionEntries = computed<ConfiguredActionEntry[]>(() =>
+    this.configuredActions().flatMap((definition, index) => {
+      if (
+        definition.requirePermission &&
+        !this.canDoAction(definition.requirePermission)
+      ) {
+        return [];
+      }
+      if (!this.hasValidHeaderActionDisplay(definition)) {
+        return [];
+      }
+
+      if (this.kubeconfigSecretService.isDownloadActionIdentifier(definition)) {
+        if (
+          !this.kubeconfigSecretService.isDownloadAction(definition) ||
+          !this.kubeconfigSecretService.resolveSecretReference(
+            definition,
+            this.resource(),
+            this.context(),
+          )
+        ) {
+          return [];
+        }
+      } else if (
+        !this.isValidGenericActionDefinition(definition) ||
+        !this.hasResolvedGenericActionTarget(definition)
+      ) {
+        // Content configuration is runtime input and can bypass the TypeScript
+        // model. Hide unsupported identifiers instead of rendering a button
+        // that can only fail when clicked.
+        return [];
+      }
+
+      return [
+        {
+          definition,
+          buttonSettings: {
+            ...definition.uiSettings.buttonSettings,
+            action: `${CONFIGURED_ACTION_PREFIX}${index}`,
+          },
+        },
+      ];
+    }),
   );
   isDownloadingKubeConfig = signal(false);
   isDemoEnabled = computed(() =>
@@ -168,21 +231,6 @@ export class DetailView {
       });
     }
 
-    this.secretRefActions().forEach((configuredAction, index) => {
-      if (!this.resolveSecretReference(configuredAction)) {
-        return;
-      }
-
-      customActions.push({
-        text: 'Download kubeconfig',
-        icon: 'download-from-cloud',
-        design: 'Default',
-        tooltip: 'Download kubeconfig',
-        ...configuredAction.button,
-        action: `${SECRET_REF_ACTION_PREFIX}${index}`,
-      });
-    });
-
     if (this.resource()) {
       if (this.canDoAction('update')) {
         customActions.push({
@@ -202,6 +250,10 @@ export class DetailView {
         });
       }
     }
+
+    customActions.push(
+      ...this.configuredActionEntries().map((entry) => entry.buttonSettings),
+    );
 
     return customActions;
   });
@@ -262,9 +314,23 @@ export class DetailView {
     action: ButtonSettings;
   }): void {
     const resource = this.resource();
-    const secretRefAction = this.getSecretRefAction(action.action);
-    if (secretRefAction) {
-      void this.downloadKubeconfigFromSecretRef(secretRefAction);
+    const configuredAction = this.configuredActionEntries().find(
+      (entry) => entry.buttonSettings.action === action.action,
+    )?.definition;
+    if (configuredAction) {
+      event.stopPropagation?.();
+      if (this.kubeconfigSecretService.isDownloadAction(configuredAction)) {
+        void this.downloadKubeconfigFromSecretRef(configuredAction);
+      } else {
+        try {
+          executeButtonAction(this.LuigiClient(), configuredAction, resource);
+        } catch {
+          void this.LuigiClient().uxManager().showAlert({
+            text: 'Configured action could not be executed',
+            type: 'error',
+          });
+        }
+      }
       return;
     }
 
@@ -282,11 +348,18 @@ export class DetailView {
   }
 
   constructor() {
-    effect(() => {
-      this.readResource();
+    effect((onCleanup) => {
+      const subscription = this.readResource();
+      onCleanup(() => subscription?.unsubscribe());
     });
 
     this.destroyRef.onDestroy(() => {
+      // Cancel any credential read that was started for this view and suppress
+      // delivery if the source does not support cancellation synchronously.
+      this.resourceReadGeneration += 1;
+      this.cancelKubeconfigRead.next();
+      this.cancelKubeconfigRead.complete();
+
       // Safety net — the dashboard's `unsavedChangesChange` does not fire on
       // teardown, so explicitly clear Luigi's dirty flag to avoid leaving the
       // shell locked on stale state if this view is destroyed mid-edit.
@@ -315,7 +388,14 @@ export class DetailView {
     );
   }
 
-  private readResource(): void {
+  private readResource() {
+    this.resourceReadGeneration += 1;
+    this.cancelKubeconfigRead.next();
+
+    // A custom element can be reused with a different workspace or resource.
+    // Drop the previous payload before resolving the new context so actions
+    // can never combine an old Secret reference with a new workspace path.
+    this.resource.set(undefined);
     const resourceDefinition = this.getResourceDefinition();
     const fields = this.getDetailViewQueryFields();
 
@@ -331,7 +411,7 @@ export class DetailView {
       throw new Error('Resource ID is not defined');
     }
 
-    this.resourceService
+    return this.resourceService
       .read(
         resourceId,
         params,
@@ -495,7 +575,7 @@ export class DetailView {
       };
 
       const kubeConfig = kubeConfigTemplate(kubeconfigProps);
-      this.downloadFile(kubeConfig, 'kubeconfig.yaml');
+      downloadFile(kubeConfig, 'kubeconfig.yaml', 'application/yaml');
     } catch (error: unknown) {
       void this.LuigiClient()
         .uxManager()
@@ -515,31 +595,39 @@ export class DetailView {
       return;
     }
 
+    const resource = this.resource();
+    const resourceReadGeneration = this.resourceReadGeneration;
+
     try {
       this.isDownloadingKubeConfig.set(true);
-      const secretRef = this.resolveSecretReference(action);
-      if (!secretRef) {
-        throw new Error('Kubeconfig Secret reference is not available');
-      }
-
-      const dataKey = action.dataKey?.trim() || 'kubeconfig';
-      const encodedKubeconfig = await firstValueFrom(
-        this.kubeconfigSecretService.readEncodedKubeconfig(
-          secretRef.name,
-          secretRef.namespace,
-          dataKey,
-          this.context(),
-        ),
+      const kubeconfig = await firstValueFrom(
+        this.kubeconfigSecretService
+          .readKubeconfig(action, resource, this.context())
+          .pipe(takeUntil(this.cancelKubeconfigRead)),
       );
-      if (!encodedKubeconfig) {
-        throw new Error(`Kubeconfig data key "${dataKey}" is not available`);
+
+      // A detail-view element can be reused while this Secret request is in
+      // flight. Do not deliver credentials resolved for the previous view.
+      if (
+        resourceReadGeneration !== this.resourceReadGeneration ||
+        resource !== this.resource()
+      ) {
+        return;
       }
 
-      this.downloadFile(
-        decodeBase64(encodedKubeconfig),
-        action.filename?.trim() || 'kubeconfig.yaml',
+      downloadFile(
+        kubeconfig.contents,
+        kubeconfig.filename,
+        'application/yaml',
       );
     } catch (error: unknown) {
+      if (
+        resourceReadGeneration !== this.resourceReadGeneration ||
+        resource !== this.resource()
+      ) {
+        return;
+      }
+
       void this.LuigiClient()
         .uxManager()
         .showAlert({
@@ -585,12 +673,22 @@ export class DetailView {
       additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
     }
 
-    this.secretRefActions().forEach((action) => {
-      if (action.nameProperty.trim()) {
-        additionalFields.push({ property: action.nameProperty });
+    this.configuredActions().forEach((action) => {
+      if (!this.hasValidHeaderActionDisplay(action)) {
+        return;
       }
-      if (action.namespaceProperty?.trim()) {
-        additionalFields.push({ property: action.namespaceProperty });
+
+      if (this.kubeconfigSecretService.isDownloadActionIdentifier(action)) {
+        if (this.kubeconfigSecretService.isDownloadAction(action)) {
+          additionalFields.push(
+            ...this.kubeconfigSecretService.getSecretReferenceFields(action),
+          );
+        }
+        return;
+      }
+
+      if (this.isValidGenericActionDefinition(action)) {
+        additionalFields.push(...flattenFieldTree([action]));
       }
     });
 
@@ -620,60 +718,67 @@ export class DetailView {
     return this.instancePermissions()?.includes(action) ?? true;
   }
 
-  private getSecretRefAction(
-    buttonAction: string,
-  ): DownloadKubeconfigFromSecretRefAction | undefined {
-    if (!buttonAction.startsWith(SECRET_REF_ACTION_PREFIX)) {
-      return undefined;
+  private isValidGenericActionDefinition(
+    action: ConfiguredActionDefinition,
+  ): boolean {
+    if (action.propertyCollection !== undefined) {
+      return false;
     }
 
-    const index = Number(buttonAction.slice(SECRET_REF_ACTION_PREFIX.length));
-    return Number.isInteger(index) ? this.secretRefActions()[index] : undefined;
-  }
-
-  private resolveSecretReference(
-    action: DownloadKubeconfigFromSecretRefAction,
-  ): { name: string; namespace: string } | undefined {
-    const resource = this.resource();
-    if (!resource) {
-      return undefined;
+    const identifier = action.uiSettings.buttonSettings.action;
+    const isSupportedIdentifier =
+      identifier === 'navigate' || identifier === 'openInModal';
+    if (!isSupportedIdentifier) {
+      return false;
     }
 
-    const name = this.readStringProperty(resource, action.nameProperty);
-    const namespace =
-      (action.namespaceProperty
-        ? this.readStringProperty(resource, action.namespaceProperty)
-        : undefined) ??
-      this.readNonEmptyString(resource.metadata?.namespace) ??
-      this.readNonEmptyString(this.context().namespaceId);
+    const hasStaticTarget = this.isNonEmptyString(action.value);
+    const hasDirectProperty = this.isGraphQlPropertyPath(action.property);
+    const hasPropertyCollection =
+      Array.isArray(action.property) &&
+      action.property.length > 0 &&
+      action.property.every((property) => this.isGraphQlPropertyPath(property));
+    const hasJsonPathTarget =
+      this.isNonEmptyString(action.jsonPathExpression) &&
+      (hasDirectProperty || hasPropertyCollection);
+    const hasValidPropertyDefinition =
+      action.property === undefined ||
+      hasDirectProperty ||
+      (hasPropertyCollection && hasJsonPathTarget);
 
-    return name && namespace ? { name, namespace } : undefined;
-  }
-
-  private readStringProperty(resource: Resource, property: string) {
-    if (!property.trim()) {
-      return undefined;
-    }
-
-    return this.readNonEmptyString(
-      getResourceValueByJsonPath(resource, { property }),
+    return (
+      hasValidPropertyDefinition &&
+      (hasStaticTarget || hasDirectProperty || hasJsonPathTarget)
     );
   }
 
-  private readNonEmptyString(value: unknown): string | undefined {
-    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  private hasResolvedGenericActionTarget(
+    action: ConfiguredActionDefinition,
+  ): boolean {
+    try {
+      return this.isNonEmptyString(getFieldValue(action, this.resource()));
+    } catch {
+      return false;
+    }
   }
 
-  private downloadFile(contents: string, filename: string): void {
-    const blob = new Blob([contents], { type: 'application/yaml' });
-    const url = URL.createObjectURL(blob);
+  private isGraphQlPropertyPath(value: unknown): value is string {
+    return (
+      typeof value === 'string' &&
+      value === value.trim() &&
+      GRAPHQL_PROPERTY_PATH_PATTERN.test(value)
+    );
+  }
 
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
+  private isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
 
-    URL.revokeObjectURL(url);
+  private hasValidHeaderActionDisplay(
+    action: ConfiguredActionDefinition,
+  ): boolean {
+    const displayAs = action.uiSettings.displayAs;
+    return displayAs === undefined || displayAs === 'button';
   }
 
   private getErrorMessage(error: unknown): string {
