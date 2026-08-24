@@ -303,22 +303,27 @@ describe('DetailViewComponent', () => {
       });
     });
 
-    it('should open edit resource modal', () => {
+    it('should refetch the resource with createView fields and open the edit modal', () => {
       const mockCreateModal = {
         open: vi.fn(),
       };
       (component as any).createModal = () => mockCreateModal;
 
-      const resource: any = {
+      const fetchedResource = {
         metadata: { name: 'test-resource' },
+        spec: { createOnlyField: 'current-value' },
       };
+      mockResourceService.read.mockClear();
+      mockResourceService.read.mockReturnValue(of(fetchedResource));
+
       const event = new MouseEvent('click');
       const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
 
-      component.openEditResourceModal(event, resource);
+      component.openEditResourceModal(event);
 
       expect(stopPropagationSpy).toHaveBeenCalled();
-      expect(mockCreateModal.open).toHaveBeenCalledWith(resource);
+      expect(mockResourceService.read).toHaveBeenCalled();
+      expect(mockCreateModal.open).toHaveBeenCalledWith(fetchedResource);
     });
 
     it('should delete resource successfully', () => {
@@ -1215,7 +1220,7 @@ describe('DetailViewComponent', () => {
 
       newFixture.detectChanges();
 
-      const actions = newComponent.dashboardConfig().customActions;
+      const actions = newComponent.customActions();
       expect(actions.some((a) => a.action === 'download-kubeconfig')).toBe(
         true,
       );
@@ -1248,7 +1253,7 @@ describe('DetailViewComponent', () => {
         getActiveFeatureToggles: () => [],
       })) as any;
       newFixture.detectChanges();
-      const actions = newComponent.dashboardConfig().customActions;
+      const actions = newComponent.customActions();
       expect(actions.some((a) => a.action === 'edit')).toBe(false);
       expect(actions.some((a) => a.action === 'delete')).toBe(false);
     });
@@ -1275,7 +1280,7 @@ describe('DetailViewComponent', () => {
         event,
         action: { action: 'edit' },
       } as any);
-      expect(openEditSpy).toHaveBeenCalledWith(event, resource);
+      expect(openEditSpy).toHaveBeenCalledWith(event);
     });
 
     it('should call openDeleteResourceModal for delete action when resource exists', () => {
@@ -1470,6 +1475,43 @@ describe('DetailViewComponent', () => {
       });
     });
   });
+
+  describe('getDetailViewQueryFields', () => {
+    it('should build the read query from detailView fields', () => {
+      mockResourceService.read.mockClear();
+
+      const localFixture = TestBed.createComponent(DetailView);
+      const localComponent = localFixture.componentInstance;
+      localComponent.context = (() => ({
+        ...component.context(),
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          apiGroup: 'core_k8s_io',
+          ui: {
+            createView: {
+              fields: [{ property: 'spec.createOnlyField' }],
+            },
+            detailView: {
+              fields: [
+                { property: 'metadata.name' },
+                { property: 'spec.detailOnlyField' },
+              ],
+            },
+          },
+        },
+      })) as any;
+      localComponent.LuigiClient = component.LuigiClient;
+      localFixture.detectChanges();
+
+      expect(mockResourceService.read).toHaveBeenCalled();
+      const fields = JSON.stringify(mockResourceService.read.mock.calls[0][2]);
+      expect(fields).toContain('detailOnlyField');
+      expect(fields).toContain('name');
+      expect(fields).not.toContain('createOnlyField');
+    });
+  });
 });
 
 describe('DetailViewComponent template', () => {
@@ -1645,7 +1687,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1659,7 +1701,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(false);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1673,7 +1715,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(false);
   });
@@ -1686,7 +1728,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     component.resource.set({ metadata: { name: 'c1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1700,8 +1742,10 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     });
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
-    component.resource.set({ metadata: { name: 'pod-1', namespace: 'ns1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    component.resource.set({
+      metadata: { name: 'pod-1', namespace: 'ns1' },
+    } as any);
+    const actions = component.customActions();
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
     expect(actions.some((a) => a.action === 'delete')).toBe(true);
   });
@@ -1716,9 +1760,12 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     component.LuigiClient = makeLuigiClient();
     fixture.detectChanges();
     // resource with namespace: key becomes 'clusters/ns1/pod-1' — not found in map
-    component.resource.set({ metadata: { name: 'pod-1', namespace: 'ns1' } } as any);
-    const actions = component.dashboardConfig().customActions;
+    component.resource.set({
+      metadata: { name: 'pod-1', namespace: 'ns1' },
+    } as any);
+    const actions = component.customActions();
     // instancePermissions() returns undefined → canDoAction defaults to true (fail-open)
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
   });
+
 });
