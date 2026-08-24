@@ -245,7 +245,10 @@ export class ResourceService {
             .map((r) => ({
               ...r,
               id: r.metadata.name,
-              isAvailable: this.isAvailable(r),
+              isAvailable: this.isAvailable(
+                r,
+                resourceDefinition.availableWhenNotReady,
+              ),
               accessibleName: this.getAccessibleName(r),
             }));
           return { ...resourceListResult, items: processedResult };
@@ -253,8 +256,11 @@ export class ResourceService {
       );
   }
 
-  isAvailable(item: Resource) {
-    return !!item.ready && !item.metadata?.deletionTimestamp;
+  isAvailable(item: Resource, availableWhenNotReady = false) {
+    return (
+      (!!item.ready || availableWhenNotReady) &&
+      !item.metadata?.deletionTimestamp
+    );
   }
 
   getAccessibleName(item: Resource): string | undefined {
@@ -339,7 +345,10 @@ export class ResourceService {
               nodeContext,
             );
             resource.object.id = resource.object.metadata.name;
-            resource.object.isAvailable = this.isAvailable(resource.object);
+            resource.object.isAvailable = this.isAvailable(
+              resource.object,
+              nodeContext.resourceDefinition?.availableWhenNotReady,
+            );
             resource.object.accessibleName = this.getAccessibleName(
               resource.object,
             );
