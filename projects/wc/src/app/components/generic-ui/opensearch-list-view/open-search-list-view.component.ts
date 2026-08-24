@@ -1,3 +1,4 @@
+import { OpenSearchResourceTableCard } from './open-search-resource-table-card/open-search-resource-table-card.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,8 +9,6 @@ import {
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { CARD_TYPES, CardConfig, Dashboard, SectionConfig } from '@openmfp/ngx';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
-
-import { OpenSearchResourceTableCard } from './open-search-resource-table-card/open-search-resource-table-card.component';
 
 // Register the open-search-backed resource table card so `<mfp-dashboard>` can
 // resolve the `pm-open-search-resource-table-card` selector at runtime.
@@ -67,8 +66,7 @@ export class OpenSearchListView {
   dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled()
       ? ''
-      : (this.resourceDefinition()?.ui?.listView?.backgroundImageUrl ??
-        '/assets/pm_background.png');
+      : this.resourceDefinition()?.ui?.listView?.backgroundImageUrl;
     return {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
