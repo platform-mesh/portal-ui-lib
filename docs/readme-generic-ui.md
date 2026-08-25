@@ -35,6 +35,10 @@ In order to use the generic list view, you need to adjust the node’s `content-
       }
     }
     ```
+  - `"availableWhenNotReady"`: Optional boolean (default: `false`). When set to
+    `true`, a resource remains available for navigation and actions while its
+    `readyCondition` evaluates to false. A resource with
+    `metadata.deletionTimestamp` remains unavailable regardless of this setting.
   - `"resourceDefinition"` also accepts an optional `permissionsDefinition` object that enables instance and resource levels permission checks and gating:
     - `group`: API group of the resource (e.g. `"core.platform-mesh.io"`)
     - `resource`: plural resource name used as the permission key (e.g. `"HttpBins"`)

@@ -929,6 +929,48 @@ describe('ResourceService', () => {
       expect(res.items[0].ready).toBe(true);
     });
 
+    it('should keep listed resources available while not ready when configured', async () => {
+      const contextWithNotReadyAccess: any = {
+        ...namespacedNodeContext,
+        resourceDefinition: {
+          ...namespacedNodeContext.resourceDefinition,
+          availableWhenNotReady: true,
+          readyCondition: {
+            jsonPathExpression: '$.status.ready',
+            property: 'status.ready',
+          },
+        },
+      };
+
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_k8s_io: {
+              v1: {
+                Testkinds: {
+                  resourceVersion: '123',
+                  items: [
+                    {
+                      name: 'res1',
+                      metadata: { uid: 'uid1' },
+                      status: { ready: false },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      const res = await firstValueFrom(
+        service.list('myList', ['name', 'status'], contextWithNotReadyAccess),
+      );
+      expect(res.items[0]).toEqual(
+        expect.objectContaining({ ready: false, isAvailable: true }),
+      );
+    });
+
     it('should determine ready status from conditions when readyCondition is not defined', async () => {
       mockApollo.query.mockReturnValue(
         of({
@@ -1190,6 +1232,48 @@ describe('ResourceService', () => {
         ),
       );
       expect(res?.object.ready).toBe(true);
+    });
+
+    it('should keep subscribed resources available while not ready when configured', async () => {
+      const contextWithNotReadyAccess: any = {
+        ...namespacedNodeContext,
+        resourceDefinition: {
+          ...namespacedNodeContext.resourceDefinition,
+          availableWhenNotReady: true,
+          readyCondition: {
+            jsonPathExpression: '$.status.ready',
+            property: 'status.ready',
+          },
+        },
+      };
+
+      mockApollo.subscribe.mockReturnValue(
+        of({
+          data: {
+            mysubscription: {
+              type: 'MODIFIED',
+              object: {
+                name: 'res1',
+                metadata: { uid: 'uid1' },
+                status: { ready: false },
+              },
+            },
+          },
+        }),
+      );
+
+      const res = await firstValueFrom(
+        service.resourceChangeSubscription(
+          'mySubscription',
+          ['name', 'status'],
+          contextWithNotReadyAccess,
+          '123',
+          false,
+        ),
+      );
+      expect(res?.object).toEqual(
+        expect.objectContaining({ ready: false, isAvailable: true }),
+      );
     });
 
     it('should set ready status on subscription object using conditions', async () => {
@@ -2376,6 +2460,15 @@ describe('ResourceService', () => {
       expect(service.isAvailable(resource)).toBe(false);
     });
 
+    it('isAvailable: should return true for a not-ready resource when explicitly enabled', () => {
+      const resource = {
+        ready: false,
+        metadata: { name: 'res1' },
+      } as any;
+
+      expect(service.isAvailable(resource, true)).toBe(true);
+    });
+
     it('isAvailable: should return false when resource has a deletionTimestamp', () => {
       const resource = {
         ready: true,
@@ -2386,6 +2479,18 @@ describe('ResourceService', () => {
       } as any;
 
       expect(service.isAvailable(resource)).toBe(false);
+    });
+
+    it('isAvailable: should keep a deleting resource unavailable when not-ready access is enabled', () => {
+      const resource = {
+        ready: false,
+        metadata: {
+          name: 'res1',
+          deletionTimestamp: '2023-10-27T10:00:00Z',
+        },
+      } as any;
+
+      expect(service.isAvailable(resource, true)).toBe(false);
     });
 
     it('getAccessibleName: should return undefined string for a healthy, ready resource', () => {
