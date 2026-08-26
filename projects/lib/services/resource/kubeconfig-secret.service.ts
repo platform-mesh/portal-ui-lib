@@ -3,8 +3,9 @@ import { ResourceService } from './resource.service';
 import { Injectable, inject } from '@angular/core';
 import {
   ALL_NAMESPACE,
+  ButtonSettings,
   DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
-  DownloadKubeconfigFromSecretRefAction,
+  DownloadKubeconfigFromSecretRefButtonSettings,
   PlatformMeshFieldDefinition,
   Resource,
   ResourceDefinition,
@@ -24,8 +25,6 @@ const SECRET_RESOURCE_DEFINITION: ResourceDefinition = {
 
 const DEFAULT_DATA_KEY = 'kubeconfig';
 const DEFAULT_FILENAME = 'kubeconfig.yaml';
-const GRAPHQL_PROPERTY_PATH_PATTERN =
-  /^[_A-Za-z][_0-9A-Za-z]*(?:\.[_A-Za-z][_0-9A-Za-z]*)*$/;
 
 export interface KubeconfigDownload {
   contents: string;
@@ -37,52 +36,35 @@ interface SecretReference {
   namespace: string;
 }
 
+export function isDownloadKubeconfigButtonSettings(
+  buttonSettings: ButtonSettings | undefined,
+): buttonSettings is DownloadKubeconfigFromSecretRefButtonSettings {
+  return buttonSettings?.action === DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class KubeconfigSecretService {
   private resourceService = inject(ResourceService);
 
-  isDownloadActionIdentifier(action: PlatformMeshFieldDefinition): boolean {
-    return (
-      action.uiSettings?.buttonSettings?.action ===
-      DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION
-    );
-  }
-
-  isDownloadAction(
-    action: PlatformMeshFieldDefinition,
-  ): action is DownloadKubeconfigFromSecretRefAction {
-    const buttonSettings = action.uiSettings?.buttonSettings;
-    const namespaceProperty =
-      buttonSettings && 'namespaceProperty' in buttonSettings
-        ? buttonSettings.namespaceProperty
-        : undefined;
-
-    return (
-      this.isDownloadActionIdentifier(action) &&
-      (action.uiSettings?.displayAs === undefined ||
-        action.uiSettings.displayAs === 'button') &&
-      action.propertyCollection === undefined &&
-      typeof action.property === 'string' &&
-      this.normalizeProperty(action.property) !== undefined &&
-      (namespaceProperty === undefined ||
-        this.normalizeProperty(namespaceProperty) !== undefined)
-    );
-  }
-
-  getSecretReferenceFields(
-    action: DownloadKubeconfigFromSecretRefAction,
+  /**
+   * Fields the detail-view query has to read so the action can resolve its
+   * Secret reference from the loaded resource.
+   */
+  secretReferenceQueryFields(
+    buttonSettings: ButtonSettings | undefined,
   ): PlatformMeshFieldDefinition[] {
-    const property = this.normalizeProperty(action.property);
-    if (!property) {
+    if (!isDownloadKubeconfigButtonSettings(buttonSettings)) {
       return [];
     }
 
-    const fields: PlatformMeshFieldDefinition[] = [{ property }];
-    const namespaceProperty = this.normalizeProperty(
-      action.uiSettings.buttonSettings.namespaceProperty,
-    );
+    const fields: PlatformMeshFieldDefinition[] = [];
+    const resourceProperty = this.readString(buttonSettings.resourceProperty);
+    if (resourceProperty) {
+      fields.push({ property: resourceProperty });
+    }
+    const namespaceProperty = this.readString(buttonSettings.namespaceProperty);
     if (namespaceProperty) {
       fields.push({ property: namespaceProperty });
     }
@@ -90,63 +72,52 @@ export class KubeconfigSecretService {
     return fields;
   }
 
-  resolveSecretReference(
-    action: DownloadKubeconfigFromSecretRefAction,
+  isSecretReferenceAvailable(
+    buttonSettings: ButtonSettings | undefined,
     resource: Resource | undefined,
     context: ResourceNodeContext,
-  ): SecretReference | undefined {
-    if (!resource) {
-      return undefined;
-    }
-
-    const nameProperty = this.normalizeProperty(action.property);
-    if (!nameProperty) {
-      return undefined;
-    }
-
-    const name = this.readStringProperty(resource, nameProperty);
-    const configuredNamespaceProperty =
-      action.uiSettings.buttonSettings.namespaceProperty;
-    const namespace =
-      configuredNamespaceProperty === undefined
-        ? (this.normalizeNamespace(resource.metadata?.namespace) ??
-          this.normalizeNamespace(context.namespaceId))
-        : this.normalizeNamespace(
-            this.readStringProperty(
-              resource,
-              this.normalizeProperty(configuredNamespaceProperty),
-            ),
-          );
-
-    return name && namespace ? { name, namespace } : undefined;
+  ): boolean {
+    return (
+      isDownloadKubeconfigButtonSettings(buttonSettings) &&
+      this.resolveSecretReference(buttonSettings, resource, context) !==
+        undefined
+    );
   }
 
   readKubeconfig(
-    action: DownloadKubeconfigFromSecretRefAction,
+    buttonSettings: ButtonSettings,
     resource: Resource | undefined,
     context: ResourceNodeContext,
   ): Observable<KubeconfigDownload> {
-    const secretRef = this.resolveSecretReference(action, resource, context);
-    if (!secretRef) {
+    if (!isDownloadKubeconfigButtonSettings(buttonSettings)) {
+      return throwError(
+        () => new Error('Button is not a kubeconfig download action'),
+      );
+    }
+
+    const secretReference = this.resolveSecretReference(
+      buttonSettings,
+      resource,
+      context,
+    );
+    if (!secretReference) {
       return throwError(
         () => new Error('Kubeconfig Secret reference is not available'),
       );
     }
 
-    const buttonSettings = action.uiSettings.buttonSettings;
-    const dataKey =
-      this.readNonEmptyString(buttonSettings.dataKey) ?? DEFAULT_DATA_KEY;
+    const dataKey = this.readString(buttonSettings.dataKey) ?? DEFAULT_DATA_KEY;
     const filename =
-      this.readNonEmptyString(buttonSettings.filename) ?? DEFAULT_FILENAME;
+      this.readString(buttonSettings.filename) ?? DEFAULT_FILENAME;
     const secretContext: ResourceNodeContext = {
       ...context,
-      namespaceId: secretRef.namespace,
+      namespaceId: secretReference.namespace,
       resourceDefinition: SECRET_RESOURCE_DEFINITION,
     };
 
     return this.resourceService
       .read(
-        secretRef.name,
+        secretReference.name,
         SECRET_RESOURCE_DEFINITION,
         ['data'],
         secretContext,
@@ -157,9 +128,7 @@ export class KubeconfigSecretService {
           throwError(() => new Error('Kubeconfig Secret could not be read')),
         ),
         map((secret) => {
-          const encodedKubeconfig = this.readNonEmptyString(
-            secret?.data?.[dataKey],
-          );
+          const encodedKubeconfig = this.readString(secret?.data?.[dataKey]);
           if (!encodedKubeconfig) {
             throw new Error(
               `Kubeconfig data key "${dataKey}" is not available`,
@@ -174,33 +143,50 @@ export class KubeconfigSecretService {
       );
   }
 
-  private readStringProperty(
-    resource: Resource,
-    property: string | undefined,
-  ): string | undefined {
-    return property
-      ? this.readNonEmptyString(
-          getResourceValueByJsonPath(resource, { property }),
-        )
-      : undefined;
+  private resolveSecretReference(
+    buttonSettings: DownloadKubeconfigFromSecretRefButtonSettings,
+    resource: Resource | undefined,
+    context: ResourceNodeContext,
+  ): SecretReference | undefined {
+    if (!resource) {
+      return undefined;
+    }
+
+    try {
+      const resourceProperty = this.readString(buttonSettings.resourceProperty);
+      if (!resourceProperty) {
+        return undefined;
+      }
+
+      const name = this.readString(
+        getResourceValueByJsonPath(resource, {
+          property: resourceProperty,
+        }),
+      );
+      const namespaceProperty = this.readString(
+        buttonSettings.namespaceProperty,
+      );
+      const namespace = namespaceProperty
+        ? this.namespaceOf(
+            getResourceValueByJsonPath(resource, {
+              property: namespaceProperty,
+            }),
+          )
+        : (this.namespaceOf(resource.metadata?.namespace) ??
+          this.namespaceOf(this.resourceService.getNamespace(context)));
+
+      return name && namespace ? { name, namespace } : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
-  private normalizeProperty(value: unknown): string | undefined {
-    const property = this.readNonEmptyString(value);
-    const normalized = property?.startsWith('$.')
-      ? property.slice(2)
-      : property;
-    return normalized && GRAPHQL_PROPERTY_PATH_PATTERN.test(normalized)
-      ? normalized
-      : undefined;
-  }
-
-  private normalizeNamespace(value: unknown): string | undefined {
-    const namespace = this.readNonEmptyString(value);
+  private namespaceOf(value: unknown): string | undefined {
+    const namespace = this.readString(value);
     return namespace && namespace !== ALL_NAMESPACE ? namespace : undefined;
   }
 
-  private readNonEmptyString(value: unknown): string | undefined {
+  private readString(value: unknown): string | undefined {
     return typeof value === 'string' && value.trim() ? value.trim() : undefined;
   }
 }

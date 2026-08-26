@@ -3,7 +3,6 @@ import {
   FieldFilterDefinition,
   FormFieldDefinition,
   TableFieldDefinition,
-  UiSettings,
 } from '@openmfp/ngx';
 
 export type {
@@ -30,68 +29,26 @@ export type PlatformMeshFieldDefinition = TableFieldDefinition &
   };
 
 export const DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION =
-  'downloadKubeconfigFromSecretRef';
+  'download-kubeconfig-from-secret-ref';
 
+/**
+ * `ButtonSettings` plus the extra data the kubeconfig download needs. Used
+ * inside `UiView.actions[].uiSettings.buttonSettings`.
+ */
 export interface DownloadKubeconfigFromSecretRefButtonSettings extends ButtonSettings {
   action: typeof DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION;
+  /** Resource property holding the referenced Secret name. */
+  resourceProperty: string;
+  /** Secret `data` key to download; defaults to `kubeconfig`. */
   dataKey?: string;
+  /** Download filename; defaults to `kubeconfig.yaml`. */
   filename?: string;
+  /**
+   * Resource property holding the Secret namespace; falls back to the
+   * resource's own namespace, then the node context namespace.
+   */
   namespaceProperty?: string;
 }
-
-type DetailViewActionUiSettings<T extends ButtonSettings> = Omit<
-  UiSettings,
-  'buttonSettings' | 'displayAs'
-> & {
-  displayAs?: 'button';
-  buttonSettings: T;
-};
-
-export type GenericActionButtonSettings = Omit<ButtonSettings, 'action'> & {
-  action: 'navigate' | 'openInModal';
-};
-
-type GenericActionTarget =
-  | {
-      value: string;
-      property?: string;
-      jsonPathExpression?: string;
-    }
-  | {
-      value?: string;
-      property: string;
-      jsonPathExpression?: string;
-    }
-  | {
-      value?: string;
-      property: string[];
-      jsonPathExpression: string;
-    };
-
-export type GenericAction = Omit<
-  PlatformMeshFieldDefinition,
-  | 'uiSettings'
-  | 'value'
-  | 'property'
-  | 'jsonPathExpression'
-  | 'propertyCollection'
-> &
-  GenericActionTarget & {
-    propertyCollection?: never;
-    uiSettings: DetailViewActionUiSettings<GenericActionButtonSettings>;
-  };
-
-export type DownloadKubeconfigFromSecretRefAction = Omit<
-  PlatformMeshFieldDefinition,
-  'property' | 'propertyCollection' | 'uiSettings'
-> & {
-  /** JSON path to the referenced Secret name. */
-  property: string;
-  propertyCollection?: never;
-  uiSettings: DetailViewActionUiSettings<DownloadKubeconfigFromSecretRefButtonSettings>;
-};
-
-export type UiAction = DownloadKubeconfigFromSecretRefAction | GenericAction;
 
 export interface UiView {
   actions?: PlatformMeshFieldDefinition[];

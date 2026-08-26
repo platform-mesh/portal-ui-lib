@@ -23,23 +23,21 @@ describe('DetailViewComponent', () => {
   let envConfigServiceMock: MockedObject<EnvConfigService>;
   let accountInfoServiceMock: MockedObject<AccountInfoService>;
   let kubeconfigSecretServiceMock: {
-    isDownloadActionIdentifier: ReturnType<typeof vi.fn>;
-    isDownloadAction: ReturnType<typeof vi.fn>;
-    getSecretReferenceFields: ReturnType<typeof vi.fn>;
-    resolveSecretReference: ReturnType<typeof vi.fn>;
+    secretReferenceQueryFields: ReturnType<typeof vi.fn>;
+    isSecretReferenceAvailable: ReturnType<typeof vi.fn>;
     readKubeconfig: ReturnType<typeof vi.fn>;
   };
   let luigiClientLinkManagerNavigate = vi.fn();
   let errorHandlerServiceMock: MockedObject<ErrorHandlerService>;
   const secretAction = {
-    property: 'status.kubeconfig.secretRef.name',
     uiSettings: {
       displayAs: 'button',
       buttonSettings: {
-        action: 'downloadKubeconfigFromSecretRef',
+        action: 'download-kubeconfig-from-secret-ref',
         text: 'Download cluster access',
         icon: 'download-from-cloud',
         design: 'Emphasized',
+        resourceProperty: 'status.kubeconfig.secretRef.name',
         dataKey: 'config',
         filename: 'cluster.yaml',
         namespaceProperty: 'status.kubeconfig.secretRef.namespace',
@@ -51,50 +49,23 @@ describe('DetailViewComponent', () => {
     envConfigServiceMock = mock();
     accountInfoServiceMock = mock();
     kubeconfigSecretServiceMock = {
-      isDownloadActionIdentifier: vi.fn(
-        (action) =>
-          action.uiSettings?.buttonSettings?.action ===
-          'downloadKubeconfigFromSecretRef',
-      ),
-      isDownloadAction: vi.fn(
-        (action) =>
-          action.uiSettings?.buttonSettings?.action ===
-            'downloadKubeconfigFromSecretRef' &&
-          (action.uiSettings?.displayAs === undefined ||
-            action.uiSettings?.displayAs === 'button') &&
-          typeof action.property === 'string' &&
-          /^[_A-Za-z][_0-9A-Za-z]*(?:\.[_A-Za-z][_0-9A-Za-z]*)*$/.test(
-            action.property.trim().replace(/^\$\./, ''),
-          ) &&
-          (action.uiSettings.buttonSettings.namespaceProperty === undefined ||
-            (typeof action.uiSettings.buttonSettings.namespaceProperty ===
-              'string' &&
-              /^[_A-Za-z][_0-9A-Za-z]*(?:\.[_A-Za-z][_0-9A-Za-z]*)*$/.test(
-                action.uiSettings.buttonSettings.namespaceProperty
-                  .trim()
-                  .replace(/^\$\./, ''),
-              ))),
-      ),
-      getSecretReferenceFields: vi.fn((action) => [
-        { property: action.property },
-        ...(action.uiSettings.buttonSettings.namespaceProperty
+      secretReferenceQueryFields: vi.fn((buttonSettings) =>
+        buttonSettings?.action === 'download-kubeconfig-from-secret-ref'
           ? [
               {
-                property: action.uiSettings.buttonSettings.namespaceProperty,
+                property: buttonSettings.resourceProperty,
               },
+              ...(buttonSettings.namespaceProperty
+                ? [
+                    {
+                      property: buttonSettings.namespaceProperty,
+                    },
+                  ]
+                : []),
             ]
-          : []),
-      ]),
-      resolveSecretReference: vi.fn((_action, resource, context) => {
-        const reference = resource?.status?.kubeconfig?.secretRef;
-        const namespace = reference?.namespace ?? resource?.metadata?.namespace;
-        return reference?.name && (namespace ?? context.namespaceId)
-          ? {
-              name: reference.name,
-              namespace: namespace ?? context.namespaceId,
-            }
-          : undefined;
-      }),
+          : [],
+      ),
+      isSecretReferenceAvailable: vi.fn().mockReturnValue(true),
       readKubeconfig: vi
         .fn()
         .mockReturnValue(
@@ -135,6 +106,7 @@ describe('DetailViewComponent', () => {
       readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
       delete: vi.fn().mockReturnValue(of({})),
       update: vi.fn().mockReturnValue(of({})),
+      getNamespace: vi.fn((context) => context.namespaceId),
     };
 
     mockGatewayService = {
@@ -801,7 +773,7 @@ describe('DetailViewComponent', () => {
     });
   });
 
-  it('should include generic, cross-namespace, and local Secret action properties in the detail query', () => {
+  it('should include Secret reference properties but not generic action properties in the detail query', () => {
     mockResourceService.read.mockClear();
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
@@ -815,11 +787,11 @@ describe('DetailViewComponent', () => {
             actions: [
               secretAction,
               {
-                property: 'status.kubeconfigSecretRef.name',
                 uiSettings: {
                   displayAs: 'button',
                   buttonSettings: {
-                    action: 'downloadKubeconfigFromSecretRef',
+                    action: 'download-kubeconfig-from-secret-ref',
+                    resourceProperty: 'status.kubeconfigSecretRef.name',
                     text: 'Download local cluster access',
                   },
                 },
@@ -845,11 +817,13 @@ describe('DetailViewComponent', () => {
       { status: [{ kubeconfig: [{ secretRef: ['name'] }] }] },
       { status: [{ kubeconfig: [{ secretRef: ['namespace'] }] }] },
       { status: [{ kubeconfigSecretRef: ['name'] }] },
-      { status: [{ console: ['url'] }] },
     ]);
   });
 
-  it('should hide a Secret-backed action while its reference is unavailable', () => {
+  it('should hide a Secret action while its reference is unavailable', () => {
+    kubeconfigSecretServiceMock.isSecretReferenceAvailable.mockReturnValue(
+      false,
+    );
     mockResourceService.read.mockReturnValueOnce(
       of({ metadata: { name: 'cluster-1', namespace: 'default' } }),
     );
@@ -865,50 +839,60 @@ describe('DetailViewComponent', () => {
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
+    expect(newComponent.customActions()).not.toContain(
+      secretAction.uiSettings.buttonSettings,
+    );
   });
 
-  it('should fail closed for a malformed action using the reserved identifier', () => {
-    mockResourceService.read.mockClear();
-    const malformedAction = {
-      property: 'status..kubeconfig.secretRef.name',
+  it('should render a generic action before the resource arrives', () => {
+    const resourceRead = new Subject<any>();
+    const navigateAction = {
+      value: '/clusters',
       uiSettings: {
         displayAs: 'button',
-        buttonSettings: {
-          action: 'downloadKubeconfigFromSecretRef',
-          text: 'Download cluster access',
-        },
+        buttonSettings: { action: 'navigate', text: 'Clusters' },
       },
     };
+    mockResourceService.read.mockReturnValueOnce(resourceRead);
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
     newComponent.context = (() => ({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
-        ui: { detailView: { fields: [], actions: [malformedAction] } },
+        ui: { detailView: { fields: [], actions: [navigateAction] } },
       },
     })) as any;
     newComponent.LuigiClient = component.LuigiClient;
-
     newFixture.detectChanges();
 
-    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
-      { metadata: ['deletionTimestamp'] },
-    ]);
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
+    expect(newComponent.resource()).toBeUndefined();
+    expect(newComponent.customActions()).toContain(
+      navigateAction.uiSettings.buttonSettings,
+    );
+    newFixture.destroy();
+  });
+
+  it('should surface a click-time error when the kubeconfig download fails', async () => {
+    const showAlert = vi.fn();
+    component.LuigiClient = (() => ({
+      uxManager: () => ({ showAlert }),
+      linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
+      getActiveFeatureToggles: () => [],
+    })) as any;
+    kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(
+      throwError(() => new Error('Kubeconfig Secret could not be read')),
+    );
+
+    await component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
+
+    expect(showAlert).toHaveBeenCalledWith({
+      text: 'Failed to download kubeconfig: Kubeconfig Secret could not be read',
+      type: 'error',
+    });
+    expect(component.isDownloadingKubeConfig()).toBe(false);
   });
 
   it.each([
@@ -931,16 +915,13 @@ describe('DetailViewComponent', () => {
     expect(mockResourceService.read.mock.calls[0][2]).toEqual([
       { metadata: ['deletionTimestamp'] },
     ]);
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
+    expect(newComponent.configuredActions()).toEqual([]);
   });
 
   it('should render configured presentation when the Secret reference is ready', () => {
+    kubeconfigSecretServiceMock.isSecretReferenceAvailable.mockReturnValue(
+      true,
+    );
     mockResourceService.read.mockReturnValueOnce(
       of({
         metadata: { name: 'cluster-1', namespace: 'default' },
@@ -966,16 +947,18 @@ describe('DetailViewComponent', () => {
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
+    expect(newComponent.customActions()).toContain(
+      secretAction.uiSettings.buttonSettings,
+    );
     expect(
-      newComponent
-        .customActions()
-        .find((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toEqual({
-      ...secretAction.uiSettings.buttonSettings,
-      action: 'portal-ui-configured-action:0',
-    });
+      kubeconfigSecretServiceMock.isSecretReferenceAvailable,
+    ).toHaveBeenCalledWith(
+      secretAction.uiSettings.buttonSettings,
+      expect.objectContaining({
+        metadata: expect.objectContaining({ name: 'cluster-1' }),
+      }),
+      expect.anything(),
+    );
   });
 
   it('should delegate Secret-backed download resolution to the service', async () => {
@@ -1001,10 +984,12 @@ describe('DetailViewComponent', () => {
     global.URL.createObjectURL = vi.fn().mockReturnValue('blob-url');
     global.URL.revokeObjectURL = vi.fn();
 
-    await component.downloadKubeconfigFromSecretRef(secretAction);
+    await component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
 
     expect(kubeconfigSecretServiceMock.readKubeconfig).toHaveBeenCalledWith(
-      secretAction,
+      secretAction.uiSettings.buttonSettings,
       loadedResource,
       component.context(),
     );
@@ -1020,24 +1005,27 @@ describe('DetailViewComponent', () => {
   it('should not start a second Secret-backed download while one is running', async () => {
     component.isDownloadingKubeConfig.set(true);
 
-    await component.downloadKubeconfigFromSecretRef(secretAction);
+    await component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
 
     expect(kubeconfigSecretServiceMock.readKubeconfig).not.toHaveBeenCalled();
   });
 
   it('should discard a Secret response after the displayed resource changes', async () => {
-    const loadedResource = {
-      metadata: { name: 'cluster-1', namespace: 'default' },
-    } as any;
     const readResult = new Subject<{
       contents: string;
       filename: string;
     }>();
-    component.resource.set(loadedResource);
+    component.resource.set({
+      metadata: { name: 'cluster-1', namespace: 'default' },
+    } as any);
     kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(readResult);
     global.URL.createObjectURL = vi.fn();
 
-    const download = component.downloadKubeconfigFromSecretRef(secretAction);
+    const download = component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
     component.resource.set({
       metadata: { name: 'cluster-2', namespace: 'default' },
     } as any);
@@ -1054,25 +1042,23 @@ describe('DetailViewComponent', () => {
 
   it('should suppress a Secret error after the displayed resource changes', async () => {
     const showAlert = vi.fn();
-    const loadedResource = {
-      metadata: { name: 'cluster-1', namespace: 'default' },
-    } as any;
     const readResult = new Subject<{
       contents: string;
       filename: string;
     }>();
-    component.resource.set(loadedResource);
+    component.resource.set({
+      metadata: { name: 'cluster-1', namespace: 'default' },
+    } as any);
     component.LuigiClient = (() => ({
       uxManager: () => ({ showAlert }),
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-      }),
+      linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
       getActiveFeatureToggles: () => [],
     })) as any;
     kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(readResult);
 
-    const download = component.downloadKubeconfigFromSecretRef(secretAction);
+    const download = component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
     component.resource.set({
       metadata: { name: 'cluster-2', namespace: 'default' },
     } as any);
@@ -1081,6 +1067,52 @@ describe('DetailViewComponent', () => {
 
     expect(showAlert).not.toHaveBeenCalled();
     expect(component.isDownloadingKubeConfig()).toBe(false);
+  });
+
+  it('should cancel a pending Secret read when the context changes', async () => {
+    const showAlert = vi.fn();
+    const readResult = new Subject<{
+      contents: string;
+      filename: string;
+    }>();
+    const newFixture = TestBed.createComponent(DetailView);
+    const newComponent = newFixture.componentInstance;
+    const oldContext = {
+      ...component.context(),
+      resourceId: 'cluster-1',
+      kcpPath: 'root:orgs:showroom:old-account',
+    };
+    newFixture.componentRef.setInput('context', oldContext);
+    newFixture.componentRef.setInput('LuigiClient', (() => ({
+      uxManager: () => ({ showAlert }),
+      linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
+      getActiveFeatureToggles: () => [],
+    })) as any);
+    newFixture.detectChanges();
+    newComponent.resource.set({
+      metadata: { name: 'cluster-1', namespace: 'default' },
+    } as any);
+    kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(readResult);
+    global.URL.createObjectURL = vi.fn();
+
+    const download = newComponent.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
+    expect(readResult.observed).toBe(true);
+
+    newFixture.componentRef.setInput('context', {
+      ...oldContext,
+      resourceId: 'cluster-2',
+      kcpPath: 'root:orgs:showroom:new-account',
+    });
+    newFixture.detectChanges();
+    await download;
+
+    expect(readResult.observed).toBe(false);
+    expect(global.URL.createObjectURL).not.toHaveBeenCalled();
+    expect(showAlert).not.toHaveBeenCalled();
+    expect(newComponent.isDownloadingKubeConfig()).toBe(false);
+    newFixture.destroy();
   });
 
   it('should cancel a pending Secret read when the view is destroyed', async () => {
@@ -1094,53 +1126,19 @@ describe('DetailViewComponent', () => {
     } as any);
     component.LuigiClient = (() => ({
       uxManager: () => ({ showAlert }),
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-      }),
+      linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
       getActiveFeatureToggles: () => [],
     })) as any;
     kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(readResult);
     global.URL.createObjectURL = vi.fn();
 
-    const download = component.downloadKubeconfigFromSecretRef(secretAction);
+    const download = component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
     expect(readResult.observed).toBe(true);
 
     fixture.destroy();
     await download;
-
-    expect(readResult.observed).toBe(false);
-    expect(global.URL.createObjectURL).not.toHaveBeenCalled();
-    expect(showAlert).not.toHaveBeenCalled();
-    expect(component.isDownloadingKubeConfig()).toBe(false);
-  });
-
-  it('should cancel a pending Secret read when a new resource read starts', async () => {
-    const showAlert = vi.fn();
-    const readResult = new Subject<{
-      contents: string;
-      filename: string;
-    }>();
-    component.resource.set({
-      metadata: { name: 'cluster-1', namespace: 'default' },
-    } as any);
-    component.LuigiClient = (() => ({
-      uxManager: () => ({ showAlert }),
-      linkManager: () => ({
-        fromContext: vi.fn().mockReturnThis(),
-        navigate: vi.fn(),
-      }),
-      getActiveFeatureToggles: () => [],
-    })) as any;
-    kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(readResult);
-    global.URL.createObjectURL = vi.fn();
-
-    const download = component.downloadKubeconfigFromSecretRef(secretAction);
-    expect(readResult.observed).toBe(true);
-
-    const resourceSubscription = (component as any).readResource();
-    await download;
-    resourceSubscription.unsubscribe();
 
     expect(readResult.observed).toBe(false);
     expect(global.URL.createObjectURL).not.toHaveBeenCalled();
@@ -1163,7 +1161,9 @@ describe('DetailViewComponent', () => {
     );
     global.URL.createObjectURL = vi.fn();
 
-    await component.downloadKubeconfigFromSecretRef(secretAction);
+    await component.downloadKubeconfigFromSecretRef(
+      secretAction.uiSettings.buttonSettings,
+    );
 
     expect(showAlertSpy).toHaveBeenCalledWith({
       text: 'Failed to download kubeconfig: Kubeconfig Secret could not be read',
@@ -1173,7 +1173,7 @@ describe('DetailViewComponent', () => {
     expect(component.isDownloadingKubeConfig()).toBe(false);
   });
 
-  it('should dispatch a configured Secret-backed action by its internal id', () => {
+  it('should dispatch a configured Secret-backed action to the download flow', () => {
     mockResourceService.read.mockReturnValueOnce(
       of({
         metadata: { name: 'cluster-1', namespace: 'default' },
@@ -1201,10 +1201,12 @@ describe('DetailViewComponent', () => {
 
     newComponent.onActionButtonClick({
       event: new MouseEvent('click'),
-      action: { action: 'portal-ui-configured-action:0' },
+      action: secretAction.uiSettings.buttonSettings,
     } as any);
 
-    expect(downloadSpy).toHaveBeenCalledWith(secretAction);
+    expect(downloadSpy).toHaveBeenCalledWith(
+      secretAction.uiSettings.buttonSettings,
+    );
   });
 
   it('should dispatch repeated generic actions independently', () => {
@@ -1212,14 +1214,12 @@ describe('DetailViewComponent', () => {
       {
         value: '/clusters/one',
         uiSettings: {
-          displayAs: 'button',
           buttonSettings: { action: 'navigate', text: 'Cluster one' },
         },
       },
       {
         value: '/clusters/two',
         uiSettings: {
-          displayAs: 'button',
           buttonSettings: { action: 'navigate', text: 'Cluster two' },
         },
       },
@@ -1236,33 +1236,29 @@ describe('DetailViewComponent', () => {
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
-    const configuredButtons = newComponent
-      .customActions()
-      .filter((action) =>
-        action.action.startsWith('portal-ui-configured-action:'),
-      );
-    expect(configuredButtons.map((action) => action.action)).toEqual([
-      'portal-ui-configured-action:0',
-      'portal-ui-configured-action:1',
-    ]);
+    expect(newComponent.customActions()).toContain(
+      actions[0].uiSettings.buttonSettings,
+    );
+    expect(newComponent.customActions()).toContain(
+      actions[1].uiSettings.buttonSettings,
+    );
 
     newComponent.onActionButtonClick({
       event: new MouseEvent('click'),
-      action: configuredButtons[1],
-    });
+      action: actions[1].uiSettings.buttonSettings,
+    } as any);
 
     expect(luigiClientLinkManagerNavigate).toHaveBeenCalledWith(
       '/clusters/two',
     );
   });
 
-  it('should hide an unsupported generic action', () => {
+  it('should render an unsupported generic action and alert when it is clicked', () => {
     const showAlert = vi.fn();
     mockResourceService.read.mockClear();
     const unsupportedAction = {
       property: 'status.console.url',
       uiSettings: {
-        displayAs: 'button',
         buttonSettings: {
           action: 'providerSpecificAction',
           text: 'Provider action',
@@ -1285,89 +1281,26 @@ describe('DetailViewComponent', () => {
     })) as any;
     newFixture.detectChanges();
 
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
+    expect(newComponent.customActions()).toContain(
+      unsupportedAction.uiSettings.buttonSettings,
+    );
     expect(mockResourceService.read.mock.calls[0][2]).toEqual([
       { metadata: ['deletionTimestamp'] },
     ]);
-    expect(showAlert).not.toHaveBeenCalled();
+
+    newComponent.onActionButtonClick({
+      event: new MouseEvent('click'),
+      action: unsupportedAction.uiSettings.buttonSettings,
+    } as any);
+
+    expect(showAlert).toHaveBeenCalledWith({
+      text: 'Configured action could not be executed',
+      type: 'error',
+    });
   });
 
-  it('should reject a generic action whose GraphQL property has surrounding whitespace', () => {
-    mockResourceService.read.mockClear();
-    const malformedAction = {
-      property: ' status.console.url ',
-      uiSettings: {
-        displayAs: 'button',
-        buttonSettings: { action: 'navigate', text: 'Console' },
-      },
-    };
-    const newFixture = TestBed.createComponent(DetailView);
-    const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
-      ...component.context(),
-      resourceDefinition: {
-        ...component.context().resourceDefinition,
-        ui: { detailView: { fields: [], actions: [malformedAction] } },
-      },
-    })) as any;
-    newComponent.LuigiClient = component.LuigiClient;
-
-    newFixture.detectChanges();
-
-    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
-      { metadata: ['deletionTimestamp'] },
-    ]);
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
-  });
-
-  it('should ignore a header action with a non-button display mode', () => {
-    mockResourceService.read.mockClear();
-    const invalidDisplayAction = {
-      value: '/console',
-      uiSettings: {
-        displayAs: 'link',
-        buttonSettings: { action: 'navigate', text: 'Console' },
-      },
-    };
-    const newFixture = TestBed.createComponent(DetailView);
-    const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
-      ...component.context(),
-      resourceDefinition: {
-        ...component.context().resourceDefinition,
-        ui: {
-          detailView: { fields: [], actions: [invalidDisplayAction] },
-        },
-      },
-    })) as any;
-    newComponent.LuigiClient = component.LuigiClient;
-    newFixture.detectChanges();
-
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
-    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
-      { metadata: ['deletionTimestamp'] },
-    ]);
-  });
-
-  it('should ignore a generic action without a queryable target', () => {
+  it('should render a generic action without a target and alert on click', () => {
+    const showAlert = vi.fn();
     mockResourceService.read.mockClear();
     const missingTargetAction = {
       uiSettings: {
@@ -1383,55 +1316,29 @@ describe('DetailViewComponent', () => {
         ui: { detailView: { fields: [], actions: [missingTargetAction] } },
       },
     })) as any;
-    newComponent.LuigiClient = component.LuigiClient;
+    newComponent.LuigiClient = (() => ({
+      linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
+      uxManager: () => ({ showAlert }),
+      getActiveFeatureToggles: () => [],
+    })) as any;
     newFixture.detectChanges();
 
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
-    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
-      { metadata: ['deletionTimestamp'] },
-    ]);
+    expect(newComponent.customActions()).toContain(
+      missingTargetAction.uiSettings.buttonSettings,
+    );
+
+    newComponent.onActionButtonClick({
+      event: new MouseEvent('click'),
+      action: missingTargetAction.uiSettings.buttonSettings,
+    } as any);
+
+    expect(showAlert).toHaveBeenCalledWith({
+      text: 'Configured action could not be executed',
+      type: 'error',
+    });
   });
 
-  it('should ignore a header action with a nested field tree', () => {
-    mockResourceService.read.mockClear();
-    const nestedAction = {
-      value: '/console',
-      propertyCollection: [null],
-      uiSettings: {
-        buttonSettings: { action: 'navigate', text: 'Console' },
-      },
-    };
-    const newFixture = TestBed.createComponent(DetailView);
-    const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
-      ...component.context(),
-      resourceDefinition: {
-        ...component.context().resourceDefinition,
-        ui: { detailView: { fields: [], actions: [nestedAction] } },
-      },
-    })) as any;
-    newComponent.LuigiClient = component.LuigiClient;
-
-    expect(() => newFixture.detectChanges()).not.toThrow();
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
-    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
-      { metadata: ['deletionTimestamp'] },
-    ]);
-  });
-
-  it('should ignore a generic action with an invalid JSONPath expression', () => {
+  it('should not add a generic action with an invalid JSONPath to the query', () => {
     mockResourceService.read.mockClear();
     mockResourceService.read.mockReturnValueOnce(
       of({
@@ -1461,20 +1368,14 @@ describe('DetailViewComponent', () => {
     newFixture.detectChanges();
 
     expect(() => newComponent.customActions()).not.toThrow();
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
     expect(mockResourceService.read.mock.calls[0][2]).toEqual([
       { metadata: ['deletionTimestamp'] },
-      { status: [{ console: ['url'] }] },
     ]);
   });
 
-  it('should hide a configured action when its required permission is denied', () => {
+  it('should neither render nor query a Secret action when its required permission is denied', () => {
+    mockResourceService.read.mockClear();
+    kubeconfigSecretServiceMock.secretReferenceQueryFields.mockClear();
     mockResourceService.read.mockReturnValueOnce(
       of({
         metadata: { name: 'cluster-1', namespace: 'default' },
@@ -1484,6 +1385,7 @@ describe('DetailViewComponent', () => {
     const newComponent = newFixture.componentInstance;
     newComponent.context = (() => ({
       ...component.context(),
+      namespaceId: 'default',
       portalPermissions: { 'clusters/default/cluster-1': ['get'] },
       resourceDefinition: {
         ...component.context().resourceDefinition,
@@ -1493,12 +1395,8 @@ describe('DetailViewComponent', () => {
             fields: [],
             actions: [
               {
-                value: '/console',
+                ...secretAction,
                 requirePermission: 'update',
-                uiSettings: {
-                  displayAs: 'button',
-                  buttonSettings: { action: 'navigate', text: 'Console' },
-                },
               },
             ],
           },
@@ -1509,39 +1407,84 @@ describe('DetailViewComponent', () => {
     newFixture.detectChanges();
 
     expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
+      newComponent.customActions().map((action) => action.text),
+    ).not.toContain('Download cluster access');
+    expect(newComponent.configuredActions()).toEqual([]);
+    expect(
+      kubeconfigSecretServiceMock.secretReferenceQueryFields,
+    ).not.toHaveBeenCalled();
+    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
+      { metadata: ['deletionTimestamp'] },
+    ]);
+  });
+
+  it('should use the effective route namespace before querying a permission-gated Secret reference', () => {
+    mockResourceService.read.mockClear();
+    kubeconfigSecretServiceMock.secretReferenceQueryFields.mockClear();
+    mockResourceService.getNamespace.mockReturnValue('route-namespace');
+    mockResourceService.read.mockReturnValueOnce(
+      of({
+        metadata: { name: 'cluster-1', namespace: 'route-namespace' },
+      }),
+    );
+    const newFixture = TestBed.createComponent(DetailView);
+    const newComponent = newFixture.componentInstance;
+    newComponent.context = (() => ({
+      ...component.context(),
+      namespaceId: undefined,
+      portalPermissions: {
+        'clusters/route-namespace/cluster-1': ['get'],
+      },
+      resourceDefinition: {
+        ...component.context().resourceDefinition,
+        permissionsDefinition: { resource: 'clusters' },
+        ui: {
+          detailView: {
+            fields: [],
+            actions: [
+              {
+                ...secretAction,
+                requirePermission: 'update',
+              },
+            ],
+          },
+        },
+      },
+    })) as any;
+    newComponent.LuigiClient = component.LuigiClient;
+    newFixture.detectChanges();
+
+    expect(mockResourceService.getNamespace).toHaveBeenCalledWith(
+      newComponent.context(),
+    );
+    expect(newComponent.configuredActions()).toEqual([]);
+    expect(
+      kubeconfigSecretServiceMock.secretReferenceQueryFields,
+    ).not.toHaveBeenCalled();
+    expect(mockResourceService.read.mock.calls[0][2]).toEqual([
+      { metadata: ['deletionTimestamp'] },
+    ]);
   });
 
   it('should restore configured modal actions', () => {
     const openAsModal = vi.fn();
+    const modalAction = {
+      value: '/help',
+      uiSettings: {
+        buttonSettings: {
+          action: 'openInModal',
+          text: 'Help',
+          modalSettings: { title: 'Help', size: 'm' },
+        },
+      },
+    };
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
     newComponent.context = (() => ({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
-        ui: {
-          detailView: {
-            fields: [],
-            actions: [
-              {
-                value: '/help',
-                uiSettings: {
-                  buttonSettings: {
-                    action: 'openInModal',
-                    text: 'Help',
-                    modalSettings: { title: 'Help', size: 'm' },
-                  },
-                },
-              },
-            ],
-          },
-        },
+        ui: { detailView: { fields: [], actions: [modalAction] } },
       },
     })) as any;
     newComponent.LuigiClient = (() => ({
@@ -1557,7 +1500,7 @@ describe('DetailViewComponent', () => {
 
     newComponent.onActionButtonClick({
       event: new MouseEvent('click'),
-      action: { action: 'portal-ui-configured-action:0' },
+      action: modalAction.uiSettings.buttonSettings,
     } as any);
 
     expect(openAsModal).toHaveBeenCalledWith('/help', {
@@ -1707,26 +1650,12 @@ describe('DetailViewComponent', () => {
     });
     newFixture.detectChanges();
     expect(newComponent.resource()?.metadata?.name).toBe('old-cluster');
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(true);
 
     newFixture.componentRef.setInput('context', newContext);
     newFixture.detectChanges();
 
     expect(mockResourceService.read).toHaveBeenCalledTimes(2);
     expect(newComponent.resource()).toBeUndefined();
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
 
     newRead.next({
       metadata: { name: 'new-cluster', namespace: 'default' },
@@ -1742,13 +1671,6 @@ describe('DetailViewComponent', () => {
     newFixture.detectChanges();
 
     expect(newComponent.resource()?.metadata?.name).toBe('new-cluster');
-    expect(
-      newComponent
-        .customActions()
-        .some((action) =>
-          action.action.startsWith('portal-ui-configured-action:'),
-        ),
-    ).toBe(false);
     newFixture.destroy();
   });
 
@@ -2456,6 +2378,7 @@ describe('DetailViewComponent template', () => {
     mockResourceService = {
       read: vi.fn().mockReturnValue(of({ name: 'test-resource' })),
       readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
+      getNamespace: vi.fn((context) => context.namespaceId),
     };
     mockGatewayService = {
       resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),
@@ -2583,6 +2506,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
       readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
       delete: vi.fn().mockReturnValue(of({})),
       update: vi.fn().mockReturnValue(of({})),
+      getNamespace: vi.fn((context) => context.namespaceId),
     };
     mockGatewayService = {
       resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),

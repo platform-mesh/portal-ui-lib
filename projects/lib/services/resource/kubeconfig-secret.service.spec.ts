@@ -1,15 +1,21 @@
-import { KubeconfigSecretService } from './kubeconfig-secret.service';
+import {
+  KubeconfigSecretService,
+  isDownloadKubeconfigButtonSettings,
+} from './kubeconfig-secret.service';
 import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import {
   DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
-  DownloadKubeconfigFromSecretRefAction,
+  DownloadKubeconfigFromSecretRefButtonSettings,
 } from '@platform-mesh/portal-ui-lib/models';
 import { firstValueFrom, of, throwError } from 'rxjs';
 
 describe('KubeconfigSecretService', () => {
   let service: KubeconfigSecretService;
-  let resourceService: { read: ReturnType<typeof vi.fn> };
+  let resourceService: {
+    read: ReturnType<typeof vi.fn>;
+    getNamespace: ReturnType<typeof vi.fn>;
+  };
 
   const context: any = {
     token: 'token',
@@ -25,26 +31,22 @@ describe('KubeconfigSecretService', () => {
       crdGatewayApiUrl: 'https://gateway.example.test',
     },
   };
-  const action: DownloadKubeconfigFromSecretRefAction = {
-    property: 'status.kubeconfig.secretRef.name',
-    uiSettings: {
-      displayAs: 'button',
-      buttonSettings: {
-        action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
-        text: 'Download cluster kubeconfig',
-        namespaceProperty: 'status.kubeconfig.secretRef.namespace',
-      },
-    },
-  };
-  const localReferenceAction: DownloadKubeconfigFromSecretRefAction = {
-    property: 'status.kubeconfigSecretRef.name',
-    uiSettings: {
-      displayAs: 'button',
-      buttonSettings: {
-        action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
-        text: 'Download cluster kubeconfig',
-      },
-    },
+  const downloadButtonSettings: DownloadKubeconfigFromSecretRefButtonSettings =
+    {
+      action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
+      text: 'Download cluster kubeconfig',
+      resourceProperty: 'status.kubeconfig.secretRef.name',
+      namespaceProperty: 'status.kubeconfig.secretRef.namespace',
+    };
+  const localReferenceButtonSettings: DownloadKubeconfigFromSecretRefButtonSettings =
+    {
+      action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
+      text: 'Download cluster kubeconfig',
+      resourceProperty: 'status.kubeconfigSecretRef.name',
+    };
+  const navigateButtonSettings = {
+    action: 'navigate',
+    text: 'Open',
   };
   const resource: any = {
     metadata: { name: 'cluster-1', namespace: 'claim-namespace' },
@@ -55,12 +57,15 @@ describe('KubeconfigSecretService', () => {
           namespace: 'provider-namespace',
         },
       },
+      kubeconfigSecretRef: { name: 'local-kubeconfig' },
     },
   };
+  const encoded = (value: string) => btoa(value);
 
   beforeEach(() => {
     resourceService = {
       read: vi.fn(),
+      getNamespace: vi.fn((context) => context.namespaceId),
     };
 
     TestBed.configureTestingModule({
@@ -73,420 +78,268 @@ describe('KubeconfigSecretService', () => {
     service = TestBed.inject(KubeconfigSecretService);
   });
 
-  it('recognizes the typed action by its configured button action', () => {
-    expect(service.isDownloadActionIdentifier(action)).toBe(true);
-    expect(service.isDownloadAction(action)).toBe(true);
-    expect(
-      service.isDownloadAction({
-        value: '/clusters',
-        uiSettings: {
-          displayAs: 'button',
-          buttonSettings: { action: 'navigate' },
-        },
-      }),
-    ).toBe(false);
-  });
-
-  it('accepts omitted displayAs and rejects malformed reserved configurations', () => {
-    const missingProperty = {
-      uiSettings: action.uiSettings,
-    } as any;
-    const missingDisplayAs = {
-      property: action.property,
-      uiSettings: {
-        buttonSettings: action.uiSettings.buttonSettings,
-      },
-    } as any;
-
-    expect(service.isDownloadActionIdentifier(missingProperty)).toBe(true);
-    expect(service.isDownloadAction(missingProperty)).toBe(false);
-    expect(service.isDownloadActionIdentifier(missingDisplayAs)).toBe(true);
-    expect(service.isDownloadAction(missingDisplayAs)).toBe(true);
-    expect(
-      service.isDownloadAction({
-        ...action,
-        uiSettings: { ...action.uiSettings, displayAs: 'link' },
-      } as any),
-    ).toBe(false);
-    expect(service.isDownloadAction({ ...action, property: ' ' })).toBe(false);
-    expect(
-      service.isDownloadAction({
-        ...action,
-        property: 'status..kubeconfig.secretRef.name',
-      }),
-    ).toBe(false);
-    expect(
-      service.isDownloadAction({
-        ...action,
-        uiSettings: {
-          ...action.uiSettings,
-          buttonSettings: {
-            ...action.uiSettings.buttonSettings,
-            namespaceProperty: ' ',
-          },
-        },
-      } as DownloadKubeconfigFromSecretRefAction),
-    ).toBe(false);
-    expect(
-      service.isDownloadAction({
-        ...action,
-        uiSettings: {
-          ...action.uiSettings,
-          buttonSettings: {
-            ...action.uiSettings.buttonSettings,
-            namespaceProperty: 'status.kubeconfig.secret-ref.namespace',
-          },
-        },
-      } as DownloadKubeconfigFromSecretRefAction),
-    ).toBe(false);
-    expect(
-      service.isDownloadAction({
-        ...action,
-        propertyCollection: [{ property: 'status..bad' }],
-      } as any),
-    ).toBe(false);
-  });
-
-  it('queries the configured Secret name and namespace fields', () => {
-    expect(service.getSecretReferenceFields(action)).toEqual([
-      { property: 'status.kubeconfig.secretRef.name' },
-      { property: 'status.kubeconfig.secretRef.namespace' },
-    ]);
-    expect(
-      service.getSecretReferenceFields({
-        ...action,
-        property: '$.status.kubeconfig.secretRef.name',
-        uiSettings: {
-          ...action.uiSettings,
-          buttonSettings: {
-            ...action.uiSettings.buttonSettings,
-            namespaceProperty: '$.status.kubeconfig.secretRef.namespace',
-          },
-        },
-      }),
-    ).toEqual([
-      { property: 'status.kubeconfig.secretRef.name' },
-      { property: 'status.kubeconfig.secretRef.namespace' },
-    ]);
-
-    expect(
-      service.getSecretReferenceFields({ ...action, property: ' ' }),
-    ).toEqual([]);
-    expect(
-      service.getSecretReferenceFields({ ...action, property: '$.' }),
-    ).toEqual([]);
-    expect(
-      service.getSecretReferenceFields({
-        ...action,
-        property: 'status..kubeconfig.secretRef.name',
-      }),
-    ).toEqual([]);
-  });
-
-  it('queries only the Secret name for a namespace-local reference', () => {
-    expect(service.getSecretReferenceFields(localReferenceAction)).toEqual([
-      { property: 'status.kubeconfigSecretRef.name' },
-    ]);
-  });
-
-  it('resolves and trims the referenced Secret name and namespace', () => {
-    expect(
-      service.resolveSecretReference(
-        action,
-        {
-          ...resource,
-          status: {
-            kubeconfig: {
-              secretRef: {
-                name: ' cluster-kubeconfig ',
-                namespace: ' provider-namespace ',
-              },
-            },
-          },
-        },
-        context,
-      ),
-    ).toEqual({
-      name: 'cluster-kubeconfig',
-      namespace: 'provider-namespace',
-    });
-    expect(
-      service.resolveSecretReference(
-        {
-          ...action,
-          property: '$.status.kubeconfig.secretRef.name',
-          uiSettings: {
-            ...action.uiSettings,
-            buttonSettings: {
-              ...action.uiSettings.buttonSettings,
-              namespaceProperty: '$.status.kubeconfig.secretRef.namespace',
-            },
-          },
-        },
-        resource,
-        context,
-      ),
-    ).toEqual({
-      name: 'cluster-kubeconfig',
-      namespace: 'provider-namespace',
+  describe('isDownloadKubeconfigButtonSettings', () => {
+    it('recognizes the download action and rejects everything else', () => {
+      expect(isDownloadKubeconfigButtonSettings(downloadButtonSettings)).toBe(
+        true,
+      );
+      expect(isDownloadKubeconfigButtonSettings(navigateButtonSettings)).toBe(
+        false,
+      );
+      expect(isDownloadKubeconfigButtonSettings(undefined)).toBe(false);
     });
   });
 
-  it('uses the resource namespace for a namespace-local reference', () => {
-    expect(
-      service.resolveSecretReference(
-        localReferenceAction,
+  describe('secretReferenceQueryFields', () => {
+    it('returns the name and namespace properties of a download action', () => {
+      expect(
+        service.secretReferenceQueryFields(downloadButtonSettings),
+      ).toEqual([
         {
-          metadata: { name: 'cluster-1', namespace: 'claim-namespace' },
-          status: { kubeconfigSecretRef: { name: 'cluster-kubeconfig' } },
-        } as any,
-        context,
-      ),
-    ).toEqual({
-      name: 'cluster-kubeconfig',
-      namespace: 'claim-namespace',
+          property: 'status.kubeconfig.secretRef.name',
+        },
+        { property: 'status.kubeconfig.secretRef.namespace' },
+      ]);
+    });
+
+    it('omits the namespace field when no namespaceProperty is configured', () => {
+      const blankNamespaceSettings: DownloadKubeconfigFromSecretRefButtonSettings =
+        {
+          ...localReferenceButtonSettings,
+          namespaceProperty: '   ',
+        };
+
+      expect(
+        service.secretReferenceQueryFields(localReferenceButtonSettings),
+      ).toEqual([{ property: 'status.kubeconfigSecretRef.name' }]);
+
+      expect(
+        service.secretReferenceQueryFields(blankNamespaceSettings),
+      ).toEqual([{ property: 'status.kubeconfigSecretRef.name' }]);
+    });
+
+    it('returns nothing for non-download actions', () => {
+      expect(
+        service.secretReferenceQueryFields(navigateButtonSettings),
+      ).toEqual([]);
+    });
+
+    it('returns nothing when runtime JSON omits resourceProperty', () => {
+      expect(
+        service.secretReferenceQueryFields({
+          action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
+        }),
+      ).toEqual([]);
     });
   });
 
-  it('uses the navigation namespace when a local reference resource omits namespace', () => {
-    expect(
-      service.resolveSecretReference(
-        localReferenceAction,
-        {
-          metadata: { name: 'cluster-1' },
-          status: { kubeconfigSecretRef: { name: 'cluster-kubeconfig' } },
-        } as any,
-        context,
-      ),
-    ).toEqual({
-      name: 'cluster-kubeconfig',
-      namespace: 'context-namespace',
-    });
-  });
-
-  it('does not fall back when a configured namespace is absent, null, or blank', () => {
-    expect(
-      service.resolveSecretReference(
-        action,
-        {
-          ...resource,
-          status: {
-            kubeconfig: { secretRef: { name: 'cluster-kubeconfig' } },
-          },
-        },
-        context,
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        action,
-        {
-          ...resource,
-          status: {
-            kubeconfig: {
-              secretRef: { name: 'cluster-kubeconfig', namespace: '-all-' },
-            },
-          },
-        } as any,
-        context,
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        action,
-        {
-          ...resource,
-          status: {
-            kubeconfig: {
-              secretRef: { name: 'cluster-kubeconfig', namespace: null },
-            },
-          },
-        } as any,
-        context,
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        action,
-        {
-          ...resource,
-          status: {
-            kubeconfig: {
-              secretRef: { name: 'cluster-kubeconfig', namespace: ' ' },
-            },
-          },
-        },
-        context,
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        localReferenceAction,
-        {
-          metadata: { name: 'cluster-1' },
-          status: { kubeconfigSecretRef: { name: 'cluster-kubeconfig' } },
-        } as any,
-        { ...context, namespaceId: undefined },
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        localReferenceAction,
-        {
-          metadata: { name: 'cluster-1' },
-          status: { kubeconfigSecretRef: { name: 'cluster-kubeconfig' } },
-        } as any,
-        { ...context, namespaceId: '-all-' },
-      ),
-    ).toBeUndefined();
-  });
-
-  it('returns undefined for an absent or malformed reference', () => {
-    expect(
-      service.resolveSecretReference(action, undefined, context),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        { ...action, property: ' ' },
-        resource,
-        context,
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        action,
-        { metadata: { name: 'cluster-1', namespace: 'default' } } as any,
-        context,
-      ),
-    ).toBeUndefined();
-    expect(
-      service.resolveSecretReference(
-        action,
-        {
-          metadata: { name: 'cluster-1', namespace: 'default' },
-          status: { kubeconfig: { secretRef: 'not-an-object' } },
-        } as any,
-        context,
-      ),
-    ).toBeUndefined();
-  });
-
-  it('reads and decodes the selected Secret key in the current workspace', async () => {
-    resourceService.read.mockReturnValue(
-      of({
-        data: {
-          kubeconfig: btoa('apiVersion: v1'),
-          unrelated: 'encoded-unrelated-value',
-        },
-      }),
-    );
-
-    await expect(
-      firstValueFrom(service.readKubeconfig(action, resource, context)),
-    ).resolves.toEqual({
-      contents: 'apiVersion: v1',
-      filename: 'kubeconfig.yaml',
-    });
-    expect(resourceService.read).toHaveBeenCalledWith(
-      'cluster-kubeconfig',
-      {
-        version: 'v1',
-        entity: 'Secret',
-        entityCollection: 'Secrets',
-        scope: 'Namespaced',
-      },
-      ['data'],
-      {
-        ...context,
-        namespaceId: 'provider-namespace',
-        resourceDefinition: {
-          version: 'v1',
-          entity: 'Secret',
-          entityCollection: 'Secrets',
-          scope: 'Namespaced',
-        },
-      },
-      false,
-    );
-  });
-
-  it('uses configured data key and filename', async () => {
-    const configuredAction: DownloadKubeconfigFromSecretRefAction = {
-      ...action,
-      uiSettings: {
-        ...action.uiSettings,
-        buttonSettings: {
-          ...action.uiSettings.buttonSettings,
-          dataKey: 'config',
-          filename: 'cluster.yaml',
-        },
-      },
-    };
-    resourceService.read.mockReturnValue(
-      of({ data: { config: btoa('apiVersion: v1') } }),
-    );
-
-    await expect(
-      firstValueFrom(
-        service.readKubeconfig(configuredAction, resource, context),
-      ),
-    ).resolves.toEqual({
-      contents: 'apiVersion: v1',
-      filename: 'cluster.yaml',
-    });
-  });
-
-  it('fails before reading when the Secret reference is unavailable', async () => {
-    await expect(
-      firstValueFrom(
-        service.readKubeconfig(
-          action,
-          { metadata: { name: 'cluster-1', namespace: 'default' } } as any,
+  describe('isSecretReferenceAvailable', () => {
+    it('accepts complete cross-namespace and namespace-local references', () => {
+      expect(
+        service.isSecretReferenceAvailable(
+          downloadButtonSettings,
+          resource,
           context,
         ),
-      ),
-    ).rejects.toThrow('Kubeconfig Secret reference is not available');
-    expect(resourceService.read).not.toHaveBeenCalled();
+      ).toBe(true);
+      expect(
+        service.isSecretReferenceAvailable(
+          localReferenceButtonSettings,
+          resource,
+          context,
+        ),
+      ).toBe(true);
+    });
+
+    it('rejects absent or incomplete references', () => {
+      expect(
+        service.isSecretReferenceAvailable(
+          downloadButtonSettings,
+          undefined,
+          context,
+        ),
+      ).toBe(false);
+      expect(
+        service.isSecretReferenceAvailable(
+          downloadButtonSettings,
+          { metadata: { namespace: 'claim-namespace' } } as any,
+          context,
+        ),
+      ).toBe(false);
+      expect(
+        service.isSecretReferenceAvailable(
+          downloadButtonSettings,
+          {
+            metadata: { namespace: 'claim-namespace' },
+            status: {
+              kubeconfig: { secretRef: { name: 'cluster-kubeconfig' } },
+            },
+          } as any,
+          context,
+        ),
+      ).toBe(false);
+      expect(
+        service.isSecretReferenceAvailable(
+          navigateButtonSettings,
+          resource,
+          context,
+        ),
+      ).toBe(false);
+      expect(
+        service.isSecretReferenceAvailable(
+          { action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION },
+          resource,
+          context,
+        ),
+      ).toBe(false);
+    });
   });
 
-  it('fails without exposing Secret data when the selected key is absent', async () => {
-    resourceService.read.mockReturnValue(
-      of({ data: { unrelated: 'sensitive-value' } }),
-    );
+  describe('readKubeconfig', () => {
+    it('reads the referenced Secret and decodes the default data key', async () => {
+      resourceService.read.mockReturnValue(
+        of({ data: { kubeconfig: encoded('kubeconfig-content') } }),
+      );
 
-    await expect(
-      firstValueFrom(service.readKubeconfig(action, resource, context)),
-    ).rejects.toThrow('Kubeconfig data key "kubeconfig" is not available');
-  });
+      const download = await firstValueFrom(
+        service.readKubeconfig(downloadButtonSettings, resource, context),
+      );
 
-  it.each([undefined, null])(
-    'fails cleanly when the Secret response is %s',
-    async (secret) => {
-      resourceService.read.mockReturnValue(of(secret as any));
+      expect(download).toEqual({
+        contents: 'kubeconfig-content',
+        filename: 'kubeconfig.yaml',
+      });
+      expect(resourceService.read).toHaveBeenCalledWith(
+        'cluster-kubeconfig',
+        expect.objectContaining({ entity: 'Secret', version: 'v1' }),
+        ['data'],
+        expect.objectContaining({ namespaceId: 'provider-namespace' }),
+        false,
+      );
+    });
+
+    it('falls back to the resource namespace, then the effective navigation namespace', async () => {
+      resourceService.read.mockReturnValue(
+        of({ data: { kubeconfig: encoded('content') } }),
+      );
+
+      await firstValueFrom(
+        service.readKubeconfig(localReferenceButtonSettings, resource, context),
+      );
+      expect(resourceService.read).toHaveBeenLastCalledWith(
+        'local-kubeconfig',
+        expect.anything(),
+        ['data'],
+        expect.objectContaining({ namespaceId: 'claim-namespace' }),
+        false,
+      );
+
+      const clusterScopedResource = {
+        ...resource,
+        metadata: { name: 'cluster-1' },
+      };
+      await firstValueFrom(
+        service.readKubeconfig(
+          localReferenceButtonSettings,
+          clusterScopedResource,
+          context,
+        ),
+      );
+      expect(resourceService.read).toHaveBeenLastCalledWith(
+        'local-kubeconfig',
+        expect.anything(),
+        ['data'],
+        expect.objectContaining({ namespaceId: 'context-namespace' }),
+        false,
+      );
+
+      resourceService.getNamespace.mockReturnValueOnce('route-namespace');
+      await firstValueFrom(
+        service.readKubeconfig(
+          localReferenceButtonSettings,
+          clusterScopedResource,
+          { ...context, namespaceId: undefined },
+        ),
+      );
+      expect(resourceService.read).toHaveBeenLastCalledWith(
+        'local-kubeconfig',
+        expect.anything(),
+        ['data'],
+        expect.objectContaining({ namespaceId: 'route-namespace' }),
+        false,
+      );
+    });
+
+    it('respects a configured data key and filename', async () => {
+      const customButtonSettings: DownloadKubeconfigFromSecretRefButtonSettings =
+        {
+          action: DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
+          text: 'Download',
+          resourceProperty: 'status.kubeconfigSecretRef.name',
+          dataKey: 'value',
+          filename: 'cluster.yaml',
+        };
+      resourceService.read.mockReturnValue(
+        of({ data: { value: encoded('custom-content') } }),
+      );
+
+      const download = await firstValueFrom(
+        service.readKubeconfig(customButtonSettings, resource, context),
+      );
+
+      expect(download).toEqual({
+        contents: 'custom-content',
+        filename: 'cluster.yaml',
+      });
+    });
+
+    it('fails for non-download actions', async () => {
+      await expect(
+        firstValueFrom(
+          service.readKubeconfig(navigateButtonSettings, resource, context),
+        ),
+      ).rejects.toThrow('Button is not a kubeconfig download action');
+      expect(resourceService.read).not.toHaveBeenCalled();
+    });
+
+    it('fails when the Secret reference cannot be resolved', async () => {
+      await expect(
+        firstValueFrom(
+          service.readKubeconfig(downloadButtonSettings, undefined, context),
+        ),
+      ).rejects.toThrow('Kubeconfig Secret reference is not available');
+
+      const resourceWithoutRef: any = { metadata: { name: 'cluster-1' } };
+      await expect(
+        firstValueFrom(
+          service.readKubeconfig(
+            downloadButtonSettings,
+            resourceWithoutRef,
+            context,
+          ),
+        ),
+      ).rejects.toThrow('Kubeconfig Secret reference is not available');
+      expect(resourceService.read).not.toHaveBeenCalled();
+    });
+
+    it('maps Secret read failures to a stable error', async () => {
+      resourceService.read.mockReturnValue(throwError(() => new Error('boom')));
 
       await expect(
-        firstValueFrom(service.readKubeconfig(action, resource, context)),
+        firstValueFrom(
+          service.readKubeconfig(downloadButtonSettings, resource, context),
+        ),
+      ).rejects.toThrow('Kubeconfig Secret could not be read');
+    });
+
+    it('fails when the configured data key is missing on the Secret', async () => {
+      resourceService.read.mockReturnValue(of({ data: {} }));
+
+      await expect(
+        firstValueFrom(
+          service.readKubeconfig(downloadButtonSettings, resource, context),
+        ),
       ).rejects.toThrow('Kubeconfig data key "kubeconfig" is not available');
-    },
-  );
-
-  it('rejects malformed base64 kubeconfig data', async () => {
-    resourceService.read.mockReturnValue(
-      of({ data: { kubeconfig: 'not-valid-base64!' } }),
-    );
-
-    await expect(
-      firstValueFrom(service.readKubeconfig(action, resource, context)),
-    ).rejects.toThrow('Failed to decode Base64 string');
-  });
-
-  it('does not expose gateway error details to the caller', async () => {
-    resourceService.read.mockReturnValue(
-      throwError(() => new Error('forbidden')),
-    );
-
-    await expect(
-      firstValueFrom(service.readKubeconfig(action, resource, context)),
-    ).rejects.toThrow('Kubeconfig Secret could not be read');
+    });
   });
 });

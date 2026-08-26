@@ -1,8 +1,5 @@
 import { downloadFile } from '../../../utils/download-file';
-import {
-  executeButtonAction,
-  getFieldValue,
-} from '../../../utils/field-definition.utils';
+import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { flattenFieldTree } from '../../../utils/to-form-fields';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
@@ -38,7 +35,7 @@ import {
   SectionConfig,
 } from '@openmfp/ngx';
 import {
-  DownloadKubeconfigFromSecretRefAction,
+  DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
   PlatformMeshFieldDefinition,
   Resource,
 } from '@platform-mesh/portal-ui-lib/models';
@@ -50,6 +47,7 @@ import {
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
+  isDownloadKubeconfigButtonSettings,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
@@ -59,21 +57,6 @@ import {
 } from '@platform-mesh/portal-ui-lib/utils';
 import { Subject, firstValueFrom } from 'rxjs';
 import { take, takeUntil, tap } from 'rxjs/operators';
-
-const CONFIGURED_ACTION_PREFIX = 'portal-ui-configured-action:';
-const GRAPHQL_PROPERTY_PATH_PATTERN =
-  /^[_A-Za-z][_0-9A-Za-z]*(?:\.[_A-Za-z][_0-9A-Za-z]*)*$/;
-
-type ConfiguredActionDefinition = PlatformMeshFieldDefinition & {
-  uiSettings: {
-    buttonSettings: ButtonSettings;
-  };
-};
-
-interface ConfiguredActionEntry {
-  definition: ConfiguredActionDefinition;
-  buttonSettings: ButtonSettings;
-}
 
 @Component({
   selector: 'pm-detail-view',
@@ -146,59 +129,18 @@ export class DetailView {
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
       false,
   );
-  configuredActions = computed<ConfiguredActionDefinition[]>(() => {
+  configuredActions = computed<PlatformMeshFieldDefinition[]>(() => {
+    // Content configuration is runtime JSON, so guard the shape.
     const actions = this.resourceDefinition()?.ui?.detailView?.actions;
     return Array.isArray(actions)
       ? actions.filter(
-          (action): action is ConfiguredActionDefinition =>
-            !!action?.uiSettings?.buttonSettings,
+          (action) =>
+            !!action?.uiSettings?.buttonSettings &&
+            (!action.requirePermission ||
+              this.canDoConfiguredAction(action.requirePermission)),
         )
       : [];
   });
-  configuredActionEntries = computed<ConfiguredActionEntry[]>(() =>
-    this.configuredActions().flatMap((definition, index) => {
-      if (
-        definition.requirePermission &&
-        !this.canDoAction(definition.requirePermission)
-      ) {
-        return [];
-      }
-      if (!this.hasValidHeaderActionDisplay(definition)) {
-        return [];
-      }
-
-      if (this.kubeconfigSecretService.isDownloadActionIdentifier(definition)) {
-        if (
-          !this.kubeconfigSecretService.isDownloadAction(definition) ||
-          !this.kubeconfigSecretService.resolveSecretReference(
-            definition,
-            this.resource(),
-            this.context(),
-          )
-        ) {
-          return [];
-        }
-      } else if (
-        !this.isValidGenericActionDefinition(definition) ||
-        !this.hasResolvedGenericActionTarget(definition)
-      ) {
-        // Content configuration is runtime input and can bypass the TypeScript
-        // model. Hide unsupported identifiers instead of rendering a button
-        // that can only fail when clicked.
-        return [];
-      }
-
-      return [
-        {
-          definition,
-          buttonSettings: {
-            ...definition.uiSettings.buttonSettings,
-            action: `${CONFIGURED_ACTION_PREFIX}${index}`,
-          },
-        },
-      ];
-    }),
-  );
   isDownloadingKubeConfig = signal(false);
   isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
@@ -207,15 +149,20 @@ export class DetailView {
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private instancePermissions = computed(() => {
     const resource = this.resource();
-    const resourceDefinition = this.getResourceDefinition();
-
-    return this.context().portalPermissions?.[
-      permissionKey({
-        resource: resourceDefinition?.permissionsDefinition?.resource,
-        name: resource?.metadata?.name,
-        namespace: resource?.metadata?.namespace,
-      })
-    ];
+    return this.permissionsFor(
+      resource?.metadata?.name ?? this.resourceId(),
+      resource?.metadata?.namespace ?? this.context().namespaceId,
+    );
+  });
+  private configuredActionPermissions = computed(() => {
+    // Configured actions are filtered while building the resource query,
+    // before resource() exists. Keep this lookup independent of resource() so
+    // the read effect does not depend on the value it loads. At this stage the
+    // effective namespace can also come from the route.
+    return this.permissionsFor(
+      this.resourceId(),
+      this.resourceService.getNamespace(this.context()),
+    );
   });
 
   customActions = computed(() => {
@@ -252,7 +199,19 @@ export class DetailView {
     }
 
     customActions.push(
-      ...this.configuredActionEntries().map((entry) => entry.buttonSettings),
+      ...this.configuredActions()
+        .filter((action) => {
+          const buttonSettings = action.uiSettings?.buttonSettings;
+          return (
+            !isDownloadKubeconfigButtonSettings(buttonSettings) ||
+            this.kubeconfigSecretService.isSecretReferenceAvailable(
+              buttonSettings,
+              this.resource(),
+              this.context(),
+            )
+          );
+        })
+        .flatMap((action) => action.uiSettings?.buttonSettings ?? []),
     );
 
     return customActions;
@@ -314,27 +273,10 @@ export class DetailView {
     action: ButtonSettings;
   }): void {
     const resource = this.resource();
-    const configuredAction = this.configuredActionEntries().find(
-      (entry) => entry.buttonSettings.action === action.action,
-    )?.definition;
-    if (configuredAction) {
-      event.stopPropagation?.();
-      if (this.kubeconfigSecretService.isDownloadAction(configuredAction)) {
-        void this.downloadKubeconfigFromSecretRef(configuredAction);
-      } else {
-        try {
-          executeButtonAction(this.LuigiClient(), configuredAction, resource);
-        } catch {
-          void this.LuigiClient().uxManager().showAlert({
-            text: 'Configured action could not be executed',
-            type: 'error',
-          });
-        }
-      }
-      return;
-    }
-
     switch (action.action) {
+      case DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION:
+        void this.downloadKubeconfigFromSecretRef(action);
+        break;
       case 'download-kubeconfig':
         this.downloadKubeConfig();
         break;
@@ -343,6 +285,9 @@ export class DetailView {
         break;
       case 'delete':
         if (resource) this.openDeleteResourceModal(event, resource);
+        break;
+      default:
+        this.executeConfiguredAction(action, resource);
         break;
     }
   }
@@ -354,8 +299,6 @@ export class DetailView {
     });
 
     this.destroyRef.onDestroy(() => {
-      // Cancel any credential read that was started for this view and suppress
-      // delivery if the source does not support cancellation synchronously.
       this.resourceReadGeneration += 1;
       this.cancelKubeconfigRead.next();
       this.cancelKubeconfigRead.complete();
@@ -588,9 +531,7 @@ export class DetailView {
     }
   }
 
-  async downloadKubeconfigFromSecretRef(
-    action: DownloadKubeconfigFromSecretRefAction,
-  ) {
+  async downloadKubeconfigFromSecretRef(buttonSettings: ButtonSettings) {
     if (this.isDownloadingKubeConfig()) {
       return;
     }
@@ -602,12 +543,10 @@ export class DetailView {
       this.isDownloadingKubeConfig.set(true);
       const kubeconfig = await firstValueFrom(
         this.kubeconfigSecretService
-          .readKubeconfig(action, resource, this.context())
+          .readKubeconfig(buttonSettings, resource, this.context())
           .pipe(takeUntil(this.cancelKubeconfigRead)),
       );
 
-      // A detail-view element can be reused while this Secret request is in
-      // flight. Do not deliver credentials resolved for the previous view.
       if (
         resourceReadGeneration !== this.resourceReadGeneration ||
         resource !== this.resource()
@@ -674,21 +613,14 @@ export class DetailView {
     }
 
     this.configuredActions().forEach((action) => {
-      if (!this.hasValidHeaderActionDisplay(action)) {
-        return;
-      }
-
-      if (this.kubeconfigSecretService.isDownloadActionIdentifier(action)) {
-        if (this.kubeconfigSecretService.isDownloadAction(action)) {
-          additionalFields.push(
-            ...this.kubeconfigSecretService.getSecretReferenceFields(action),
-          );
-        }
-        return;
-      }
-
-      if (this.isValidGenericActionDefinition(action)) {
-        additionalFields.push(...flattenFieldTree([action]));
+      if (
+        isDownloadKubeconfigButtonSettings(action.uiSettings?.buttonSettings)
+      ) {
+        additionalFields.push(
+          ...this.kubeconfigSecretService.secretReferenceQueryFields(
+            action.uiSettings?.buttonSettings,
+          ),
+        );
       }
     });
 
@@ -718,67 +650,55 @@ export class DetailView {
     return this.instancePermissions()?.includes(action) ?? true;
   }
 
-  private isValidGenericActionDefinition(
-    action: ConfiguredActionDefinition,
-  ): boolean {
-    if (action.propertyCollection !== undefined) {
-      return false;
-    }
+  private canDoConfiguredAction(action: string): boolean {
+    return this.configuredActionPermissions()?.includes(action) ?? true;
+  }
 
-    const identifier = action.uiSettings.buttonSettings.action;
-    const isSupportedIdentifier =
-      identifier === 'navigate' || identifier === 'openInModal';
-    if (!isSupportedIdentifier) {
-      return false;
-    }
+  private permissionsFor(
+    name: string | undefined,
+    namespace: string | undefined,
+  ): string[] | undefined {
+    return this.context().portalPermissions?.[
+      permissionKey({
+        resource: this.getResourceDefinition()?.permissionsDefinition?.resource,
+        name,
+        namespace,
+      })
+    ];
+  }
 
-    const hasStaticTarget = this.isNonEmptyString(action.value);
-    const hasDirectProperty = this.isGraphQlPropertyPath(action.property);
-    const hasPropertyCollection =
-      Array.isArray(action.property) &&
-      action.property.length > 0 &&
-      action.property.every((property) => this.isGraphQlPropertyPath(property));
-    const hasJsonPathTarget =
-      this.isNonEmptyString(action.jsonPathExpression) &&
-      (hasDirectProperty || hasPropertyCollection);
-    const hasValidPropertyDefinition =
-      action.property === undefined ||
-      hasDirectProperty ||
-      (hasPropertyCollection && hasJsonPathTarget);
-
-    return (
-      hasValidPropertyDefinition &&
-      (hasStaticTarget || hasDirectProperty || hasJsonPathTarget)
+  private configuredActionFor(
+    buttonSettings: ButtonSettings,
+  ): PlatformMeshFieldDefinition | undefined {
+    // The dashboard returns the exact ButtonSettings object it received. The
+    // enclosing field is still needed to resolve a dynamic path/reference.
+    return this.configuredActions().find(
+      (action) => action.uiSettings?.buttonSettings === buttonSettings,
     );
   }
 
-  private hasResolvedGenericActionTarget(
-    action: ConfiguredActionDefinition,
-  ): boolean {
+  private executeConfiguredAction(
+    buttonSettings: ButtonSettings,
+    resource: Resource | undefined,
+  ): void {
+    const action = this.configuredActionFor(buttonSettings);
+    if (!action) {
+      this.showConfiguredActionError();
+      return;
+    }
+
     try {
-      return this.isNonEmptyString(getFieldValue(action, this.resource()));
+      executeButtonAction(this.LuigiClient(), action, resource);
     } catch {
-      return false;
+      this.showConfiguredActionError();
     }
   }
 
-  private isGraphQlPropertyPath(value: unknown): value is string {
-    return (
-      typeof value === 'string' &&
-      value === value.trim() &&
-      GRAPHQL_PROPERTY_PATH_PATTERN.test(value)
-    );
-  }
-
-  private isNonEmptyString(value: unknown): value is string {
-    return typeof value === 'string' && value.trim().length > 0;
-  }
-
-  private hasValidHeaderActionDisplay(
-    action: ConfiguredActionDefinition,
-  ): boolean {
-    const displayAs = action.uiSettings.displayAs;
-    return displayAs === undefined || displayAs === 'button';
+  private showConfiguredActionError(): void {
+    void this.LuigiClient().uxManager().showAlert({
+      text: 'Configured action could not be executed',
+      type: 'error',
+    });
   }
 
   private getErrorMessage(error: unknown): string {
