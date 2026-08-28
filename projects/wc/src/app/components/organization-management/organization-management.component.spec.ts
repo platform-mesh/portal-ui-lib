@@ -17,7 +17,7 @@ describe('OrganizationManagementComponent', () => {
   let envConfigService: MockedObject<EnvConfigService>;
   let luigiClient: MockedObject<LuigiClient>;
 
-  let mockShowAlert;
+  let mockShowAlert: ReturnType<typeof vi.fn>;
   let mockUxManager;
 
   beforeEach(async () => {

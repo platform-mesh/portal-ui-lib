@@ -85,7 +85,10 @@ describe('CustomGlobalNodesServiceImpl', () => {
       it('should mark the :id child webcomponent as self-registered', async () => {
         const [errorNode] = await service.getCustomGlobalNodes();
         const child = (errorNode.children as any[])[0];
-        expect(child.webcomponent).toEqual({ selfRegistered: true });
+        expect(child.webcomponent).toEqual({
+          selfRegistered: true,
+          type: 'module',
+        });
       });
     });
 

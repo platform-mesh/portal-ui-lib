@@ -597,8 +597,9 @@ export class ResourceService {
         ${query}
       `;
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.luigiCoreService.showAlert({
-        text: `Could not parse gql query: <br/><br/> ${query} <br/><br/> ${error.message}`,
+        text: `Could not parse gql query: <br/><br/> ${query} <br/><br/> ${message}`,
         type: 'error',
       });
       throw error;
