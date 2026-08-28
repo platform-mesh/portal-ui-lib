@@ -1,4 +1,5 @@
 import {
+  ButtonSettings,
   FieldFilterDefinition,
   FormFieldDefinition,
   TableFieldDefinition,
@@ -26,6 +27,28 @@ export type PlatformMeshFieldDefinition = TableFieldDefinition &
       key: string;
     };
   };
+
+export const DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION =
+  'download-kubeconfig-from-secret-ref';
+
+/**
+ * `ButtonSettings` plus the extra data the kubeconfig download needs. Used
+ * inside `UiView.actions[].uiSettings.buttonSettings`.
+ */
+export interface DownloadKubeconfigFromSecretRefButtonSettings extends ButtonSettings {
+  action: typeof DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION;
+  /** Resource property holding the referenced Secret name. */
+  resourceProperty: string;
+  /** Secret `data` key to download; defaults to `kubeconfig`. */
+  dataKey?: string;
+  /** Download filename; defaults to `kubeconfig.yaml`. */
+  filename?: string;
+  /**
+   * Resource property holding the Secret namespace; falls back to the
+   * resource's own namespace, then the node context namespace.
+   */
+  namespaceProperty?: string;
+}
 
 export interface UiView {
   actions?: PlatformMeshFieldDefinition[];

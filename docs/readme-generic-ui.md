@@ -99,7 +99,25 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"detailView"`: Defines how a page view for individual resource is displayed
   - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for a compact display of related data.
-  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as action buttons in the detail view header. These buttons can trigger navigation or open modals based on their `buttonSettings.action` configuration.
+  - `"actions"`: Array of `FieldDefinition` objects whose `uiSettings.buttonSettings` render as action buttons in the detail view header, exactly as configured. Supported actions are `navigate`, `openInModal`, and `download-kubeconfig-from-secret-ref`; an action that cannot be executed shows an error alert when clicked. An action with `requirePermission` is hidden when the user lacks that permission. The existing `navigate` and `openInModal` actions use the URL from the field's `property` or static `value`; dynamic properties must also be present in `detailView.fields`, because ordinary actions do not add fields to the detail query. The `download-kubeconfig-from-secret-ref` action reads a core Kubernetes Secret and downloads one base64-encoded data key as YAML. Its `buttonSettings.resourceProperty` must resolve to the Secret name. For cross-namespace references, `buttonSettings.namespaceProperty` must resolve to the Secret namespace; when omitted, the resource namespace and then the current navigation namespace are used.
+    ```json
+    {
+      "uiSettings": {
+        "buttonSettings": {
+          "action": "download-kubeconfig-from-secret-ref",
+          "resourceProperty": "status.kubeconfig.secretRef.name",
+          "text": "Download cluster kubeconfig",
+          "icon": "download-from-cloud",
+          "design": "Default",
+          "tooltip": "Download cluster kubeconfig",
+          "namespaceProperty": "status.kubeconfig.secretRef.namespace",
+          "dataKey": "kubeconfig",
+          "filename": "kubeconfig.yaml"
+        }
+      }
+    }
+    ```
+    `buttonSettings.action: "download-kubeconfig-from-secret-ref"` is reserved for this operation. `resourceProperty` is required and resolves the Secret name. `namespaceProperty` is optional; for example, a namespace-local SimpleCluster reference uses `"resourceProperty": "status.kubeconfigSecretRef.name"` and omits `namespaceProperty`. `dataKey` defaults to `kubeconfig` and `filename` defaults to `kubeconfig.yaml`. The configured reference fields are included in the detail query automatically, and the action stays hidden until the Secret name and effective namespace resolve. The gateway and workspace RBAC must authorize reading the referenced Secret; use a dedicated kubeconfig Secret and least-privilege Secret-read RBAC.
   - `"showDownloadKubeconfig"`: Boolean to enable/disable download kubeconfig button (default: `false`).
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the resource title. Supports all field definition properties including `property`, `jsonPathExpression`, `uiSettings`, etc. If not provided, defaults to the resource ID or display name.
   - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition properties. If not provided, a default description is generated.
