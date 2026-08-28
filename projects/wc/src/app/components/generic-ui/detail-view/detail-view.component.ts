@@ -137,7 +137,7 @@ export class DetailView {
           (action) =>
             !!action?.uiSettings?.buttonSettings &&
             (!action.requirePermission ||
-              this.canDoConfiguredAction(action.requirePermission)),
+              this.canDoAction(action.requirePermission)),
         )
       : [];
   });
@@ -148,17 +148,9 @@ export class DetailView {
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private instancePermissions = computed(() => {
-    const resource = this.resource();
-    return this.permissionsFor(
-      resource?.metadata?.name ?? this.resourceId(),
-      resource?.metadata?.namespace ?? this.context().namespaceId,
-    );
-  });
-  private configuredActionPermissions = computed(() => {
-    // Configured actions are filtered while building the resource query,
-    // before resource() exists. Keep this lookup independent of resource() so
-    // the read effect does not depend on the value it loads. At this stage the
-    // effective namespace can also come from the route.
+    // The permission key derives entirely from the resource id and the
+    // effective namespace (which can come from the route), so this stays
+    // independent of the loaded resource() and is usable before the read.
     return this.permissionsFor(
       this.resourceId(),
       this.resourceService.getNamespace(this.context()),
@@ -648,10 +640,6 @@ export class DetailView {
 
   private canDoAction(action: string): boolean {
     return this.instancePermissions()?.includes(action) ?? true;
-  }
-
-  private canDoConfiguredAction(action: string): boolean {
-    return this.configuredActionPermissions()?.includes(action) ?? true;
   }
 
   private permissionsFor(
