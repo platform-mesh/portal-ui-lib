@@ -225,7 +225,7 @@ export class DetailView {
     return {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
-      editable: false,
+      editable: false || this.isDemoEnabled(),
       backgroundImageUrl,
     };
   });
