@@ -1,3 +1,5 @@
+import { downloadFile } from '../../../utils/download-file';
+import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { flattenFieldTree } from '../../../utils/to-form-fields';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
@@ -33,6 +35,7 @@ import {
   SectionConfig,
 } from '@openmfp/ngx';
 import {
+  DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
   PlatformMeshFieldDefinition,
   Resource,
 } from '@platform-mesh/portal-ui-lib/models';
@@ -40,9 +43,11 @@ import {
   AccountInfoService,
   ErrorHandlerService,
   GatewayService,
+  KubeconfigSecretService,
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
+  isDownloadKubeconfigButtonSettings,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
@@ -50,8 +55,8 @@ import {
   isNamespacedResource,
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { firstValueFrom } from 'rxjs';
-import { take, tap } from 'rxjs/operators';
+import { Subject, firstValueFrom } from 'rxjs';
+import { take, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-detail-view',
@@ -74,9 +79,12 @@ export class DetailView {
   private resourceService = inject(ResourceService);
   private accountInfoService = inject(AccountInfoService);
   private gatewayService = inject(GatewayService);
+  private kubeconfigSecretService = inject(KubeconfigSecretService);
   private errorHandlerService = inject(ErrorHandlerService);
   private dashboardConfigService = inject(DashboardConfigService);
   private destroyRef = inject(DestroyRef);
+  private resourceReadGeneration = 0;
+  private readonly cancelKubeconfigRead = new Subject<void>();
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
   private createModal = viewChild<CreateResourceModal>('createModal');
   private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
@@ -121,6 +129,18 @@ export class DetailView {
       this.resourceDefinition()?.ui?.detailView?.showDownloadKubeconfig ??
       false,
   );
+  configuredActions = computed<PlatformMeshFieldDefinition[]>(() => {
+    // Content configuration is runtime JSON, so guard the shape.
+    const actions = this.resourceDefinition()?.ui?.detailView?.actions;
+    return Array.isArray(actions)
+      ? actions.filter(
+          (action) =>
+            !!action?.uiSettings?.buttonSettings &&
+            (!action.requirePermission ||
+              this.canDoAction(action.requirePermission)),
+        )
+      : [];
+  });
   isDownloadingKubeConfig = signal(false);
   isDemoEnabled = computed(() =>
     this.LuigiClient().getActiveFeatureToggles().includes('neoNephosDemo'),
@@ -128,16 +148,13 @@ export class DetailView {
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private instancePermissions = computed(() => {
-    const resource = this.resource();
-    const resourceDefinition = this.getResourceDefinition();
-
-    return this.context().portalPermissions?.[
-      permissionKey({
-        resource: resourceDefinition?.permissionsDefinition?.resource,
-        name: resource?.metadata?.name,
-        namespace: resource?.metadata?.namespace,
-      })
-    ];
+    // The permission key derives entirely from the resource id and the
+    // effective namespace (which can come from the route), so this stays
+    // independent of the loaded resource() and is usable before the read.
+    return this.permissionsFor(
+      this.resourceId(),
+      this.resourceService.getNamespace(this.context()),
+    );
   });
 
   customActions = computed(() => {
@@ -172,6 +189,22 @@ export class DetailView {
         });
       }
     }
+
+    customActions.push(
+      ...this.configuredActions()
+        .filter((action) => {
+          const buttonSettings = action.uiSettings?.buttonSettings;
+          return (
+            !isDownloadKubeconfigButtonSettings(buttonSettings) ||
+            this.kubeconfigSecretService.isSecretReferenceAvailable(
+              buttonSettings,
+              this.resource(),
+              this.context(),
+            )
+          );
+        })
+        .flatMap((action) => action.uiSettings?.buttonSettings ?? []),
+    );
 
     return customActions;
   });
@@ -232,6 +265,9 @@ export class DetailView {
   }): void {
     const resource = this.resource();
     switch (action.action) {
+      case DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION:
+        void this.downloadKubeconfigFromSecretRef(action);
+        break;
       case 'download-kubeconfig':
         this.downloadKubeConfig();
         break;
@@ -241,15 +277,23 @@ export class DetailView {
       case 'delete':
         if (resource) this.openDeleteResourceModal(event, resource);
         break;
+      default:
+        this.executeConfiguredAction(action, resource);
+        break;
     }
   }
 
   constructor() {
-    effect(() => {
-      this.readResource();
+    effect((onCleanup) => {
+      const subscription = this.readResource();
+      onCleanup(() => subscription?.unsubscribe());
     });
 
     this.destroyRef.onDestroy(() => {
+      this.resourceReadGeneration += 1;
+      this.cancelKubeconfigRead.next();
+      this.cancelKubeconfigRead.complete();
+
       // Safety net — the dashboard's `unsavedChangesChange` does not fire on
       // teardown, so explicitly clear Luigi's dirty flag to avoid leaving the
       // shell locked on stale state if this view is destroyed mid-edit.
@@ -278,7 +322,14 @@ export class DetailView {
     );
   }
 
-  private readResource(): void {
+  private readResource() {
+    this.resourceReadGeneration += 1;
+    this.cancelKubeconfigRead.next();
+
+    // A custom element can be reused with a different workspace or resource.
+    // Drop the previous payload before resolving the new context so actions
+    // can never combine an old Secret reference with a new workspace path.
+    this.resource.set(undefined);
     const resourceDefinition = this.getResourceDefinition();
     const fields = this.getDetailViewQueryFields();
 
@@ -294,7 +345,7 @@ export class DetailView {
       throw new Error('Resource ID is not defined');
     }
 
-    this.resourceService
+    return this.resourceService
       .read(
         resourceId,
         params,
@@ -458,20 +509,59 @@ export class DetailView {
       };
 
       const kubeConfig = kubeConfigTemplate(kubeconfigProps);
-      const blob = new Blob([kubeConfig], { type: 'application/plain' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'kubeconfig.yaml';
-      a.click();
-
-      URL.revokeObjectURL(url);
-    } catch (error: any) {
+      downloadFile(kubeConfig, 'kubeconfig.yaml', 'application/yaml');
+    } catch (error: unknown) {
       void this.LuigiClient()
         .uxManager()
         .showAlert({
-          text: `Failed to download kubeconfig: ${error.message}`,
+          text: `Failed to download kubeconfig: ${this.getErrorMessage(error)}`,
+          type: 'error',
+        });
+    } finally {
+      this.isDownloadingKubeConfig.set(false);
+    }
+  }
+
+  async downloadKubeconfigFromSecretRef(buttonSettings: ButtonSettings) {
+    if (this.isDownloadingKubeConfig()) {
+      return;
+    }
+
+    const resource = this.resource();
+    const resourceReadGeneration = this.resourceReadGeneration;
+
+    try {
+      this.isDownloadingKubeConfig.set(true);
+      const kubeconfig = await firstValueFrom(
+        this.kubeconfigSecretService
+          .readKubeconfig(buttonSettings, resource, this.context())
+          .pipe(takeUntil(this.cancelKubeconfigRead)),
+      );
+
+      if (
+        resourceReadGeneration !== this.resourceReadGeneration ||
+        resource !== this.resource()
+      ) {
+        return;
+      }
+
+      downloadFile(
+        kubeconfig.contents,
+        kubeconfig.filename,
+        'application/yaml',
+      );
+    } catch (error: unknown) {
+      if (
+        resourceReadGeneration !== this.resourceReadGeneration ||
+        resource !== this.resource()
+      ) {
+        return;
+      }
+
+      void this.LuigiClient()
+        .uxManager()
+        .showAlert({
+          text: `Failed to download kubeconfig: ${this.getErrorMessage(error)}`,
           type: 'error',
         });
     } finally {
@@ -513,6 +603,18 @@ export class DetailView {
       additionalFields.push(resourceDefinition.ui.detailView.resourceTitle);
     }
 
+    this.configuredActions().forEach((action) => {
+      if (
+        isDownloadKubeconfigButtonSettings(action.uiSettings?.buttonSettings)
+      ) {
+        additionalFields.push(
+          ...this.kubeconfigSecretService.secretReferenceQueryFields(
+            action.uiSettings?.buttonSettings,
+          ),
+        );
+      }
+    });
+
     // The query covers exactly what the detail view renders
     // (ui.detailView.fields); createView is a separate field set and is not
     // part of the detail read.
@@ -537,6 +639,57 @@ export class DetailView {
 
   private canDoAction(action: string): boolean {
     return this.instancePermissions()?.includes(action) ?? true;
+  }
+
+  private permissionsFor(
+    name: string | undefined,
+    namespace: string | undefined,
+  ): string[] | undefined {
+    return this.context().portalPermissions?.[
+      permissionKey({
+        resource: this.getResourceDefinition()?.permissionsDefinition?.resource,
+        name,
+        namespace,
+      })
+    ];
+  }
+
+  private configuredActionFor(
+    buttonSettings: ButtonSettings,
+  ): PlatformMeshFieldDefinition | undefined {
+    // The dashboard returns the exact ButtonSettings object it received. The
+    // enclosing field is still needed to resolve a dynamic path/reference.
+    return this.configuredActions().find(
+      (action) => action.uiSettings?.buttonSettings === buttonSettings,
+    );
+  }
+
+  private executeConfiguredAction(
+    buttonSettings: ButtonSettings,
+    resource: Resource | undefined,
+  ): void {
+    const action = this.configuredActionFor(buttonSettings);
+    if (!action) {
+      this.showConfiguredActionError();
+      return;
+    }
+
+    try {
+      executeButtonAction(this.LuigiClient(), action, resource);
+    } catch {
+      this.showConfiguredActionError();
+    }
+  }
+
+  private showConfiguredActionError(): void {
+    void this.LuigiClient().uxManager().showAlert({
+      text: 'Configured action could not be executed',
+      type: 'error',
+    });
+  }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
   protected dashboardConfigurationChanged(config: {
