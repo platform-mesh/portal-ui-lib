@@ -155,12 +155,6 @@ describe('ListViewComponent', () => {
       );
     });
 
-    it('should use default backgroundImageUrl when not defined', () => {
-      expect(component.dashboardConfig().backgroundImageUrl).toBe(
-        '/assets/pm_background.png',
-      );
-    });
-
     it('should have no custom actions', () => {
       expect(component.customActions.length).toBe(0);
     });

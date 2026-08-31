@@ -8,10 +8,13 @@ import {
   signal,
 } from '@angular/core';
 import {
+  AbstractControl,
   FormBuilder,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { Bar } from '@fundamental-ngx/ui5-webcomponents/bar';
@@ -51,7 +54,7 @@ export class DeleteResourceModal implements OnInit {
   resource = output<Resource>();
 
   fb = inject(FormBuilder);
-  form: FormGroup;
+  form!: FormGroup;
 
   ngOnInit(): void {
     this.form = this.fb.group(this.createControls());
@@ -94,8 +97,8 @@ export class DeleteResourceModal implements OnInit {
   }
 
   private createControls() {
-    const resourceNameValidator = () => {
-      return (control: FormControl) => {
+    const resourceNameValidator = (): ValidatorFn => {
+      return (control: AbstractControl): ValidationErrors | null => {
         const expected = this.innerResource()?.metadata?.name?.toLowerCase();
         const value = (control.value ?? '').toString().toLowerCase();
         if (!value || !expected || value !== expected) {

@@ -18,7 +18,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - node properties
   - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view"`: pointing to the web component.
-  - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent.
+  - `"webcomponent": {"selfRegistered": true, "type": "module"}`: indicating Luigi framework to register as a webcomponent.
   - `"navigationContext": "accounts"`: providing the navigation context for easy navigation between the entity and list views.
 
 - context resource definition `"context"`
@@ -278,7 +278,8 @@ This example demonstrates various features including:
           "keepSelectedForChildren": true,
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "context": {
             "resourceDefinition": {
@@ -603,7 +604,8 @@ This example demonstrates various features including:
           "keepSelectedForChildren": true,
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "context": {
             "resourceDefinition": {
@@ -677,7 +679,8 @@ This example demonstrates various features including:
           "label": "Dashboard",
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "defineEntity": {
             "id": "dashboard"
@@ -698,7 +701,7 @@ To use the generic detail view, update the node’s `content-configuration` to i
 
 - node properties
   - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view"`: pointing to the web component
-  - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent
+  - `"webcomponent": {"selfRegistered": true, "type": "module"}`: indicating Luigi framework to register as a webcomponent
 
 - context resource definition
   - because below provided example is a child of the list view node's child indicated by `"entityType": "main.account"`, the context data is
@@ -720,7 +723,8 @@ Below is a sample content-configuration for displaying an account resource using
           "label": "Dashboard",
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "defineEntity": {
             "id": "dashboard"

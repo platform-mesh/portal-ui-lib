@@ -220,13 +220,12 @@ export class DetailView {
   dashboardConfig = computed(() => {
     const backgroundImageUrl = this.isDemoEnabled()
       ? ''
-      : (this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl ??
-        '/assets/pm_background.png');
+      : this.resourceDefinition()?.ui?.detailView?.backgroundImageUrl;
 
     return {
       title: this.resourceTitleDefinition(),
       description: this.resourceDescriptionDefinition(),
-      editable: true,
+      editable: false || this.isDemoEnabled(),
       backgroundImageUrl,
     };
   });

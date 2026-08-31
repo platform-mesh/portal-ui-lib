@@ -3,7 +3,7 @@ import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models
 export const generateGraphQLFields = (
   uiFields: PlatformMeshFieldDefinition[],
 ): any[] => {
-  const graphQLFields = [];
+  const graphQLFields: any[] = [];
   uiFields.map((field) => {
     if (field.property instanceof Array) {
       field.property.map((property) => generate(property, graphQLFields));
