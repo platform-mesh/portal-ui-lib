@@ -1106,7 +1106,7 @@ describe('ResourceTableCard', () => {
         expect(mockResourceService.list).not.toHaveBeenCalled();
       });
 
-      it('keeps isLoadingList false when list() is blocked by missing "list" permission', () => {
+      it('keeps loading false when list() is blocked by missing "list" permission', () => {
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
         newComponent.context = makePermissionedContext({ clusters: ['get'] });
@@ -1114,7 +1114,7 @@ describe('ResourceTableCard', () => {
         newFixture.detectChanges();
         // Calling list() directly should still be a no-op
         newComponent.list();
-        expect((newComponent as any).isLoadingList).toBe(false);
+        expect(newComponent.loading()).toBe(false);
       });
 
       it('calls resourceService.list when "list" verb is present in portalPermissions', () => {

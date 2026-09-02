@@ -118,6 +118,7 @@ export class ResourceTableCard {
   remainingItemCount = signal<number>(0);
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
+  loading = signal<boolean>(false);
 
   private createFieldErrors = signal<FormFieldErrors>({});
   createFormState = computed<TableCardFormState>(() => ({
@@ -272,6 +273,7 @@ export class ResourceTableCard {
     if (!this.canDo('list')) return;
     if (this.isLoadingList) return;
     this.isLoadingList = true;
+    this.loading.set(true);
 
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
@@ -289,7 +291,10 @@ export class ResourceTableCard {
         },
       })
       .pipe(
-        finalize(() => (this.isLoadingList = false)),
+        finalize(() => {
+          this.isLoadingList = false;
+          this.loading.set(false);
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
