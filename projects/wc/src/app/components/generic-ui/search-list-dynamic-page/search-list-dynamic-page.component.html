@@ -1,21 +1,24 @@
 <ui5-dynamic-page>
   <ui5-dynamic-page-title slot="titleArea">
-    <pm-resource-logo
-      slot="heading"
-      [resourceDefinition]="resourceDefinition()"
-    />
     <ui5-title slot="heading">{{ resourceTitleDefinition() }}</ui5-title>
     <p slot="subheading">{{ resourceDescriptionDefinition() }}</p>
 
-    <div slot="actionsBar">
+    <div slot="snappedHeading" class="snapped-heading">
+      <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+      <div class="snapped-heading-text">
+        <ui5-title wrapping-type="None">{{ resourceTitleDefinition() }}</ui5-title>
+        <p>{{ resourceDescriptionDefinition() }}</p>
+      </div>
+    </div>
+
+    <ui5-toolbar slot="actionsBar" design="Transparent">
       @if (hasUiCreateViewFields() && canCreate()) {
-        <ui5-button
+        <ui5-toolbar-button
           design="Emphasized"
           data-testid="search-list-create-button"
+          [text]="'Create'"
           (click)="openCreateModal()"
-        >
-          Create
-        </ui5-button>
+        />
       }
       @for (action of actions(); track action.property) {
         @if (canDo(action.uiSettings?.buttonSettings?.action)) {
@@ -25,10 +28,11 @@
           />
         }
       }
-    </div>
+    </ui5-toolbar>
   </ui5-dynamic-page-title>
 
   <ui5-dynamic-page-header slot="headerArea">
+    <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
     <!-- future: filter bar (#591) -->
   </ui5-dynamic-page-header>
   <!-- future: table content (#593) -->

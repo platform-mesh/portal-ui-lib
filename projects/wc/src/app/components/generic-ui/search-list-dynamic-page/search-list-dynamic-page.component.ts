@@ -15,7 +15,8 @@ import {
   DynamicPageHeader,
   DynamicPageTitle,
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
-import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
+import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
+import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { ResourceField, ResourceFieldButtonClickEvent } from '@openmfp/ngx';
@@ -33,6 +34,26 @@ import { resourceActionAllowed } from '@platform-mesh/portal-ui-lib/utils';
   selector: 'pm-search-list-dynamic-page',
   standalone: true,
   templateUrl: './search-list-dynamic-page.component.html',
+  styles: `
+    .snapped-heading {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .snapped-heading ::ng-deep .resource-logo {
+      width: 2.5rem;
+      padding-bottom: 0;
+      display: block;
+    }
+    .snapped-heading-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .snapped-heading-text p {
+      margin: 0;
+    }
+  `,
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -40,7 +61,8 @@ import { resourceActionAllowed } from '@platform-mesh/portal-ui-lib/utils';
     DynamicPageTitle,
     DynamicPageHeader,
     Title,
-    Button,
+    Toolbar,
+    ToolbarButton,
     ResourceLogo,
     ResourceField,
     CreateResourceModal,
