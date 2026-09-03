@@ -1,0 +1,18 @@
+.snapped-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.snapped-heading ::ng-deep .resource-logo {
+  width: 2.5rem;
+  padding-bottom: 0;
+  display: block;
+}
+.snapped-heading-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.snapped-heading-text p {
+  margin: 0;
+}

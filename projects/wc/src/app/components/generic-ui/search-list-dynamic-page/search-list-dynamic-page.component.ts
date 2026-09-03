@@ -34,26 +34,7 @@ import { resourceActionAllowed } from '@platform-mesh/portal-ui-lib/utils';
   selector: 'pm-search-list-dynamic-page',
   standalone: true,
   templateUrl: './search-list-dynamic-page.component.html',
-  styles: `
-    .snapped-heading {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .snapped-heading ::ng-deep .resource-logo {
-      width: 2.5rem;
-      padding-bottom: 0;
-      display: block;
-    }
-    .snapped-heading-text {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    .snapped-heading-text p {
-      margin: 0;
-    }
-  `,
+  styleUrl: './search-list-dynamic-page.component.scss',
   encapsulation: ViewEncapsulation.Emulated,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
