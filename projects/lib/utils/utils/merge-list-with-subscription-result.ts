@@ -30,12 +30,12 @@ export function mergeListWithSubscriptionResult<T>(
   });
 
   const { type, object } = subscriptionResult;
-  const objectKey = object.id;
+  const mappedObject = mapSubscriptionObjectToItem(object);
+  const objectKey = getItemKey(mappedObject);
   if (!objectKey) {
     return items;
   }
 
-  const mappedObject = mapSubscriptionObjectToItem(object);
   if (type === ResourceOperationTypeMap.ADDED) {
     result.set(objectKey, mappedObject);
   } else if (type === ResourceOperationTypeMap.MODIFIED) {

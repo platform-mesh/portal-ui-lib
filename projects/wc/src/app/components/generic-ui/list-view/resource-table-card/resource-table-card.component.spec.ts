@@ -567,7 +567,7 @@ describe('ResourceTableCard', () => {
       );
       mockResourceService.list.mockReturnValue(
         of({
-          items: [{ metadata: { name: 'existing' } }],
+          items: [{ id: 'existing', metadata: { name: 'existing' } }],
           resourceVersion: '1',
         }),
       );
@@ -580,7 +580,7 @@ describe('ResourceTableCard', () => {
 
       subscriptionSubject.next({
         type: 'ADDED',
-        object: { id: '', metadata: { name: 'new-resource' } },
+        object: { id: 'new-resource', metadata: { name: 'new-resource' } },
       });
 
       expect(newComponent.resources().length).toBe(2);
@@ -600,7 +600,9 @@ describe('ResourceTableCard', () => {
       );
       mockResourceService.list.mockReturnValue(
         of({
-          items: [{ metadata: { name: 'existing' }, spec: { type: 'v1' } }],
+          items: [
+            { id: 'existing', metadata: { name: 'existing' }, spec: { type: 'v1' } },
+          ],
           resourceVersion: '1',
         }),
       );
@@ -614,7 +616,7 @@ describe('ResourceTableCard', () => {
       subscriptionSubject.next({
         type: 'MODIFIED',
         object: {
-          id: '',
+          id: 'existing',
           metadata: { name: 'existing' },
           spec: { type: 'v2' },
         },
@@ -634,8 +636,8 @@ describe('ResourceTableCard', () => {
       mockResourceService.list.mockReturnValue(
         of({
           items: [
-            { metadata: { name: 'to-delete' } },
-            { metadata: { name: 'to-keep' } },
+            { id: 'to-delete', metadata: { name: 'to-delete' } },
+            { id: 'to-keep', metadata: { name: 'to-keep' } },
           ],
           resourceVersion: '1',
         }),
@@ -649,7 +651,7 @@ describe('ResourceTableCard', () => {
 
       subscriptionSubject.next({
         type: 'DELETED',
-        object: { id: '', metadata: { name: 'to-delete' } },
+        object: { id: 'to-delete', metadata: { name: 'to-delete' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -753,14 +755,14 @@ describe('ResourceTableCard', () => {
 
       it('should merge existing resources with new ones from list', () => {
         const firstResponse = {
-          items: [{ metadata: { name: 'res1' }, spec: { version: 'v1' } }],
+          items: [{ id: 'res1', metadata: { name: 'res1' }, spec: { version: 'v1' } }],
           resourceVersion: '123',
           continue: 'token1',
         };
         const secondResponse = {
           items: [
-            { metadata: { name: 'res1' }, spec: { version: 'v2' } },
-            { metadata: { name: 'res2' }, spec: { version: 'v1' } },
+            { id: 'res1', metadata: { name: 'res1' }, spec: { version: 'v2' } },
+            { id: 'res2', metadata: { name: 'res2' }, spec: { version: 'v1' } },
           ],
           resourceVersion: '124',
         };
