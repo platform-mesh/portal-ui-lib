@@ -173,26 +173,6 @@ Each field definition supports the following properties:
       - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
       - `"width"`: Custom modal width (allowed units: `"px"`, `"%"`, `"rem"`, `"em"`, `"vh"`, `"vw"`)
       - `"height"`: Custom modal height (allowed units: `"px"`, `"%"`, `"rem"`, `"em"`, `"vh"`, `"vw"`)
-
-  **Receiving data back from a modal (`openInModal`)**
-
-  When `action: "openInModal"` is used together with a `callBack` (configured programmatically), the action returns a `Promise` that resolves when the modal is closed.
-
-  To pass data **from the modal back to the caller**, close the modal inside the routed micro-frontend using Luigi's `goBack` with a payload:
-
-  ```ts
-  LuigiClient.linkManager().goBack({ status: 'submitted', resource: createdResource });
-  ```
-
-  Luigi wraps the argument in a `{ data }` envelope, so `callBack` receives:
-
-  ```ts
-  { data: { status: 'submitted', resource: createdResource } }
-  ```
-
-  If the user dismisses the modal (e.g. close button or ESC) without calling `goBack`, the promise resolves with `undefined`.
-
-  > **This is the only supported way to pass data back from the modal.** The library reads `goBackContext` from the Luigi modal lifecycle — any other mechanism (postMessage, shared state, etc.) is not handled.
   - `"tooltipIcon"`: UI5 icon name to use with `displayAs: "tooltip"` (defaults to `hint`) Don't forget to import picked icon to you portal from ui5 lib
   - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
   - `"cssCustomization"`: Inline styles applied to the rendered value (partial `CSSStyleDeclaration`, e.g. `backgroundColor`, `fontWeight`)
@@ -210,6 +190,23 @@ Each field definition supports the following properties:
     - **Relative** — just the leaf name (`"type"`). Nothing to strip; same outcome.
   - Sub-fields inherit the same UI features as top-level fields: `"required"` (with `"validation": "onChange"` auto-enabled for required sub-fields), `"values"` for static selects, `"dynamicValuesDefinition"` for async selects, `"uiSettings"` for display customisation, `"disabled"` behaviour in edit mode, etc.
   - Nested `"propertyCollection"` is supported (array-of-objects-with-array-of-objects). The prefix-strip rule applies recursively — each nesting layer strips its own collection `property`.
+
+#### Passing data back from a modal (`openInModal`)
+
+When the micro-frontend opened inside the modal needs to signal a result back (e.g. after a form submit), close the modal using Luigi's `goBack` with a payload:
+
+```ts
+LuigiClient.linkManager().goBack({ status: 'submit', action: 'create', resource: createdResource });
+```
+
+Luigi wraps the argument in a `{ data }` envelope which the parent view receives as the modal result. If the user dismisses the modal (e.g. close button or ESC) without calling `goBack`, no result data is available.
+
+Supported values for the payload fields:
+- `status`: `"submit"` | `"cancelled"`
+- `action`: `"create"` | `"navigate"` | `"loadTableData"`
+- `resource`: the affected resource object (optional, any type)
+
+> **This is the only supported way to pass data back from the modal.** Any other mechanism (postMessage, shared state, etc.) is not handled by the library.
 
 ##### Example — an array of Kubernetes conditions
 
