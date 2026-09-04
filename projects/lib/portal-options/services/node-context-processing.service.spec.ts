@@ -588,6 +588,51 @@ describe('NodeContextProcessingServiceImpl', () => {
       );
     });
 
+    it('treats the all-namespaces selection as no namespace', async () => {
+      luigiCoreService.routing.mockReturnValue({
+        getSearchParams: () => ({ namespace: '-all-' }),
+      } as any);
+
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          permissionsDefinition: pd,
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.namespaceId).toBeUndefined();
+      expect(instancePermissionsService.checkInstance).toHaveBeenCalledWith(
+        expect.any(Object),
+        pd,
+        { name: mockEntityId, namespace: undefined },
+      );
+    });
+
+    it('sets ctx.namespaceId from the selected namespace', async () => {
+      luigiCoreService.routing.mockReturnValue({
+        getSearchParams: () => ({ namespace: 'team-a' }),
+      } as any);
+
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'HttpBin',
+          entityCollection: 'HttpBins',
+          version: 'v1alpha1',
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(ctx.namespaceId).toBe('team-a');
+    });
+
     it('merges returned permissions into ctx.portalPermissions keyed by permissionKey', async () => {
       instancePermissionsService.checkInstance.mockReturnValue(
         of([

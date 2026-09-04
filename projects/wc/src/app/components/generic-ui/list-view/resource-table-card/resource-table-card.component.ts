@@ -20,6 +20,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -33,6 +34,7 @@ import {
   TableCardConfig,
   TableCardFormState,
 } from '@openmfp/ngx';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   PlatformMeshFieldDefinition,
   Resource,
@@ -118,6 +120,7 @@ export class ResourceTableCard {
   remainingItemCount = signal<number>(0);
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
+  loading = signal<boolean>(false);
 
   private createFieldErrors = signal<FormFieldErrors>({});
   createFormState = computed<TableCardFormState>(() => ({
@@ -171,7 +174,6 @@ export class ResourceTableCard {
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private currentContinueToken: string | undefined = undefined;
-  private isLoadingList = false;
 
   constructor() {
     effect(() => {
@@ -270,8 +272,8 @@ export class ResourceTableCard {
 
   list(isInitialLoad: boolean = false) {
     if (!this.canDo('list')) return;
-    if (this.isLoadingList) return;
-    this.isLoadingList = true;
+    if (untracked(this.loading)) return;
+    this.loading.set(true);
 
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
@@ -289,7 +291,9 @@ export class ResourceTableCard {
         },
       })
       .pipe(
-        finalize(() => (this.isLoadingList = false)),
+        finalize(() => {
+          this.loading.set(false);
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
@@ -298,8 +302,8 @@ export class ResourceTableCard {
             this.resources.set(result.items ?? []);
           } else {
             this.resources.update((values) => {
-              const map = new Map(values.map((i) => [i.metadata.name, i]));
-              (result.items ?? []).forEach((i) => map.set(i.metadata.name, i));
+              const map = new Map(values.map((i) => [i.id, i]));
+              (result.items ?? []).forEach((i) => map.set(i.id, i));
               return [...map.values()];
             });
           }
@@ -319,7 +323,7 @@ export class ResourceTableCard {
   ) {
     this.resources.set(
       mergeListWithSubscriptionResult(this.resources(), subscriptionResult, {
-        getItemKey: (item) => item.metadata?.name,
+        getItemKey: (item) => item.id,
         mapSubscriptionObjectToItem: (object) => object,
       }),
     );
@@ -337,9 +341,18 @@ export class ResourceTableCard {
       throw new Error('Resource name is not defined');
     }
 
+    if (this.isNamespaced() && !resource.metadata.namespace) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource namespace is not known',
+        type: 'error',
+      });
+      throw new Error('Resource namespace is not defined');
+    }
+
     addSearchParams({
       namespace: this.isNamespaced() ? resource.metadata.namespace : undefined,
     });
+
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
