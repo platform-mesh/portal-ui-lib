@@ -26,6 +26,45 @@ export function getFieldValue<T>(
   return field.value;
 }
 
+/**
+ * Executes the action defined by a button field definition.
+ *
+ * Supported actions:
+ * - `'navigate'` — calls `LuigiClient.linkManager().navigate(path)`.
+ * - `'openInModal'` — opens the route at `path` in a Luigi modal via
+ *   `LuigiClient.linkManager().openAsModal(path, modalSettings)`.
+ *
+ * **`openInModal` / `openAsModal` return value**
+ *
+ * `openAsModal` returns a `Promise` that resolves when the modal is closed.
+ * The resolved value is a `ModalResult` envelope — or `undefined` when the
+ * modal is dismissed without a `goBack` call.
+ *
+ * To pass data **back** from the modal to the calling component, close the
+ * modal inside the routed micro-frontend using:
+ * ```ts
+ * LuigiClient.linkManager().goBack({ status: 'submit', action: 'create', resource: created });
+ * ```
+ * Luigi wraps the argument in a `{ data }` envelope, so `callBack` receives:
+ * ```ts
+ * { data: { status: 'submit', action: 'create', resource: created } }
+ * ```
+ * When the modal is dismissed (e.g. close button or ESC) without a `goBack`
+ * call, `callBack` receives `undefined`.
+ *
+ * @param luigiClient - The `LuigiClient` instance bound to the current element.
+ * @param field - Field definition that carries the action type, path, and modal settings.
+ * @param resource - Optional resource whose properties may be used as the navigation path.
+ * @param callBack - Optional function invoked with the `ModalResult` once the modal closes.
+ *   Only called for `openInModal` actions. Return value propagates as the resolved value.
+ *
+ * @throws {Error} When `buttonSettings.action` is missing or falsy.
+ * @throws {Error} When the resolved path is not a non-empty string.
+ * @throws {Error} When the action is not one of the supported values.
+ *
+ * @typeParam T - Type of the resource passed in.
+ * @typeParam R - Type of the affected resource inside the `ModalResultContext`.
+ */
 export function executeButtonAction<T, R = unknown>(
   luigiClient: LuigiClient,
   field: FieldDefinition,

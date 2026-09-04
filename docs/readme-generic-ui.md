@@ -173,6 +173,26 @@ Each field definition supports the following properties:
       - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
       - `"width"`: Custom modal width (allowed units: `"px"`, `"%"`, `"rem"`, `"em"`, `"vh"`, `"vw"`)
       - `"height"`: Custom modal height (allowed units: `"px"`, `"%"`, `"rem"`, `"em"`, `"vh"`, `"vw"`)
+
+  **Receiving data back from a modal (`openInModal`)**
+
+  When `action: "openInModal"` is used together with a `callBack` (configured programmatically), the action returns a `Promise` that resolves when the modal is closed.
+
+  To pass data **from the modal back to the caller**, close the modal inside the routed micro-frontend using Luigi's `goBack` with a payload:
+
+  ```ts
+  LuigiClient.linkManager().goBack({ status: 'submitted', resource: createdResource });
+  ```
+
+  Luigi wraps the argument in a `{ data }` envelope, so `callBack` receives:
+
+  ```ts
+  { data: { status: 'submitted', resource: createdResource } }
+  ```
+
+  If the user dismisses the modal (e.g. close button or ESC) without calling `goBack`, the promise resolves with `undefined`.
+
+  > **This is the only supported way to pass data back from the modal.** The library reads `goBackContext` from the Luigi modal lifecycle — any other mechanism (postMessage, shared state, etc.) is not handled.
   - `"tooltipIcon"`: UI5 icon name to use with `displayAs: "tooltip"` (defaults to `hint`) Don't forget to import picked icon to you portal from ui5 lib
   - `"withCopyButton"`: Boolean flag to show a copy button next to the value for easy copying to clipboard
   - `"cssCustomization"`: Inline styles applied to the rendered value (partial `CSSStyleDeclaration`, e.g. `backgroundColor`, `fontWeight`)
