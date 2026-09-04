@@ -1,7 +1,10 @@
 import { ResourceFieldNames } from '../components/generic-ui/create-resource-modal/create-resource-modal.consts';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@openmfp/ngx';
-import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import {
+  ModalResult,
+  PlatformMeshFieldDefinition,
+} from '@platform-mesh/portal-ui-lib/models';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 
 export function isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
@@ -23,11 +26,11 @@ export function getFieldValue<T>(
   return field.value;
 }
 
-export function executeButtonAction<T>(
+export function executeButtonAction<T, R = unknown>(
   luigiClient: LuigiClient,
   field: FieldDefinition,
   resource: T | undefined,
-  callBack?: (...args: unknown[]) => unknown,
+  callBack?: (result?: ModalResult<R>) => unknown,
 ) {
   const buttonSettings = field.uiSettings?.buttonSettings;
   const path = getFieldValue(field, resource);
@@ -51,14 +54,17 @@ export function executeButtonAction<T>(
       luigiClient.linkManager().navigate(synitzedPath);
       return;
     case 'openInModal':
-      // openAsModal returns Promise but luigi-element d.ts incorrectly declares void
+      // openAsModal returns a Promise resolved with a { data } envelope that
+      // wraps the goBackContext, but the luigi-element d.ts incorrectly
+      // declares it as void. The value is undefined when closed without a
+      // goBack context.
       return (
         luigiClient
           .linkManager()
           .openAsModal(
             synitzedPath,
             buttonSettings.modalSettings,
-          ) as unknown as Promise<void>
+          ) as unknown as Promise<ModalResult<R> | undefined>
       ).then(callBack);
     default:
       throw Error(

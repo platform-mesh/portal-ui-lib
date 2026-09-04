@@ -105,12 +105,7 @@ export class SearchListDynamicPage {
 
   genericActionHandler(event: ResourceFieldButtonClickEvent<Resource>): void {
     // TODO(#593): refresh the list once the table is added (re-run OpenSearch query)
-    executeButtonAction(
-      this.LuigiClient(),
-      event.field,
-      event.resource,
-      (data: any) => {},
-    );
+    executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
   canDo(action: string | undefined): boolean {
