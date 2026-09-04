@@ -20,6 +20,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -173,7 +174,6 @@ export class ResourceTableCard {
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private currentContinueToken: string | undefined = undefined;
-  private isLoadingList = false;
 
   constructor() {
     effect(() => {
@@ -272,8 +272,7 @@ export class ResourceTableCard {
 
   list(isInitialLoad: boolean = false) {
     if (!this.canDo('list')) return;
-    if (this.isLoadingList) return;
-    this.isLoadingList = true;
+    if (untracked(this.loading)) return;
     this.loading.set(true);
 
     const fields = this.getListQueryFields();
@@ -293,7 +292,6 @@ export class ResourceTableCard {
       })
       .pipe(
         finalize(() => {
-          this.isLoadingList = false;
           this.loading.set(false);
         }),
         takeUntilDestroyed(this.destroyRef),

@@ -707,7 +707,7 @@ describe('ResourceTableCard', () => {
           .fn()
           .mockReturnValueOnce(of({ items: [], resourceVersion: '123' }));
         mockResourceService.list = listSpy;
-        (component as any).isLoadingList = true;
+        component.loading.set(true);
         component.list();
         expect(listSpy).not.toHaveBeenCalled();
       });
