@@ -244,7 +244,7 @@ export class ResourceService {
             }))
             .map((r) => ({
               ...r,
-              id: r.metadata.name,
+              id: this.getResourceId(r),
               isAvailable: this.isAvailable(
                 r,
                 resourceDefinition.availableWhenNotReady,
@@ -254,6 +254,10 @@ export class ResourceService {
           return { ...resourceListResult, items: processedResult };
         }),
       );
+  }
+
+  private getResourceId(resource: Resource) {
+    return `${resource.metadata.name}${resource.metadata.namespace ? '_' + resource.metadata.namespace : ''}`;
   }
 
   isAvailable(item: Resource, availableWhenNotReady = false) {
@@ -344,7 +348,7 @@ export class ResourceService {
               resource.object,
               nodeContext,
             );
-            resource.object.id = resource.object.metadata.name;
+            resource.object.id = this.getResourceId(resource.object);
             resource.object.isAvailable = this.isAvailable(
               resource.object,
               nodeContext.resourceDefinition?.availableWhenNotReady,

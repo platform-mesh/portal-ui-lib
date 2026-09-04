@@ -8,6 +8,7 @@ import {
   AccountInfoService,
   InstancePermissionsService,
   OrganizationReadyService,
+  ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { of, throwError } from 'rxjs';
@@ -21,6 +22,7 @@ describe('NodeContextProcessingServiceImpl', () => {
   let organizationReadyService: MockedObject<OrganizationReadyService>;
   let instancePermissionsService: MockedObject<InstancePermissionsService>;
   let luigiCoreService: MockedObject<LuigiCoreService>;
+  let resourceService: MockedObject<ResourceService>;
 
   const mockEntityId = 'entity-123';
   const mockKind = 'account';
@@ -52,9 +54,12 @@ describe('NodeContextProcessingServiceImpl', () => {
     organizationReadyService = mock<OrganizationReadyService>();
     instancePermissionsService = mock<InstancePermissionsService>();
     luigiCoreService = mock<LuigiCoreService>();
+    resourceService = mock<ResourceService>();
 
     // Default: checkInstance returns an empty array
     instancePermissionsService.checkInstance.mockReturnValue(of([]));
+    // Default: reading a resource returns no namespace
+    resourceService.read.mockReturnValue(of({} as any));
     // Default: routing().getSearchParams() returns empty object
     luigiCoreService.routing.mockReturnValue({
       getSearchParams: () => ({}),
@@ -91,6 +96,7 @@ describe('NodeContextProcessingServiceImpl', () => {
           useValue: instancePermissionsService,
         },
         { provide: LuigiCoreService, useValue: luigiCoreService },
+        { provide: ResourceService, useValue: resourceService },
       ],
     });
 
@@ -563,10 +569,10 @@ describe('NodeContextProcessingServiceImpl', () => {
       );
     });
 
-    it('passes namespace from routing().getSearchParams() to checkInstance', async () => {
-      luigiCoreService.routing.mockReturnValue({
-        getSearchParams: () => ({ namespace: 'default' }),
-      } as any);
+    it('passes namespace read from the gateway to checkInstance', async () => {
+      resourceService.read.mockReturnValue(
+        of({ metadata: { namespace: 'default' } } as any),
+      );
 
       const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
       const ctx: PortalNodeContext = {
@@ -575,16 +581,107 @@ describe('NodeContextProcessingServiceImpl', () => {
           entity: 'Cluster',
           entityCollection: 'clusters',
           version: 'v1alpha1',
+          scope: 'Namespaced',
           permissionsDefinition: pd,
         } as any,
       };
 
       await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
 
+      expect(resourceService.read).toHaveBeenCalledWith(
+        mockEntityId,
+        { entity: 'Cluster', version: 'v1alpha1', apiGroup: undefined },
+        expect.any(Array),
+        ctx,
+        false,
+      );
       expect(instancePermissionsService.checkInstance).toHaveBeenCalledWith(
         expect.any(Object),
         pd,
         { name: mockEntityId, namespace: 'default' },
+      );
+    });
+
+    it('reuses entityNode.context.namespaceId without reading from the gateway', async () => {
+      const nodeWithNamespace = {
+        ...mockEntityNode,
+        context: { namespaceId: 'preset-ns' },
+      } as PortalLuigiNode;
+
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          scope: 'Namespaced',
+          permissionsDefinition: pd,
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, nodeWithNamespace, ctx);
+
+      expect(resourceService.read).not.toHaveBeenCalled();
+      expect(instancePermissionsService.checkInstance).toHaveBeenCalledWith(
+        expect.any(Object),
+        pd,
+        { name: mockEntityId, namespace: 'preset-ns' },
+      );
+    });
+
+    it('reads the namespace for entityId from the current kcp path', async () => {
+      resourceService.read.mockReturnValue(
+        of({ metadata: { namespace: 'team-a' } } as any),
+      );
+
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'HttpBin',
+          entityCollection: 'HttpBins',
+          version: 'v1alpha1',
+          apiGroup: 'orchestrate_platform_mesh_io',
+          scope: 'Namespaced',
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(resourceService.read).toHaveBeenCalledWith(
+        mockEntityId,
+        {
+          entity: 'HttpBin',
+          version: 'v1alpha1',
+          apiGroup: 'orchestrate_platform_mesh_io',
+        },
+        expect.any(Array),
+        ctx,
+        false,
+      );
+      expect(ctx.namespaceId).toBe('team-a');
+    });
+
+    it('does not read from the gateway for cluster-scoped resources', async () => {
+      const pd = makePermissionsDefinition({ entityContextKey: 'entityName' });
+      const ctx: PortalNodeContext = {
+        ...mockContext,
+        resourceDefinition: {
+          entity: 'Cluster',
+          entityCollection: 'clusters',
+          version: 'v1alpha1',
+          scope: 'Cluster',
+          permissionsDefinition: pd,
+        } as any,
+      };
+
+      await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+      expect(resourceService.read).not.toHaveBeenCalled();
+      expect(instancePermissionsService.checkInstance).toHaveBeenCalledWith(
+        expect.any(Object),
+        pd,
+        { name: mockEntityId, namespace: undefined },
       );
     });
 

@@ -20,6 +20,7 @@ export class CustomRoutingConfigServiceImpl implements RoutingConfigService {
 
   getRoutingConfig(): any {
     return {
+      preserveQueryParams: true,
       pageNotFoundHandler: () => {
         if (!this.envConfig?.baseDomain) {
           return this.redirectTo('error/404');

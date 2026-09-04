@@ -30,7 +30,7 @@ export function mergeListWithSubscriptionResult<T>(
   });
 
   const { type, object } = subscriptionResult;
-  const objectKey = object.metadata?.name;
+  const objectKey = object.id;
   if (!objectKey) {
     return items;
   }

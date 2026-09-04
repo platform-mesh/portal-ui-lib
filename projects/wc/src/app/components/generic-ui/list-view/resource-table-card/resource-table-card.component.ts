@@ -33,6 +33,7 @@ import {
   TableCardConfig,
   TableCardFormState,
 } from '@openmfp/ngx';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   PlatformMeshFieldDefinition,
   Resource,
@@ -303,8 +304,8 @@ export class ResourceTableCard {
             this.resources.set(result.items ?? []);
           } else {
             this.resources.update((values) => {
-              const map = new Map(values.map((i) => [i.metadata.name, i]));
-              (result.items ?? []).forEach((i) => map.set(i.metadata.name, i));
+              const map = new Map(values.map((i) => [i.id, i]));
+              (result.items ?? []).forEach((i) => map.set(i.id, i));
               return [...map.values()];
             });
           }
@@ -324,7 +325,7 @@ export class ResourceTableCard {
   ) {
     this.resources.set(
       mergeListWithSubscriptionResult(this.resources(), subscriptionResult, {
-        getItemKey: (item) => item.metadata?.name,
+        getItemKey: (item) => item.id,
         mapSubscriptionObjectToItem: (object) => object,
       }),
     );
@@ -342,9 +343,18 @@ export class ResourceTableCard {
       throw new Error('Resource name is not defined');
     }
 
+    if (this.isNamespaced() && !resource.metadata.namespace) {
+      this.LuigiClient().uxManager().showAlert({
+        text: 'Resource namespace is not known',
+        type: 'error',
+      });
+      throw new Error('Resource namespace is not defined');
+    }
+
     addSearchParams({
       namespace: this.isNamespaced() ? resource.metadata.namespace : undefined,
     });
+
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
