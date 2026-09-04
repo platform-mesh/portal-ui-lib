@@ -6,7 +6,9 @@
     <div slot="snappedHeading" class="snapped-heading">
       <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
       <div class="snapped-heading-text">
-        <ui5-title wrapping-type="None">{{ resourceTitleDefinition() }}</ui5-title>
+        <ui5-title wrapping-type="None">{{
+          resourceTitleDefinition()
+        }}</ui5-title>
         <p>{{ resourceDescriptionDefinition() }}</p>
       </div>
     </div>
@@ -21,7 +23,7 @@
         />
       }
       @for (action of actions(); track action.property) {
-        @if (canDo(action.uiSettings?.buttonSettings?.action)) {
+        @if (canDo(action.requirePermission)) {
           <mfp-resource-field
             [fieldDefinition]="action"
             (buttonClick)="genericActionHandler($event)"

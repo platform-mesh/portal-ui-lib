@@ -27,6 +27,7 @@ export function executeButtonAction<T>(
   luigiClient: LuigiClient,
   field: FieldDefinition,
   resource: T | undefined,
+  callBack?: (...args: unknown[]) => unknown,
 ) {
   const buttonSettings = field.uiSettings?.buttonSettings;
   const path = getFieldValue(field, resource);
@@ -48,12 +49,17 @@ export function executeButtonAction<T>(
   switch (buttonSettings.action) {
     case 'navigate':
       luigiClient.linkManager().navigate(synitzedPath);
-      break;
+      return;
     case 'openInModal':
-      luigiClient
-        .linkManager()
-        .openAsModal(synitzedPath, buttonSettings.modalSettings);
-      break;
+      // openAsModal returns Promise but luigi-element d.ts incorrectly declares void
+      return (
+        luigiClient
+          .linkManager()
+          .openAsModal(
+            synitzedPath,
+            buttonSettings.modalSettings,
+          ) as unknown as Promise<void>
+      ).then(callBack);
     default:
       throw Error(
         `Unsupported action: ${buttonSettings?.action}, in field declaration: ${JSON.stringify(field)}`,

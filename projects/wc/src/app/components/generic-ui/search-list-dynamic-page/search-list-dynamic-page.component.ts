@@ -15,9 +15,9 @@ import {
   DynamicPageHeader,
   DynamicPageTitle,
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
+import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
-import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { ResourceField, ResourceFieldButtonClickEvent } from '@openmfp/ngx';
 import {
@@ -104,7 +104,13 @@ export class SearchListDynamicPage {
   }
 
   genericActionHandler(event: ResourceFieldButtonClickEvent<Resource>): void {
-    executeButtonAction(this.LuigiClient(), event.field, event.resource);
+    // TODO(#593): refresh the list once the table is added (re-run OpenSearch query)
+    executeButtonAction(
+      this.LuigiClient(),
+      event.field,
+      event.resource,
+      (data: any) => {},
+    );
   }
 
   canDo(action: string | undefined): boolean {

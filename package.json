@@ -26,6 +26,7 @@
   },
   "prettier": "@openmfp/config-prettier",
   "dependencies": {
+    "@platform-mesh/portal-ui-lib": "file:.yalc/@platform-mesh/portal-ui-lib",
     "jsonpath-plus": "10.4.0",
     "tslib": "2.8.1"
   },
