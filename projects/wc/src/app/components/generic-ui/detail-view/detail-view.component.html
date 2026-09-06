@@ -89,8 +89,8 @@
   </div>
 </ng-template>
 
-<pm-create-resource-modal
-  #createModal
+<pm-resource-form-modal
+  #formModal
   [fields]="resourceCreateEditFields()"
   (updateResource)="update($event)"
   [context]="context()"

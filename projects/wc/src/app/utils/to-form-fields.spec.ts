@@ -1,8 +1,4 @@
-import {
-  buildInitialValues,
-  flattenFieldTree,
-  toFormFields,
-} from './to-form-fields';
+import { buildInitialValues, coerceBoolean, toFormFields } from './to-form-fields';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 /**
@@ -14,72 +10,6 @@ import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models
  */
 const defs = (items: readonly unknown[]): PlatformMeshFieldDefinition[] =>
   items as PlatformMeshFieldDefinition[];
-
-// ---------------------------------------------------------------------------
-// flattenFieldTree
-// ---------------------------------------------------------------------------
-
-describe('flattenFieldTree', () => {
-  it('returns [] for undefined / empty input', () => {
-    expect(flattenFieldTree(undefined)).toEqual([]);
-    expect(flattenFieldTree([])).toEqual([]);
-  });
-
-  it('passes scalar fields through untouched', () => {
-    const fields = defs([
-      { property: 'metadata.name' },
-      { property: 'spec.type' },
-    ]);
-    expect(flattenFieldTree(fields)).toEqual(fields);
-  });
-
-  it('replaces a collection field with its sub-fields', () => {
-    const fields = defs([
-      { property: 'metadata.name' },
-      {
-        label: 'Conditions',
-        property: 'status.conditions',
-        propertyCollection: [
-          { property: 'status.conditions.type' },
-          { property: 'status.conditions.status' },
-        ],
-      },
-    ]);
-
-    // The collection wrapper itself is dropped — the parent path is only a
-    // segment and can't be selected without its scalar leaves. Sub-fields
-    // are hoisted into the flat list with their original `property` values.
-    expect(flattenFieldTree(fields)).toEqual([
-      { property: 'metadata.name' },
-      { property: 'status.conditions.type' },
-      { property: 'status.conditions.status' },
-    ]);
-  });
-
-  it('recurses into nested collections', () => {
-    const fields = defs([
-      {
-        property: 'spec.stages',
-        propertyCollection: [
-          { property: 'spec.stages.name' },
-          {
-            property: 'spec.stages.steps',
-            propertyCollection: [
-              { property: 'spec.stages.steps.command' },
-              { property: 'spec.stages.steps.image' },
-            ],
-          },
-        ],
-      },
-    ]);
-
-    expect(flattenFieldTree(fields)).toEqual([
-      { property: 'spec.stages.name' },
-      { property: 'spec.stages.steps.command' },
-      { property: 'spec.stages.steps.image' },
-    ]);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // toFormFields
@@ -150,6 +80,93 @@ describe('toFormFields', () => {
     );
     expect(name.disabled).toBe(true);
     expect(displayName.disabled).toBe(false);
+  });
+
+  it('maps displayAs secret fields to password inputs without writeOnly', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.token',
+          label: 'Token',
+          uiSettings: { displayAs: 'secret' },
+        },
+      ]),
+    );
+    expect(formField.inputType).toBe('Password');
+    expect(formField.writeOnly).toBe(false);
+  });
+
+  it('ignores blank uiSettings.hint values', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.alias',
+          label: 'Alias',
+          uiSettings: { hint: '   ' },
+        },
+      ]),
+    );
+    expect(formField.hint).toBeUndefined();
+  });
+
+  it('maps write-only fields to password inputs', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          uiSettings: { writeOnly: true },
+        },
+      ]),
+    );
+    expect(formField.inputType).toBe('Password');
+    expect(formField.writeOnly).toBe(true);
+  });
+
+  it('maps displayAs switch fields to Switch input type', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.enabled',
+          label: 'Enabled',
+          uiSettings: { displayAs: 'switch' },
+        },
+      ]),
+    );
+    expect(formField.inputType).toBe('Switch');
+  });
+
+  it('maps uiSettings.hint to form field help text', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.oidc.discoveryUrl',
+          label: 'Discovery URL',
+          uiSettings: {
+            hint: 'e.g. https://issuer.example.com/.well-known/openid-configuration',
+          },
+        },
+      ]),
+    );
+    expect(formField.hint).toBe(
+      'e.g. https://issuer.example.com/.well-known/openid-configuration',
+    );
+  });
+
+  it('makes write-only fields optional with placeholder in edit mode', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          required: true,
+          uiSettings: { writeOnly: true },
+        },
+      ]),
+      { editMode: true },
+    );
+    expect(formField.required).toBe(false);
+    expect(formField.placeholder).toBe('Leave empty to keep unchanged');
   });
 
   describe('collections', () => {
@@ -364,10 +381,90 @@ describe('toFormFieldsAsync', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildInitialValues', () => {
-  it('returns {} for an undefined resource', () => {
+  it('returns {} for an undefined resource without boolean fields', () => {
     expect(
       buildInitialValues(defs([{ property: 'metadata.name' }]), undefined),
     ).toEqual({});
+  });
+
+  it('skips fields whose property is not a string', () => {
+    expect(
+      buildInitialValues(
+        defs([{ property: ['metadata', 'name'] as any, label: 'Name' }]),
+        { metadata: { name: 'dex' } },
+      ),
+    ).toEqual({});
+  });
+
+  it('returns an empty object for null collection entries', () => {
+    expect(
+      buildInitialValues(
+        defs([
+          {
+            property: 'status.conditions',
+            propertyCollection: [{ property: 'type' }],
+          },
+        ]),
+        { status: { conditions: [null] } } as any,
+      ),
+    ).toEqual({ 'status.conditions': [{}] });
+  });
+
+  it('seeds boolean create values from field.value', () => {
+    expect(
+      buildInitialValues(
+        defs([
+          {
+            property: 'spec.enabled',
+            value: 'true',
+            uiSettings: { displayAs: 'switch' },
+          },
+        ]),
+        undefined,
+      ),
+    ).toEqual({ 'spec.enabled': true });
+  });
+
+  it('coerces boolean values when reading a resource', () => {
+    expect(
+      buildInitialValues(
+        defs([
+          {
+            property: 'spec.enabled',
+            uiSettings: { displayAs: 'switch' },
+          },
+        ]),
+        { spec: { enabled: 'true' } },
+      ),
+    ).toEqual({ 'spec.enabled': true });
+  });
+
+  it('coerces false-like string booleans when reading a resource', () => {
+    expect(
+      buildInitialValues(
+        defs([
+          {
+            property: 'spec.enabled',
+            uiSettings: { displayAs: 'switch' },
+          },
+        ]),
+        { spec: { enabled: 'false' } },
+      ),
+    ).toEqual({ 'spec.enabled': false });
+  });
+
+  it('defaults switch fields to false on create when no value is set', () => {
+    expect(
+      buildInitialValues(
+        defs([
+          {
+            property: 'spec.enabled',
+            uiSettings: { displayAs: 'switch' },
+          },
+        ]),
+        undefined,
+      ),
+    ).toEqual({ 'spec.enabled': false });
   });
 
   it('reads scalar values by dotted path and keys them by the same path', () => {
@@ -557,5 +654,19 @@ describe('buildInitialValues', () => {
         'status.conditions': [{ type: 'Ready', status: 'True' }],
       });
     });
+  });
+});
+
+describe('coerceBoolean', () => {
+  it('returns booleans unchanged', () => {
+    expect(coerceBoolean(true)).toBe(true);
+    expect(coerceBoolean(false)).toBe(false);
+  });
+
+  it('parses string booleans and coerces other values', () => {
+    expect(coerceBoolean('true')).toBe(true);
+    expect(coerceBoolean('false')).toBe(false);
+    expect(coerceBoolean('')).toBe(false);
+    expect(coerceBoolean(1)).toBe(true);
   });
 });

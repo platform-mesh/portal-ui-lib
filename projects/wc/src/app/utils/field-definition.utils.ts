@@ -1,12 +1,13 @@
-import { ResourceFieldNames } from '../components/generic-ui/create-resource-modal/create-resource-modal.consts';
+import { ResourceFieldNames } from '../components/generic-ui/resource-form-modal/resource-form-modal.consts';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { getResourceValueByJsonPath } from '@platform-mesh/portal-ui-lib/utils';
 
-export function isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
+export function isImmutableOnEdit(field: PlatformMeshFieldDefinition): boolean {
   return (
     field.property === ResourceFieldNames.MetadataName ||
+    field.property === ResourceFieldNames.SpecAlias ||
     field.property === ResourceFieldNames.SpecType ||
     field.property === ResourceFieldNames.MetadataNamespace
   );

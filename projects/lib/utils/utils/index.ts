@@ -10,4 +10,7 @@ export * from './parse-raw-gql-query';
 export * from './resource-action-allowed';
 export * from './resource-field-by-path';
 export * from './resource-sanitizer';
+export * from './delete-property-by-path';
+export * from './flatten-field-tree';
+export * from './omit-empty-write-only-fields';
 export * from './set-property-by-path';

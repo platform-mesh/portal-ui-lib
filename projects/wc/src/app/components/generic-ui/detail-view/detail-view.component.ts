@@ -1,8 +1,8 @@
 import { downloadFile } from '../../../utils/download-file';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
+import { flattenFieldTree } from '@platform-mesh/portal-ui-lib/utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
-import { flattenFieldTree } from '../../../utils/to-form-fields';
-import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
+import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { DeleteResourceModal } from '../delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
@@ -51,6 +51,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
+  generateGraphQLReadFields,
   getResourceValueByJsonPath,
   isNamespacedResource,
   permissionKey,
@@ -65,7 +66,7 @@ import { take, takeUntil, tap } from 'rxjs/operators';
     NgTemplateOutlet,
     Label,
     ResourceField,
-    CreateResourceModal,
+    ResourceFormModal,
     DeleteResourceModal,
     ResourceLogo,
     Dashboard,
@@ -86,7 +87,7 @@ export class DetailView {
   private resourceReadGeneration = 0;
   private readonly cancelKubeconfigRead = new Subject<void>();
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
-  private createModal = viewChild<CreateResourceModal>('createModal');
+  private formModal = viewChild<ResourceFormModal>('formModal');
   private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
 
   LuigiClient = input.required<LuigiClient>();
@@ -361,7 +362,9 @@ export class DetailView {
         }),
       )
       .subscribe({
-        next: (result) => this.resource.set(result),
+        next: (result) => {
+          this.resource.set(result);
+        },
         error: (error) => this.errorHandlerService.handleError(error),
       });
   }
@@ -400,9 +403,8 @@ export class DetailView {
     // The edit form works on createView.fields, which the detail read does
     // not fetch - refetch the resource with exactly that selection so the
     // form is prefilled with current values.
-    const fields = generateGraphQLFields(
-      flattenFieldTree(this.resourceCreateEditFields()),
-    );
+    const allFields = this.resourceCreateEditFields();
+    const fields = generateGraphQLReadFields(allFields);
 
     this.resourceService
       .read(
@@ -414,7 +416,7 @@ export class DetailView {
       )
       .pipe(take(1))
       .subscribe({
-        next: (resource) => void this.createModal()?.open(resource),
+        next: (resource) => void this.formModal()?.open(resource),
         error: (error) => this.errorHandlerService.handleError(error),
       });
   }
@@ -438,7 +440,6 @@ export class DetailView {
       .subscribe({
         next: async (_result) => {
           this.deleteModal()?.close();
-          console.debug('Resource deleted.');
           this.navigateToParent();
         },
         error: (_error) => {
@@ -455,8 +456,8 @@ export class DetailView {
   update(resource: Resource) {
     const resourceDefinition = this.getResourceDefinition();
     const resourceId = this.getResourceId();
-    const fields = generateGraphQLFields(
-      flattenFieldTree(this.resourceCreateEditFields()),
+    const fields = generateGraphQLReadFields(
+      this.resourceCreateEditFields(),
     );
     const resourceToUpdate: Resource = {
       ...resource,
@@ -474,8 +475,7 @@ export class DetailView {
       .subscribe({
         next: (result: any) => {
           this.resource.set(result);
-          this.createModal()?.close();
-          console.debug('Resource updated', result);
+          this.formModal()?.close();
         },
         error: (_error) => {
           this.LuigiClient()

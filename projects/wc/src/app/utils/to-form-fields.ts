@@ -1,19 +1,10 @@
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { flattenFieldTree, isWriteOnlyField } from '@platform-mesh/portal-ui-lib/utils';
 
-export function flattenFieldTree(
-  fields: readonly PlatformMeshFieldDefinition[] | undefined,
-): PlatformMeshFieldDefinition[] {
-  const result: PlatformMeshFieldDefinition[] = [];
-  for (const field of fields ?? []) {
-    if (field.propertyCollection?.length) {
-      result.push(...flattenFieldTree(field.propertyCollection));
-      continue;
-    }
-    result.push(field);
-  }
-  return result;
-}
+export { flattenFieldTree } from '@platform-mesh/portal-ui-lib/utils';
+
+export const WRITE_ONLY_EDIT_PLACEHOLDER = 'Leave empty to keep unchanged';
 
 export type DisabledPredicate = (field: PlatformMeshFieldDefinition) => boolean;
 
@@ -26,6 +17,8 @@ const METADATA_NAME_FIELD = 'metadata.name';
 export interface ToFormFieldsOptions {
   disabled?: DisabledPredicate;
   resolveDynamicValues?: DynamicValuesResolver;
+  /** When true, write-only fields are optional and show a keep-unchanged placeholder. */
+  editMode?: boolean;
 }
 
 /**
@@ -118,6 +111,24 @@ function buildFormField(
     formField.disabled = options.disabled(field);
   }
 
+  if (isSecretFormField(field)) {
+    formField.inputType = 'Password';
+    formField.writeOnly = isWriteOnlyField(field);
+    if (options.editMode) {
+      formField.placeholder = WRITE_ONLY_EDIT_PLACEHOLDER;
+      formField.required = false;
+    }
+  }
+
+  if (isBooleanFormField(field)) {
+    formField.inputType = 'Switch';
+  }
+
+  const hint = field.uiSettings?.hint?.trim();
+  if (hint) {
+    formField.hint = hint;
+  }
+
   if (field.required || field.property === METADATA_NAME_FIELD) {
     formField.validation = 'onChange';
   }
@@ -130,6 +141,26 @@ function collectionPath(
   field: PlatformMeshFieldDefinition,
 ): string | undefined {
   return typeof field.property === 'string' ? field.property : undefined;
+}
+
+export function isSecretFormField(field: PlatformMeshFieldDefinition): boolean {
+  return (
+    isWriteOnlyField(field) || field.uiSettings?.displayAs === 'secret'
+  );
+}
+
+export function isBooleanFormField(field: PlatformMeshFieldDefinition): boolean {
+  return (field.uiSettings?.displayAs as string | undefined) === 'switch';
+}
+
+export function coerceBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false' || normalized === '') return false;
+  }
+  return Boolean(value);
 }
 
 function stripParentPath(
@@ -167,7 +198,17 @@ export function buildInitialValues(
   fields: readonly PlatformMeshFieldDefinition[] | undefined,
   resource: Record<string, unknown> | undefined,
 ): Record<string, unknown> {
-  if (!resource) return {};
+  if (!resource) {
+    const result: Record<string, unknown> = {};
+    for (const field of fields ?? []) {
+      if (typeof field.property !== 'string') continue;
+      if (isBooleanFormField(field)) {
+        result[field.property] =
+          field.value !== undefined ? coerceBoolean(field.value) : false;
+      }
+    }
+    return result;
+  }
 
   const result: Record<string, unknown> = {};
   for (const field of fields ?? []) {
@@ -186,7 +227,10 @@ export function buildInitialValues(
     }
 
     if (typeof field.property === 'string') {
-      result[field.property] = readPath(resource, field.property) ?? '';
+      const raw = readPath(resource, field.property) ?? '';
+      result[field.property] = isBooleanFormField(field)
+        ? coerceBoolean(raw)
+        : raw;
     }
   }
   return result;

@@ -6,22 +6,14 @@ import {
   LuigiCoreService,
   NodeContextProcessingService,
 } from '@openmfp/portal-ui-lib';
-import {
-  ALL_NAMESPACE,
-  AccountInfo,
-} from '@platform-mesh/portal-ui-lib/models';
+import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
   ErrorHandlerService,
   InstancePermissionsService,
   OrganizationReadyService,
-  ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import {
-  generateGraphQLFields,
-  isNamespacedResource,
-  permissionKey,
-} from '@platform-mesh/portal-ui-lib/utils';
+import { permissionKey } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({
@@ -55,21 +47,8 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
         kind,
       );
 
-    const namespace =
-      this.luigiCoreService.routing().getSearchParams().namespace !==
-      ALL_NAMESPACE
-        ? this.luigiCoreService.routing().getSearchParams().namespace
-        : undefined;
-
     // update the current already calculated by Luigi context for a node
-    this.addFieldsToContext(
-      ctx,
-      entityId,
-      kcpPath,
-      accountPath,
-      kind,
-      namespace,
-    );
+    this.addFieldsToContext(ctx, entityId, kcpPath, accountPath, kind);
 
     // update the node context of sa node to contain the entity for future context calculations
     this.addFieldsToContext(
@@ -78,11 +57,10 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       kcpPath,
       accountPath,
       kind,
-      namespace,
     );
 
     this.accamulatePortalPermissions(ctx);
-    this.getEntityPermissions(ctx, namespace);
+    this.getEntityPermissions(ctx);
     try {
       const accountInfo = await firstValueFrom(
         this.accountInfoService.read({
@@ -119,13 +97,11 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     kcpPath: string,
     accountPath: string | undefined,
     kind: string | undefined,
-    namespace: string | undefined,
   ) {
     ctx.kcpPath = kcpPath;
     ctx.entityName = entityId;
     ctx.entityKind = kind;
     ctx.accountPath = accountPath;
-    ctx.namespaceId = namespace;
   }
 
   private addFieldsToContextFromAccountInfo(
@@ -143,10 +119,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     ctx.kcpCA = btoa(accountInfo.spec.clusterInfo.ca);
   }
 
-  private getEntityPermissions(
-    ctx: PortalNodeContext,
-    namespace: string | undefined,
-  ) {
+  private getEntityPermissions(ctx: PortalNodeContext) {
     const resourceDefinition = ctx.resourceDefinition;
 
     if (!resourceDefinition || !resourceDefinition?.permissionsDefinition) {
@@ -158,6 +131,10 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     if (!name) {
       return;
     }
+
+    const namespace = this.luigiCoreService
+      .routing()
+      .getSearchParams().namespace;
 
     return this.instancePermissionsService
       .checkInstance(ctx, resourceDefinition.permissionsDefinition!, {

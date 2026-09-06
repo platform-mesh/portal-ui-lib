@@ -128,6 +128,17 @@ In order to use the generic list view, you need to adjust the node’s `content-
   - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value). Fields that represent **arrays of objects** (e.g. `status.conditions`) are declared with a `"property"` pointing at the array + a nested `"propertyCollection"` of sub-`FieldDefinition`s — see the [`propertyCollection` reference](#field-definition-properties).
   - for namespaced resources, the create form automatically adds a required `metadata.namespace` field with dynamic namespace options **only when no namespace is already resolved** — i.e. no namespace is selected in the navigation context (`namespaceId`) and the URL search param `namespace` is `-all-` (or missing). When a namespace is already resolved it is reused on create, so the field is omitted.
 
+#### Create and edit dialogs
+
+The generic UI uses two dialog paths:
+
+- **List create** — the list view delegates to `@openmfp/ngx` `DeclarativeTableCard` (`mfp-resource-form-dialog` with Save/Cancel). Fields come from `createView.fields` via `toFormFields()`. K8s name validation runs in the list host on `createFieldChange`.
+- **Detail edit** — the detail view opens `pm-resource-form-modal`, a Platform Mesh wrapper around `mfp-declarative-form` with Submit/Cancel. It prefetches the resource with `generateGraphQLReadFields()` (omits `uiSettings.writeOnly` from the GraphQL selection, including nested `propertyCollection` trees) and strips empty write-only values on submit via `omitEmptyWriteOnlyFields()`.
+
+`uiSettings.writeOnly` fields are required on create. On edit they are optional, show the placeholder “Leave empty to keep unchanged”, and empty values are omitted from the update payload.
+
+On edit, `metadata.name`, `spec.alias`, `spec.type`, and `metadata.namespace` are shown but disabled; their values are restored from the resource on submit.
+
 #### Field Definition Properties
 
 Each field definition supports the following properties:
@@ -154,8 +165,11 @@ Each field definition supports the following properties:
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
 - `"uiSettings"`: Object for configuring UI-specific display settings:
   - `"labelDisplay"`: Boolean flag for applying the default emphasized style to the value
+  - `"writeOnly"`: Boolean for create/edit forms. Renders a password input, omits the field from GraphQL read queries, and skips empty values on edit submit so existing secrets are left unchanged.
+  - `"hint"`: Persistent help text rendered below the create/edit form control; never submitted with the form.
   - `"displayAs"`: Controls how the value is displayed (if nothing is provided the plain text is displayed):
     - `"secret"`: Render value as a secret with show/hide toggle
+    - `"switch"`: Create/edit forms only — render as a UI5 switch; submits a boolean
     - `"boolIcon"`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
     - `"link"`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
     - `"tooltip"`: Render an icon with a tooltip; tooltip text is the field value

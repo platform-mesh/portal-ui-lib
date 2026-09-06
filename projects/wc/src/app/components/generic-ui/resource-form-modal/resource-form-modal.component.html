@@ -1,20 +1,16 @@
 <ui5-dialog
-  data-testid="create-resource-dialog"
+  data-testid="resource-form-dialog"
   [open]="dialogOpen()"
   (close)="close()"
 >
   <ui5-bar slot="header" design="Header">
-    <ui5-title data-testid="create-resource-dialog-title" slot="startContent">
-      @if (isEditMode()) {
-        Edit
-      } @else {
-        Create
-      }
+    <ui5-title data-testid="resource-form-dialog-title" slot="startContent">
+      Edit
     </ui5-title>
   </ui5-bar>
 
   <mfp-declarative-form
-    data-testid="create-resource-dialog-form"
+    data-testid="resource-form-dialog-form"
     [fields]="formFields()"
     [initialValues]="formInitialValues()"
     [fieldErrors]="fieldErrors()"
@@ -24,7 +20,7 @@
 
   <ui5-toolbar class="ui5-content-density-compact" slot="footer">
     <ui5-toolbar-button
-      data-testid="create-resource-submit"
+      data-testid="resource-form-submit"
       class="dialogCloser"
       design="Emphasized"
       text="Submit"
@@ -33,7 +29,7 @@
     >
     </ui5-toolbar-button>
     <ui5-toolbar-button
-      data-testid="create-resource-cancel"
+      data-testid="resource-form-cancel"
       class="dialogCloser"
       design="Transparent"
       text="Cancel"
