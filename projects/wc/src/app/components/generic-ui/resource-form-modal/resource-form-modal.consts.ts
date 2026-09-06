@@ -1,5 +1,6 @@
 export enum ResourceFieldNames {
   MetadataName = 'metadata.name',
+  SpecAlias = 'spec.alias',
   SpecType = 'spec.type',
   MetadataNamespace = 'metadata.namespace',
 }

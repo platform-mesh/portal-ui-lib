@@ -1,5 +1,5 @@
 import { executeButtonAction } from '../../../utils/field-definition.utils';
-import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
+import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import {
   ChangeDetectionStrategy,
@@ -46,7 +46,7 @@ import { resourceActionAllowed } from '@platform-mesh/portal-ui-lib/utils';
     ToolbarButton,
     ResourceLogo,
     ResourceField,
-    CreateResourceModal,
+    ResourceFormModal,
   ],
 })
 export class SearchListDynamicPage {
@@ -83,7 +83,7 @@ export class SearchListDynamicPage {
   canCreate = computed(() => this.canDo('create'));
 
   private resourceService = inject(ResourceService);
-  private createModal = viewChild<CreateResourceModal>('createModal');
+  private createModal = viewChild<ResourceFormModal>('createModal');
 
   openCreateModal(): void {
     void this.createModal()?.open();

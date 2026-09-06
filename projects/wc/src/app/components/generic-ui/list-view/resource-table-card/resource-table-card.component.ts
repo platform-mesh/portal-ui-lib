@@ -1,15 +1,15 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
 import {
   expandCollectionEntries,
-  flattenFieldTree,
   toFormFields,
 } from '../../../../utils/to-form-fields';
+import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import { addSearchParams } from '../../../../utils/url-params';
 import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
   ResourceFieldNames,
-} from '../../create-resource-modal/create-resource-modal.consts';
+} from '../../resource-form-modal/resource-form-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {
   ChangeDetectionStrategy,
@@ -30,12 +30,12 @@ import {
   DeclarativeTableCard,
   DeleteResourceConfirmationConfig,
   FormFieldChangeEvent,
+  FormFieldDefinition,
   FormFieldErrors,
   ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
 } from '@openmfp/ngx';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   PlatformMeshFieldDefinition,
   Resource,
@@ -49,6 +49,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   buildResourcePath,
+  flattenFieldTree,
   generateGraphQLFields,
   getValueByPath,
   isNamespacedResource,
@@ -126,6 +127,7 @@ export class ResourceTableCard {
   protected watchError = signal(false);
 
   private createFieldErrors = signal<FormFieldErrors>({});
+  private resolvedCreateFormFields = signal<FormFieldDefinition[]>([]);
   createFormState = computed<TableCardFormState>(() => ({
     fieldErrors: this.createFieldErrors(),
   }));
@@ -163,12 +165,7 @@ export class ResourceTableCard {
       ...(this.hasUiCreateViewFields() &&
         this.canDo('create') && {
           createResourceFormConfig: {
-            fields: () =>
-              toFormFields(this.createFormFields(), {
-                disabled: (field) => false,
-                resolveDynamicValues: (field) =>
-                  this.resolveDynamicValues(field),
-              }),
+            fields: () => this.resolveCreateFormFields(),
           },
         }),
       deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
@@ -181,6 +178,15 @@ export class ResourceTableCard {
   private lastListWasInitialLoad = true;
 
   constructor() {
+    effect(() => {
+      const fields = this.createFormFields();
+      if (!this.hasUiCreateViewFields() || !this.canDo('create')) {
+        this.resolvedCreateFormFields.set([]);
+        return;
+      }
+      void this.refreshResolvedCreateFormFields(fields);
+    });
+
     effect((onCleanup) => {
       this.currentContinueToken = undefined;
       this.resources.set([]);
@@ -223,13 +229,43 @@ export class ResourceTableCard {
     });
   }
 
+  private resolveCreateFormFields(): Promise<FormFieldDefinition[]> {
+    const cached = this.resolvedCreateFormFields();
+    if (cached.length > 0) {
+      return Promise.resolve(cached);
+    }
+    return this.refreshResolvedCreateFormFields(this.createFormFields());
+  }
+
+  private refreshResolvedCreateFormFields(
+    fields: PlatformMeshFieldDefinition[],
+  ): Promise<FormFieldDefinition[]> {
+    return toFormFields(fields, {
+      resolveDynamicValues: (field) => this.resolveDynamicValues(field),
+    }).then((resolved) => {
+      this.resolvedCreateFormFields.set(resolved);
+      return resolved;
+    });
+  }
+
   private async resolveDynamicValues(
     field: PlatformMeshFieldDefinition,
   ): Promise<string[] | undefined> {
     const def = field.dynamicValuesDefinition;
     if (!def) return undefined;
+
+    const ctx = this.context();
+    const variables = Object.fromEntries(
+      Object.entries(def.gqlQueryVariables ?? {}).map(([name, value]) => [
+        name,
+        { type: 'String', value: resolveContextPlaceholders(value, ctx) },
+      ]),
+    );
+
     const resources = await firstValueFrom(
-      this.resourceService.list(def.operation, def.gqlQuery, this.context()),
+      this.resourceService.list(def.operation, def.gqlQuery, ctx, {
+        variables,
+      }),
     );
     return (resources as Resource[])
       .map((r) => getValueByPath(r, def.value) as string)
@@ -393,7 +429,6 @@ export class ResourceTableCard {
     addSearchParams({
       namespace: this.isNamespaced() ? resource.metadata.namespace : undefined,
     });
-
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
 
@@ -401,7 +436,7 @@ export class ResourceTableCard {
     executeButtonAction(this.LuigiClient(), event.field, event.resource);
   }
 
-  async onCreateFieldChange(event: FormFieldChangeEvent) {
+  onCreateFieldChange(event: FormFieldChangeEvent) {
     const name = event.fieldProperty;
     const value = String(event.value ?? '').trim();
     let error: string | null = null;
@@ -413,9 +448,7 @@ export class ResourceTableCard {
         error = K8S_NAME_ERROR;
       }
     } else {
-      const field = (await toFormFields(this.createFormFields())).find(
-        (f) => f.name === name,
-      );
+      const field = this.resolvedCreateFormFields().find((f) => f.name === name);
       if (field?.required && !value) {
         error = 'This field is required';
       }
@@ -432,11 +465,14 @@ export class ResourceTableCard {
     ) as Resource;
     this.resourceService
       .create(expanded, resourceDefinition, this.context())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (result) => {
+        next: () => {
           this.createFieldErrors.set({});
           this.tableCard().closeCreateDialog();
-          console.debug('Resource created', result);
+        },
+        error: (error) => {
+          this.errorHandlerService.handleError(error);
         },
       });
   }

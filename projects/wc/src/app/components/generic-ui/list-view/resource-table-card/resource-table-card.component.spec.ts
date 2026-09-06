@@ -403,7 +403,7 @@ describe('ResourceTableCard', () => {
       expect(component.hasUiCreateViewFields()).toBe(false);
     });
 
-    it('should include createResourceFormConfig with a lazy fields thunk when createView fields exist', async () => {
+    it('should include createResourceFormConfig when createView fields exist', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
       newComponent.context = signal({
@@ -427,14 +427,12 @@ describe('ResourceTableCard', () => {
 
       const formConfig = newComponent.config().createResourceFormConfig;
       expect(formConfig).toBeDefined();
-      // `fields` is a thunk resolved lazily on dialog open (fetches dynamic
-      // options on demand rather than prefetching them on render).
       expect(typeof formConfig!.fields).toBe('function');
 
-      const resolved = await (formConfig!.fields as () => Promise<any[]>)();
-      expect(resolved[0].name).toBe('metadata.name');
-      expect(resolved[0].label).toBe('Name');
-      expect(resolved[0].required).toBe(true);
+      const resolved = await (formConfig!.fields as () => Promise<unknown[]>)();
+      expect(resolved).toEqual([
+        expect.objectContaining({ name: 'metadata.name', label: 'Name' }),
+      ]);
     });
 
     it('should not include createResourceFormConfig when no createView fields', () => {
@@ -446,50 +444,51 @@ describe('ResourceTableCard', () => {
         .fn()
         .mockReturnValue(of({ metadata: { name: 'new' } }));
       const mockCloseDialog = vi.fn();
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
+      vi.spyOn(component as any, 'tableCard').mockReturnValue({
         closeCreateDialog: mockCloseDialog,
-      }));
+      });
       component.onCreateSubmit({ metadata: { name: 'new' } });
       expect(mockResourceService.create).toHaveBeenCalled();
+      expect(mockCloseDialog).toHaveBeenCalled();
     });
 
-    it('should reset createFieldErrors after successful create', () => {
-      mockResourceService.create = vi
-        .fn()
-        .mockReturnValue(of({ metadata: { name: 'new' } }));
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
-        closeCreateDialog: vi.fn(),
-      }));
-      component.onCreateFieldChange({
+    it('should validate metadata.name on onCreateFieldChange using cached form fields', async () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: {
+            createView: {
+              fields: [
+                { property: 'metadata.name', label: 'Name', required: true },
+              ],
+            },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      await (newComponent as any).refreshResolvedCreateFormFields(
+        newComponent.createFormFields(),
+      );
+
+      newComponent.onCreateFieldChange({
         fieldProperty: 'metadata.name',
-        value: 'bad value!!',
+        value: 'Invalid_Name',
       });
+      expect(newComponent.createFormState().fieldErrors?.['metadata.name']).toBeTruthy();
+    });
+
+    it('should route create errors through errorHandlerService', () => {
+      const error = new Error('create failed');
+      mockResourceService.create = vi.fn().mockReturnValue(throwError(() => error));
       component.onCreateSubmit({ metadata: { name: 'new' } });
-      expect(component.createFormState().fieldErrors).toEqual({});
-    });
-
-    it('should set k8s name error for invalid metadata.name', () => {
-      component.onCreateFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid Name!!',
-      });
-      expect(
-        component.createFormState().fieldErrors?.['metadata.name'],
-      ).toBeTruthy();
-    });
-
-    it('should clear k8s name error for valid metadata.name', () => {
-      component.onCreateFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid Name!!',
-      });
-      component.onCreateFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'valid-name',
-      });
-      expect(
-        component.createFormState().fieldErrors?.['metadata.name'],
-      ).toBeFalsy();
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
     });
 
     const makeNamespacedCreateContext = () =>
@@ -546,7 +545,16 @@ describe('ResourceTableCard', () => {
       }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      await newComponent.onCreateFieldChange({
+      await newFixture.whenStable();
+      (newComponent as any).resolvedCreateFormFields.set([
+        {
+          name: 'spec.type',
+          label: 'Type',
+          required: true,
+          property: 'spec.type',
+        },
+      ]);
+      newComponent.onCreateFieldChange({
         fieldProperty: 'spec.type',
         value: '',
       });

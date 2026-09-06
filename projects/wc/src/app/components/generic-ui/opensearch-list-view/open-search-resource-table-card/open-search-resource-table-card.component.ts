@@ -32,7 +32,6 @@ import {
   resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { Subscription } from 'rxjs';
-import { finalize } from 'rxjs/operators';
 import { resolveContextPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   addSearchParams,
@@ -114,7 +113,6 @@ export class OpenSearchResourceTableCard implements OnInit {
   currentPage = signal<number>(this.pageFromUrl());
   totalItemsCount = signal<number | undefined>(undefined);
   hasMore = signal<boolean>(false);
-  loading = signal<boolean>(false);
 
   selectedSearchFilter = linkedSignal<
     FieldFilterDefinition[] | undefined,
@@ -248,7 +246,6 @@ export class OpenSearchResourceTableCard implements OnInit {
         : {}),
     });
 
-    this.loading.set(true);
     this.listSubscription = this.readResourcesProxy
       .forContext(this.LuigiClient())
       .list(
@@ -263,10 +260,7 @@ export class OpenSearchResourceTableCard implements OnInit {
           resource: this.resourceDefinition()?.entityCollection,
         },
       )
-      .pipe(
-        finalize(() => this.loading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result: ReadResourcesResult) => {
           const items = result.items ?? [];

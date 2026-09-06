@@ -111,7 +111,8 @@ portal-ui-lib/
 │       │   │   ├── generic-form/      # GenericForm, GenericDynamicSelect
 │       │   │   ├── generic-table/     # GenericTable
 │       │   │   ├── generic-view/      # GenericView
-│       │   │   ├── list-view/         # ListView (with CreateResourceModal, DeleteResourceModal)
+│       │   │   ├── list-view/         # ListView (ngx create dialog, DeleteResourceModal)
+│       │   │   ├── detail-view/       # DetailView (ResourceFormModal for edit)
 │       │   │   ├── resource-logo/     # ResourceLogo
 │       │   │   └── value-cell/        # ValueCell (boolean, link, secret variants)
 │       │   ├── organization-management/   # OrganizationManagement component
