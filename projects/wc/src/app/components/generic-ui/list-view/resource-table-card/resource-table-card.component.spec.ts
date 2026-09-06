@@ -398,7 +398,7 @@ describe('ResourceTableCard', () => {
       expect(component.hasUiCreateViewFields()).toBe(false);
     });
 
-    it('should include createResourceFormConfig with a lazy fields thunk when createView fields exist', async () => {
+    it('should include createResourceFormConfig when createView fields exist', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
       newComponent.context = (() => ({
@@ -422,14 +422,12 @@ describe('ResourceTableCard', () => {
 
       const formConfig = newComponent.config().createResourceFormConfig;
       expect(formConfig).toBeDefined();
-      // `fields` is a thunk resolved lazily on dialog open (fetches dynamic
-      // options on demand rather than prefetching them on render).
       expect(typeof formConfig!.fields).toBe('function');
 
-      const resolved = await (formConfig!.fields as () => Promise<any[]>)();
-      expect(resolved[0].name).toBe('metadata.name');
-      expect(resolved[0].label).toBe('Name');
-      expect(resolved[0].required).toBe(true);
+      const resolved = await (formConfig!.fields as () => Promise<unknown[]>)();
+      expect(resolved).toEqual([
+        expect.objectContaining({ name: 'metadata.name', label: 'Name' }),
+      ]);
     });
 
     it('should not include createResourceFormConfig when no createView fields', () => {
@@ -441,50 +439,51 @@ describe('ResourceTableCard', () => {
         .fn()
         .mockReturnValue(of({ metadata: { name: 'new' } }));
       const mockCloseDialog = vi.fn();
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
+      vi.spyOn(component as any, 'tableCard').mockReturnValue({
         closeCreateDialog: mockCloseDialog,
-      }));
+      });
       component.onCreateSubmit({ metadata: { name: 'new' } });
       expect(mockResourceService.create).toHaveBeenCalled();
+      expect(mockCloseDialog).toHaveBeenCalled();
     });
 
-    it('should reset createFieldErrors after successful create', () => {
-      mockResourceService.create = vi
-        .fn()
-        .mockReturnValue(of({ metadata: { name: 'new' } }));
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
-        closeCreateDialog: vi.fn(),
-      }));
-      component.onCreateFieldChange({
+    it('should validate metadata.name on onCreateFieldChange using cached form fields', async () => {
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = (() => ({
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          entity: 'Cluster',
+          apiGroup: 'core_k8s_io',
+          version: 'v1alpha1',
+          ui: {
+            createView: {
+              fields: [
+                { property: 'metadata.name', label: 'Name', required: true },
+              ],
+            },
+            listView: { fields: [] },
+          },
+        },
+      })) as any;
+      newComponent.LuigiClient = makeLuigiClient();
+      newFixture.detectChanges();
+      await (newComponent as any).refreshResolvedCreateFormFields(
+        newComponent.createFormFields(),
+      );
+
+      newComponent.onCreateFieldChange({
         fieldProperty: 'metadata.name',
-        value: 'bad value!!',
+        value: 'Invalid_Name',
       });
+      expect(newComponent.createFormState().fieldErrors?.['metadata.name']).toBeTruthy();
+    });
+
+    it('should route create errors through errorHandlerService', () => {
+      const error = new Error('create failed');
+      mockResourceService.create = vi.fn().mockReturnValue(throwError(() => error));
       component.onCreateSubmit({ metadata: { name: 'new' } });
-      expect(component.createFormState().fieldErrors).toEqual({});
-    });
-
-    it('should set k8s name error for invalid metadata.name', () => {
-      component.onCreateFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid Name!!',
-      });
-      expect(
-        component.createFormState().fieldErrors?.['metadata.name'],
-      ).toBeTruthy();
-    });
-
-    it('should clear k8s name error for valid metadata.name', () => {
-      component.onCreateFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid Name!!',
-      });
-      component.onCreateFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'valid-name',
-      });
-      expect(
-        component.createFormState().fieldErrors?.['metadata.name'],
-      ).toBeFalsy();
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
     });
 
     const makeNamespacedCreateContext = () =>
@@ -524,31 +523,6 @@ describe('ResourceTableCard', () => {
       expect(properties).toContain('metadata.namespace');
     });
 
-    it('should set required error for empty required field', async () => {
-      const newFixture = TestBed.createComponent(ResourceTableCard);
-      const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
-        resourceDefinition: {
-          entityCollection: 'clusters',
-          entity: 'Cluster',
-          apiGroup: 'core_k8s_io',
-          version: 'v1alpha1',
-          ui: {
-            createView: { fields: [{ property: 'spec.type', required: true }] },
-            listView: { fields: [] },
-          },
-        },
-      })) as any;
-      newComponent.LuigiClient = makeLuigiClient();
-      newFixture.detectChanges();
-      await newComponent.onCreateFieldChange({
-        fieldProperty: 'spec.type',
-        value: '',
-      });
-      expect(newComponent.createFormState().fieldErrors?.['spec.type']).toBe(
-        'This field is required',
-      );
-    });
   });
 
   describe('List subscription', () => {
@@ -567,7 +541,7 @@ describe('ResourceTableCard', () => {
       );
       mockResourceService.list.mockReturnValue(
         of({
-          items: [{ id: 'existing', metadata: { name: 'existing' } }],
+          items: [{ metadata: { name: 'existing' } }],
           resourceVersion: '1',
         }),
       );
@@ -580,7 +554,7 @@ describe('ResourceTableCard', () => {
 
       subscriptionSubject.next({
         type: 'ADDED',
-        object: { id: 'new-resource', metadata: { name: 'new-resource' } },
+        object: { id: '', metadata: { name: 'new-resource' } },
       });
 
       expect(newComponent.resources().length).toBe(2);
@@ -600,9 +574,7 @@ describe('ResourceTableCard', () => {
       );
       mockResourceService.list.mockReturnValue(
         of({
-          items: [
-            { id: 'existing', metadata: { name: 'existing' }, spec: { type: 'v1' } },
-          ],
+          items: [{ metadata: { name: 'existing' }, spec: { type: 'v1' } }],
           resourceVersion: '1',
         }),
       );
@@ -616,7 +588,7 @@ describe('ResourceTableCard', () => {
       subscriptionSubject.next({
         type: 'MODIFIED',
         object: {
-          id: 'existing',
+          id: '',
           metadata: { name: 'existing' },
           spec: { type: 'v2' },
         },
@@ -636,8 +608,8 @@ describe('ResourceTableCard', () => {
       mockResourceService.list.mockReturnValue(
         of({
           items: [
-            { id: 'to-delete', metadata: { name: 'to-delete' } },
-            { id: 'to-keep', metadata: { name: 'to-keep' } },
+            { metadata: { name: 'to-delete' } },
+            { metadata: { name: 'to-keep' } },
           ],
           resourceVersion: '1',
         }),
@@ -651,7 +623,7 @@ describe('ResourceTableCard', () => {
 
       subscriptionSubject.next({
         type: 'DELETED',
-        object: { id: 'to-delete', metadata: { name: 'to-delete' } },
+        object: { id: '', metadata: { name: 'to-delete' } },
       });
 
       expect(newComponent.resources().length).toBe(1);
@@ -709,7 +681,7 @@ describe('ResourceTableCard', () => {
           .fn()
           .mockReturnValueOnce(of({ items: [], resourceVersion: '123' }));
         mockResourceService.list = listSpy;
-        component.loading.set(true);
+        (component as any).isLoadingList = true;
         component.list();
         expect(listSpy).not.toHaveBeenCalled();
       });
@@ -755,14 +727,14 @@ describe('ResourceTableCard', () => {
 
       it('should merge existing resources with new ones from list', () => {
         const firstResponse = {
-          items: [{ id: 'res1', metadata: { name: 'res1' }, spec: { version: 'v1' } }],
+          items: [{ metadata: { name: 'res1' }, spec: { version: 'v1' } }],
           resourceVersion: '123',
           continue: 'token1',
         };
         const secondResponse = {
           items: [
-            { id: 'res1', metadata: { name: 'res1' }, spec: { version: 'v2' } },
-            { id: 'res2', metadata: { name: 'res2' }, spec: { version: 'v1' } },
+            { metadata: { name: 'res1' }, spec: { version: 'v2' } },
+            { metadata: { name: 'res2' }, spec: { version: 'v1' } },
           ],
           resourceVersion: '124',
         };
@@ -1108,7 +1080,7 @@ describe('ResourceTableCard', () => {
         expect(mockResourceService.list).not.toHaveBeenCalled();
       });
 
-      it('keeps loading false when list() is blocked by missing "list" permission', () => {
+      it('keeps isLoadingList false when list() is blocked by missing "list" permission', () => {
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
         newComponent.context = makePermissionedContext({ clusters: ['get'] });
@@ -1116,7 +1088,7 @@ describe('ResourceTableCard', () => {
         newFixture.detectChanges();
         // Calling list() directly should still be a no-op
         newComponent.list();
-        expect(newComponent.loading()).toBe(false);
+        expect((newComponent as any).isLoadingList).toBe(false);
       });
 
       it('calls resourceService.list when "list" verb is present in portalPermissions', () => {

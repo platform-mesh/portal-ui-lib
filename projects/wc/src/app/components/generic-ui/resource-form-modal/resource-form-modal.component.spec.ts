@@ -1,4 +1,4 @@
-import { CreateResourceModal } from './create-resource-modal.component';
+import { ResourceFormModal } from './resource-form-modal.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DeclarativeForm } from '@openmfp/ngx';
@@ -7,9 +7,9 @@ import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
 import { mock } from 'vitest-mock-extended';
 
-describe('CreateResourceModalComponent', () => {
-  let component: CreateResourceModal;
-  let fixture: ComponentFixture<CreateResourceModal>;
+describe('ResourceFormModalComponent', () => {
+  let component: ResourceFormModal;
+  let fixture: ComponentFixture<ResourceFormModal>;
   let resourceService: ReturnType<typeof mock<ResourceService>>;
 
   const testFields: PlatformMeshFieldDefinition[] = [
@@ -27,16 +27,18 @@ describe('CreateResourceModalComponent', () => {
     portalContext: { crdGatewayApiUrl: 'http://example.com' },
   };
 
+  const editResource = { metadata: { name: 'valid-name' } } as any;
+
   beforeEach(async () => {
     resourceService = mock<ResourceService>();
 
     await TestBed.configureTestingModule({
-      imports: [CreateResourceModal],
+      imports: [ResourceFormModal],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
       teardown: { destroyAfterEach: true },
       providers: [{ provide: ResourceService, useValue: resourceService }],
     })
-      .overrideComponent(CreateResourceModal, {
+      .overrideComponent(ResourceFormModal, {
         set: {
           template:
             '<mfp-declarative-form [fields]="formFields()" [initialValues]="formInitialValues()" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (formSubmit)="onFormSubmit($event)" />',
@@ -47,7 +49,7 @@ describe('CreateResourceModalComponent', () => {
       .overrideComponent(DeclarativeForm, { set: { template: '' } })
       .compileComponents();
 
-    fixture = TestBed.createComponent(CreateResourceModal);
+    fixture = TestBed.createComponent(ResourceFormModal);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('fields', testFields);
     fixture.componentRef.setInput('context', clusterContext);
@@ -60,27 +62,21 @@ describe('CreateResourceModalComponent', () => {
 
   describe('open / close', () => {
     it('should set dialogOpen to true when open is called', async () => {
-      await component.open();
+      await component.open(editResource);
       expect(component.dialogOpen()).toBe(true);
     });
 
     it('should set dialogOpen to false and reset state when close is called', async () => {
-      await component.open();
+      await component.open(editResource);
       component.close();
       expect(component.dialogOpen()).toBe(false);
       expect(component.isFormValid()).toBe(false);
     });
 
     it('should clear fieldErrors when close is called', async () => {
-      await component.open();
+      await component.open(editResource);
       component.close();
       expect(component.fieldErrors()).toEqual({});
-    });
-
-    it('should leave isEditMode false after close', async () => {
-      await component.open({ metadata: { name: 'r1' } } as any);
-      component.close();
-      expect(component.isEditMode()).toBe(false);
     });
 
     it('should return to isFormValid false after close even if form was valid', async () => {
@@ -91,9 +87,9 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should support re-opening after close', async () => {
-      await component.open();
+      await component.open(editResource);
       component.close();
-      await component.open();
+      await component.open(editResource);
       expect(component.dialogOpen()).toBe(true);
     });
   });
@@ -104,19 +100,19 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should build formFields from fields input after open', async () => {
-      await component.open();
+      await component.open(editResource);
       expect(component.formFields()).toHaveLength(testFields.length);
     });
 
     it('should use dot-notation field names', async () => {
-      await component.open();
+      await component.open(editResource);
       const names = component.formFields().map((f) => f.name);
       expect(names).toContain('metadata.name');
       expect(names).toContain('spec.description');
     });
 
     it('should set validation: onChange on the metadata.name field', async () => {
-      await component.open();
+      await component.open(editResource);
       const nameField = component
         .formFields()
         .find((f) => f.name === 'metadata.name');
@@ -129,7 +125,7 @@ describe('CreateResourceModalComponent', () => {
         { property: 'spec.description', required: false, label: 'Description' },
       ];
       fixture.componentRef.setInput('fields', requiredFields);
-      await component.open();
+      await component.open(editResource);
       const requiredField = component
         .formFields()
         .find((f) => f.name === 'spec.type');
@@ -141,14 +137,14 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should not set validation on non-required, non-name fields', async () => {
-      await component.open();
+      await component.open(editResource);
       const descField = component
         .formFields()
         .find((f) => f.name === 'spec.description');
       expect(descField?.validation).toBeUndefined();
     });
 
-    it('should disable metadata.name when opened in edit mode', async () => {
+    it('should disable metadata.name when opened for edit', async () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const nameField = component
         .formFields()
@@ -156,12 +152,19 @@ describe('CreateResourceModalComponent', () => {
       expect(nameField?.disabled).toBe(true);
     });
 
-    it('should not disable metadata.name when opened in create mode', async () => {
-      await component.open();
-      const nameField = component
+    it('should disable spec.alias when opened for edit', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'spec.alias', required: true, label: 'Alias' },
+        { property: 'spec.displayName', label: 'Display name' },
+      ]);
+      await component.open({
+        metadata: { name: 'test2' },
+        spec: { alias: 'test2', displayName: 'test-dex-dex-dex' },
+      } as any);
+      const aliasField = component
         .formFields()
-        .find((f) => f.name === 'metadata.name');
-      expect(nameField?.disabled).toBe(false);
+        .find((f) => f.name === 'spec.alias');
+      expect(aliasField?.disabled).toBe(true);
     });
 
     it('should not disable spec.description in edit mode', async () => {
@@ -176,7 +179,7 @@ describe('CreateResourceModalComponent', () => {
       resourceService.list.mockReturnValue(of([]));
       fixture.componentRef.setInput('context', namespacedContext);
       fixture.detectChanges();
-      await component.open();
+      await component.open(editResource);
       const nsField = component
         .formFields()
         .find((f) => f.name === 'metadata.namespace');
@@ -184,7 +187,7 @@ describe('CreateResourceModalComponent', () => {
     });
 
     it('should not append a metadata.namespace field for cluster-scoped resources', async () => {
-      await component.open();
+      await component.open(editResource);
       const nsField = component
         .formFields()
         .find((f) => f.name === 'metadata.namespace');
@@ -195,7 +198,7 @@ describe('CreateResourceModalComponent', () => {
       resourceService.getNamespace.mockReturnValue('default');
       fixture.componentRef.setInput('context', namespacedContext);
       fixture.detectChanges();
-      await component.open();
+      await component.open(editResource);
       const nsField = component
         .formFields()
         .find((f) => f.name === 'metadata.namespace');
@@ -211,7 +214,7 @@ describe('CreateResourceModalComponent', () => {
       );
       fixture.componentRef.setInput('context', namespacedContext);
       fixture.detectChanges();
-      await component.open();
+      await component.open(editResource);
       const nsField = component
         .formFields()
         .find((f) => f.name === 'metadata.namespace');
@@ -222,7 +225,7 @@ describe('CreateResourceModalComponent', () => {
       resourceService.list.mockReturnValue(of([]));
       fixture.componentRef.setInput('context', namespacedContext);
       fixture.detectChanges();
-      await component.open();
+      await component.open(editResource);
       expect(resourceService.list).toHaveBeenCalledWith(
         'v1.Namespaces.items',
         'query { v1 { Namespaces { items { metadata { name } } } } }',
@@ -261,7 +264,7 @@ describe('CreateResourceModalComponent', () => {
       fixture.componentRef.setInput('fields', fieldsWithVars);
       fixture.componentRef.setInput('context', ctx);
       fixture.detectChanges();
-      await component.open();
+      await component.open(editResource);
 
       const call = resourceService.list.mock.calls.find(
         (c) => c[0] === 'inventory.v1alpha1.Regions.items',
@@ -301,7 +304,7 @@ describe('CreateResourceModalComponent', () => {
       fixture.componentRef.setInput('fields', fieldsWithVars);
       fixture.componentRef.setInput('context', ctx);
       fixture.detectChanges();
-      await component.open();
+      await component.open(editResource);
 
       const call = resourceService.list.mock.calls.find(
         (c) => c[0] === 'inventory.v1alpha1.Regions.items',
@@ -320,7 +323,7 @@ describe('CreateResourceModalComponent', () => {
         },
       ];
       fixture.componentRef.setInput('fields', staticFields);
-      await component.open();
+      await component.open(editResource);
       const typeField = component
         .formFields()
         .find((f) => f.name === 'spec.type');
@@ -330,11 +333,6 @@ describe('CreateResourceModalComponent', () => {
 
   describe('formInitialValues', () => {
     it('should be empty before open is called', () => {
-      expect(component.formInitialValues()).toEqual({});
-    });
-
-    it('should be empty when opened without a resource', async () => {
-      await component.open();
       expect(component.formInitialValues()).toEqual({});
     });
 
@@ -354,144 +352,180 @@ describe('CreateResourceModalComponent', () => {
   });
 
   describe('onFormSubmit', () => {
-    it('should emit resource when not in edit mode', async () => {
-      await component.open();
-      const spy = vi.spyOn(component.resource, 'emit');
-      component.onFormSubmit({ 'metadata.name': 'new-res' });
-      expect(spy).toHaveBeenCalledWith({ 'metadata.name': 'new-res' });
+    it('should restore immutable fields from the original resource on submit', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        { property: 'spec.alias', required: true, label: 'Alias' },
+        { property: 'spec.displayName', label: 'Display name' },
+      ]);
+      await component.open({
+        metadata: { name: 'dex' },
+        spec: { alias: 'dex', displayName: 'Dex' },
+      } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        spec: { displayName: 'Dex (updated)' },
+      });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'dex' },
+        spec: { alias: 'dex', displayName: 'Dex (updated)' },
+      });
     });
 
-    it('should emit updateResource when in edit mode', async () => {
+    it('should emit updateResource with sanitized values', async () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const spy = vi.spyOn(component.updateResource, 'emit');
       component.onFormSubmit({
-        'metadata.name': 'existing',
-        'spec.description': 'updated',
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
       });
       expect(spy).toHaveBeenCalledWith({
-        'metadata.name': 'existing',
-        'spec.description': 'updated',
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
       });
     });
 
-    it('should not emit updateResource when not in edit mode', async () => {
-      await component.open();
+    it('should omit empty write-only fields on edit submit', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          uiSettings: { writeOnly: true },
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
       const spy = vi.spyOn(component.updateResource, 'emit');
-      component.onFormSubmit({ 'metadata.name': 'new-res' });
-      expect(spy).not.toHaveBeenCalled();
+      component.onFormSubmit({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: '' } },
+      });
+      expect(spy).toHaveBeenCalledWith({ metadata: { name: 'existing' } });
     });
 
-    it('should not emit resource when in edit mode', async () => {
+    it('should keep non-empty write-only fields on edit submit', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          uiSettings: { writeOnly: true },
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
       await component.open({ metadata: { name: 'existing' } } as any);
-      const spy = vi.spyOn(component.resource, 'emit');
-      component.onFormSubmit({ 'metadata.name': 'existing' });
-      expect(spy).not.toHaveBeenCalled();
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: 'new-secret' } },
+      });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: 'new-secret' } },
+      });
     });
   });
 
   describe('onFieldChange / validation', () => {
     beforeEach(async () => {
-      await component.open();
+      fixture.componentRef.setInput('fields', [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        { property: 'spec.type', required: true, label: 'Type' },
+        { property: 'spec.description', required: false, label: 'Description' },
+      ]);
+      await component.open(editResource);
     });
 
     it('should set isFormValid to false when a required field is empty', () => {
-      component.onFieldChange({ fieldProperty: 'metadata.name', value: '' });
+      component.onFieldChange({ fieldProperty: 'spec.type', value: '' });
       expect(component.isFormValid()).toBe(false);
     });
 
     it('should set a fieldError when a required field is empty', () => {
-      component.onFieldChange({ fieldProperty: 'metadata.name', value: '' });
-      expect(component.fieldErrors()['metadata.name']).toBe(
-        'This field is required',
-      );
+      component.onFieldChange({ fieldProperty: 'spec.type', value: '' });
+      expect(component.fieldErrors()['spec.type']).toBe('This field is required');
     });
 
-    it('should set isFormValid to false for an invalid k8s name', () => {
+    it('should set isFormValid to true and clear errors for a valid value', () => {
       component.onFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid_Name',
-      });
-      expect(component.isFormValid()).toBe(false);
-    });
-
-    it('should set the RFC 1035 error message for an invalid k8s name', () => {
-      component.onFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid_Name',
-      });
-      expect(component.fieldErrors()['metadata.name']).toBe(
-        'Invalid resource name accrording to RFC 1035',
-      );
-    });
-
-    it('should set isFormValid to true and clear errors for a valid k8s name', () => {
-      component.onFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'valid-name',
+        fieldProperty: 'spec.type',
+        value: 'oidc',
       });
       expect(component.isFormValid()).toBe(true);
-      expect(component.fieldErrors()['metadata.name']).toBeNull();
+      expect(component.fieldErrors()['spec.type']).toBeNull();
     });
 
-    it('should accept a single-character lowercase name as valid', () => {
-      component.onFieldChange({ fieldProperty: 'metadata.name', value: 'a' });
+    it('should not require empty write-only fields in edit mode', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          required: true,
+          uiSettings: { writeOnly: true },
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+
+      component.onFieldChange({
+        fieldProperty: 'spec.oidc.clientSecret',
+        value: '',
+      });
+
+      expect(component.fieldErrors()['spec.oidc.clientSecret']).toBeNull();
       expect(component.isFormValid()).toBe(true);
     });
 
-    it('should reject a name starting with a digit', () => {
-      component.onFieldChange({
-        fieldProperty: 'metadata.name',
-        value: '1bad',
-      });
-      expect(component.isFormValid()).toBe(false);
-    });
-
-    it('should reject a name ending with a hyphen', () => {
-      component.onFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'bad-',
-      });
-      expect(component.isFormValid()).toBe(false);
-    });
-
-    it('should not set an error for an optional non-name field regardless of value', () => {
+    it('should not set an error for an optional field regardless of value', () => {
       component.onFieldChange({
         fieldProperty: 'spec.description',
         value: '',
       });
       expect(component.fieldErrors()['spec.description']).toBeNull();
     });
+  });
 
-    it('should update formValues so a subsequent change event builds on prior state', () => {
-      component.onFieldChange({ fieldProperty: 'metadata.name', value: 'ok' });
-      component.onFieldChange({
-        fieldProperty: 'spec.description',
-        value: 'desc',
-      });
-      // Both changes are retained; valid name means form is valid
-      expect(component.isFormValid()).toBe(true);
+  describe('submitForm', () => {
+    it('should delegate to the declarative form submit handler', async () => {
+      await component.open(editResource);
+      const formRef = (component as any).declarativeFormRef();
+      const submitSpy = vi.spyOn(formRef, 'submit');
+      (component as any).submitForm();
+      expect(submitSpy).toHaveBeenCalled();
     });
   });
 
-  describe('isEditMode', () => {
-    it('should return false by default', () => {
-      expect(component.isEditMode()).toBe(false);
+  describe('onFormSubmit without open', () => {
+    it('should emit the payload unchanged when no resource was loaded', () => {
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({ spec: { displayName: 'updated' } });
+      expect(spy).toHaveBeenCalledWith({ spec: { displayName: 'updated' } });
     });
 
-    it('should return true after opening with a resource', async () => {
-      await component.open({ metadata: { name: 'r1' } } as any);
-      expect(component.isEditMode()).toBe(true);
+    it('should skip immutable fields missing on the original resource', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        { property: 'spec.alias', required: true, label: 'Alias' },
+        { property: 'spec.displayName', label: 'Display name' },
+      ]);
+      await component.open({ metadata: { name: 'dex' } } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({ spec: { displayName: 'Dex (updated)' } });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'dex' },
+        spec: { displayName: 'Dex (updated)' },
+      });
     });
+  });
 
-    it('should return false when opened without a resource', async () => {
-      await component.open();
-      expect(component.isEditMode()).toBe(false);
-    });
-
-    it('should return false after close', async () => {
-      await component.open({ metadata: { name: 'r1' } } as any);
-      component.close();
-      expect(component.isEditMode()).toBe(false);
+  describe('resolveDynamicValues', () => {
+    it('returns undefined when the field has no dynamicValuesDefinition', async () => {
+      const result = await (component as any).resolveDynamicValues({
+        property: 'spec.displayName',
+      });
+      expect(result).toBeUndefined();
     });
   });
 });
