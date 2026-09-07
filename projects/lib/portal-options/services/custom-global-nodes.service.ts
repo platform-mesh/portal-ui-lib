@@ -33,6 +33,7 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
             } as any as NodeContext,
             webcomponent: {
               selfRegistered: true,
+              type: 'module',
             },
           },
         ],

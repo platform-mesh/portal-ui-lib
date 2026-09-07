@@ -18,7 +18,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - node properties
   - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view"`: pointing to the web component.
-  - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent.
+  - `"webcomponent": {"selfRegistered": true, "type": "module"}`: indicating Luigi framework to register as a webcomponent.
   - `"navigationContext": "accounts"`: providing the navigation context for easy navigation between the entity and list views.
 
 - context resource definition `"context"`
@@ -191,6 +191,23 @@ Each field definition supports the following properties:
   - Sub-fields inherit the same UI features as top-level fields: `"required"` (with `"validation": "onChange"` auto-enabled for required sub-fields), `"values"` for static selects, `"dynamicValuesDefinition"` for async selects, `"uiSettings"` for display customisation, `"disabled"` behaviour in edit mode, etc.
   - Nested `"propertyCollection"` is supported (array-of-objects-with-array-of-objects). The prefix-strip rule applies recursively — each nesting layer strips its own collection `property`.
 
+#### Passing data back from a modal (`openInModal`)
+
+When the micro-frontend opened inside the modal needs to signal a result back (e.g. after a form submit), close the modal using Luigi's `goBack` with a payload:
+
+```ts
+LuigiClient.linkManager().goBack({ status: 'submit', action: 'create', resource: createdResource });
+```
+
+Luigi wraps the argument in a `{ data }` envelope which the parent view receives as the modal result. If the user dismisses the modal (e.g. close button or ESC) without calling `goBack`, no result data is available.
+
+Supported values for the payload fields:
+- `status`: `"submit"` | `"cancelled"`
+- `action`: `"create"` | `"navigate"` | `"loadTableData"`
+- `resource`: the affected resource object (optional, any type)
+
+> **This is the only supported way to pass data back from the modal.** Any other mechanism (postMessage, shared state, etc.) is not handled by the library.
+
 ##### Example — an array of Kubernetes conditions
 
 Declaring a `status.conditions` collection in `createView` (or in any other view that renders a `FieldDefinition`):
@@ -278,7 +295,8 @@ This example demonstrates various features including:
           "keepSelectedForChildren": true,
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "context": {
             "resourceDefinition": {
@@ -603,7 +621,8 @@ This example demonstrates various features including:
           "keepSelectedForChildren": true,
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-list-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "context": {
             "resourceDefinition": {
@@ -677,7 +696,8 @@ This example demonstrates various features including:
           "label": "Dashboard",
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "defineEntity": {
             "id": "dashboard"
@@ -698,7 +718,7 @@ To use the generic detail view, update the node’s `content-configuration` to i
 
 - node properties
   - `"url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view"`: pointing to the web component
-  - `"webcomponent": {"selfRegistered": true}`: indicating Luigi framework to register as a webcomponent
+  - `"webcomponent": {"selfRegistered": true, "type": "module"}`: indicating Luigi framework to register as a webcomponent
 
 - context resource definition
   - because below provided example is a child of the list view node's child indicated by `"entityType": "main.account"`, the context data is
@@ -720,7 +740,8 @@ Below is a sample content-configuration for displaying an account resource using
           "label": "Dashboard",
           "url": "/assets/platform-mesh-portal-ui-wc.js#generic-detail-view",
           "webcomponent": {
-            "selfRegistered": true
+            "selfRegistered": true,
+            "type": "module"
           },
           "defineEntity": {
             "id": "dashboard"

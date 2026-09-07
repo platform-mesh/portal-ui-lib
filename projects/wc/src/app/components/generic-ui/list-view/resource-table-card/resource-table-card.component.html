@@ -2,6 +2,7 @@
   data-testid="generic-list-view-table"
   [resources]="tableResources()"
   [config]="config()"
+  [loading]="loading()"
   [permissions]="instancePermissionsStore.permissions()"
   [createFormState]="createFormState()"
   (tableRowClicked)="navigateToResource($event)"

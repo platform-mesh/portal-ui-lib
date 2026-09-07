@@ -257,7 +257,7 @@ describe('ApolloFactory', () => {
       const link = new ApolloLink((operation) => {
         return new Observable((observer: any) => {
           attempts++;
-          const headers = operation.getContext().headers;
+          const headers = operation.getContext().headers as any;
           seenAuthHeaders.push(headers?.get?.('Authorization') ?? null);
           if (attempts <= failures) {
             observer.error(error);

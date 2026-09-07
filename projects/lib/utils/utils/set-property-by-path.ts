@@ -8,7 +8,7 @@ export function setPropertyByPath<T extends Record<string, any>>(
     return object;
   }
 
-  let current: object = object;
+  let current: Record<string, any> = object;
 
   for (let i = 0; i < segments.length; i += 1) {
     const key = segments[i];

@@ -1,10 +1,13 @@
 import { executeButtonAction, getFieldValue } from './field-definition.utils';
 import {
+  ModalResult,
   PlatformMeshFieldDefinition,
   Resource,
 } from '@platform-mesh/portal-ui-lib/models';
 
-const getResourceValueByJsonPathMock = vi.fn();
+const { getResourceValueByJsonPathMock } = vi.hoisted(() => ({
+  getResourceValueByJsonPathMock: vi.fn(),
+}));
 
 vi.mock('@platform-mesh/portal-ui-lib/utils', () => ({
   getResourceValueByJsonPath: getResourceValueByJsonPathMock,
@@ -17,7 +20,9 @@ describe('field-definition.utils', () => {
   beforeEach(() => {
     mockLinkManager = {
       navigate: vi.fn(),
-      openAsModal: vi.fn(),
+      // openAsModal returns a Promise per the Luigi API; default to a
+      // never-resolving promise so tests that don't need resolution still pass.
+      openAsModal: vi.fn().mockReturnValue(new Promise(() => {})),
     };
 
     mockLuigiClient = {
@@ -38,6 +43,8 @@ describe('field-definition.utils', () => {
         metadata: { name: 'resource-name' },
       };
 
+      getResourceValueByJsonPathMock.mockReturnValue('resource-name');
+
       const result = getFieldValue(field, resource);
 
       expect(result).toBe('resource-name');
@@ -53,8 +60,12 @@ describe('field-definition.utils', () => {
         metadata: { name: '' },
       };
 
+      getResourceValueByJsonPathMock.mockReturnValue('');
+
       const result = getFieldValue(field, resource);
 
+      // getFieldValue returns field.value when jsonPath resolves to null/undefined.
+      // An empty string is a valid resolved value, so it is returned as-is.
       expect(result).toBe('');
     });
 
@@ -260,6 +271,88 @@ describe('field-definition.utils', () => {
         '/modal/path',
         undefined,
       );
+    });
+
+    it('should invoke callBack with the ModalResult when the modal is closed with goBack context', async () => {
+      const goBackContext: ModalResult = {
+        data: { status: 'submit', action: 'create' },
+      };
+      mockLinkManager.openAsModal.mockReturnValue(
+        Promise.resolve(goBackContext),
+      );
+
+      const callBack = vi.fn();
+      const field: PlatformMeshFieldDefinition = {
+        value: '/modal/path',
+        uiSettings: { buttonSettings: { action: 'openInModal' } },
+      };
+
+      await executeButtonAction(
+        mockLuigiClient,
+        field,
+        undefined,
+        callBack,
+      );
+
+      expect(callBack).toHaveBeenCalledWith(goBackContext);
+    });
+
+    it('should invoke callBack with undefined when modal is closed without goBack context', async () => {
+      mockLinkManager.openAsModal.mockReturnValue(Promise.resolve(undefined));
+
+      const callBack = vi.fn();
+      const field: PlatformMeshFieldDefinition = {
+        value: '/modal/path',
+        uiSettings: { buttonSettings: { action: 'openInModal' } },
+      };
+
+      await executeButtonAction(
+        mockLuigiClient,
+        field,
+        undefined,
+        callBack,
+      );
+
+      expect(callBack).toHaveBeenCalledWith(undefined);
+    });
+
+    it('should not throw when no callBack is provided for openInModal', async () => {
+      mockLinkManager.openAsModal.mockReturnValue(
+        Promise.resolve({ data: { status: 'cancelled' } }),
+      );
+
+      const field: PlatformMeshFieldDefinition = {
+        value: '/modal/path',
+        uiSettings: { buttonSettings: { action: 'openInModal' } },
+      };
+
+      await expect(
+        executeButtonAction(mockLuigiClient, field, undefined),
+      ).resolves.not.toThrow();
+    });
+
+    it('should resolve the returned promise with the callBack return value', async () => {
+      const goBackContext: ModalResult = {
+        data: { status: 'submit', action: 'loadTableData' },
+      };
+      mockLinkManager.openAsModal.mockReturnValue(
+        Promise.resolve(goBackContext),
+      );
+
+      const callBack = vi.fn().mockReturnValue('handled');
+      const field: PlatformMeshFieldDefinition = {
+        value: '/modal/path',
+        uiSettings: { buttonSettings: { action: 'openInModal' } },
+      };
+
+      const result = await executeButtonAction(
+        mockLuigiClient,
+        field,
+        undefined,
+        callBack,
+      );
+
+      expect(result).toBe('handled');
     });
 
     it('should throw error when buttonSettings is missing', () => {

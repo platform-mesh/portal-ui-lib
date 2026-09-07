@@ -411,8 +411,8 @@ describe('ResourceService', () => {
                 Testkinds: {
                   resourceVersion: '123',
                   items: [
-                    { name: 'res1', metadata: { uid: 'uid1' } },
-                    { name: 'res2', metadata: { uid: 'uid2' } },
+                    { name: 'res1', metadata: { name: 'res1', uid: 'uid1' } },
+                    { name: 'res2', metadata: { name: 'res2', uid: 'uid2' } },
                   ],
                 },
               },
@@ -431,16 +431,22 @@ describe('ResourceService', () => {
       expect(results[0]).toEqual({
         items: [
           {
+            accessibleName: undefined,
+            id: 'res1',
             isAvailable: true,
             metadata: {
+              name: 'res1',
               uid: 'uid1',
             },
             name: 'res1',
             ready: true,
           },
           {
+            accessibleName: undefined,
+            id: 'res2',
             isAvailable: true,
             metadata: {
+              name: 'res2',
               uid: 'uid2',
             },
             name: 'res2',
