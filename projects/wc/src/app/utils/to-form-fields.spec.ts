@@ -1,5 +1,6 @@
 import {
   buildInitialValues,
+  expandCollectionEntries,
   flattenFieldTree,
   toFormFields,
 } from './to-form-fields';
@@ -557,5 +558,140 @@ describe('buildInitialValues', () => {
         'status.conditions': [{ type: 'Ready', status: 'True' }],
       });
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// expandCollectionEntries
+// ---------------------------------------------------------------------------
+
+describe('expandCollectionEntries', () => {
+  it('returns {} for undefined value', () => {
+    expect(expandCollectionEntries(undefined, [])).toEqual({});
+  });
+
+  it('leaves a value without collection fields untouched', () => {
+    const fields = defs([{ property: 'metadata.name' }]);
+    const value = { metadata: { name: 'foo' } };
+    expect(expandCollectionEntries(value, fields)).toEqual({
+      metadata: { name: 'foo' },
+    });
+  });
+
+  it('expands a dotted sub-field key into a nested object per entry', () => {
+    const fields = defs([
+      {
+        property: 'spec.artifacts',
+        propertyCollection: [
+          { property: 'type' },
+          { property: 'spec.override' },
+        ],
+      },
+    ]);
+    const value = {
+      spec: {
+        artifacts: [{ type: 'image', 'spec.override': 'v1' }],
+      },
+    };
+
+    expect(expandCollectionEntries(value, fields)).toEqual({
+      spec: {
+        artifacts: [{ type: 'image', spec: { override: 'v1' } }],
+      },
+    });
+  });
+
+  it('produces the expected shape', () => {
+    const fields = defs([
+      { property: 'metadata.name', required: true },
+      {
+        property: 'spec.artifacts',
+        propertyCollection: [
+          { property: 'type', required: true },
+          { property: 'spec.override' },
+        ],
+      },
+    ]);
+    const value = {
+      metadata: { name: 'my-resource' },
+      spec: {
+        artifacts: [{ type: 'image', 'spec.override': 'v1' }],
+      },
+    };
+
+    expect(expandCollectionEntries(value, fields)).toEqual({
+      metadata: { name: 'my-resource' },
+      spec: {
+        artifacts: [{ type: 'image', spec: { override: 'v1' } }],
+      },
+    });
+  });
+
+  it('expands multiple entries independently', () => {
+    const fields = defs([
+      {
+        property: 'spec.artifacts',
+        propertyCollection: [{ property: 'spec.override' }],
+      },
+    ]);
+    const value = {
+      spec: {
+        artifacts: [{ 'spec.override': 'v1' }, { 'spec.override': 'v2' }],
+      },
+    };
+
+    expect(expandCollectionEntries(value, fields)).toEqual({
+      spec: {
+        artifacts: [{ spec: { override: 'v1' } }, { spec: { override: 'v2' } }],
+      },
+    });
+  });
+
+  it('recurses into nested collections', () => {
+    const fields = defs([
+      {
+        property: 'spec.artifacts',
+        propertyCollection: [
+          { property: 'type' },
+          {
+            property: 'spec.layers',
+            propertyCollection: [{ property: 'spec.digest' }],
+          },
+        ],
+      },
+    ]);
+    const value = {
+      spec: {
+        artifacts: [
+          {
+            type: 'image',
+            'spec.layers': [{ 'spec.digest': 'sha256:abc' }],
+          },
+        ],
+      },
+    };
+
+    expect(expandCollectionEntries(value, fields)).toEqual({
+      spec: {
+        artifacts: [
+          {
+            type: 'image',
+            spec: { layers: [{ spec: { digest: 'sha256:abc' } }] },
+          },
+        ],
+      },
+    });
+  });
+
+  it('handles a missing or non-array collection value without throwing', () => {
+    const fields = defs([
+      {
+        property: 'spec.artifacts',
+        propertyCollection: [{ property: 'spec.override' }],
+      },
+    ]);
+    expect(
+      expandCollectionEntries({ metadata: { name: 'x' } }, fields),
+    ).toEqual({ metadata: { name: 'x' } });
   });
 });

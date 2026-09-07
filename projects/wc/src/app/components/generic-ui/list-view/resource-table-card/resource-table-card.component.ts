@@ -1,5 +1,6 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
 import {
+  expandCollectionEntries,
   flattenFieldTree,
   toFormFields,
 } from '../../../../utils/to-form-fields';
@@ -385,8 +386,12 @@ export class ResourceTableCard {
 
   onCreateSubmit(value: Resource): void {
     const resourceDefinition = this.getResourceDefinition();
+    const expanded = expandCollectionEntries(
+      value as Record<string, unknown>,
+      this.createFormFields(),
+    ) as Resource;
     this.resourceService
-      .create(value, resourceDefinition, this.context())
+      .create(expanded, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
           this.createFieldErrors.set({});
