@@ -1,5 +1,6 @@
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { setPropertyByPath } from '@platform-mesh/portal-ui-lib/utils';
 
 export function flattenFieldTree(
   fields: readonly PlatformMeshFieldDefinition[] | undefined,
@@ -244,4 +245,66 @@ function readPath(obj: unknown, path: string): unknown {
     if (acc == null || typeof acc !== 'object') return undefined;
     return (acc as Record<string, unknown>)[segment];
   }, obj);
+}
+
+export function expandCollectionEntries(
+  value: Record<string, unknown> | undefined,
+  fields: readonly PlatformMeshFieldDefinition[] | undefined,
+): Record<string, unknown> {
+  if (!value) return {};
+
+  const result: Record<string, unknown> = { ...value };
+  for (const field of fields ?? []) {
+    const path = collectionPath(field);
+    if (!field.propertyCollection?.length || !path) {
+      continue;
+    }
+
+    const rawArray = readPath(result, path);
+    if (!Array.isArray(rawArray)) {
+      continue;
+    }
+
+    const expanded = rawArray.map((entry) =>
+      expandEntry(
+        entry as Record<string, unknown>,
+        field.propertyCollection ?? [],
+      ),
+    );
+    setPropertyByPath(result, path, expanded);
+  }
+  return result;
+}
+
+function expandEntry(
+  entry: Record<string, unknown> | undefined,
+  subFields: readonly PlatformMeshFieldDefinition[],
+): Record<string, unknown> {
+  if (!entry) return {};
+
+  const nestedCollectionKeys = new Map<string, PlatformMeshFieldDefinition>();
+  for (const sub of subFields) {
+    const subPath = collectionPath(sub);
+    if (sub.propertyCollection?.length && subPath) {
+      nestedCollectionKeys.set(subPath, sub);
+    }
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, entryValue] of Object.entries(entry)) {
+    const nested = nestedCollectionKeys.get(key);
+    if (nested && Array.isArray(entryValue)) {
+      const expanded = entryValue.map((child) =>
+        expandEntry(
+          child as Record<string, unknown>,
+          nested.propertyCollection ?? [],
+        ),
+      );
+      setPropertyByPath(result, key, expanded);
+      continue;
+    }
+
+    setPropertyByPath(result, key, entryValue);
+  }
+  return result;
 }
