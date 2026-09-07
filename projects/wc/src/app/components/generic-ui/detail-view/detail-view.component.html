@@ -1,23 +1,51 @@
-<mfp-dashboard
-  [config]="dashboardConfig()"
-  [customActions]="customActions()"
-  [i18n]="i18n()"
-  [sections]="sections()"
-  [cards]="cards()"
-  [availableCards]="availableCards()"
-  (actionButtonClick)="onActionButtonClick($event)"
-  (saved)="dashboardConfigurationChanged($event)"
-  (unsavedChangesChange)="setLuigiPageDirty($any($event))"
->
-  <div slot="dashboard-subheader" style="width: 100%">
-    <div class="sh">
-      <ng-container *ngTemplateOutlet="subheader" />
-      @if (isDemoEnabled()) {
-        <div class="logo"></div>
-      }
+@if (viewState() === 'error' || viewState() === 'not-found') {
+  <ui5-illustrated-message
+    data-testid="generic-detail-view-read-state"
+    role="status"
+    [name]="viewState() === 'error' ? 'UnableToLoad' : 'NoEntries'"
+    [titleText]="
+      viewState() === 'error' ? 'Could not load resource' : 'Resource not found'
+    "
+    [subtitleText]="
+      viewState() === 'error'
+        ? 'Please try again.'
+        : 'The requested resource is not available.'
+    "
+  >
+    <ui5-button
+      data-testid="generic-detail-view-retry"
+      design="Emphasized"
+      (click)="retryRead()"
+      >Retry</ui5-button
+    >
+    @if (context().parentNavigationContexts?.length) {
+      <ui5-button (click)="navigateToParent()">Back</ui5-button>
+    }
+  </ui5-illustrated-message>
+} @else if (viewState() !== 'redirecting') {
+  <mfp-dashboard
+    [loading]="viewState() === 'loading'"
+    [loadingDelay]="0"
+    [config]="dashboardConfig()"
+    [customActions]="customActions()"
+    [i18n]="i18n()"
+    [sections]="sections()"
+    [cards]="cards()"
+    [availableCards]="availableCards()"
+    (actionButtonClick)="onActionButtonClick($event)"
+    (saved)="dashboardConfigurationChanged($event)"
+    (unsavedChangesChange)="setLuigiPageDirty($any($event))"
+  >
+    <div slot="dashboard-subheader" style="width: 100%">
+      <div class="sh">
+        <ng-container *ngTemplateOutlet="subheader" />
+        @if (isDemoEnabled()) {
+          <div class="logo"></div>
+        }
+      </div>
     </div>
-  </div>
-</mfp-dashboard>
+  </mfp-dashboard>
+}
 
 <ng-template #subheader>
   <div class="resource-info">
