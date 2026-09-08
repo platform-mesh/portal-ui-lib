@@ -56,7 +56,7 @@ import {
   permissionKey,
   resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { firstValueFrom } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -122,6 +122,8 @@ export class ResourceTableCard {
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
   loading = signal<boolean>(false);
+  protected listError = signal(false);
+  protected watchError = signal(false);
 
   private createFieldErrors = signal<FormFieldErrors>({});
   createFormState = computed<TableCardFormState>(() => ({
@@ -175,16 +177,26 @@ export class ResourceTableCard {
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private currentContinueToken: string | undefined = undefined;
+  private listSubscription?: Subscription;
+  private lastListWasInitialLoad = true;
 
   constructor() {
-    effect(() => {
+    effect((onCleanup) => {
       this.currentContinueToken = undefined;
+      this.resources.set([]);
+      this.resourceVersion.set(undefined);
+      this.remainingItemCount.set(0);
+      this.hasMore.set(false);
+      this.listError.set(false);
+      this.watchError.set(false);
       this.list(true);
+      onCleanup(() => this.listSubscription?.unsubscribe());
     });
 
     effect((onCleanup) => {
       const version = this.resourceVersion();
       if (!version) return;
+      if (untracked(this.watchError)) return;
       if (!this.canDo('watch')) return;
       const sub = this.subscribeToResourceChange(version);
       onCleanup(() => sub.unsubscribe());
@@ -226,7 +238,8 @@ export class ResourceTableCard {
 
   private subscribeToResourceChange(version: string) {
     const fields = this.getListQueryFields();
-    const resourceDefinition = this.context().resourceDefinition!;
+    const context = this.context();
+    const resourceDefinition = context.resourceDefinition!;
     const queryOperation = buildResourcePath({
       apiGroup: resourceDefinition.apiGroup,
       version: resourceDefinition.version,
@@ -237,20 +250,22 @@ export class ResourceTableCard {
       .resourceChangeSubscription(
         queryOperation,
         fields,
-        this.context(),
+        context,
         version,
         false,
       )
       .subscribe({
         next: (value) => {
-          if (!value) return;
+          if (!value || context !== this.context()) return;
           this.mergeResourcesWithSubscriptionResult(value);
         },
-        error: (_error) => {
-          this.LuigiClient().uxManager().showAlert({
-            text: 'Error while updating list with new data. To see new updates, refresh the page.',
-            type: 'error',
-          });
+        error: (error) => {
+          if (context !== this.context()) return;
+          if (this.errorHandlerService.isUnauthorizedAccess(error)) {
+            this.errorHandlerService.handleError(error);
+          } else {
+            this.watchError.set(true);
+          }
         },
       });
   }
@@ -274,18 +289,21 @@ export class ResourceTableCard {
   list(isInitialLoad: boolean = false) {
     if (!this.canDo('list')) return;
     if (untracked(this.loading)) return;
+    this.lastListWasInitialLoad = isInitialLoad;
+    this.listError.set(false);
     this.loading.set(true);
 
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
+    const context = this.context();
     const queryOperation = buildResourcePath({
       apiGroup: resourceDefinition.apiGroup,
       version: resourceDefinition.version,
       entity: resourceDefinition.entityCollection,
     }) as string;
 
-    this.resourceService
-      .list(queryOperation, fields, this.context(), {
+    this.listSubscription = this.resourceService
+      .list(queryOperation, fields, context, {
         pagination: {
           limit: this.paginationLimit(),
           continue: this.currentContinueToken,
@@ -299,6 +317,7 @@ export class ResourceTableCard {
       )
       .subscribe({
         next: (result: ResourceListResult) => {
+          if (context !== this.context()) return;
           if (isInitialLoad) {
             this.resources.set(result.items ?? []);
           } else {
@@ -314,9 +333,30 @@ export class ResourceTableCard {
           this.remainingItemCount.set(result.remainingItemCount || 0);
         },
         error: (error) => {
-          this.errorHandlerService.handleError(error);
+          if (context !== this.context()) return;
+          if (this.errorHandlerService.isUnauthorizedAccess(error)) {
+            this.errorHandlerService.handleError(error);
+          } else {
+            this.listError.set(true);
+          }
         },
       });
+  }
+
+  retryList() {
+    if (untracked(this.loading)) return;
+    if (untracked(this.watchError)) {
+      this.currentContinueToken = undefined;
+      this.resourceVersion.set(undefined);
+      this.hasMore.set(false);
+      this.remainingItemCount.set(0);
+      this.watchError.set(false);
+      this.list(true);
+      return;
+    }
+    if (untracked(this.listError)) {
+      this.list(this.lastListWasInitialLoad);
+    }
   }
 
   private mergeResourcesWithSubscriptionResult(

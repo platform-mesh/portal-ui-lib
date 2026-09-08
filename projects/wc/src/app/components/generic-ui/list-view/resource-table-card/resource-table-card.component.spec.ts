@@ -1,9 +1,10 @@
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import { ResourceTableCard } from './resource-table-card.component';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ResourceDefinition,
+  ResourceListResult,
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
@@ -25,7 +26,7 @@ describe('ResourceTableCard', () => {
   let mockInstancePermissionsLocalStore: MockedObject<InstancePermissionsStore>;
 
   const makeContext = (overrides: object = {}) =>
-    (() => ({
+    signal({
       resourceDefinition: {
         entityCollection: 'clusters',
         entity: 'Cluster',
@@ -37,7 +38,7 @@ describe('ResourceTableCard', () => {
         },
         ...overrides,
       },
-    })) as any;
+    }) as any;
 
   const makeLuigiClient = (navSpy = vi.fn()) =>
     (() => ({
@@ -116,7 +117,7 @@ describe('ResourceTableCard', () => {
     const newFixture = TestBed.createComponent(ResourceTableCard);
     const newComponent = newFixture.componentInstance;
 
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       resourceDefinition: {
         entityCollection: 'clusters',
         entity: 'Cluster',
@@ -125,7 +126,7 @@ describe('ResourceTableCard', () => {
         readyCondition,
         ui: { listView: { fields: [{ property: 'metadata.name' }] } },
       } as ResourceDefinition,
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = makeLuigiClient();
 
     const expectedContext = newComponent.context();
@@ -151,7 +152,7 @@ describe('ResourceTableCard', () => {
     const newFixture = TestBed.createComponent(ResourceTableCard);
     const newComponent = newFixture.componentInstance;
 
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       resourceDefinition: {
         entityCollection: 'clusters',
         entity: 'Cluster',
@@ -160,7 +161,7 @@ describe('ResourceTableCard', () => {
         scope: 'Namespaced',
         ui: { listView: { fields: [{ property: 'metadata.name' }] } },
       } as ResourceDefinition,
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = makeLuigiClient();
 
     newFixture.detectChanges();
@@ -217,13 +218,13 @@ describe('ResourceTableCard', () => {
 
     it('should not navigate when ui is not defined', () => {
       const navSpy = vi.fn();
-      component.context = (() => ({
+      component.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
           apiGroup: 'core_k8s_io',
         },
-      })) as any;
+      }) as any;
       component.LuigiClient = makeLuigiClient(navSpy);
 
       component.navigateToResource({ metadata: { name: 'res1' } } as any);
@@ -277,9 +278,9 @@ describe('ResourceTableCard', () => {
       const resource = { metadata: { name: 'test' } } as any;
       const closeDeleteDialog = vi.fn();
       mockResourceService.delete.mockReturnValue(of(resource));
-      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(
-        () => ({ closeDeleteDialog }),
-      );
+      vi.spyOn(component as any, 'tableCard', 'get').mockReturnValue(() => ({
+        closeDeleteDialog,
+      }));
 
       component.delete(resource);
 
@@ -302,9 +303,11 @@ describe('ResourceTableCard', () => {
     });
 
     it('should build the delete confirmation config from the resource via config()', () => {
-      const deleteConfig = component.config().deleteResourceConfirmationConfig!({
-        metadata: { name: 'My-Cluster' },
-      } as any);
+      const deleteConfig = component.config().deleteResourceConfirmationConfig!(
+        {
+          metadata: { name: 'My-Cluster' },
+        } as any,
+      );
 
       // name is lower-cased and used as the confirmation text
       expect(deleteConfig.title).toBe('Delete my-cluster');
@@ -317,9 +320,11 @@ describe('ResourceTableCard', () => {
     });
 
     it('should fall back to an empty confirmation name when metadata.name is missing', () => {
-      const deleteConfig = component.config().deleteResourceConfirmationConfig!({
-        metadata: {},
-      } as any);
+      const deleteConfig = component.config().deleteResourceConfirmationConfig!(
+        {
+          metadata: {},
+        } as any,
+      );
 
       expect(deleteConfig.title).toBe('Delete ');
       expect(deleteConfig.confirmationText).toBe('');
@@ -377,7 +382,7 @@ describe('ResourceTableCard', () => {
     it('should detect hasUiCreateViewFields when createView fields are defined', () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -388,7 +393,7 @@ describe('ResourceTableCard', () => {
             listView: { fields: [] },
           },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       expect(newComponent.hasUiCreateViewFields()).toBe(true);
@@ -401,7 +406,7 @@ describe('ResourceTableCard', () => {
     it('should include createResourceFormConfig with a lazy fields thunk when createView fields exist', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -416,7 +421,7 @@ describe('ResourceTableCard', () => {
             listView: { fields: [] },
           },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
 
@@ -488,7 +493,7 @@ describe('ResourceTableCard', () => {
     });
 
     const makeNamespacedCreateContext = () =>
-      (() => ({
+      signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -500,7 +505,7 @@ describe('ResourceTableCard', () => {
             listView: { fields: [] },
           },
         },
-      })) as any;
+      }) as any;
 
     it('should not add a metadata.namespace field when a namespace is already resolved', () => {
       mockResourceService.getNamespace.mockReturnValue('default');
@@ -527,7 +532,7 @@ describe('ResourceTableCard', () => {
     it('should set required error for empty required field', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -538,7 +543,7 @@ describe('ResourceTableCard', () => {
             listView: { fields: [] },
           },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       await newComponent.onCreateFieldChange({
@@ -601,7 +606,11 @@ describe('ResourceTableCard', () => {
       mockResourceService.list.mockReturnValue(
         of({
           items: [
-            { id: 'existing', metadata: { name: 'existing' }, spec: { type: 'v1' } },
+            {
+              id: 'existing',
+              metadata: { name: 'existing' },
+              spec: { type: 'v1' },
+            },
           ],
           resourceVersion: '1',
         }),
@@ -755,7 +764,9 @@ describe('ResourceTableCard', () => {
 
       it('should merge existing resources with new ones from list', () => {
         const firstResponse = {
-          items: [{ id: 'res1', metadata: { name: 'res1' }, spec: { version: 'v1' } }],
+          items: [
+            { id: 'res1', metadata: { name: 'res1' }, spec: { version: 'v1' } },
+          ],
           resourceVersion: '123',
           continue: 'token1',
         };
@@ -791,8 +802,9 @@ describe('ResourceTableCard', () => {
       });
 
       it('should handle error and call error handler service', () => {
-        const error = new Error('Unauthorized');
+        const error = new Error('Forbidden');
         mockResourceService.list.mockReturnValue(throwError(() => error));
+        mockErrorHandlerService.isUnauthorizedAccess.mockReturnValue(true);
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
@@ -801,6 +813,7 @@ describe('ResourceTableCard', () => {
         newFixture.detectChanges();
 
         expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+        expect((newComponent as any).listError()).toBe(false);
       });
 
       it('should set remainingItemCount to 0 when not provided in response', () => {
@@ -823,9 +836,9 @@ describe('ResourceTableCard', () => {
       it('should show alert and throw when resourceDefinition is undefined', () => {
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
-        newComponent.context = (() => ({
+        newComponent.context = signal({
           resourceDefinition: undefined,
-        })) as any;
+        }) as any;
 
         const showAlertSpy = vi.fn();
         newComponent.LuigiClient = (() => ({
@@ -840,6 +853,311 @@ describe('ResourceTableCard', () => {
           text: 'Resource definition is not defined',
           type: 'error',
         });
+      });
+    });
+
+    describe('Request recovery', () => {
+      const row = (name: string) => ({ id: name, metadata: { name } }) as any;
+
+      function createReactiveTable(showAlert = vi.fn()) {
+        mockResourceService.list.mockClear();
+        mockResourceService.resourceChangeSubscription.mockClear();
+        const table = TestBed.createComponent(ResourceTableCard);
+        const context = {
+          ...makeContext()(),
+          kcpPath: 'root:orgs:example:first',
+        };
+        table.componentRef.setInput('context', context);
+        table.componentRef.setInput('LuigiClient', {
+          ...makeLuigiClient()(),
+          uxManager: () => ({ showAlert }),
+        });
+        table.detectChanges();
+        return { table, context, card: table.componentInstance };
+      }
+
+      it('shows a retryable initial failure and replaces rows with the successful retry', () => {
+        const initial = new Subject<ResourceListResult>();
+        const retry = new Subject<ResourceListResult>();
+        mockResourceService.list
+          .mockReturnValueOnce(initial)
+          .mockReturnValueOnce(retry);
+        const { card } = createReactiveTable();
+
+        expect(card.loading()).toBe(true);
+        expect((card as any).listError()).toBe(false);
+        initial.error(new Error('Gateway unavailable'));
+        expect(card.loading()).toBe(false);
+        expect((card as any).listError()).toBe(true);
+        expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
+
+        card.resources.set([row('stale')]);
+        card.retryList();
+        card.retryList();
+        expect(mockResourceService.list).toHaveBeenCalledTimes(2);
+        expect(card.loading()).toBe(true);
+        expect((card as any).listError()).toBe(false);
+        retry.next({
+          items: [row('current')],
+          resourceVersion: '2',
+          continue: undefined,
+        });
+        retry.complete();
+
+        expect(card.resources()).toEqual([row('current')]);
+        expect(card.loading()).toBe(false);
+        card.retryList();
+        expect(mockResourceService.list).toHaveBeenCalledTimes(2);
+      });
+
+      it('retries a failed load-more request with the same token and keeps existing rows', () => {
+        mockResourceService.list
+          .mockReturnValueOnce(
+            of({
+              items: [row('first')],
+              resourceVersion: '1',
+              continue: 'next-page',
+            }),
+          )
+          .mockReturnValueOnce(
+            throwError(() => new Error('Gateway unavailable')),
+          )
+          .mockReturnValueOnce(
+            of({ items: [row('second')], resourceVersion: '2' }),
+          );
+        const { card } = createReactiveTable();
+
+        card.loadMore();
+        expect((card as any).listError()).toBe(true);
+        expect(card.resources()).toEqual([row('first')]);
+        card.retryList();
+
+        expect(mockResourceService.list).toHaveBeenCalledTimes(3);
+        for (const call of mockResourceService.list.mock.calls.slice(1)) {
+          expect(call[3]).toEqual({
+            pagination: { continue: 'next-page', limit: 5 },
+          });
+        }
+        expect(card.resources()).toEqual([row('first'), row('second')]);
+        expect((card as any).listError()).toBe(false);
+        expect(card.hasMore()).toBe(false);
+      });
+
+      it('cancels an initial read when context changes and ignores its late result', () => {
+        const oldRead = new Subject<ResourceListResult>();
+        const currentRead = new Subject<ResourceListResult>();
+        mockResourceService.list
+          .mockReturnValueOnce(oldRead)
+          .mockReturnValueOnce(currentRead);
+        const { table, card, context } = createReactiveTable();
+        const currentContext = {
+          ...context,
+          kcpPath: 'root:orgs:example:second',
+        };
+
+        table.componentRef.setInput('context', currentContext);
+        oldRead.next({
+          items: [row('wrong-workspace')],
+          resourceVersion: 'old',
+          continue: undefined,
+        });
+        expect(card.resources()).toEqual([]);
+        table.detectChanges();
+
+        expect(oldRead.observed).toBe(false);
+        expect(currentRead.observed).toBe(true);
+        expect(mockResourceService.list.mock.calls.at(-1)?.slice(2)).toEqual([
+          currentContext,
+          { pagination: { continue: undefined, limit: 5 } },
+        ]);
+        oldRead.error(new Error('Forbidden'));
+        expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
+        expect(card.loading()).toBe(true);
+        expect((card as any).listError()).toBe(false);
+        currentRead.next({
+          items: [row('current')],
+          resourceVersion: '2',
+          continue: undefined,
+        });
+        currentRead.complete();
+        expect(card.resources()).toEqual([row('current')]);
+        expect(card.loading()).toBe(false);
+      });
+
+      it('clears a failed page and its watch when switching contexts before retry', () => {
+        const oldWatch = new Subject<ResourceSubscriptionResult | undefined>();
+        const currentRead = new Subject<ResourceListResult>();
+        mockResourceService.resourceChangeSubscription.mockReturnValue(
+          oldWatch,
+        );
+        mockResourceService.list
+          .mockReturnValueOnce(
+            of({
+              items: [row('old')],
+              resourceVersion: '1',
+              continue: 'old-page',
+              remainingItemCount: 3,
+            }),
+          )
+          .mockReturnValueOnce(
+            throwError(() => new Error('Gateway unavailable')),
+          )
+          .mockReturnValueOnce(currentRead);
+        const { table, card, context } = createReactiveTable();
+        card.loadMore();
+        expect((card as any).listError()).toBe(true);
+
+        table.componentRef.setInput('context', {
+          ...context,
+          kcpPath: 'root:orgs:example:second',
+        });
+        oldWatch.next({ type: 'ADDED', object: row('late-old') });
+        expect(card.resources()).toEqual([row('old')]);
+        table.detectChanges();
+
+        expect(oldWatch.observed).toBe(false);
+        expect(card.resources()).toEqual([]);
+        expect(card.resourceVersion()).toBeUndefined();
+        expect(card.remainingItemCount()).toBe(0);
+        expect(card.hasMore()).toBe(false);
+        expect((card as any).listError()).toBe(false);
+        card.retryList();
+        expect(mockResourceService.list).toHaveBeenCalledTimes(3);
+        expect(mockResourceService.list.mock.calls.at(-1)?.[3]).toEqual({
+          pagination: { continue: undefined, limit: 5 },
+        });
+      });
+
+      it.each(['list', 'watch'])(
+        'ignores a stale %s error before context cleanup runs',
+        (source) => {
+          const oldRequest = new Subject<any>();
+          const currentRead = new Subject<ResourceListResult>();
+          mockResourceService.list
+            .mockReturnValueOnce(
+              source === 'list'
+                ? oldRequest
+                : of({ items: [row('old')], resourceVersion: '1' }),
+            )
+            .mockReturnValueOnce(currentRead);
+          mockResourceService.resourceChangeSubscription.mockReturnValue(
+            oldRequest,
+          );
+          mockErrorHandlerService.isUnauthorizedAccess.mockReturnValue(true);
+          const showAlert = vi.fn();
+          const { table, card, context } = createReactiveTable(showAlert);
+
+          table.componentRef.setInput('context', {
+            ...context,
+            kcpPath: 'root:orgs:example:second',
+          });
+          oldRequest.error(new Error('Forbidden'));
+          expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
+          expect(showAlert).not.toHaveBeenCalled();
+          expect((card as any).listError()).toBe(false);
+
+          table.detectChanges();
+          expect(currentRead.observed).toBe(true);
+          expect(card.loading()).toBe(true);
+        },
+      );
+
+      it('recovers a failed watch by replacing the first page and restarting the same resource version', () => {
+        const oldWatch = new Subject<ResourceSubscriptionResult | undefined>();
+        const currentWatch = new Subject<
+          ResourceSubscriptionResult | undefined
+        >();
+        const nextPage = new Subject<ResourceListResult>();
+        const refresh = new Subject<ResourceListResult>();
+        mockResourceService.resourceChangeSubscription
+          .mockReturnValueOnce(oldWatch)
+          .mockReturnValueOnce(currentWatch);
+        mockResourceService.list
+          .mockReturnValueOnce(
+            of({
+              items: [row('first')],
+              resourceVersion: '1',
+              continue: 'next-page',
+            }),
+          )
+          .mockReturnValueOnce(nextPage)
+          .mockReturnValueOnce(refresh);
+        const { table, card } = createReactiveTable();
+        card.loadMore();
+        oldWatch.error(new Error('Watch disconnected'));
+        expect((card as any).watchError()).toBe(true);
+        card.retryList();
+        expect(mockResourceService.list).toHaveBeenCalledTimes(2);
+        expect((card as any).watchError()).toBe(true);
+
+        nextPage.next({
+          items: [row('second')],
+          resourceVersion: '1',
+          continue: 'third-page',
+        });
+        nextPage.complete();
+        table.detectChanges();
+        expect(card.resources()).toEqual([row('first'), row('second')]);
+        card.retryList();
+        card.retryList();
+        expect(mockResourceService.list).toHaveBeenCalledTimes(3);
+        expect(mockResourceService.list.mock.calls.at(-1)?.[3]).toEqual({
+          pagination: { continue: undefined, limit: 5 },
+        });
+        expect((card as any).watchError()).toBe(false);
+        expect(card.loading()).toBe(true);
+
+        refresh.next({
+          items: [row('current')],
+          resourceVersion: '1',
+          continue: undefined,
+        });
+        refresh.complete();
+        table.detectChanges();
+        expect(card.resources()).toEqual([row('current')]);
+        expect(currentWatch.observed).toBe(true);
+        expect(
+          mockResourceService.resourceChangeSubscription,
+        ).toHaveBeenCalledTimes(2);
+        expect(card.hasMore()).toBe(false);
+        expect(card.loading()).toBe(false);
+        expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
+      });
+
+      it('preserves authorization handling when the watch is forbidden', () => {
+        const watch = new Subject<ResourceSubscriptionResult | undefined>();
+        mockResourceService.list.mockReturnValueOnce(
+          of({ items: [], resourceVersion: '1' }),
+        );
+        mockResourceService.resourceChangeSubscription.mockReturnValueOnce(
+          watch,
+        );
+        mockErrorHandlerService.isUnauthorizedAccess.mockReturnValue(true);
+        const { card } = createReactiveTable();
+        const error = new Error('Forbidden');
+        watch.error(error);
+
+        expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+        expect((card as any).watchError()).toBe(false);
+        expect((card as any).listError()).toBe(false);
+        card.retryList();
+        expect(mockResourceService.list).toHaveBeenCalledTimes(1);
+      });
+
+      it('cancels the active retry when the component is destroyed', () => {
+        const retry = new Subject<ResourceListResult>();
+        mockResourceService.list
+          .mockReturnValueOnce(
+            throwError(() => new Error('Gateway unavailable')),
+          )
+          .mockReturnValueOnce(retry);
+        const { table, card } = createReactiveTable();
+        card.retryList();
+        expect(retry.observed).toBe(true);
+
+        table.destroy();
+        expect(retry.observed).toBe(false);
+        expect(card.loading()).toBe(false);
       });
     });
 
@@ -868,7 +1186,7 @@ describe('ResourceTableCard', () => {
     it('should include createResourceFormConfig when canCreate=true (no permissionsDefinition)', () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -880,7 +1198,7 @@ describe('ResourceTableCard', () => {
           },
           // no permissionsDefinition — canCreate defaults to true
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       expect(newComponent.config().createResourceFormConfig).toBeDefined();
@@ -889,7 +1207,7 @@ describe('ResourceTableCard', () => {
     it('should omit createResourceFormConfig when portalPermissions does not include create', () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         portalPermissions: { clusters: ['get'] }, // no 'create'
         resourceDefinition: {
           entityCollection: 'clusters',
@@ -908,7 +1226,7 @@ describe('ResourceTableCard', () => {
             listView: { fields: [] },
           },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       expect(newComponent.config().createResourceFormConfig).toBeUndefined();
@@ -917,7 +1235,7 @@ describe('ResourceTableCard', () => {
     it('should include createResourceFormConfig when portalPermissions includes create', () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         portalPermissions: { clusters: ['get', 'create'] },
         resourceDefinition: {
           entityCollection: 'clusters',
@@ -936,7 +1254,7 @@ describe('ResourceTableCard', () => {
             listView: { fields: [] },
           },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       expect(newComponent.config().createResourceFormConfig).toBeDefined();
@@ -951,7 +1269,7 @@ describe('ResourceTableCard', () => {
       );
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -967,7 +1285,7 @@ describe('ResourceTableCard', () => {
           },
           ui: { listView: { fields: [] } },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       // permissionKey({ resource: 'clusters', namespace: 'ns1', name: 'c1' }) = 'clusters/ns1/c1'
@@ -983,7 +1301,7 @@ describe('ResourceTableCard', () => {
       );
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -991,7 +1309,7 @@ describe('ResourceTableCard', () => {
           version: 'v1alpha1',
           ui: { listView: { fields: [] } },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
       // permissionKey({ resource: undefined, name: 'c1' }) = 'c1'
@@ -1004,7 +1322,7 @@ describe('ResourceTableCard', () => {
       );
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -1012,10 +1330,12 @@ describe('ResourceTableCard', () => {
           version: 'v1alpha1',
           ui: { listView: { fields: [] } },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      expect(mockInstancePermissionsService.checkInstances).not.toHaveBeenCalled();
+      expect(
+        mockInstancePermissionsService.checkInstances,
+      ).not.toHaveBeenCalled();
     });
 
     it('should NOT call instancePermissionsService.checkInstances when entityActions is empty', () => {
@@ -1024,7 +1344,7 @@ describe('ResourceTableCard', () => {
       );
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceDefinition: {
           entityCollection: 'clusters',
           entity: 'Cluster',
@@ -1039,10 +1359,12 @@ describe('ResourceTableCard', () => {
           },
           ui: { listView: { fields: [] } },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      expect(mockInstancePermissionsService.checkInstances).not.toHaveBeenCalled();
+      expect(
+        mockInstancePermissionsService.checkInstances,
+      ).not.toHaveBeenCalled();
     });
 
     it('should call instancePermissionsService.checkInstances with correct args when entityActions are set', () => {
@@ -1058,7 +1380,7 @@ describe('ResourceTableCard', () => {
       );
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         organization: 'my-org',
         resourceDefinition: {
           entityCollection: 'clusters',
@@ -1068,10 +1390,12 @@ describe('ResourceTableCard', () => {
           permissionsDefinition: pd,
           ui: { listView: { fields: [] } },
         },
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = makeLuigiClient();
       newFixture.detectChanges();
-      expect(mockInstancePermissionsService.checkInstances).toHaveBeenCalledWith(
+      expect(
+        mockInstancePermissionsService.checkInstances,
+      ).toHaveBeenCalledWith(
         expect.any(Object),
         pd,
         expect.arrayContaining([expect.objectContaining({ name: 'c1' })]),
@@ -1079,8 +1403,10 @@ describe('ResourceTableCard', () => {
     });
 
     describe('list() guard (canDo("list"))', () => {
-      const makePermissionedContext = (perms: Record<string, string[]> | undefined) =>
-        (() => ({
+      const makePermissionedContext = (
+        perms: Record<string, string[]> | undefined,
+      ) =>
+        signal({
           portalPermissions: perms,
           resourceDefinition: {
             entityCollection: 'clusters',
@@ -1096,7 +1422,7 @@ describe('ResourceTableCard', () => {
             },
             ui: { listView: { fields: [] } },
           },
-        })) as any;
+        }) as any;
 
       it('does NOT call resourceService.list when portalPermissions has the resource entry without "list"', () => {
         mockResourceService.list.mockClear();
@@ -1126,7 +1452,9 @@ describe('ResourceTableCard', () => {
         );
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
-        newComponent.context = makePermissionedContext({ clusters: ['list', 'get'] });
+        newComponent.context = makePermissionedContext({
+          clusters: ['list', 'get'],
+        });
         newComponent.LuigiClient = makeLuigiClient();
         newFixture.detectChanges();
         expect(mockResourceService.list).toHaveBeenCalled();
@@ -1162,7 +1490,7 @@ describe('ResourceTableCard', () => {
 
     describe('watch effect guard (canDo("watch"))', () => {
       const makeWatchContext = (perms: Record<string, string[]> | undefined) =>
-        (() => ({
+        signal({
           portalPermissions: perms,
           resourceDefinition: {
             entityCollection: 'clusters',
@@ -1178,7 +1506,7 @@ describe('ResourceTableCard', () => {
             },
             ui: { listView: { fields: [] } },
           },
-        })) as any;
+        }) as any;
 
       it('does NOT open a watch subscription when portalPermissions lacks "watch" for the resource', () => {
         mockResourceService.list.mockReturnValue(
@@ -1194,29 +1522,39 @@ describe('ResourceTableCard', () => {
 
         // resourceVersion is now set ('v1') but the watch effect should have bailed out
         expect(newComponent.resourceVersion()).toBe('v1');
-        expect(mockResourceService.resourceChangeSubscription).not.toHaveBeenCalled();
+        expect(
+          mockResourceService.resourceChangeSubscription,
+        ).not.toHaveBeenCalled();
       });
 
       it('opens the watch subscription when "watch" is present in portalPermissions', () => {
         mockResourceService.list.mockReturnValue(
           of({ items: [], resourceVersion: 'v1' }),
         );
-        mockResourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
+        mockResourceService.resourceChangeSubscription.mockReturnValue(
+          of(undefined),
+        );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
-        newComponent.context = makeWatchContext({ clusters: ['list', 'watch'] });
+        newComponent.context = makeWatchContext({
+          clusters: ['list', 'watch'],
+        });
         newComponent.LuigiClient = makeLuigiClient();
         newFixture.detectChanges();
 
-        expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalled();
+        expect(
+          mockResourceService.resourceChangeSubscription,
+        ).toHaveBeenCalled();
       });
 
       it('opens the watch subscription when portalPermissions has no entry for the resource (fail-open)', () => {
         mockResourceService.list.mockReturnValue(
           of({ items: [], resourceVersion: 'v1' }),
         );
-        mockResourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
+        mockResourceService.resourceChangeSubscription.mockReturnValue(
+          of(undefined),
+        );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
@@ -1224,14 +1562,18 @@ describe('ResourceTableCard', () => {
         newComponent.LuigiClient = makeLuigiClient();
         newFixture.detectChanges();
 
-        expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalled();
+        expect(
+          mockResourceService.resourceChangeSubscription,
+        ).toHaveBeenCalled();
       });
 
       it('opens the watch subscription when portalPermissions is undefined (fail-open)', () => {
         mockResourceService.list.mockReturnValue(
           of({ items: [], resourceVersion: 'v1' }),
         );
-        mockResourceService.resourceChangeSubscription.mockReturnValue(of(undefined));
+        mockResourceService.resourceChangeSubscription.mockReturnValue(
+          of(undefined),
+        );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
@@ -1239,7 +1581,9 @@ describe('ResourceTableCard', () => {
         newComponent.LuigiClient = makeLuigiClient();
         newFixture.detectChanges();
 
-        expect(mockResourceService.resourceChangeSubscription).toHaveBeenCalled();
+        expect(
+          mockResourceService.resourceChangeSubscription,
+        ).toHaveBeenCalled();
       });
     });
   });
