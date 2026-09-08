@@ -155,8 +155,11 @@ Each field definition supports the following properties:
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
 - `"uiSettings"`: Object for configuring UI-specific display settings:
   - `"labelDisplay"`: Boolean flag for applying the default emphasized style to the value
+  - `"writeOnly"`: Boolean for create/edit forms. Renders a password input on create.
+  - `"hint"`: Persistent help text rendered below the create/edit form control; never submitted with the form.
   - `"displayAs"`: Controls how the value is displayed (if nothing is provided the plain text is displayed):
     - `"secret"`: Render value as a secret with show/hide toggle
+    - `"switch"`: Create/edit forms only — render as a UI5 switch; submits a boolean
     - `"boolIcon"`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
     - `"link"`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
     - `"tooltip"`: Render an icon with a tooltip; tooltip text is the field value
