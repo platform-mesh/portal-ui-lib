@@ -1,6 +1,6 @@
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { addSearchParams, readUrlSearchParam } from '../../../utils/url-params';
-import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
+import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { ReadResourcesProxyService } from '../opensearch-list-view/services/read-resources-proxy.service';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
@@ -70,7 +70,7 @@ import { finalize } from 'rxjs/operators';
     ToolbarButton,
     ResourceLogo,
     ResourceField,
-    CreateResourceModal,
+    ResourceFormModal,
     DeclarativeTable,
   ],
 })
@@ -143,7 +143,7 @@ export class SearchListDynamicPage implements OnInit {
   private errorHandlerService = inject(ErrorHandlerService);
   protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
-  private createModal = viewChild<CreateResourceModal>('createModal');
+  private createModal = viewChild<ResourceFormModal>('createModal');
 
   private listSubscription?: Subscription;
   private isNamespaced = computed(() => isNamespacedResource(this.context()));

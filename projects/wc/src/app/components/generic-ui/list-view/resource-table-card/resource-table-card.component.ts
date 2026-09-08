@@ -8,7 +8,7 @@ import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
   ResourceFieldNames,
-} from '../../create-resource-modal/create-resource-modal.consts';
+} from '../../resource-form-modal/resource-form-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {
   ChangeDetectionStrategy,

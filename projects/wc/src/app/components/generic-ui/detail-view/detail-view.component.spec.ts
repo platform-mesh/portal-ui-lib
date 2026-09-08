@@ -358,7 +358,7 @@ describe('DetailViewComponent', () => {
       const mockCreateModal = {
         open: vi.fn(),
       };
-      (component as any).createModal = () => mockCreateModal;
+      (component as any).formModal = () => mockCreateModal;
 
       const fetchedResource = {
         metadata: { name: 'test-resource' },
@@ -379,7 +379,7 @@ describe('DetailViewComponent', () => {
 
     it('should omit write-only fields from the edit refetch GraphQL selection', () => {
       const mockCreateModal = { open: vi.fn() };
-      (component as any).createModal = () => mockCreateModal;
+      (component as any).formModal = () => mockCreateModal;
 
       const localFixture = TestBed.createComponent(DetailView);
       const localComponent = localFixture.componentInstance;
@@ -543,7 +543,7 @@ describe('DetailViewComponent', () => {
       const mockCreateModal = {
         close: vi.fn(),
       };
-      (component as any).createModal = () => mockCreateModal;
+      (component as any).formModal = () => mockCreateModal;
       const updatedResource = { metadata: { name: 'cluster-1' }, spec: {} };
       mockResourceService.update = vi.fn().mockReturnValue(of(updatedResource));
 
@@ -591,7 +591,7 @@ describe('DetailViewComponent', () => {
         },
       })) as any;
       localComponent.LuigiClient = component.LuigiClient;
-      (localComponent as any).createModal = () => mockCreateModal;
+      (localComponent as any).formModal = () => mockCreateModal;
       localFixture.detectChanges();
 
       localComponent.update({
@@ -665,7 +665,7 @@ describe('DetailViewComponent', () => {
       }) as any;
 
       newComponent.LuigiClient = component.LuigiClient;
-      (newComponent as any).createModal = () => mockCreateModal;
+      (newComponent as any).formModal = () => mockCreateModal;
 
       newFixture.detectChanges();
 
