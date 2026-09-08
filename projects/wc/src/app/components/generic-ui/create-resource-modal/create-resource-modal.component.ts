@@ -141,9 +141,11 @@ export class CreateResourceModal {
   private buildFormFieldsAsync(
     fields: PlatformMeshFieldDefinition[],
   ): Promise<FormFieldDefinition[]> {
+    const editMode = this.isEditMode();
     return toFormFields(fields, {
-      disabled: (field) => this.isCreateFieldOnly(field) && this.isEditMode(),
+      disabled: (field) => this.isCreateFieldOnly(field) && editMode,
       resolveDynamicValues: (field) => this.resolveDynamicValues(field),
+      editMode,
     });
   }
 
