@@ -387,6 +387,47 @@ describe('CreateResourceModalComponent', () => {
       component.onFormSubmit({ 'metadata.name': 'existing' });
       expect(spy).not.toHaveBeenCalled();
     });
+
+    it('should omit empty write-only fields on edit submit', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          uiSettings: { writeOnly: true },
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: '' } },
+      });
+      expect(spy).toHaveBeenCalledWith({ metadata: { name: 'existing' } });
+    });
+
+    it('should keep non-empty write-only fields on edit submit', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          uiSettings: { writeOnly: true },
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: 'new-secret' } },
+      });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: 'new-secret' } },
+      });
+    });
   });
 
   describe('onFieldChange / validation', () => {
@@ -469,6 +510,28 @@ describe('CreateResourceModalComponent', () => {
         value: 'desc',
       });
       // Both changes are retained; valid name means form is valid
+      expect(component.isFormValid()).toBe(true);
+    });
+
+    it('should not require empty write-only fields in edit mode', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          required: true,
+          uiSettings: { writeOnly: true },
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+
+      component.onFieldChange({
+        fieldProperty: 'spec.oidc.clientSecret',
+        value: '',
+      });
+
+      expect(component.fieldErrors()['spec.oidc.clientSecret']).toBeNull();
       expect(component.isFormValid()).toBe(true);
     });
   });
