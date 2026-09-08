@@ -1,3 +1,4 @@
+import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
 import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   buildInitialValues,
@@ -43,6 +44,7 @@ import {
   getValueByPath,
   isNamespacedResource,
   omitEmptyWriteOnlyFields,
+  setPropertyByPath,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
@@ -104,7 +106,9 @@ export class CreateResourceModal {
   onFormSubmit(value: Record<string, unknown>): void {
     if (this.isEditMode()) {
       const sanitized = omitEmptyWriteOnlyFields(value, this.calculateFields());
-      this.updateResource.emit(sanitized as Resource);
+      this.updateResource.emit(
+        this.restoreImmutableFields(sanitized) as Resource,
+      );
       return;
     }
 
@@ -128,7 +132,9 @@ export class CreateResourceModal {
         break;
       default: {
         const field = this.formFields().find((f) => f.name === name);
-        if (field?.required && !value) {
+        if (field?.writeOnly && !value && this.isEditMode()) {
+          error = null;
+        } else if (field?.required && !value) {
           error = 'This field is required';
         }
       }
@@ -146,7 +152,7 @@ export class CreateResourceModal {
   ): Promise<FormFieldDefinition[]> {
     const editMode = this.isEditMode();
     return toFormFields(fields, {
-      disabled: (field) => this.isCreateFieldOnly(field) && editMode,
+      disabled: (field) => editMode && isImmutableOnEdit(field),
       resolveDynamicValues: (field) => this.resolveDynamicValues(field),
       editMode,
     });
@@ -208,11 +214,26 @@ export class CreateResourceModal {
     return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
   }
 
-  private isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
-    return (
-      field.property === ResourceFieldNames.MetadataName ||
-      field.property === ResourceFieldNames.SpecType ||
-      field.property === ResourceFieldNames.MetadataNamespace
-    );
+  private restoreImmutableFields(
+    value: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const original = this.originalResource();
+    if (!original) {
+      return value;
+    }
+
+    const result = structuredClone(value) as Record<string, unknown>;
+    for (const field of this.fields()) {
+      if (!isImmutableOnEdit(field) || typeof field.property !== 'string') {
+        continue;
+      }
+
+      const originalValue = getValueByPath(original, field.property);
+      if (originalValue !== undefined) {
+        setPropertyByPath(result, field.property, originalValue);
+      }
+    }
+
+    return result;
   }
 }

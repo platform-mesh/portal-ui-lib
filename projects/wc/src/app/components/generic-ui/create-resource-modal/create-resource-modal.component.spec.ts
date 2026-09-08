@@ -164,6 +164,21 @@ describe('CreateResourceModalComponent', () => {
       expect(nameField?.disabled).toBe(false);
     });
 
+    it('should disable spec.alias when opened for edit', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'spec.alias', required: true, label: 'Alias' },
+        { property: 'spec.displayName', label: 'Display name' },
+      ]);
+      await component.open({
+        metadata: { name: 'test2' },
+        spec: { alias: 'test2', displayName: 'test-dex-dex-dex' },
+      } as any);
+      const aliasField = component
+        .formFields()
+        .find((f) => f.name === 'spec.alias');
+      expect(aliasField?.disabled).toBe(true);
+    });
+
     it('should not disable spec.description in edit mode', async () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const descField = component
@@ -354,6 +369,26 @@ describe('CreateResourceModalComponent', () => {
   });
 
   describe('onFormSubmit', () => {
+    it('should restore immutable fields from the original resource on submit', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        { property: 'spec.alias', required: true, label: 'Alias' },
+        { property: 'spec.displayName', label: 'Display name' },
+      ]);
+      await component.open({
+        metadata: { name: 'dex' },
+        spec: { alias: 'dex', displayName: 'Dex' },
+      } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        spec: { displayName: 'Dex (updated)' },
+      });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'dex' },
+        spec: { alias: 'dex', displayName: 'Dex (updated)' },
+      });
+    });
+
     it('should emit resource when not in edit mode', async () => {
       await component.open();
       const spy = vi.spyOn(component.resource, 'emit');
@@ -365,12 +400,12 @@ describe('CreateResourceModalComponent', () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const spy = vi.spyOn(component.updateResource, 'emit');
       component.onFormSubmit({
-        'metadata.name': 'existing',
-        'spec.description': 'updated',
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
       });
       expect(spy).toHaveBeenCalledWith({
-        'metadata.name': 'existing',
-        'spec.description': 'updated',
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
       });
     });
 
