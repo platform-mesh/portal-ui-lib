@@ -16,10 +16,6 @@ export function flattenFieldTree(
   return result;
 }
 
-function isWriteOnlyField(field: PlatformMeshFieldDefinition): boolean {
-  return field.uiSettings?.writeOnly === true;
-}
-
 export const WRITE_ONLY_EDIT_PLACEHOLDER = 'Leave empty to keep unchanged';
 
 export type DisabledPredicate = (field: PlatformMeshFieldDefinition) => boolean;
@@ -127,22 +123,38 @@ function buildFormField(
     formField.disabled = options.disabled(field);
   }
 
-  if (isSecretFormField(field)) {
+  if (field.inputType) {
+    formField.inputType = field.inputType;
+  } else if (field.uiSettings?.displayAs === 'secret') {
     formField.inputType = 'Password';
-    formField.writeOnly = isWriteOnlyField(field);
-    if (options.editMode) {
-      formField.placeholder = WRITE_ONLY_EDIT_PLACEHOLDER;
-      formField.required = false;
-    }
   }
 
-  if (isBooleanFormField(field)) {
-    formField.inputType = 'Switch';
+  if (field.showPasswordToggle !== undefined) {
+    formField.showPasswordToggle = field.showPasswordToggle;
   }
 
-  const hint = field.uiSettings?.hint?.trim();
+  const hint = field.hint?.trim();
   if (hint) {
     formField.hint = hint;
+  }
+
+  if (field.writeOnly) {
+    formField.writeOnly = true;
+  }
+
+  if (field.placeholder) {
+    formField.placeholder = field.placeholder;
+  }
+
+  if (
+    options.editMode &&
+    formField.inputType === 'Password' &&
+    formField.writeOnly
+  ) {
+    formField.required = false;
+    if (!formField.placeholder) {
+      formField.placeholder = WRITE_ONLY_EDIT_PLACEHOLDER;
+    }
   }
 
   if (field.required || field.property === METADATA_NAME_FIELD) {
@@ -159,14 +171,8 @@ function collectionPath(
   return typeof field.property === 'string' ? field.property : undefined;
 }
 
-export function isSecretFormField(field: PlatformMeshFieldDefinition): boolean {
-  return (
-    isWriteOnlyField(field) || field.uiSettings?.displayAs === 'secret'
-  );
-}
-
-export function isBooleanFormField(field: PlatformMeshFieldDefinition): boolean {
-  return (field.uiSettings?.displayAs as string | undefined) === 'switch';
+function isSwitchField(field: PlatformMeshFieldDefinition): boolean {
+  return field.inputType === 'Switch';
 }
 
 export function coerceBoolean(value: unknown): boolean {
@@ -218,7 +224,7 @@ export function buildInitialValues(
     const result: Record<string, unknown> = {};
     for (const field of fields ?? []) {
       if (typeof field.property !== 'string') continue;
-      if (isBooleanFormField(field)) {
+      if (isSwitchField(field)) {
         result[field.property] =
           field.value !== undefined ? coerceBoolean(field.value) : false;
       }
@@ -244,7 +250,7 @@ export function buildInitialValues(
 
     if (typeof field.property === 'string') {
       const raw = readPath(resource, field.property) ?? '';
-      result[field.property] = isBooleanFormField(field)
+      result[field.property] = isSwitchField(field)
         ? coerceBoolean(raw)
         : raw;
     }

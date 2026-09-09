@@ -18,6 +18,69 @@ const defs = (items: readonly unknown[]): PlatformMeshFieldDefinition[] =>
   items as PlatformMeshFieldDefinition[];
 
 // ---------------------------------------------------------------------------
+// flattenFieldTree
+// ---------------------------------------------------------------------------
+
+describe('flattenFieldTree', () => {
+  it('returns [] for undefined / empty input', () => {
+    expect(flattenFieldTree(undefined)).toEqual([]);
+    expect(flattenFieldTree([])).toEqual([]);
+  });
+
+  it('passes scalar fields through untouched', () => {
+    const fields = defs([
+      { property: 'metadata.name' },
+      { property: 'spec.type' },
+    ]);
+    expect(flattenFieldTree(fields)).toEqual(fields);
+  });
+
+  it('replaces a collection field with its sub-fields', () => {
+    const fields = defs([
+      { property: 'metadata.name' },
+      {
+        label: 'Conditions',
+        property: 'status.conditions',
+        propertyCollection: [
+          { property: 'status.conditions.type' },
+          { property: 'status.conditions.status' },
+        ],
+      },
+    ]);
+
+    expect(flattenFieldTree(fields)).toEqual([
+      { property: 'metadata.name' },
+      { property: 'status.conditions.type' },
+      { property: 'status.conditions.status' },
+    ]);
+  });
+
+  it('recurses into nested collections', () => {
+    const fields = defs([
+      {
+        property: 'spec.stages',
+        propertyCollection: [
+          { property: 'spec.stages.name' },
+          {
+            property: 'spec.stages.steps',
+            propertyCollection: [
+              { property: 'spec.stages.steps.command' },
+              { property: 'spec.stages.steps.image' },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(flattenFieldTree(fields)).toEqual([
+      { property: 'spec.stages.name' },
+      { property: 'spec.stages.steps.command' },
+      { property: 'spec.stages.steps.image' },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // toFormFields
 // ---------------------------------------------------------------------------
 
@@ -99,29 +162,30 @@ describe('toFormFields', () => {
       ]),
     );
     expect(formField.inputType).toBe('Password');
-    expect(formField.writeOnly).toBe(false);
+    expect(formField.writeOnly).toBeUndefined();
   });
 
-  it('ignores blank uiSettings.hint values', async () => {
+  it('ignores blank hint values', async () => {
     const [formField] = await toFormFields(
       defs([
         {
           property: 'spec.alias',
           label: 'Alias',
-          uiSettings: { hint: '   ' },
+          hint: '   ',
         },
       ]),
     );
     expect(formField.hint).toBeUndefined();
   });
 
-  it('maps write-only fields to password inputs', async () => {
+  it('passes through password and write-only field metadata', async () => {
     const [formField] = await toFormFields(
       defs([
         {
           property: 'spec.oidc.clientSecret',
           label: 'Client secret',
-          uiSettings: { writeOnly: true },
+          inputType: 'Password',
+          writeOnly: true,
         },
       ]),
     );
@@ -129,28 +193,26 @@ describe('toFormFields', () => {
     expect(formField.writeOnly).toBe(true);
   });
 
-  it('maps displayAs switch fields to Switch input type', async () => {
+  it('passes through Switch input type', async () => {
     const [formField] = await toFormFields(
       defs([
         {
           property: 'spec.enabled',
           label: 'Enabled',
-          uiSettings: { displayAs: 'switch' },
+          inputType: 'Switch',
         },
       ]),
     );
     expect(formField.inputType).toBe('Switch');
   });
 
-  it('maps uiSettings.hint to form field help text', async () => {
+  it('passes through hint text', async () => {
     const [formField] = await toFormFields(
       defs([
         {
           property: 'spec.oidc.discoveryUrl',
           label: 'Discovery URL',
-          uiSettings: {
-            hint: 'e.g. https://issuer.example.com/.well-known/openid-configuration',
-          },
+          hint: 'e.g. https://issuer.example.com/.well-known/openid-configuration',
         },
       ]),
     );
@@ -159,20 +221,38 @@ describe('toFormFields', () => {
     );
   });
 
-  it('makes write-only fields optional with placeholder in edit mode', async () => {
+  it('makes write-only password fields optional with placeholder in edit mode', async () => {
     const [formField] = await toFormFields(
       defs([
         {
           property: 'spec.oidc.clientSecret',
           label: 'Client secret',
           required: true,
-          uiSettings: { writeOnly: true },
+          inputType: 'Password',
+          writeOnly: true,
         },
       ]),
       { editMode: true },
     );
     expect(formField.required).toBe(false);
     expect(formField.placeholder).toBe('Leave empty to keep unchanged');
+  });
+
+  it('does not override a configured placeholder in edit mode', async () => {
+    const [formField] = await toFormFields(
+      defs([
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          required: true,
+          inputType: 'Password',
+          writeOnly: true,
+          placeholder: 'Configured placeholder',
+        },
+      ]),
+      { editMode: true },
+    );
+    expect(formField.placeholder).toBe('Configured placeholder');
   });
 
   describe('collections', () => {
@@ -423,7 +503,7 @@ describe('buildInitialValues', () => {
           {
             property: 'spec.enabled',
             value: 'true',
-            uiSettings: { displayAs: 'switch' },
+            inputType: 'Switch',
           },
         ]),
         undefined,
@@ -437,7 +517,7 @@ describe('buildInitialValues', () => {
         defs([
           {
             property: 'spec.enabled',
-            uiSettings: { displayAs: 'switch' },
+            inputType: 'Switch',
           },
         ]),
         { spec: { enabled: 'true' } },
@@ -451,7 +531,7 @@ describe('buildInitialValues', () => {
         defs([
           {
             property: 'spec.enabled',
-            uiSettings: { displayAs: 'switch' },
+            inputType: 'Switch',
           },
         ]),
         { spec: { enabled: 'false' } },
@@ -465,7 +545,7 @@ describe('buildInitialValues', () => {
         defs([
           {
             property: 'spec.enabled',
-            uiSettings: { displayAs: 'switch' },
+            inputType: 'Switch',
           },
         ]),
         undefined,

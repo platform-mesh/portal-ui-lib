@@ -148,6 +148,11 @@ Each field definition supports the following properties:
 - `"requirePermission"`: Optional verb (e.g. `"update"`, `"delete"`) that gates rendering of this field per row. The field is shown when the verb is granted for the row, or while the row's permissions are still unknown; it is hidden once the row's permissions are known and the verb is absent. Fields without `requirePermission` always render. Commonly used on `displayAs: "button"` action fields to hide edit/delete buttons the user is not allowed to use.
 - `"values"`: Array of predefined values for selection
 - `"value"`: Static value for field
+- `"inputType"`: Create/edit form control type (`"Text"`, `"Password"`, `"Switch"`). Use `"Switch"` for boolean toggles; table views use `uiSettings.displayAs: "boolIcon"` for read-only boolean icons instead.
+- `"hint"`: Persistent help text below the create/edit form control; never submitted with the form.
+- `"writeOnly"`: When `true`, the field is omitted from GraphQL read queries and empty values are omitted on edit submit (e.g. secrets). Pair with `"inputType": "Password"` for masked secret inputs.
+- `"placeholder"`: Functional placeholder on create/edit form inputs (not example help text — use `hint` for that).
+- `"showPasswordToggle"`: When `inputType` is `"Password"`, show a show/hide toggle inside the input (defaults to ngx behaviour when omitted).
 - `"group"`: Object for grouping related fields together:
   - `"name"`: Unique identifier for the group
   - `"label"`: Display name for the group
@@ -155,11 +160,8 @@ Each field definition supports the following properties:
   - `"multiline"`: Boolean flag for multiline display of grouped values (default: true) When true, values are displayed on separate lines
 - `"uiSettings"`: Object for configuring UI-specific display settings:
   - `"labelDisplay"`: Boolean flag for applying the default emphasized style to the value
-  - `"writeOnly"`: Boolean for create/edit forms. Renders a password input on create.
-  - `"hint"`: Persistent help text rendered below the create/edit form control; never submitted with the form.
   - `"displayAs"`: Controls how the value is displayed (if nothing is provided the plain text is displayed):
     - `"secret"`: Render value as a secret with show/hide toggle
-    - `"switch"`: Create/edit forms only — render as a UI5 switch; submits a boolean
     - `"boolIcon"`: Render boolean-like values (true/false, True/False, TRUE/FALSE) as icon indicators
     - `"link"`: Render URL values as clickable links (supports http://, https://, ftp://, mailto:, tel: protocols)
     - `"tooltip"`: Render an icon with a tooltip; tooltip text is the field value

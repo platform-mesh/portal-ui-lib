@@ -17,20 +17,13 @@ export type {
   ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 
-export type PlatformMeshUiSettings = UiSettings & {
-  writeOnly?: boolean;
-  hint?: string;
-  /** Render as a toggle switch in create/edit forms (`boolIcon` is read-only). */
-  displayAs?: UiSettings['displayAs'] | 'switch';
-};
-
 export type PlatformMeshFieldDefinition = Omit<
   TableFieldDefinition,
   'uiSettings'
 > &
   Omit<FormFieldDefinition, 'name' | 'label' | 'uiSettings'> & {
     label?: string;
-    uiSettings?: PlatformMeshUiSettings;
+    uiSettings?: UiSettings;
     dynamicValuesDefinition?: {
       operation: string;
       gqlQuery: string;
