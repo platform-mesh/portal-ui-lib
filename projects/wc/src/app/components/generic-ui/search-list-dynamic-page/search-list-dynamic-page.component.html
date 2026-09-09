@@ -37,7 +37,21 @@
     <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
     <!-- future: filter bar (#591) -->
   </ui5-dynamic-page-header>
-  <!-- future: table content (#593) -->
+  <mfp-declarative-table
+    [columns]="columns()"
+    [resources]="tableResources()"
+    [loading]="loading()"
+    [permissions]="instancePermissionsStore.permissions()"
+    [totalItemsCount]="totalItemsCount()"
+    [paginationLimit]="paginationLimit()"
+    [hasMore]="hasMore()"
+    [currentPage]="currentPage()"
+    loadMode="pager"
+    (buttonClick)="genericActionHandler($event)"
+    (tableRowClicked)="navigateToResource($event)"
+    (pageChange)="onPageChange($event)"
+    (paginationLimitChanged)="onLimitChange($event)"
+  />
 </ui5-dynamic-page>
 
 <pm-create-resource-modal

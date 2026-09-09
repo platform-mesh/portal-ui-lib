@@ -1,15 +1,20 @@
 import { SearchListDynamicPage } from './search-list-dynamic-page.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import { ErrorHandlerService, ResourceService } from '@platform-mesh/portal-ui-lib/services';
 import { of } from 'rxjs';
 import { mock } from 'vitest-mock-extended';
 import { MockedObject } from 'vitest';
+import { ReadResourcesProxyService } from '../opensearch-list-view/services/read-resources-proxy.service';
+import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
 
 describe('SearchListDynamicPage', () => {
   let component: SearchListDynamicPage;
   let fixture: ComponentFixture<SearchListDynamicPage>;
   let mockResourceService: MockedObject<ResourceService>;
+  let mockReadResourcesProxy: MockedObject<ReadResourcesProxyService>;
+  let mockErrorHandlerService: MockedObject<ErrorHandlerService>;
+  let mockInstancePermissionsStore: MockedObject<InstancePermissionsStore>;
 
   const buildContext = (overrides: Partial<any> = {}) =>
     (() => ({
@@ -28,27 +33,44 @@ describe('SearchListDynamicPage', () => {
 
   const buildLuigiClient = () => ({}) as any;
 
+  const createComponent = (contextOverrides: Partial<any> = {}): ComponentFixture<SearchListDynamicPage> => {
+    const f = TestBed.createComponent(SearchListDynamicPage);
+    f.componentInstance.context = buildContext(contextOverrides);
+    f.componentInstance.LuigiClient = (() => buildLuigiClient()) as any;
+    f.detectChanges();
+    return f;
+  };
+
   beforeEach(() => {
     mockResourceService = mock<ResourceService>();
+    mockReadResourcesProxy = mock<ReadResourcesProxyService>();
+    mockErrorHandlerService = mock<ErrorHandlerService>();
+    mockInstancePermissionsStore = mock<InstancePermissionsStore>();
+    mockInstancePermissionsStore.permissions.mockReturnValue({});
+    mockReadResourcesProxy.forContext.mockReturnValue({
+      list: () => of({ items: [], totalCount: 0 } as any),
+      subscribe: () => of(undefined),
+    });
 
     TestBed.configureTestingModule({
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
-      providers: [{ provide: ResourceService, useValue: mockResourceService }],
+      providers: [
+        { provide: ResourceService, useValue: mockResourceService },
+        { provide: ReadResourcesProxyService, useValue: mockReadResourcesProxy },
+        { provide: ErrorHandlerService, useValue: mockErrorHandlerService },
+        { provide: InstancePermissionsStore, useValue: mockInstancePermissionsStore },
+      ],
     }).overrideComponent(SearchListDynamicPage, {
       set: {
         template: '',
         imports: [],
+        providers: [],
         schemas: [CUSTOM_ELEMENTS_SCHEMA],
       },
     });
 
-    fixture = TestBed.createComponent(SearchListDynamicPage);
+    fixture = createComponent();
     component = fixture.componentInstance;
-
-    component.context = buildContext();
-    component.LuigiClient = (() => buildLuigiClient()) as any;
-
-    fixture.detectChanges();
   });
 
   it('should create', () => {
@@ -61,30 +83,24 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('uses resourceDefinition.ui.listView.resourceTitle.label when set', () => {
-      const f = TestBed.createComponent(SearchListDynamicPage);
-      f.componentInstance.context = buildContext({
+      const f = createComponent({
         resourceDefinition: {
           ui: { listView: { resourceTitle: { label: 'Custom title' } } },
         },
       });
-      f.componentInstance.LuigiClient = component.LuigiClient;
-      f.detectChanges();
       expect(f.componentInstance.resourceTitleDefinition()).toBe('Custom title');
     });
   });
 
   describe('resourceDescriptionDefinition', () => {
     it('returns custom label when resourceDescription.label is set', () => {
-      const f = TestBed.createComponent(SearchListDynamicPage);
-      f.componentInstance.context = buildContext({
+      const f = createComponent({
         resourceDefinition: {
           ui: {
             listView: { resourceDescription: { label: 'My description' } },
           },
         },
       });
-      f.componentInstance.LuigiClient = component.LuigiClient;
-      f.detectChanges();
       expect(f.componentInstance.resourceDescriptionDefinition()).toBe(
         'My description',
       );
@@ -104,12 +120,12 @@ describe('SearchListDynamicPage', () => {
 
     it('returns actions from listView when defined', () => {
       const action = { property: 'spec.url', label: 'Open', uiSettings: { buttonSettings: { action: 'navigate' } } };
-      component.context = buildContext({
+      const f = createComponent({
         resourceDefinition: {
           ui: { listView: { actions: [action] } },
         },
       });
-      expect(component.actions()).toEqual([action]);
+      expect(f.componentInstance.actions()).toEqual([action]);
     });
   });
 
@@ -119,12 +135,12 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('returns true when createView fields are present', () => {
-      component.context = buildContext({
+      const f = createComponent({
         resourceDefinition: {
           ui: { createView: { fields: [{ property: 'metadata.name' }] } },
         },
       });
-      expect(component.hasUiCreateViewFields()).toBe(true);
+      expect(f.componentInstance.hasUiCreateViewFields()).toBe(true);
     });
   });
 
@@ -135,12 +151,12 @@ describe('SearchListDynamicPage', () => {
 
     it('returns the createView fields when present', () => {
       const fields = [{ property: 'metadata.name', label: 'Name' }];
-      component.context = buildContext({
+      const f = createComponent({
         resourceDefinition: {
           ui: { createView: { fields } },
         },
       });
-      expect(component.createFields()).toEqual(fields);
+      expect(f.componentInstance.createFields()).toEqual(fields);
     });
   });
 
@@ -150,53 +166,53 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('returns true when portalPermissions allows the action', () => {
-      component.context = buildContext({
+      const f = createComponent({
         portalPermissions: { clusters: ['create'] },
         resourceDefinition: {
           permissionsDefinition: { resource: 'clusters' },
         },
       });
-      expect(component.canDo('create')).toBe(true);
+      expect(f.componentInstance.canDo('create')).toBe(true);
     });
 
     it('returns false when portalPermissions denies the action', () => {
-      component.context = buildContext({
+      const f = createComponent({
         portalPermissions: { clusters: ['get'] },
         resourceDefinition: {
           permissionsDefinition: { resource: 'clusters' },
         },
       });
-      expect(component.canDo('create')).toBe(false);
+      expect(f.componentInstance.canDo('create')).toBe(false);
     });
 
     it('returns true when portalPermissions is undefined (no restrictions)', () => {
-      component.context = buildContext({
+      const f = createComponent({
         portalPermissions: undefined,
         resourceDefinition: { permissionsDefinition: { resource: 'clusters' } },
       });
-      expect(component.canDo('create')).toBe(true);
+      expect(f.componentInstance.canDo('create')).toBe(true);
     });
   });
 
   describe('canCreate', () => {
     it('returns true when portalPermissions allows create', () => {
-      component.context = buildContext({
+      const f = createComponent({
         portalPermissions: { clusters: ['create'] },
         resourceDefinition: {
           permissionsDefinition: { resource: 'clusters' },
         },
       });
-      expect(component.canCreate()).toBe(true);
+      expect(f.componentInstance.canCreate()).toBe(true);
     });
 
     it('returns false when portalPermissions denies create', () => {
-      component.context = buildContext({
+      const f = createComponent({
         portalPermissions: { clusters: ['get'] },
         resourceDefinition: {
           permissionsDefinition: { resource: 'clusters' },
         },
       });
-      expect(component.canCreate()).toBe(false);
+      expect(f.componentInstance.canCreate()).toBe(false);
     });
   });
 
@@ -228,10 +244,10 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('does nothing when resourceDefinition is undefined', () => {
-      component.context = (() => ({ resourceDefinition: undefined })) as any;
+      const f = createComponent({ resourceDefinition: undefined });
       const resource = { id: 'r1', metadata: { name: 'r1' } } as any;
 
-      component.onCreateSubmit(resource);
+      f.componentInstance.onCreateSubmit(resource);
 
       expect(mockResourceService.create).not.toHaveBeenCalled();
     });
