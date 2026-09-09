@@ -200,26 +200,28 @@ export class SearchListDynamicPage implements OnInit {
       this.LuigiClient(),
       event.field,
       event.resource,
-      (result?: ModalResult) => {
-        if (!result?.data) {
-          return;
-        }
-
-        switch (result.data.action) {
-          case 'navigate':
-            this.navigateToResource(result.data.resource);
-            break;
-          case 'create':
-            this.onCreateSubmit(result.data.resource as Resource);
-            break;
-          case 'loadTableData':
-            this.list();
-            break;
-          default:
-            console.debug(`Action ${result.data?.action} not supported`);
-        }
-      },
+      (result?: ModalResult) => this.handleModalResult(result),
     );
+  }
+
+  handleModalResult(result?: ModalResult): void {
+    if (!result?.data) {
+      return;
+    }
+
+    switch (result.data.action) {
+      case 'navigate':
+        this.navigateToResource(result.data.resource);
+        break;
+      case 'create':
+        this.onCreateSubmit(result.data.resource as Resource);
+        break;
+      case 'loadTableData':
+        this.list();
+        break;
+      default:
+        console.debug(`Action ${result.data?.action} not supported`);
+    }
   }
 
   list(): void {

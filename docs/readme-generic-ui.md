@@ -9,6 +9,7 @@ The generic ui consists of the following components:
 
 - `generic-list-view`: Component for displaying and managing lists of resources, as well as creation, and deletion of the resources.
 - `generic-detail-view`: Component for displaying individual resource.
+- `search-list-dynamic-page`: Full-page list view with a Fiori Dynamic Page layout, paged table (via `mfp-declarative-table`), and optional create modal.
 
 ## Configuration
 
@@ -196,12 +197,17 @@ Each field definition supports the following properties:
 When the micro-frontend opened inside the modal needs to signal a result back (e.g. after a form submit), close the modal using Luigi's `goBack` with a payload:
 
 ```ts
-LuigiClient.linkManager().goBack({ status: 'submit', action: 'create', resource: createdResource });
+LuigiClient.linkManager().goBack({
+  status: 'submit',
+  action: 'create',
+  resource: createdResource,
+});
 ```
 
 Luigi wraps the argument in a `{ data }` envelope which the parent view receives as the modal result. If the user dismisses the modal (e.g. close button or ESC) without calling `goBack`, no result data is available.
 
 Supported values for the payload fields:
+
 - `status`: `"submit"` | `"cancelled"`
 - `action`: `"create"` | `"navigate"` | `"loadTableData"`
 - `resource`: the affected resource object (optional, any type)
@@ -707,6 +713,49 @@ This example demonstrates various features including:
           }
         }
       ]
+    }
+  }
+}
+```
+
+### Search List Dynamic Page
+
+A full-page list view using the SAP Fiori `ui5-dynamic-page` layout. Use it when you want a DynamicPage header (collapsible, with branding and action toolbar) combined with a paginated Fiori table.
+
+**Web component selector:** `search-list-dynamic-page`
+
+**URL:** `/assets/platform-mesh-portal-ui-wc.js#search-list-dynamic-page`
+
+**Key behaviour:**
+
+- Table is rendered via `mfp-declarative-table`, columns driven by `resourceDefinition.ui.listView.fields`.
+- Pagination is page-based (`loadMode: pager`). Current page and limit are persisted as `?page=` / `?limit=` URL query params (default values `page=1` and `limit=20` are omitted to keep URLs clean).
+- Data is fetched via `ReadResourcesProxyService`: uses the GraphQL gateway by default; switches to OpenSearch when the `os-provider` Luigi feature toggle is active.
+- If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens a modal form.
+- If `resourceDefinition.readyCondition` is set, a status-alert column is prepended to the table.
+
+**Minimal node configuration:**
+
+```json
+{
+  "url": "/assets/platform-mesh-portal-ui-wc.js#search-list-dynamic-page",
+  "webcomponent": { "selfRegistered": true, "type": "module" },
+  "context": {
+    "resourceDefinition": {
+      "apiGroup": "example.io",
+      "version": "v1alpha1",
+      "entityCollection": "widgets",
+      "entity": "Widget",
+      "scope": "Namespaced",
+      "ui": {
+        "listView": {
+          "fields": [
+            { "property": "metadata.name", "label": "Name" },
+            { "property": "spec.description", "label": "Description" }
+          ]
+        },
+        "detailView": { "fields": [] }
+      }
     }
   }
 }
