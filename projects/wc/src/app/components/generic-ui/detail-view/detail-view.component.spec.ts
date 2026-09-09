@@ -1,6 +1,6 @@
 import { DetailView } from './detail-view.component';
 import { NgTemplateOutlet } from '@angular/common';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EnvConfigService } from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models/models';
@@ -11,7 +11,7 @@ import {
   KubeconfigSecretService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import { Subject, of, throwError } from 'rxjs';
+import { EMPTY, Subject, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
@@ -133,7 +133,7 @@ describe('DetailViewComponent', () => {
     fixture = TestBed.createComponent(DetailView);
     component = fixture.componentInstance;
 
-    component.context = (() => ({
+    component.context = signal({
       resourceId: 'cluster-1',
       token: 'abc123',
       accountPath: 'account-123',
@@ -154,7 +154,7 @@ describe('DetailViewComponent', () => {
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
       entityName: 'test-resource',
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     component.LuigiClient = (() => ({
       linkManager: () => ({
@@ -201,7 +201,7 @@ describe('DetailViewComponent', () => {
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
 
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       resourceId: 'cluster-1',
       token: 'abc123',
       accountPath: 'account-123',
@@ -223,7 +223,7 @@ describe('DetailViewComponent', () => {
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
       entityName: 'test-resource',
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
@@ -247,7 +247,7 @@ describe('DetailViewComponent', () => {
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
 
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       entityName: 'cluster-1',
       resourceId: 'cluster-1',
       token: 'abc123',
@@ -261,7 +261,7 @@ describe('DetailViewComponent', () => {
         metadata: { name: 'test-resource' },
       },
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
@@ -303,7 +303,7 @@ describe('DetailViewComponent', () => {
       getActiveFeatureToggles: () => [],
     })) as any;
 
-    component.context = (() => ({
+    component.context = signal({
       resourceId: 'cluster-1',
       token: 'abc123',
       accountPath: 'account-123',
@@ -324,7 +324,7 @@ describe('DetailViewComponent', () => {
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
       entityName: 'test-resource',
       parentNavigationContexts: ['organizations', 'projects'],
-    })) as any;
+    }) as any;
 
     component.navigateToParent();
 
@@ -457,7 +457,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'account-1',
         token: 'abc123',
         resourceDefinition: {
@@ -473,7 +473,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'account-1',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = component.LuigiClient;
       (newComponent as any).deleteModal = () => mockDeleteModal;
@@ -555,7 +555,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'account-1',
         token: 'abc123',
         resourceDefinition: {
@@ -571,7 +571,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'account-1',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = component.LuigiClient;
       (newComponent as any).createModal = () => mockCreateModal;
@@ -618,7 +618,7 @@ describe('DetailViewComponent', () => {
         getActiveFeatureToggles: () => [],
       })) as any;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: undefined,
         token: 'abc123',
         resourceDefinition: {
@@ -634,7 +634,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newFixture.detectChanges();
 
@@ -651,7 +651,7 @@ describe('DetailViewComponent', () => {
 
   it('should have namespaceId in context when provided', () => {
     const testNamespace = 'test-namespace';
-    component.context = (() => ({
+    component.context = signal({
       resourceId: 'cluster-1',
       token: 'abc123',
       namespaceId: testNamespace,
@@ -667,7 +667,7 @@ describe('DetailViewComponent', () => {
       },
       entityName: 'test-resource',
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     fixture.detectChanges();
 
@@ -777,7 +777,7 @@ describe('DetailViewComponent', () => {
     mockResourceService.read.mockClear();
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
@@ -807,7 +807,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
 
     newFixture.detectChanges();
@@ -829,13 +829,13 @@ describe('DetailViewComponent', () => {
     );
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [secretAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
@@ -844,7 +844,7 @@ describe('DetailViewComponent', () => {
     );
   });
 
-  it('should render a generic action before the resource arrives', () => {
+  it('should hide generic actions until the resource arrives', () => {
     const resourceRead = new Subject<any>();
     const navigateAction = {
       value: '/clusters',
@@ -856,17 +856,19 @@ describe('DetailViewComponent', () => {
     mockResourceService.read.mockReturnValueOnce(resourceRead);
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [navigateAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
     expect(newComponent.resource()).toBeUndefined();
+    expect(newComponent.customActions()).toEqual([]);
+    resourceRead.next({ metadata: { name: 'cluster-1' } });
     expect(newComponent.customActions()).toContain(
       navigateAction.uiSettings.buttonSettings,
     );
@@ -902,13 +904,13 @@ describe('DetailViewComponent', () => {
     mockResourceService.read.mockClear();
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
 
     expect(() => newFixture.detectChanges()).not.toThrow();
@@ -937,13 +939,13 @@ describe('DetailViewComponent', () => {
     );
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [secretAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
@@ -1115,6 +1117,52 @@ describe('DetailViewComponent', () => {
     newFixture.destroy();
   });
 
+  it.each(['response', 'error'])(
+    'ignores a stale Secret %s before context cleanup',
+    async (outcome) => {
+      const pending = new Subject<{ contents: string; filename: string }>();
+      const showAlert = vi.fn();
+      const view = TestBed.createComponent(DetailView);
+      const card = view.componentInstance;
+      const context = { ...component.context(), resourceId: 'cluster-1' };
+      view.componentRef.setInput('context', context);
+      view.componentRef.setInput('LuigiClient', {
+        ...component.LuigiClient(),
+        uxManager: () => ({ showAlert }),
+      });
+      view.detectChanges();
+      kubeconfigSecretServiceMock.readKubeconfig.mockReturnValue(pending);
+      global.URL.createObjectURL = vi.fn();
+      const download = card.downloadKubeconfigFromSecretRef(
+        secretAction.uiSettings.buttonSettings,
+      );
+
+      view.componentRef.setInput('context', {
+        ...context,
+        resourceId: 'cluster-2',
+      });
+      if (outcome === 'response') {
+        pending.next({
+          contents: 'apiVersion: v1',
+          filename: 'cluster-1.yaml',
+        });
+        pending.complete();
+      } else {
+        pending.error(new Error('Stale read failure'));
+      }
+      await download;
+      expect(global.URL.createObjectURL).not.toHaveBeenCalled();
+      expect(showAlert).not.toHaveBeenCalled();
+      await card.downloadKubeconfigFromSecretRef(
+        secretAction.uiSettings.buttonSettings,
+      );
+      expect(kubeconfigSecretServiceMock.readKubeconfig).toHaveBeenCalledTimes(
+        1,
+      );
+      view.destroy();
+    },
+  );
+
   it('should cancel a pending Secret read when the view is destroyed', async () => {
     const showAlert = vi.fn();
     const readResult = new Subject<{
@@ -1186,13 +1234,13 @@ describe('DetailViewComponent', () => {
     );
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [secretAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
     const downloadSpy = vi
@@ -1226,13 +1274,13 @@ describe('DetailViewComponent', () => {
     ];
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
@@ -1267,13 +1315,13 @@ describe('DetailViewComponent', () => {
     };
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [unsupportedAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
       uxManager: () => ({ showAlert }),
@@ -1309,13 +1357,13 @@ describe('DetailViewComponent', () => {
     };
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [missingTargetAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({ navigate: vi.fn(), openAsModal: vi.fn() }),
       uxManager: () => ({ showAlert }),
@@ -1355,7 +1403,7 @@ describe('DetailViewComponent', () => {
     };
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
@@ -1363,7 +1411,7 @@ describe('DetailViewComponent', () => {
           detailView: { fields: [], actions: [invalidJsonPathAction] },
         },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
@@ -1383,7 +1431,7 @@ describe('DetailViewComponent', () => {
     );
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       namespaceId: 'default',
       portalPermissions: { 'clusters/default/cluster-1': ['get'] },
@@ -1402,7 +1450,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
@@ -1429,7 +1477,7 @@ describe('DetailViewComponent', () => {
     );
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       namespaceId: undefined,
       portalPermissions: {
@@ -1450,7 +1498,7 @@ describe('DetailViewComponent', () => {
           },
         },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = component.LuigiClient;
     newFixture.detectChanges();
 
@@ -1480,13 +1528,13 @@ describe('DetailViewComponent', () => {
     };
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       ...component.context(),
       resourceDefinition: {
         ...component.context().resourceDefinition,
         ui: { detailView: { fields: [], actions: [modalAction] } },
       },
-    })) as any;
+    }) as any;
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
         fromContext: vi.fn().mockReturnThis(),
@@ -1514,7 +1562,7 @@ describe('DetailViewComponent', () => {
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
 
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       resourceId: 'test-account',
       token: 'abc123',
       resourceDefinition: {
@@ -1530,7 +1578,7 @@ describe('DetailViewComponent', () => {
       },
       entityName: 'test-account',
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
@@ -1575,7 +1623,7 @@ describe('DetailViewComponent', () => {
     const newFixture = TestBed.createComponent(DetailView);
     const newComponent = newFixture.componentInstance;
 
-    newComponent.context = (() => ({
+    newComponent.context = signal({
       resourceId: 'cluster-1',
       token: 'abc123',
       resourceDefinition: {
@@ -1590,7 +1638,7 @@ describe('DetailViewComponent', () => {
       },
       entityName: 'test-resource',
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     newComponent.LuigiClient = (() => ({
       linkManager: () => ({
@@ -1688,7 +1736,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         entityName: undefined,
         token: 'abc123',
         resourceDefinition: {
@@ -1702,7 +1750,7 @@ describe('DetailViewComponent', () => {
           },
         },
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -1753,7 +1801,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -1768,7 +1816,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: undefined, // undefined parentNavigationContexts
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -1798,7 +1846,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -1813,7 +1861,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: [], // empty array
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -1843,13 +1891,13 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: undefined, // undefined resourceDefinition
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -1879,7 +1927,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -1898,7 +1946,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -1932,7 +1980,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -1951,7 +1999,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -1983,7 +2031,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -2005,7 +2053,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -2039,7 +2087,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -2056,7 +2104,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
 
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
@@ -2080,7 +2128,7 @@ describe('DetailViewComponent', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
       mockResourceService.read = vi.fn().mockReturnValue(of(undefined));
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: 'cluster-1',
         token: 'abc123',
         resourceDefinition: {
@@ -2092,7 +2140,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
           fromContext: vi.fn().mockReturnThis(),
@@ -2192,7 +2240,7 @@ describe('DetailViewComponent', () => {
     it('should return empty string for defaultTitle when resource has no displayName and resourceId is undefined', () => {
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
-      newComponent.context = (() => ({
+      newComponent.context = signal({
         resourceId: undefined,
         token: 'abc123',
         resourceDefinition: {
@@ -2204,7 +2252,7 @@ describe('DetailViewComponent', () => {
         },
         entityName: 'test-resource',
         parentNavigationContexts: ['project'],
-      })) as any;
+      }) as any;
       newComponent.LuigiClient = (() => ({
         linkManager: () => ({
           fromContext: vi.fn().mockReturnThis(),
@@ -2332,7 +2380,7 @@ describe('DetailViewComponent', () => {
 
       const localFixture = TestBed.createComponent(DetailView);
       const localComponent = localFixture.componentInstance;
-      localComponent.context = (() => ({
+      localComponent.context = signal({
         ...component.context(),
         resourceDefinition: {
           version: 'v1alpha1',
@@ -2351,7 +2399,7 @@ describe('DetailViewComponent', () => {
             },
           },
         },
-      })) as any;
+      }) as any;
       localComponent.LuigiClient = component.LuigiClient;
       localFixture.detectChanges();
 
@@ -2398,11 +2446,226 @@ describe('DetailViewComponent template', () => {
     });
   });
 
+  const loadedResource = { metadata: { name: 'cluster-1' } };
+
+  function createReactiveDetail() {
+    const fixture = TestBed.createComponent(DetailView);
+    const context = {
+      resourceId: 'cluster-1',
+      kcpPath: 'root:orgs:example:first',
+      resourceDefinition: {
+        version: 'v1',
+        entity: 'Cluster',
+        entityCollection: 'clusters',
+        apiGroup: 'core_k8s_io',
+        ui: { detailView: { fields: [], showDownloadKubeconfig: true } },
+      },
+      parentNavigationContexts: ['project'],
+    };
+    const navigate = vi.fn();
+    const showAlert = vi.fn();
+    fixture.componentRef.setInput('context', context);
+    fixture.componentRef.setInput('LuigiClient', {
+      linkManager: () => ({ fromContext: () => ({ navigate }) }),
+      uxManager: () => ({ showAlert }),
+      getActiveFeatureToggles: () => [],
+    });
+    fixture.detectChanges();
+    const find = (selector: string) =>
+      fixture.nativeElement.querySelector(selector);
+    return {
+      fixture,
+      component: fixture.componentInstance,
+      context,
+      navigate,
+      showAlert,
+      find,
+    };
+  }
+
+  it('renders loading without resource actions, then recovers through the retry button', () => {
+    const initial = new Subject<any>();
+    const retry = new Subject<any>();
+    mockResourceService.read
+      .mockReturnValueOnce(initial)
+      .mockReturnValueOnce(retry);
+    const { fixture, component, find } = createReactiveDetail();
+
+    expect(find('mfp-dashboard').loading).toBe(true);
+    expect(component.customActions()).toEqual([]);
+    expect(find('[data-testid="generic-detail-view-read-state"]')).toBeNull();
+    initial.error(new Error('Gateway unavailable'));
+    fixture.detectChanges();
+
+    expect(find('mfp-dashboard')).toBeNull();
+    expect(find('ui5-illustrated-message').titleText).toBe(
+      'Could not load resource',
+    );
+    expect(errorHandlerServiceMock.handleError).not.toHaveBeenCalled();
+    find('[data-testid="generic-detail-view-retry"]').click();
+    component.retryRead();
+    fixture.detectChanges();
+    expect(mockResourceService.read).toHaveBeenCalledTimes(2);
+    expect(find('mfp-dashboard').loading).toBe(true);
+    expect(find('[data-testid="generic-detail-view-retry"]')).toBeNull();
+    expect(component.resource()).toBeUndefined();
+
+    retry.next(loadedResource);
+    retry.complete();
+    fixture.detectChanges();
+    expect(find('mfp-dashboard').loading).toBe(false);
+    expect(component.resource()).toEqual(loadedResource);
+    expect(component.customActions().map((action) => action.action)).toContain(
+      'download-kubeconfig',
+    );
+    component.retryRead();
+    expect(mockResourceService.read).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    { name: 'null', response: of(null) },
+    { name: 'undefined', response: of(undefined) },
+    { name: 'no emission', response: EMPTY },
+  ])(
+    'renders a distinct not-found state for $name and lets the user retry',
+    ({ response }) => {
+      mockResourceService.read
+        .mockReturnValueOnce(response)
+        .mockReturnValueOnce(of(loadedResource));
+      const { fixture, component, find, navigate } = createReactiveDetail();
+
+      expect(find('mfp-dashboard')).toBeNull();
+      expect(find('ui5-illustrated-message').name).toBe('NoEntries');
+      expect(find('ui5-illustrated-message').titleText).toBe(
+        'Resource not found',
+      );
+      expect(component.resource()).toBeUndefined();
+      expect(component.customActions()).toEqual([]);
+      find('ui5-button:last-child').click();
+      expect(navigate).toHaveBeenCalledWith('/');
+      find('[data-testid="generic-detail-view-retry"]').click();
+      fixture.detectChanges();
+      expect(component.resource()).toEqual(loadedResource);
+      expect(find('ui5-illustrated-message')).toBeNull();
+    },
+  );
+
+  it('preserves authorization handling without presenting a retryable error', () => {
+    const error = new Error('Forbidden');
+    errorHandlerServiceMock.isUnauthorizedAccess.mockReturnValue(true);
+    mockResourceService.read.mockReturnValue(throwError(() => error));
+    const { component, find } = createReactiveDetail();
+
+    expect(errorHandlerServiceMock.handleError).toHaveBeenCalledWith(error);
+    expect(find('mfp-dashboard')).toBeNull();
+    expect(find('ui5-illustrated-message')).toBeNull();
+    expect(component.customActions()).toEqual([]);
+    component.retryRead();
+    expect(mockResourceService.read).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves the pending-deletion redirect and keeps resource actions hidden', () => {
+    const pending = {
+      metadata: {
+        name: 'cluster-1',
+        deletionTimestamp: '2026-09-07T12:00:00Z',
+      },
+    };
+    mockResourceService.read.mockReturnValue(of(pending));
+    const { component, find } = createReactiveDetail();
+
+    expect(
+      errorHandlerServiceMock.handleResourcePendingDeletion,
+    ).toHaveBeenCalledWith(pending);
+    expect(component.resource()).toBeUndefined();
+    expect(component.customActions()).toEqual([]);
+    expect(find('mfp-dashboard')).toBeNull();
+  });
+
+  it('hides old actions immediately and cancels the active retry when context changes', () => {
+    const initial = new Subject<any>();
+    const retry = new Subject<any>();
+    const current = new Subject<any>();
+    mockResourceService.read
+      .mockReturnValueOnce(initial)
+      .mockReturnValueOnce(retry)
+      .mockReturnValueOnce(current);
+    const { fixture, component, context, find } = createReactiveDetail();
+    initial.error(new Error('Gateway unavailable'));
+    component.retryRead();
+    retry.next(loadedResource);
+    expect(component.customActions()).not.toEqual([]);
+    const download = vi.spyOn(component, 'downloadKubeConfig');
+
+    fixture.componentRef.setInput('context', {
+      ...context,
+      resourceId: 'cluster-2',
+      kcpPath: 'root:orgs:example:second',
+    });
+    expect(component.customActions()).toEqual([]);
+    component.onActionButtonClick({
+      event: new MouseEvent('click'),
+      action: { action: 'download-kubeconfig' },
+    });
+    expect(download).not.toHaveBeenCalled();
+    retry.next({ metadata: { name: 'stale' } });
+    expect(component.resource()).toEqual(loadedResource);
+    fixture.detectChanges();
+
+    expect(retry.observed).toBe(false);
+    expect(current.observed).toBe(true);
+    expect(component.resource()).toBeUndefined();
+    expect(find('mfp-dashboard').loading).toBe(true);
+    current.next({ metadata: { name: 'cluster-2' } });
+    current.complete();
+    fixture.detectChanges();
+    expect(component.resource()?.metadata.name).toBe('cluster-2');
+    expect(find('mfp-dashboard').loading).toBe(false);
+  });
+
+  it.each([false, true])(
+    'ignores a stale read error before cleanup (forbidden=%s)',
+    (forbidden) => {
+      const oldRead = new Subject<any>();
+      const current = new Subject<any>();
+      mockResourceService.read
+        .mockReturnValueOnce(oldRead)
+        .mockReturnValueOnce(current);
+      errorHandlerServiceMock.isUnauthorizedAccess.mockReturnValue(forbidden);
+      const { fixture, component, context, find } = createReactiveDetail();
+
+      fixture.componentRef.setInput('context', {
+        ...context,
+        resourceId: 'cluster-2',
+      });
+      oldRead.error(new Error('Forbidden'));
+      expect(errorHandlerServiceMock.handleError).not.toHaveBeenCalled();
+      expect(component.customActions()).toEqual([]);
+      fixture.detectChanges();
+      expect(find('mfp-dashboard').loading).toBe(true);
+      expect(find('ui5-illustrated-message')).toBeNull();
+    },
+  );
+
+  it('cancels a retry on destruction', () => {
+    const retry = new Subject<any>();
+    mockResourceService.read
+      .mockReturnValueOnce(throwError(() => new Error('Gateway unavailable')))
+      .mockReturnValueOnce(retry);
+    const { fixture, component } = createReactiveDetail();
+    component.retryRead();
+    expect(retry.observed).toBe(true);
+    fixture.destroy();
+    expect(retry.observed).toBe(false);
+    retry.next(loadedResource);
+    expect(component.resource()).toBeUndefined();
+  });
+
   it('should not render download button when disabled', () => {
     const fixture = TestBed.createComponent(DetailView);
     const component = fixture.componentInstance;
 
-    component.context = (() => ({
+    component.context = signal({
       resourceId: 'cluster-1',
       token: 'abc123',
       accountPath: 'account-123',
@@ -2423,7 +2686,7 @@ describe('DetailViewComponent template', () => {
       portalContext: { kcpWorkspaceUrl: 'https://example.com' },
       entityName: 'test-resource',
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
     component.LuigiClient = (() => ({
       linkManager: () => ({
@@ -2459,7 +2722,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     name: string,
     portalPermissions: Record<string, string[]>,
   ) =>
-    (() => ({
+    signal({
       resourceId: name,
       token: 'abc123',
       portalPermissions,
@@ -2483,7 +2746,7 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
       },
       entityName: name,
       parentNavigationContexts: ['project'],
-    })) as any;
+    }) as any;
 
   const makeLuigiClient = () =>
     (() => ({

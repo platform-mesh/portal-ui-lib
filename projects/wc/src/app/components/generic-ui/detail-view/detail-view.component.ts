@@ -22,8 +22,11 @@ import {
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
+import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
@@ -55,14 +58,21 @@ import {
   isNamespacedResource,
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { Subject, firstValueFrom } from 'rxjs';
-import { take, takeUntil, tap } from 'rxjs/operators';
+import '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js';
+import '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js';
+import { Subject, Subscription, firstValueFrom } from 'rxjs';
+import { take, takeUntil } from 'rxjs/operators';
+
+type ResourceReadState =
+  'loading' | 'ready' | 'error' | 'not-found' | 'redirecting';
 
 @Component({
   selector: 'pm-detail-view',
   standalone: true,
   imports: [
     NgTemplateOutlet,
+    IllustratedMessage,
+    Button,
     Label,
     ResourceField,
     CreateResourceModal,
@@ -84,6 +94,11 @@ export class DetailView {
   private dashboardConfigService = inject(DashboardConfigService);
   private destroyRef = inject(DestroyRef);
   private resourceReadGeneration = 0;
+  private resourceReadSubscription?: Subscription;
+  private readonly readContext = signal<ResourceNodeContext | undefined>(
+    undefined,
+  );
+  private readonly readState = signal<ResourceReadState>('loading');
   private readonly cancelKubeconfigRead = new Subject<void>();
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
   private createModal = viewChild<CreateResourceModal>('createModal');
@@ -92,6 +107,9 @@ export class DetailView {
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
   resource = signal<Resource | undefined>(undefined);
+  protected readonly viewState = computed(() =>
+    this.context() === this.readContext() ? this.readState() : 'loading',
+  );
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(
@@ -158,6 +176,7 @@ export class DetailView {
   });
 
   customActions = computed(() => {
+    if (this.viewState() !== 'ready' || !this.resource()) return [];
     const customActions: ButtonSettings[] = [];
 
     if (this.showDownloadKubeconfig()) {
@@ -263,6 +282,7 @@ export class DetailView {
     event: MouseEvent;
     action: ButtonSettings;
   }): void {
+    if (this.viewState() !== 'ready' || !this.resource()) return;
     const resource = this.resource();
     switch (action.action) {
       case DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION:
@@ -285,8 +305,8 @@ export class DetailView {
 
   constructor() {
     effect((onCleanup) => {
-      const subscription = this.readResource();
-      onCleanup(() => subscription?.unsubscribe());
+      this.readResource();
+      onCleanup(() => this.resourceReadSubscription?.unsubscribe());
     });
 
     this.destroyRef.onDestroy(() => {
@@ -323,13 +343,20 @@ export class DetailView {
   }
 
   private readResource() {
+    this.resourceReadSubscription?.unsubscribe();
     this.resourceReadGeneration += 1;
+    const generation = this.resourceReadGeneration;
+    const context = this.context();
+    const isCurrentRead = () =>
+      generation === this.resourceReadGeneration && context === this.context();
     this.cancelKubeconfigRead.next();
 
     // A custom element can be reused with a different workspace or resource.
     // Drop the previous payload before resolving the new context so actions
     // can never combine an old Secret reference with a new workspace path.
     this.resource.set(undefined);
+    this.readContext.set(context);
+    this.readState.set('loading');
     const resourceDefinition = this.getResourceDefinition();
     const fields = this.getDetailViewQueryFields();
 
@@ -345,25 +372,48 @@ export class DetailView {
       throw new Error('Resource ID is not defined');
     }
 
-    return this.resourceService
+    this.resourceReadSubscription = this.resourceService
       .read(
         resourceId,
         params,
         fields,
-        this.context(),
+        context,
         params.entity.toLowerCase() === 'account',
       )
-      .pipe(
-        tap((resource) => {
-          if (resource?.metadata?.deletionTimestamp) {
-            this.errorHandlerService.handleResourcePendingDeletion(resource);
-          }
-        }),
-      )
       .subscribe({
-        next: (result) => this.resource.set(result),
-        error: (error) => this.errorHandlerService.handleError(error),
+        next: (result) => {
+          if (!isCurrentRead()) return;
+          if (result?.metadata?.deletionTimestamp) {
+            this.readState.set('redirecting');
+            this.errorHandlerService.handleResourcePendingDeletion(result);
+            return;
+          }
+          this.resource.set(result ?? undefined);
+          this.readState.set(result ? 'ready' : 'not-found');
+        },
+        error: (error) => {
+          if (!isCurrentRead()) return;
+          if (this.errorHandlerService.isUnauthorizedAccess(error)) {
+            this.readState.set('redirecting');
+            this.errorHandlerService.handleError(error);
+          } else {
+            this.readState.set('error');
+          }
+        },
+        complete: () => {
+          if (isCurrentRead() && untracked(this.readState) === 'loading') {
+            this.readState.set('not-found');
+          }
+        },
       });
+    return this.resourceReadSubscription;
+  }
+
+  retryRead() {
+    const state = untracked(this.viewState);
+    if (state === 'error' || state === 'not-found') {
+      this.readResource();
+    }
   }
 
   navigateToParent() {
@@ -523,23 +573,25 @@ export class DetailView {
   }
 
   async downloadKubeconfigFromSecretRef(buttonSettings: ButtonSettings) {
-    if (this.isDownloadingKubeConfig()) {
+    if (this.isDownloadingKubeConfig() || this.viewState() !== 'ready') {
       return;
     }
 
     const resource = this.resource();
+    const context = this.context();
     const resourceReadGeneration = this.resourceReadGeneration;
 
     try {
       this.isDownloadingKubeConfig.set(true);
       const kubeconfig = await firstValueFrom(
         this.kubeconfigSecretService
-          .readKubeconfig(buttonSettings, resource, this.context())
+          .readKubeconfig(buttonSettings, resource, context)
           .pipe(takeUntil(this.cancelKubeconfigRead)),
       );
 
       if (
         resourceReadGeneration !== this.resourceReadGeneration ||
+        context !== this.context() ||
         resource !== this.resource()
       ) {
         return;
@@ -553,6 +605,7 @@ export class DetailView {
     } catch (error: unknown) {
       if (
         resourceReadGeneration !== this.resourceReadGeneration ||
+        context !== this.context() ||
         resource !== this.resource()
       ) {
         return;
