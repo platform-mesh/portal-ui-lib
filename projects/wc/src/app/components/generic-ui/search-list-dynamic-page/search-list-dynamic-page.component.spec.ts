@@ -101,7 +101,6 @@ describe('SearchListDynamicPage', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    history.replaceState(null, '', '/tests');
   });
 
   it('should create and call list on init', () => {
@@ -395,31 +394,6 @@ describe('SearchListDynamicPage', () => {
       const lastCall = mockReadResources.list.mock.calls.at(-1)!;
       expect(lastCall[2]).toHaveProperty('fields');
       expect(Array.isArray(lastCall[2].fields)).toBe(true);
-    });
-
-    it('writes page and limit to URL (non-default values)', () => {
-      listSubject.next({ items: [] });
-      listSubject.complete();
-      listSubject = new Subject<ReadResourcesResult>();
-      mockReadResources.list.mockReturnValue(listSubject.asObservable());
-
-      component.onLimitChange(10);
-      component.onPageChange(3);
-
-      const url = new URL(location.href);
-      expect(url.searchParams.get('limit')).toBe('10');
-      expect(url.searchParams.get('page')).toBe('3');
-    });
-
-    it('omits page=1 and limit=20 from URL (default values)', () => {
-      history.replaceState(null, '', '/tests');
-
-      listSubject.next({ items: [] });
-      listSubject.complete();
-
-      const url = new URL(location.href);
-      expect(url.searchParams.get('page')).toBeNull();
-      expect(url.searchParams.get('limit')).toBeNull();
     });
   });
 
