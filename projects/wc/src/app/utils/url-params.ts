@@ -16,7 +16,11 @@ export const addSearchParams = (params: Record<string, string | undefined>) => {
 
 export const readUrlSearchParam = (key: string): string | undefined => {
   if (typeof location === 'undefined') return undefined;
-  return new URL(location.href).searchParams.get(key) ?? undefined;
+  try {
+    return new URL(location.href).searchParams.get(key) ?? undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export const snapshotUrl = (): Record<string, string> => {
