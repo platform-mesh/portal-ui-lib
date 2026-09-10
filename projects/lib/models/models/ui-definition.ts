@@ -3,7 +3,6 @@ import {
   FieldFilterDefinition,
   FormFieldDefinition,
   TableFieldDefinition,
-  UiSettings,
 } from '@openmfp/ngx';
 
 export type {
@@ -17,13 +16,9 @@ export type {
   ResourceFieldButtonClickEvent,
 } from '@openmfp/ngx';
 
-export type PlatformMeshFieldDefinition = Omit<
-  TableFieldDefinition,
-  'uiSettings'
-> &
-  Omit<FormFieldDefinition, 'name' | 'label' | 'uiSettings'> & {
+export type PlatformMeshFieldDefinition = TableFieldDefinition &
+  Omit<FormFieldDefinition, 'name' | 'label'> & {
     label?: string;
-    uiSettings?: UiSettings;
     dynamicValuesDefinition?: {
       operation: string;
       gqlQuery: string;
