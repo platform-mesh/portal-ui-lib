@@ -1,4 +1,7 @@
-import { generateGraphQLFields, generateGraphQLReadFields } from './columns-to-gql-fields';
+import {
+  generateGraphQLFields,
+  generateGraphQLReadFields,
+} from './columns-to-gql-fields';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 describe('columns-to-gql-fields', () => {
@@ -109,6 +112,29 @@ describe('columns-to-gql-fields', () => {
         { spec: [{ oidc: ['clientId'] }] },
         { spec: [{ oidc: ['clientSecret'] }] },
       ]);
+    });
+
+    it('should expand status.conditions sub-fields for list queries (IdP pattern)', () => {
+      const fields: PlatformMeshFieldDefinition[] = [
+        {
+          property: ['status.conditions.status', 'status.conditions.type'],
+        },
+        {
+          property: ['status.conditions.message', 'status.conditions.type'],
+        },
+        { property: 'metadata.name' },
+      ];
+      const result = generateGraphQLFields(fields);
+      expect(result).toEqual([
+        { status: [{ conditions: ['status'] }] },
+        { status: [{ conditions: ['type'] }] },
+        { status: [{ conditions: ['message'] }] },
+        { status: [{ conditions: ['type'] }] },
+        { metadata: ['name'] },
+      ]);
+      expect(JSON.stringify(result)).not.toMatch(
+        /\{"status":\[\{"conditions":\["conditions"\]\}\]\}/,
+      );
     });
 
     it('should exclude nested write-only fields via generateGraphQLReadFields', () => {
