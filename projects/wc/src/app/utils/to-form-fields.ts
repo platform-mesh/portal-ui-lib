@@ -125,8 +125,6 @@ function buildFormField(
 
   if (field.inputType) {
     formField.inputType = field.inputType;
-  } else if (field.uiSettings?.displayAs === 'secret') {
-    formField.inputType = 'Password';
   }
 
   if (field.showPasswordToggle !== undefined) {
@@ -250,9 +248,7 @@ export function buildInitialValues(
 
     if (typeof field.property === 'string') {
       const raw = readPath(resource, field.property) ?? '';
-      result[field.property] = isSwitchField(field)
-        ? coerceBoolean(raw)
-        : raw;
+      result[field.property] = isSwitchField(field) ? coerceBoolean(raw) : raw;
     }
   }
   return result;

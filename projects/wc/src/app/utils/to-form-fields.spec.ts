@@ -151,7 +151,7 @@ describe('toFormFields', () => {
     expect(displayName.disabled).toBe(false);
   });
 
-  it('maps displayAs secret fields to password inputs without writeOnly', async () => {
+  it('does not infer input type from uiSettings.displayAs; only inputType drives it', async () => {
     const [formField] = await toFormFields(
       defs([
         {
@@ -161,7 +161,7 @@ describe('toFormFields', () => {
         },
       ]),
     );
-    expect(formField.inputType).toBe('Password');
+    expect(formField.inputType).toBeUndefined();
     expect(formField.writeOnly).toBeUndefined();
   });
 
