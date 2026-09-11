@@ -150,7 +150,7 @@ Each field definition supports the following properties:
 - `"value"`: Static value for field
 - `"inputType"`: Create/edit form control type (`"Text"`, `"Password"`, `"Switch"`). Use `"Switch"` for boolean toggles; table views use `uiSettings.displayAs: "boolIcon"` for read-only boolean icons instead.
 - `"hint"`: Persistent help text below the create/edit form control; never submitted with the form.
-- `"writeOnly"`: When `true`, the field is omitted from GraphQL read queries and empty values are omitted on edit submit (e.g. secrets). Pair with `"inputType": "Password"` for masked secret inputs.
+- `"writeOnly"`: When `true`, the field is omitted from GraphQL read queries (including nested `propertyCollection` trees) and empty values are omitted on edit submit (e.g. secrets). Pair with `"inputType": "Password"` for masked secret inputs.
 - `"placeholder"`: Functional placeholder on create/edit form inputs (not example help text — use `hint` for that).
 - `"showPasswordToggle"`: When `inputType` is `"Password"`, show a show/hide toggle inside the input (defaults to ngx behaviour when omitted).
 - `"group"`: Object for grouping related fields together:

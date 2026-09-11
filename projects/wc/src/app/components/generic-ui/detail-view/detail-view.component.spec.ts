@@ -377,6 +377,50 @@ describe('DetailViewComponent', () => {
       expect(mockCreateModal.open).toHaveBeenCalledWith(fetchedResource);
     });
 
+    it('should omit write-only fields from the edit refetch GraphQL selection', () => {
+      const mockCreateModal = { open: vi.fn() };
+      (component as any).createModal = () => mockCreateModal;
+
+      const localFixture = TestBed.createComponent(DetailView);
+      const localComponent = localFixture.componentInstance;
+      localComponent.context = (() => ({
+        ...component.context(),
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'IdPRegistration',
+          entityCollection: 'idpregistrations',
+          apiGroup: 'core_platform_mesh_io',
+          ui: {
+            detailView: { fields: [] },
+            createView: {
+              fields: [
+                { property: 'spec.oidc.clientId', label: 'Client ID' },
+                {
+                  property: 'spec.oidc.clientSecret',
+                  label: 'Client secret',
+                  uiSettings: { writeOnly: true },
+                },
+              ],
+            },
+          },
+        },
+      })) as any;
+      localComponent.LuigiClient = component.LuigiClient;
+      localFixture.detectChanges();
+
+      mockResourceService.read.mockClear();
+      mockResourceService.read.mockReturnValue(
+        of({ metadata: { name: 'dex' }, spec: { oidc: { clientId: 'id' } } }),
+      );
+
+      localComponent.openEditResourceModal(new MouseEvent('click'));
+
+      expect(mockResourceService.read).toHaveBeenCalled();
+      const fields = JSON.stringify(mockResourceService.read.mock.calls[0][2]);
+      expect(fields).toContain('clientId');
+      expect(fields).not.toContain('clientSecret');
+    });
+
     it('should delete resource successfully', () => {
       const mockDeleteModal = {
         close: vi.fn(),
@@ -512,6 +556,51 @@ describe('DetailViewComponent', () => {
       expect(mockResourceService.update).toHaveBeenCalled();
       expect(component.resource()).toEqual(updatedResource);
       expect(mockCreateModal.close).toHaveBeenCalled();
+    });
+
+    it('should omit write-only fields from the update mutation return selection', () => {
+      const mockCreateModal = { close: vi.fn() };
+      const updateSpy = vi.fn().mockReturnValue(of({ metadata: { name: 'dex' } }));
+      mockResourceService.update = updateSpy;
+
+      const localFixture = TestBed.createComponent(DetailView);
+      const localComponent = localFixture.componentInstance;
+      localComponent.context = (() => ({
+        ...component.context(),
+        resourceId: 'dex',
+        resourceDefinition: {
+          version: 'v1alpha1',
+          entity: 'IdPRegistration',
+          entityCollection: 'idpregistrations',
+          apiGroup: 'core_platform_mesh_io',
+          ui: {
+            detailView: { fields: [] },
+            createView: {
+              fields: [
+                { property: 'spec.oidc.clientId', label: 'Client ID' },
+                {
+                  property: 'spec.oidc.clientSecret',
+                  label: 'Client secret',
+                  uiSettings: { writeOnly: true },
+                },
+              ],
+            },
+          },
+        },
+      })) as any;
+      localComponent.LuigiClient = component.LuigiClient;
+      (localComponent as any).createModal = () => mockCreateModal;
+      localFixture.detectChanges();
+
+      localComponent.update({
+        metadata: { name: 'dex' },
+        spec: { oidc: { clientId: 'id' } },
+      } as any);
+
+      expect(updateSpy).toHaveBeenCalled();
+      const fields = JSON.stringify(updateSpy.mock.calls[0][4]);
+      expect(fields).toContain('clientId');
+      expect(fields).not.toContain('clientSecret');
     });
 
     it('should handle update error', () => {
