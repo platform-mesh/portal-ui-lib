@@ -398,7 +398,7 @@ describe('DetailViewComponent', () => {
                 {
                   property: 'spec.oidc.clientSecret',
                   label: 'Client secret',
-                  uiSettings: { writeOnly: true },
+                  writeOnly: true,
                 },
               ],
             },
@@ -560,7 +560,9 @@ describe('DetailViewComponent', () => {
 
     it('should omit write-only fields from the update mutation return selection', () => {
       const mockCreateModal = { close: vi.fn() };
-      const updateSpy = vi.fn().mockReturnValue(of({ metadata: { name: 'dex' } }));
+      const updateSpy = vi
+        .fn()
+        .mockReturnValue(of({ metadata: { name: 'dex' } }));
       mockResourceService.update = updateSpy;
 
       const localFixture = TestBed.createComponent(DetailView);
@@ -581,7 +583,7 @@ describe('DetailViewComponent', () => {
                 {
                   property: 'spec.oidc.clientSecret',
                   label: 'Client secret',
-                  uiSettings: { writeOnly: true },
+                  writeOnly: true,
                 },
               ],
             },

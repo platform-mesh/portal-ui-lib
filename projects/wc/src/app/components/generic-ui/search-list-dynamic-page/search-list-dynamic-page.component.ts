@@ -1,5 +1,4 @@
 import { executeButtonAction } from '../../../utils/field-definition.utils';
-import { flattenFieldTree } from '../../../utils/to-form-fields';
 import { addSearchParams, readUrlSearchParam } from '../../../utils/url-params';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
 import { ReadResourcesProxyService } from '../opensearch-list-view/services/read-resources-proxy.service';
@@ -244,7 +243,7 @@ export class SearchListDynamicPage implements OnInit {
         { limit, page },
         {
           resource: this.resourceDefinition()?.entityCollection,
-          fields: generateGraphQLFields(flattenFieldTree(this.columns())),
+          fields: generateGraphQLFields(this.columns()),
         },
       )
       .pipe(

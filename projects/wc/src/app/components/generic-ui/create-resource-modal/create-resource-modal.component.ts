@@ -1,3 +1,4 @@
+import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   buildInitialValues,
   toFormFields,
@@ -7,7 +8,6 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from './create-resource-modal.consts';
-import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -141,11 +141,9 @@ export class CreateResourceModal {
   private buildFormFieldsAsync(
     fields: PlatformMeshFieldDefinition[],
   ): Promise<FormFieldDefinition[]> {
-    const editMode = this.isEditMode();
     return toFormFields(fields, {
-      disabled: (field) => this.isCreateFieldOnly(field) && editMode,
+      disabled: (field) => this.isCreateFieldOnly(field) && this.isEditMode(),
       resolveDynamicValues: (field) => this.resolveDynamicValues(field),
-      editMode,
     });
   }
 

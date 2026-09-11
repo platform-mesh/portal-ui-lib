@@ -52,7 +52,6 @@ import {
   isDownloadKubeconfigButtonSettings,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
-  flattenFieldTree,
   generateGraphQLFields,
   generateGraphQLReadFields,
   getResourceValueByJsonPath,
@@ -669,7 +668,7 @@ export class DetailView {
     // (ui.detailView.fields); createView is a separate field set and is not
     // part of the detail read.
     return generateGraphQLFields(
-      flattenFieldTree(this.resourceDetailFields()).concat(additionalFields),
+      this.resourceDetailFields().concat(additionalFields),
     );
   }
 

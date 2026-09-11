@@ -1,13 +1,10 @@
-import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { flattenFieldTree } from './flatten-field-tree';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 export type GenerateGraphQLFieldsOptions = {
   /** Omit fields marked writeOnly (for queries/mutation return selections). */
   forRead?: boolean;
 };
-
-export const isWriteOnlyField = (field: PlatformMeshFieldDefinition): boolean =>
-  Boolean(field.writeOnly);
 
 /** Builds GraphQL field selections for reads, omitting write-only secrets. */
 export const generateGraphQLReadFields = (
@@ -21,7 +18,7 @@ export const generateGraphQLFields = (
   const graphQLFields: any[] = [];
   const flattened = flattenFieldTree(uiFields);
   const fields = options.forRead
-    ? flattened.filter((field) => !isWriteOnlyField(field))
+    ? flattened.filter((field) => !field.writeOnly)
     : flattened;
   fields.map((field) => {
     if (field.property instanceof Array) {
