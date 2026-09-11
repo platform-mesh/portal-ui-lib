@@ -1,7 +1,6 @@
 import { downloadFile } from '../../../utils/download-file';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
-import { flattenFieldTree } from '../../../utils/to-form-fields';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
@@ -54,6 +53,7 @@ import {
 } from '@platform-mesh/portal-ui-lib/services';
 import {
   generateGraphQLFields,
+  generateGraphQLReadFields,
   getResourceValueByJsonPath,
   isNamespacedResource,
   permissionKey,
@@ -450,9 +450,7 @@ export class DetailView {
     // The edit form works on createView.fields, which the detail read does
     // not fetch - refetch the resource with exactly that selection so the
     // form is prefilled with current values.
-    const fields = generateGraphQLFields(
-      flattenFieldTree(this.resourceCreateEditFields()),
-    );
+    const fields = generateGraphQLReadFields(this.resourceCreateEditFields());
 
     this.resourceService
       .read(
@@ -505,9 +503,7 @@ export class DetailView {
   update(resource: Resource) {
     const resourceDefinition = this.getResourceDefinition();
     const resourceId = this.getResourceId();
-    const fields = generateGraphQLFields(
-      flattenFieldTree(this.resourceCreateEditFields()),
-    );
+    const fields = generateGraphQLReadFields(this.resourceCreateEditFields());
     const resourceToUpdate: Resource = {
       ...resource,
       metadata: { name: resourceId },
@@ -672,7 +668,7 @@ export class DetailView {
     // (ui.detailView.fields); createView is a separate field set and is not
     // part of the detail read.
     return generateGraphQLFields(
-      flattenFieldTree(this.resourceDetailFields()).concat(additionalFields),
+      this.resourceDetailFields().concat(additionalFields),
     );
   }
 

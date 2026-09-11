@@ -1,7 +1,6 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
 import {
   expandCollectionEntries,
-  flattenFieldTree,
   toFormFields,
 } from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
@@ -460,9 +459,7 @@ export class ResourceTableCard {
     if (this.isNamespaced()) {
       additionalFields.push({ property: 'metadata.namespace' });
     }
-    return generateGraphQLFields(
-      flattenFieldTree(this.columns()).concat(additionalFields),
-    );
+    return generateGraphQLFields(this.columns().concat(additionalFields));
   }
 
   private getResourceDefinition() {

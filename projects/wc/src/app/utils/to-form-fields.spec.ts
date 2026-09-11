@@ -2,7 +2,6 @@ import {
   buildInitialValues,
   coerceBoolean,
   expandCollectionEntries,
-  flattenFieldTree,
   toFormFields,
 } from './to-form-fields';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
@@ -16,69 +15,6 @@ import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models
  */
 const defs = (items: readonly unknown[]): PlatformMeshFieldDefinition[] =>
   items as PlatformMeshFieldDefinition[];
-
-// ---------------------------------------------------------------------------
-// flattenFieldTree
-// ---------------------------------------------------------------------------
-
-describe('flattenFieldTree', () => {
-  it('returns [] for undefined / empty input', () => {
-    expect(flattenFieldTree(undefined)).toEqual([]);
-    expect(flattenFieldTree([])).toEqual([]);
-  });
-
-  it('passes scalar fields through untouched', () => {
-    const fields = defs([
-      { property: 'metadata.name' },
-      { property: 'spec.type' },
-    ]);
-    expect(flattenFieldTree(fields)).toEqual(fields);
-  });
-
-  it('replaces a collection field with its sub-fields', () => {
-    const fields = defs([
-      { property: 'metadata.name' },
-      {
-        label: 'Conditions',
-        property: 'status.conditions',
-        propertyCollection: [
-          { property: 'status.conditions.type' },
-          { property: 'status.conditions.status' },
-        ],
-      },
-    ]);
-
-    expect(flattenFieldTree(fields)).toEqual([
-      { property: 'metadata.name' },
-      { property: 'status.conditions.type' },
-      { property: 'status.conditions.status' },
-    ]);
-  });
-
-  it('recurses into nested collections', () => {
-    const fields = defs([
-      {
-        property: 'spec.stages',
-        propertyCollection: [
-          { property: 'spec.stages.name' },
-          {
-            property: 'spec.stages.steps',
-            propertyCollection: [
-              { property: 'spec.stages.steps.command' },
-              { property: 'spec.stages.steps.image' },
-            ],
-          },
-        ],
-      },
-    ]);
-
-    expect(flattenFieldTree(fields)).toEqual([
-      { property: 'spec.stages.name' },
-      { property: 'spec.stages.steps.command' },
-      { property: 'spec.stages.steps.image' },
-    ]);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // toFormFields
