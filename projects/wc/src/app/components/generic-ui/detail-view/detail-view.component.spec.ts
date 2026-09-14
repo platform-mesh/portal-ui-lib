@@ -2974,3 +2974,199 @@ describe('DetailViewComponent — instancePermissions and canDoAction', () => {
     expect(actions.some((a) => a.action === 'edit')).toBe(true);
   });
 });
+
+describe('DetailViewComponent — namespace repair from route path params', () => {
+  let mockResourceService: any;
+  let mockGatewayService: any;
+  let envConfigServiceMock: MockedObject<EnvConfigService>;
+  let accountInfoServiceMock: MockedObject<AccountInfoService>;
+  let errorHandlerServiceMock: MockedObject<ErrorHandlerService>;
+  let kubeconfigSecretServiceMock: MockedObject<KubeconfigSecretService>;
+
+  const makeContext = (overrides: Record<string, unknown> = {}) =>
+    signal({
+      resourceId: 'claim-1',
+      token: 'abc123',
+      resourceDefinition: {
+        version: 'v1',
+        entity: 'ShootClaim',
+        entityCollection: 'shootclaims',
+        apiGroup: 'gardener_t_systems_com',
+        scope: 'Namespaced',
+        ui: { detailView: { fields: [] } },
+      },
+      entityName: 'claim-1',
+      parentNavigationContexts: ['project'],
+      ...overrides,
+    }) as any;
+
+  const makeLuigiClient = (getPathParams?: () => Record<string, string>) =>
+    (() => ({
+      linkManager: () => ({
+        fromContext: vi.fn().mockReturnThis(),
+        navigate: vi.fn(),
+        withParams: vi.fn().mockReturnThis(),
+      }),
+      uxManager: () => ({ showAlert: vi.fn() }),
+      getNodeParams: vi.fn(),
+      getActiveFeatureToggles: () => [],
+      ...(getPathParams ? { getPathParams } : {}),
+    })) as any;
+
+  beforeEach(() => {
+    envConfigServiceMock = mock();
+    accountInfoServiceMock = mock();
+    errorHandlerServiceMock = mock();
+    kubeconfigSecretServiceMock = mock();
+    mockResourceService = {
+      read: vi.fn().mockReturnValue(of({ metadata: { name: 'claim-1' } })),
+      readAccountInfo: vi.fn().mockReturnValue(of('mock-ca-data')),
+      delete: vi.fn().mockReturnValue(of({})),
+      update: vi.fn().mockReturnValue(of({})),
+      getNamespace: vi.fn((context) => context.namespaceId),
+    };
+    mockGatewayService = {
+      resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ResourceService, useValue: mockResourceService },
+        { provide: AccountInfoService, useValue: accountInfoServiceMock },
+        { provide: GatewayService, useValue: mockGatewayService },
+        {
+          provide: KubeconfigSecretService,
+          useValue: kubeconfigSecretServiceMock,
+        },
+        { provide: EnvConfigService, useValue: envConfigServiceMock },
+        { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
+      ],
+    }).overrideComponent(DetailView, {
+      set: { template: '<div></div>' },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should read with the namespaceId recovered from the path params when nothing else resolves', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContext();
+    component.LuigiClient = makeLuigiClient(() => ({
+      namespaceId: 'team-a',
+      shootclaimId: 'claim-1',
+    }));
+    fixture.detectChanges();
+
+    expect(mockResourceService.read).toHaveBeenCalled();
+    const readContext = mockResourceService.read.mock.calls[0][3];
+    expect(readContext.namespaceId).toBe('team-a');
+  });
+
+  it('should not adopt the -all- sentinel from the path params', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContext();
+    component.LuigiClient = makeLuigiClient(() => ({ namespaceId: '-all-' }));
+    fixture.detectChanges();
+
+    const readContext = mockResourceService.read.mock.calls[0][3];
+    expect(readContext.namespaceId).toBeUndefined();
+  });
+
+  it('should tolerate a Luigi client without getPathParams', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContext();
+    component.LuigiClient = makeLuigiClient();
+    fixture.detectChanges();
+
+    expect(mockResourceService.read).toHaveBeenCalled();
+    const readContext = mockResourceService.read.mock.calls[0][3];
+    expect(readContext.namespaceId).toBeUndefined();
+  });
+
+  it('should keep the original context when it already resolves a namespace', () => {
+    const getPathParams = vi.fn(() => ({ namespaceId: 'team-a' }));
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContext({ namespaceId: 'ns1' });
+    component.LuigiClient = makeLuigiClient(getPathParams);
+    fixture.detectChanges();
+
+    const readContext = mockResourceService.read.mock.calls[0][3];
+    expect(readContext).toBe(component.context());
+    expect(getPathParams).not.toHaveBeenCalled();
+  });
+
+  it('should keep the original context for cluster-scoped resources', () => {
+    const getPathParams = vi.fn(() => ({ namespaceId: 'team-a' }));
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    const context = makeContext();
+    context.set({
+      ...context(),
+      resourceDefinition: {
+        ...context().resourceDefinition,
+        scope: 'Cluster',
+      },
+    });
+    component.context = context;
+    component.LuigiClient = makeLuigiClient(getPathParams);
+    fixture.detectChanges();
+
+    const readContext = mockResourceService.read.mock.calls[0][3];
+    expect(readContext).toBe(component.context());
+    expect(getPathParams).not.toHaveBeenCalled();
+  });
+
+  it('should keep the permission lookup keyed on the raw context in the repaired flow', () => {
+    // The host seeds portalPermissions with the namespace it resolved itself
+    // (none on a bare deep link), so the lookup key must not adopt the
+    // route-recovered namespace — otherwise gating silently falls open.
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContext({
+      portalPermissions: { 'shootclaims/claim-1': ['get'] },
+      resourceDefinition: {
+        version: 'v1',
+        entity: 'ShootClaim',
+        entityCollection: 'shootclaims',
+        apiGroup: 'gardener_t_systems_com',
+        scope: 'Namespaced',
+        permissionsDefinition: {
+          group: 'gardener.t-systems.com',
+          resource: 'shootclaims',
+          entityActions: ['get', 'update', 'delete'],
+          resourceActions: [],
+          entityContextKey: 'entityName',
+        },
+        ui: { detailView: { fields: [] } },
+      },
+    });
+    component.LuigiClient = makeLuigiClient(() => ({ namespaceId: 'team-a' }));
+    fixture.detectChanges();
+    component.resource.set({ metadata: { name: 'claim-1' } } as any);
+
+    const actions = component.customActions();
+    expect(actions.some((a) => a.action === 'edit')).toBe(false);
+    expect(actions.some((a) => a.action === 'delete')).toBe(false);
+  });
+
+  it('should pass the repaired context to delete', () => {
+    const fixture = TestBed.createComponent(DetailView);
+    const component = fixture.componentInstance;
+    component.context = makeContext();
+    component.LuigiClient = makeLuigiClient(() => ({ namespaceId: 'team-a' }));
+    fixture.detectChanges();
+
+    (component as any).deleteModal = () => ({ close: vi.fn() });
+    component.delete({ metadata: { name: 'claim-1' } } as any);
+
+    expect(mockResourceService.delete).toHaveBeenCalled();
+    const deleteContext = mockResourceService.delete.mock.calls[0][2];
+    expect(deleteContext.namespaceId).toBe('team-a');
+  });
+});
