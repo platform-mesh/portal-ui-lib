@@ -1,8 +1,7 @@
-import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { deletePropertyByPath } from './delete-property-by-path';
 import { flattenFieldTree } from './flatten-field-tree';
 import { getValueByPath } from './get-value-by-path';
-import { isWriteOnlyField } from './columns-to-gql-fields';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 /** Drops write-only fields whose value is empty so updates leave them unchanged. */
 export function omitEmptyWriteOnlyFields<T extends Record<string, unknown>>(
@@ -12,7 +11,7 @@ export function omitEmptyWriteOnlyFields<T extends Record<string, unknown>>(
   const result = structuredClone(resource);
 
   for (const field of flattenFieldTree(fields)) {
-    if (!isWriteOnlyField(field) || typeof field.property !== 'string') {
+    if (!field.writeOnly || typeof field.property !== 'string') {
       continue;
     }
 
