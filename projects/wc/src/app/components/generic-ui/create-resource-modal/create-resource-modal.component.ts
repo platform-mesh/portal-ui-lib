@@ -1,3 +1,4 @@
+import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
 import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   buildInitialValues,
@@ -128,7 +129,9 @@ export class CreateResourceModal {
         break;
       default: {
         const field = this.formFields().find((f) => f.name === name);
-        if (field?.required && !value) {
+        if (field?.writeOnly && !value && this.isEditMode()) {
+          error = null;
+        } else if (field?.required && !value) {
           error = 'This field is required';
         }
       }
@@ -146,7 +149,7 @@ export class CreateResourceModal {
   ): Promise<FormFieldDefinition[]> {
     const editMode = this.isEditMode();
     return toFormFields(fields, {
-      disabled: (field) => this.isCreateFieldOnly(field) && editMode,
+      disabled: (field) => editMode && isImmutableOnEdit(field),
       resolveDynamicValues: (field) => this.resolveDynamicValues(field),
       editMode,
     });
@@ -206,13 +209,5 @@ export class CreateResourceModal {
 
   private checkFormValidity(): boolean {
     return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
-  }
-
-  private isCreateFieldOnly(field: PlatformMeshFieldDefinition): boolean {
-    return (
-      field.property === ResourceFieldNames.MetadataName ||
-      field.property === ResourceFieldNames.SpecType ||
-      field.property === ResourceFieldNames.MetadataNamespace
-    );
   }
 }
