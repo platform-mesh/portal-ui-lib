@@ -44,7 +44,6 @@ import {
   getValueByPath,
   isNamespacedResource,
   omitEmptyWriteOnlyFields,
-  setPropertyByPath,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
@@ -106,9 +105,7 @@ export class CreateResourceModal {
   onFormSubmit(value: Record<string, unknown>): void {
     if (this.isEditMode()) {
       const sanitized = omitEmptyWriteOnlyFields(value, this.calculateFields());
-      this.updateResource.emit(
-        this.restoreImmutableFields(sanitized) as Resource,
-      );
+      this.updateResource.emit(sanitized as Resource);
       return;
     }
 
@@ -212,28 +209,5 @@ export class CreateResourceModal {
 
   private checkFormValidity(): boolean {
     return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
-  }
-
-  private restoreImmutableFields(
-    value: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const original = this.originalResource();
-    if (!original) {
-      return value;
-    }
-
-    const result = structuredClone(value) as Record<string, unknown>;
-    for (const field of this.fields()) {
-      if (!isImmutableOnEdit(field) || typeof field.property !== 'string') {
-        continue;
-      }
-
-      const originalValue = getValueByPath(original, field.property);
-      if (originalValue !== undefined) {
-        setPropertyByPath(result, field.property, originalValue);
-      }
-    }
-
-    return result;
   }
 }

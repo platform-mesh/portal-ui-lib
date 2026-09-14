@@ -369,26 +369,6 @@ describe('CreateResourceModalComponent', () => {
   });
 
   describe('onFormSubmit', () => {
-    it('should restore immutable fields from the original resource on submit', async () => {
-      fixture.componentRef.setInput('fields', [
-        { property: 'metadata.name', required: true, label: 'Name' },
-        { property: 'spec.alias', required: true, label: 'Alias' },
-        { property: 'spec.displayName', label: 'Display name' },
-      ]);
-      await component.open({
-        metadata: { name: 'dex' },
-        spec: { alias: 'dex', displayName: 'Dex' },
-      } as any);
-      const spy = vi.spyOn(component.updateResource, 'emit');
-      component.onFormSubmit({
-        spec: { displayName: 'Dex (updated)' },
-      });
-      expect(spy).toHaveBeenCalledWith({
-        metadata: { name: 'dex' },
-        spec: { alias: 'dex', displayName: 'Dex (updated)' },
-      });
-    });
-
     it('should emit resource when not in edit mode', async () => {
       await component.open();
       const spy = vi.spyOn(component.resource, 'emit');
