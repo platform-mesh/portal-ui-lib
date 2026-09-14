@@ -42,6 +42,7 @@ import {
 import {
   getValueByPath,
   isNamespacedResource,
+  omitEmptyWriteOnlyFields,
 } from '@platform-mesh/portal-ui-lib/utils';
 import { firstValueFrom } from 'rxjs';
 
@@ -102,10 +103,12 @@ export class CreateResourceModal {
 
   onFormSubmit(value: Record<string, unknown>): void {
     if (this.isEditMode()) {
-      this.updateResource.emit(value as Resource);
-    } else {
-      this.resource.emit(value as Resource);
+      const sanitized = omitEmptyWriteOnlyFields(value, this.calculateFields());
+      this.updateResource.emit(sanitized as Resource);
+      return;
     }
+
+    this.resource.emit(value as Resource);
   }
 
   protected submitForm(): void {
@@ -141,9 +144,11 @@ export class CreateResourceModal {
   private buildFormFieldsAsync(
     fields: PlatformMeshFieldDefinition[],
   ): Promise<FormFieldDefinition[]> {
+    const editMode = this.isEditMode();
     return toFormFields(fields, {
-      disabled: (field) => this.isCreateFieldOnly(field) && this.isEditMode(),
+      disabled: (field) => this.isCreateFieldOnly(field) && editMode,
       resolveDynamicValues: (field) => this.resolveDynamicValues(field),
+      editMode,
     });
   }
 
