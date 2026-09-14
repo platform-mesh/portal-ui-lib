@@ -1,7 +1,12 @@
 import { executeButtonAction } from '../../../utils/field-definition.utils';
-import { addSearchParams, readUrlSearchParam } from '../../../utils/url-params';
+import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
+import {
+  addSearchParams,
+  readUrlSearchParam,
+  snapshotUrl,
+} from '../../../utils/url-params';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
-import { ReadResourcesProxyService } from '../opensearch-list-view/services/read-resources-proxy.service';
+import { OpenSearchService } from '../opensearch-list-view/services/open-search.service';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
 import {
@@ -14,6 +19,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
@@ -23,12 +29,15 @@ import {
   DynamicPageHeader,
   DynamicPageTitle,
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
+import { Tab } from '@fundamental-ngx/ui5-webcomponents/tab';
+import { TabContainer } from '@fundamental-ngx/ui5-webcomponents/tab-container';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
 import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
 import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   DeclarativeTable,
+  FieldFilterDefinition,
   GenericResource,
   ResourceField,
   ResourceFieldButtonClickEvent,
@@ -40,18 +49,16 @@ import {
 } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
-  ReadResourcesResult,
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
-  generateGraphQLFields,
   isNamespacedResource,
   permissionKey,
   resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { Subscription } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError, finalize, map } from 'rxjs/operators';
 
 @Component({
   selector: 'pm-search-list-dynamic-page',
@@ -72,6 +79,8 @@ import { finalize } from 'rxjs/operators';
     ResourceField,
     CreateResourceModal,
     DeclarativeTable,
+    TabContainer,
+    Tab,
   ],
 })
 export class SearchListDynamicPage implements OnInit {
@@ -107,6 +116,52 @@ export class SearchListDynamicPage implements OnInit {
 
   canCreate = computed(() => this.canDo('create'));
 
+  searchFilters = computed<FieldFilterDefinition[] | undefined>(() => {
+    const ctx = this.context();
+    return ctx.resourceDefinition?.ui?.listView?.filters?.map((f) => ({
+      ...f,
+      value: resolveContextPlaceholders(f.value, ctx),
+    }));
+  });
+
+  hasFilters = computed(() => (this.searchFilters()?.length ?? 0) > 0);
+
+  filterTabs = computed(() => {
+    const selected = this.selectedSearchFilter();
+    const counts = this.filterCounts();
+    return (this.searchFilters() ?? []).map((f) => {
+      const key = this.filterKey(f);
+      const count = counts[key];
+      return {
+        text: count !== undefined ? `${f.label} (${count})` : f.label,
+        selected: this.isSameFilter(selected, f),
+      };
+    });
+  });
+
+  private readonly urlSnapshot: Record<string, string> = snapshotUrl();
+
+  selectedSearchFilter = linkedSignal<
+    FieldFilterDefinition[] | undefined,
+    FieldFilterDefinition | undefined
+  >({
+    source: () => this.searchFilters(),
+    computation: (filters, prev) => {
+      const previous = prev?.value;
+      if (previous && filters?.some((f) => this.isSameFilter(f, previous))) {
+        return previous;
+      }
+
+      if (!prev && filters) {
+        const match = this.matchUrlFilter(filters);
+        if (match) return match;
+      }
+      const def = filters?.find((f) => f.default);
+      if (def?.property && def?.value !== undefined) return def;
+      return filters?.[0];
+    },
+  });
+
   resources = signal<GenericResource[]>([]);
   tableResources = computed(() =>
     this.resources().map((r) => ({ ...r, id: this.generateResourceId(r) })),
@@ -138,14 +193,17 @@ export class SearchListDynamicPage implements OnInit {
   hasMore = signal<boolean>(false);
   loading = signal<boolean>(false);
 
+  private filterCounts = signal<Record<string, number | undefined>>({});
+
   private resourceService = inject(ResourceService);
-  private readResourcesProxy = inject(ReadResourcesProxyService);
+  private openSearchService = inject(OpenSearchService);
   private errorHandlerService = inject(ErrorHandlerService);
   protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
   private createModal = viewChild<CreateResourceModal>('createModal');
 
   private listSubscription?: Subscription;
+  private countsSubscription?: Subscription;
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
 
   constructor() {
@@ -172,6 +230,7 @@ export class SearchListDynamicPage implements OnInit {
 
   ngOnInit(): void {
     this.list();
+    this.loadFilterCounts();
   }
 
   openCreateModal(): void {
@@ -229,47 +288,93 @@ export class SearchListDynamicPage implements OnInit {
 
     const page = this.currentPage();
     const limit = this.paginationLimit();
+    const filter = this.selectedSearchFilter();
 
     addSearchParams({
       page: page > 1 ? String(page) : undefined,
       limit: limit !== 20 ? String(limit) : undefined,
+      tab: filter ? this.tabSlug(filter) : undefined,
     });
 
+    const context = this.context();
+    const resource = this.resourceDefinition()?.entityCollection;
+
     this.loading.set(true);
-    this.listSubscription = this.readResourcesProxy
-      .forContext(this.LuigiClient())
-      .list(
-        this.context(),
-        { limit, page },
-        {
-          resource: this.resourceDefinition()?.entityCollection,
-          fields: generateGraphQLFields(this.columns()),
-        },
-      )
+    this.listSubscription = this.openSearchService
+      .listResources(context, {
+        q: '*',
+        resource,
+        limit,
+        page,
+        filters: filter?.property
+          ? { [filter.property]: filter.value }
+          : undefined,
+      })
       .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (result: ReadResourcesResult) => {
-          const items = result.items ?? [];
-          this.resources.set(items);
-          const hasNextCursor = !!result.nextCursor;
-          this.hasMore.set(hasNextCursor);
-          if (!hasNextCursor) {
-            this.totalItemsCount.set(
-              (page - 1) * limit +
-                items.length +
-                (result.remainingItemCount ?? 0),
-            );
-          } else {
-            this.totalItemsCount.set(undefined);
-          }
+        next: (result) => {
+          this.resources.set(result.results ?? []);
+          this.hasMore.set(!!result.nextCursor);
+          this.totalItemsCount.set(result.totalCount ?? undefined);
         },
         error: (error) => {
           this.errorHandlerService.handleError(error);
         },
       });
+  }
+
+  private loadFilterCounts(): void {
+    if (!this.canDo('list')) return;
+
+    const filters = this.searchFilters();
+    if (!filters?.length) {
+      this.filterCounts.set({});
+      return;
+    }
+
+    this.countsSubscription?.unsubscribe();
+
+    const context = this.context();
+    const resource = this.resourceDefinition()?.entityCollection;
+
+    const observables = filters.map((f) => {
+      const key = this.filterKey(f);
+      return this.openSearchService
+        .listResources(context, {
+          q: '*',
+          resource,
+          limit: 1,
+          page: 1,
+          filters: f.property ? { [f.property]: f.value } : undefined,
+        })
+        .pipe(
+          map((r) => ({ key, count: r.totalCount ?? 0 })),
+          catchError(() => of({ key, count: undefined })),
+        );
+    });
+
+    this.countsSubscription = forkJoin(observables)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((results) => {
+        const counts: Record<string, number | undefined> = {};
+        for (const r of results) {
+          if (r.count !== undefined) {
+            counts[r.key] = r.count;
+          }
+        }
+        this.filterCounts.set(counts);
+      });
+  }
+
+  protected onFilterTabSelect(index: number): void {
+    const filters = this.searchFilters();
+    const next = filters?.[index];
+    this.selectedSearchFilter.set(next);
+    this.currentPage.set(1);
+    this.list();
   }
 
   onLimitChange(limit: number): void {
@@ -344,5 +449,32 @@ export class SearchListDynamicPage implements OnInit {
       name: resource.metadata.name,
       namespace: resource.metadata.namespace,
     });
+  }
+
+  private filterKey(f: FieldFilterDefinition): string {
+    const parts = [f.label, f.property, f.value].filter(Boolean);
+    return parts.join('=');
+  }
+
+  private tabSlug(f: FieldFilterDefinition): string {
+    return f.label.toLowerCase().replace(/\s+/g, '-');
+  }
+
+  private isSameFilter(
+    a: FieldFilterDefinition | undefined,
+    b: FieldFilterDefinition | undefined,
+  ): boolean {
+    if (!a || !b) return false;
+    return (
+      a.property === b.property && a.value === b.value && a.label === b.label
+    );
+  }
+
+  private matchUrlFilter(
+    filters: FieldFilterDefinition[],
+  ): FieldFilterDefinition | undefined {
+    const tab = this.urlSnapshot['tab'];
+    if (!tab) return undefined;
+    return filters.find((f) => this.tabSlug(f) === tab);
   }
 }
