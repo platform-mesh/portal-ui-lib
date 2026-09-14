@@ -1,3 +1,4 @@
+import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   buildInitialValues,
   toFormFields,
@@ -7,7 +8,6 @@ import {
   K8S_NAME_RE,
   ResourceFieldNames,
 } from './create-resource-modal.consts';
-import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
 import {
   ChangeDetectionStrategy,
   Component,
