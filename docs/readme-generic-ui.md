@@ -735,7 +735,8 @@ A full-page list view using the SAP Fiori `ui5-dynamic-page` layout. Use it when
 
 - Table is rendered via `mfp-declarative-table`, columns driven by `resourceDefinition.ui.listView.fields`.
 - Pagination is page-based (`loadMode: pager`). Current page and limit are persisted as `?page=` / `?limit=` URL query params (default values `page=1` and `limit=20` are omitted to keep URLs clean).
-- Data is fetched via `ReadResourcesProxyService`: uses the GraphQL gateway by default; switches to OpenSearch when the `os-provider` Luigi feature toggle is active.
+- Data is fetched directly via `OpenSearchService` against the OpenSearch API configured in `portalContext.openSearchApiUrl`.
+- If `resourceDefinition.ui.listView.filters` is set, a tab strip is rendered above the table — one tab per filter entry. Each tab shows the item count in parentheses. The active tab is persisted as `?tab=<slug>` in the URL. See [List View Configuration](#list-view-configuration) for the full `filters` schema.
 - If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens a modal form.
 - If `resourceDefinition.readyCondition` is set, a status-alert column is prepended to the table.
 
