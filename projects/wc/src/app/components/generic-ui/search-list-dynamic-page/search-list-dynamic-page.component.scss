@@ -1,3 +1,7 @@
+ui5-dynamic-page::part(fit-content) {
+  padding: 0;
+}
+
 .snapped-heading {
   display: flex;
   align-items: center;
@@ -8,6 +12,7 @@
   display: block;
 }
 .snapped-heading-text {
+  margin-left: 0.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;

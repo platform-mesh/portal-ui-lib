@@ -26,6 +26,7 @@ export interface OpenSearchResult {
   results: OpenSearchResource[];
   source: string;
   nextCursor: string;
+  totalCount?: number;
 }
 
 export interface OpenSearchResourceSource extends Record<any, unknown> {
