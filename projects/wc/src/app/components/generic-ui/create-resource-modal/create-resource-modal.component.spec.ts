@@ -164,6 +164,21 @@ describe('CreateResourceModalComponent', () => {
       expect(nameField?.disabled).toBe(false);
     });
 
+    it('should disable spec.alias when opened for edit', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'spec.alias', required: true, label: 'Alias' },
+        { property: 'spec.displayName', label: 'Display name' },
+      ]);
+      await component.open({
+        metadata: { name: 'test2' },
+        spec: { alias: 'test2', displayName: 'test-dex-dex-dex' },
+      } as any);
+      const aliasField = component
+        .formFields()
+        .find((f) => f.name === 'spec.alias');
+      expect(aliasField?.disabled).toBe(true);
+    });
+
     it('should not disable spec.description in edit mode', async () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const descField = component
@@ -365,12 +380,12 @@ describe('CreateResourceModalComponent', () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const spy = vi.spyOn(component.updateResource, 'emit');
       component.onFormSubmit({
-        'metadata.name': 'existing',
-        'spec.description': 'updated',
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
       });
       expect(spy).toHaveBeenCalledWith({
-        'metadata.name': 'existing',
-        'spec.description': 'updated',
+        metadata: { name: 'existing' },
+        spec: { description: 'updated' },
       });
     });
 
@@ -386,6 +401,47 @@ describe('CreateResourceModalComponent', () => {
       const spy = vi.spyOn(component.resource, 'emit');
       component.onFormSubmit({ 'metadata.name': 'existing' });
       expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should omit empty write-only fields on edit submit', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          writeOnly: true,
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: '' } },
+      });
+      expect(spy).toHaveBeenCalledWith({ metadata: { name: 'existing' } });
+    });
+
+    it('should keep non-empty write-only fields on edit submit', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          writeOnly: true,
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+      const spy = vi.spyOn(component.updateResource, 'emit');
+      component.onFormSubmit({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: 'new-secret' } },
+      });
+      expect(spy).toHaveBeenCalledWith({
+        metadata: { name: 'existing' },
+        spec: { oidc: { clientSecret: 'new-secret' } },
+      });
     });
   });
 
@@ -469,6 +525,29 @@ describe('CreateResourceModalComponent', () => {
         value: 'desc',
       });
       // Both changes are retained; valid name means form is valid
+      expect(component.isFormValid()).toBe(true);
+    });
+
+    it('should not require empty write-only fields in edit mode', async () => {
+      const fieldsWithSecret: PlatformMeshFieldDefinition[] = [
+        { property: 'metadata.name', required: true, label: 'Name' },
+        {
+          property: 'spec.oidc.clientSecret',
+          label: 'Client secret',
+          inputType: 'Password',
+          required: true,
+          writeOnly: true,
+        },
+      ];
+      fixture.componentRef.setInput('fields', fieldsWithSecret);
+      await component.open({ metadata: { name: 'existing' } } as any);
+
+      component.onFieldChange({
+        fieldProperty: 'spec.oidc.clientSecret',
+        value: '',
+      });
+
+      expect(component.fieldErrors()['spec.oidc.clientSecret']).toBeNull();
       expect(component.isFormValid()).toBe(true);
     });
   });
