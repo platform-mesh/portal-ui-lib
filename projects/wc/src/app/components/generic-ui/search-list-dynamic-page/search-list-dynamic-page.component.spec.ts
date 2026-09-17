@@ -1,3 +1,8 @@
+import {
+  OpenSearchResult,
+  OpenSearchService,
+} from '../opensearch-list-view/services/open-search.service';
+import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
 import { SearchListDynamicPage } from './search-list-dynamic-page.component';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -6,13 +11,8 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { Subject, of, throwError } from 'rxjs';
-import { mock } from 'vitest-mock-extended';
 import { MockedObject } from 'vitest';
-import {
-  OpenSearchResult,
-  OpenSearchService,
-} from '../opensearch-list-view/services/open-search.service';
-import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
+import { mock } from 'vitest-mock-extended';
 
 describe('SearchListDynamicPage', () => {
   let component: SearchListDynamicPage;
@@ -105,7 +105,12 @@ describe('SearchListDynamicPage', () => {
     expect(component).toBeTruthy();
     expect(mockOpenSearchService.listResources).toHaveBeenCalledWith(
       expect.objectContaining({ resourceDefinition: expect.any(Object) }),
-      expect.objectContaining({ q: '*', resource: 'clusters', limit: 20, page: 1 }),
+      expect.objectContaining({
+        q: '*',
+        resource: 'clusters',
+        limit: 20,
+        page: 1,
+      }),
     );
   });
 
@@ -120,7 +125,9 @@ describe('SearchListDynamicPage', () => {
           ui: { listView: { resourceTitle: { label: 'Custom title' } } },
         },
       });
-      expect(f.componentInstance.resourceTitleDefinition()).toBe('Custom title');
+      expect(f.componentInstance.resourceTitleDefinition()).toBe(
+        'Custom title',
+      );
     });
   });
 
@@ -303,17 +310,28 @@ describe('SearchListDynamicPage', () => {
         source: 'os',
       });
       listSubject.complete();
-      expect(component.resources().map((r) => (r as any).id)).toEqual(['r1', 'r2']);
+      expect(component.resources().map((r) => (r as any).id)).toEqual([
+        'r1',
+        'r2',
+      ]);
     });
 
     it('defaults to empty array when result.results is undefined', () => {
-      listSubject.next({ results: undefined as any, nextCursor: '', source: 'os' });
+      listSubject.next({
+        results: undefined as any,
+        nextCursor: '',
+        source: 'os',
+      });
       listSubject.complete();
       expect(component.resources()).toEqual([]);
     });
 
     it('sets hasMore=true when nextCursor is present', () => {
-      listSubject.next({ results: [{ id: 'a' }] as any, nextCursor: 'cursor1', source: 'os' });
+      listSubject.next({
+        results: [{ id: 'a' }] as any,
+        nextCursor: 'cursor1',
+        source: 'os',
+      });
       listSubject.complete();
       expect(component.hasMore()).toBe(true);
     });
@@ -325,7 +343,12 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('sets totalItemsCount from result.totalCount', () => {
-      listSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 42 });
+      listSubject.next({
+        results: [],
+        nextCursor: '',
+        source: 'os',
+        totalCount: 42,
+      });
       listSubject.complete();
       expect(component.totalItemsCount()).toBe(42);
     });
@@ -337,23 +360,38 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('replaces resources on each page load (no append)', () => {
-      listSubject.next({ results: [{ id: 'r1' }] as any, nextCursor: '', source: 'os' });
+      listSubject.next({
+        results: [{ id: 'r1' }] as any,
+        nextCursor: '',
+        source: 'os',
+      });
       listSubject.complete();
 
       listSubject = new Subject<OpenSearchResult>();
-      mockOpenSearchService.listResources.mockReturnValue(listSubject.asObservable());
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
 
       component.onPageChange(2);
-      listSubject.next({ results: [{ id: 'r2' }, { id: 'r3' }] as any, nextCursor: '', source: 'os' });
+      listSubject.next({
+        results: [{ id: 'r2' }, { id: 'r3' }] as any,
+        nextCursor: '',
+        source: 'os',
+      });
       listSubject.complete();
 
-      expect(component.resources().map((r) => (r as any).id)).toEqual(['r2', 'r3']);
+      expect(component.resources().map((r) => (r as any).id)).toEqual([
+        'r2',
+        'r3',
+      ]);
     });
 
     it('cancels in-flight request when a new list() supersedes it', () => {
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.list();
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore + 1);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore + 1,
+      );
     });
 
     it('forwards errors to ErrorHandlerService', () => {
@@ -378,24 +416,32 @@ describe('SearchListDynamicPage', () => {
       });
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       f.componentInstance.list();
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore,
+      );
     });
 
     it('calls listResources with correct context and request params', () => {
       // Reset state and call list() fresh so we control what the call contains
       mockOpenSearchService.listResources.mockClear();
-      mockOpenSearchService.listResources.mockReturnValue(listSubject.asObservable());
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
       component.currentPage.set(1);
       component.list();
 
       const call = mockOpenSearchService.listResources.mock.calls[0]!;
-      expect(call[0]).toEqual(expect.objectContaining({ resourceDefinition: expect.any(Object) }));
-      expect(call[1]).toEqual(expect.objectContaining({
-        q: '*',
-        resource: 'clusters',
-        limit: 20,
-        page: 1,
-      }));
+      expect(call[0]).toEqual(
+        expect.objectContaining({ resourceDefinition: expect.any(Object) }),
+      );
+      expect(call[1]).toEqual(
+        expect.objectContaining({
+          q: '*',
+          resource: 'clusters',
+          limit: 20,
+          page: 1,
+        }),
+      );
     });
   });
 
@@ -405,14 +451,18 @@ describe('SearchListDynamicPage', () => {
       listSubject.next({ results: [], nextCursor: '', source: 'os' });
       listSubject.complete();
       listSubject = new Subject<OpenSearchResult>();
-      mockOpenSearchService.listResources.mockReturnValue(listSubject.asObservable());
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
 
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.onLimitChange(50);
 
       expect(component.paginationLimit()).toBe(50);
       expect(component.currentPage()).toBe(1);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore + 1);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore + 1,
+      );
     });
   });
 
@@ -421,20 +471,26 @@ describe('SearchListDynamicPage', () => {
       listSubject.next({ results: [], nextCursor: '', source: 'os' });
       listSubject.complete();
       listSubject = new Subject<OpenSearchResult>();
-      mockOpenSearchService.listResources.mockReturnValue(listSubject.asObservable());
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
 
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.onPageChange(3);
 
       expect(component.currentPage()).toBe(3);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore + 1);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore + 1,
+      );
     });
 
     it('sends the updated page in the request argument', () => {
       listSubject.next({ results: [], nextCursor: '', source: 'os' });
       listSubject.complete();
       listSubject = new Subject<OpenSearchResult>();
-      mockOpenSearchService.listResources.mockReturnValue(listSubject.asObservable());
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
 
       component.onPageChange(5);
 
@@ -455,9 +511,9 @@ describe('SearchListDynamicPage', () => {
       mockResourceService.create.mockReturnValue(of(resource));
 
       const closeSpy = vi.fn();
-      vi.spyOn(component as any, 'createModal', 'get').mockReturnValue(
-        () => ({ close: closeSpy }),
-      );
+      vi.spyOn(component as any, 'createModal', 'get').mockReturnValue(() => ({
+        close: closeSpy,
+      }));
 
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.onCreateSubmit(resource);
@@ -468,9 +524,9 @@ describe('SearchListDynamicPage', () => {
         component.context(),
       );
       expect(closeSpy).toHaveBeenCalled();
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBeGreaterThan(
-        callsBefore,
-      );
+      expect(
+        mockOpenSearchService.listResources.mock.calls.length,
+      ).toBeGreaterThan(callsBefore);
     });
 
     it('does nothing when resourceDefinition is undefined', () => {
@@ -595,7 +651,9 @@ describe('SearchListDynamicPage', () => {
     it('no result data does nothing', () => {
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.handleModalResult(undefined);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore,
+      );
     });
 
     it('create action calls resourceService.create', () => {
@@ -610,13 +668,15 @@ describe('SearchListDynamicPage', () => {
       listSubject.next({ results: [], nextCursor: '', source: 'os' });
       listSubject.complete();
       listSubject = new Subject<OpenSearchResult>();
-      mockOpenSearchService.listResources.mockReturnValue(listSubject.asObservable());
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
 
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.handleModalResult({ data: { action: 'loadTableData' } } as any);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBeGreaterThan(
-        callsBefore,
-      );
+      expect(
+        mockOpenSearchService.listResources.mock.calls.length,
+      ).toBeGreaterThan(callsBefore);
     });
 
     it('unknown action does not throw', () => {
@@ -655,9 +715,7 @@ describe('SearchListDynamicPage', () => {
   describe('tableResources', () => {
     it('maps resources with generated id', () => {
       listSubject.next({
-        results: [
-          { id: 'x', metadata: { name: 'foo' } },
-        ] as any,
+        results: [{ id: 'x', metadata: { name: 'foo' } }] as any,
         nextCursor: '',
         source: 'os',
       });
@@ -703,8 +761,16 @@ describe('SearchListDynamicPage', () => {
       });
       const filters = f.componentInstance.searchFilters();
       expect(filters).toHaveLength(2);
-      expect(filters![0]).toEqual({ label: 'Active', property: 'status', value: 'active' });
-      expect(filters![1]).toEqual({ label: 'Inactive', property: 'status', value: 'inactive' });
+      expect(filters![0]).toEqual({
+        label: 'Active',
+        property: 'status',
+        value: 'active',
+      });
+      expect(filters![1]).toEqual({
+        label: 'Inactive',
+        property: 'status',
+        value: 'inactive',
+      });
     });
 
     it('resolves {context.xxx} placeholders from context', () => {
@@ -714,7 +780,11 @@ describe('SearchListDynamicPage', () => {
           ui: {
             listView: {
               filters: [
-                { label: 'NS filter', property: 'metadata.namespace', value: '{context.namespace}' },
+                {
+                  label: 'NS filter',
+                  property: 'metadata.namespace',
+                  value: '{context.namespace}',
+                },
               ],
             },
           },
@@ -781,7 +851,11 @@ describe('SearchListDynamicPage', () => {
         },
       });
       expect(f.componentInstance.selectedSearchFilter()).toEqual(
-        expect.objectContaining({ label: 'Default', value: 'v2', default: true }),
+        expect.objectContaining({
+          label: 'Default',
+          value: 'v2',
+          default: true,
+        }),
       );
     });
   });
@@ -838,9 +912,7 @@ describe('SearchListDynamicPage', () => {
         resourceDefinition: {
           ui: {
             listView: {
-              filters: [
-                { label: 'All', property: 'p', value: '*' },
-              ],
+              filters: [{ label: 'All', property: 'p', value: '*' }],
             },
           },
         },
@@ -891,7 +963,9 @@ describe('SearchListDynamicPage', () => {
     it('calls listResources after selecting a filter', () => {
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       (filterFixture.componentInstance as any).onFilterTabSelect(1);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBeGreaterThan(callsBefore);
+      expect(
+        mockOpenSearchService.listResources.mock.calls.length,
+      ).toBeGreaterThan(callsBefore);
     });
   });
 
@@ -949,6 +1023,143 @@ describe('SearchListDynamicPage', () => {
         (call: any[]) => call[1].limit === 1 && call[1].page === 1,
       );
       expect(countCalls).toHaveLength(2);
+    });
+  });
+
+  describe('baselineFilter', () => {
+    it('baseline resolved + kcpPath present: list() sends merged filters', () => {
+      mockOpenSearchService.listResources.mockClear();
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+
+      const f = createComponent({
+        kcpPath: '/ws/test',
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          ui: {
+            listView: {
+              baselineFilters: [
+                { property: 'workspace_path', value: '{context.kcpPath}' },
+              ],
+            },
+          },
+        },
+      });
+
+      // list() is called on init — grab the most recent call
+      const lastCall = mockOpenSearchService.listResources.mock.calls.at(-1)!;
+      expect(lastCall[1].filters).toEqual({ workspace_path: '/ws/test' });
+
+      // No extra tab rendered for the baseline filter
+      expect(f.componentInstance.filterTabs()).toHaveLength(0);
+    });
+
+    it('baseline unresolved (kcpPath missing): list() sends no filters and logs debug', () => {
+      mockOpenSearchService.listResources.mockClear();
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+
+      const debugSpy = vi
+        .spyOn(console, 'debug')
+        .mockImplementation(() => undefined);
+
+      createComponent({
+        // kcpPath intentionally absent
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          ui: {
+            listView: {
+              baselineFilters: [
+                { property: 'workspace_path', value: '{context.kcpPath}' },
+              ],
+            },
+          },
+        },
+      });
+
+      const lastCall = mockOpenSearchService.listResources.mock.calls.at(-1)!;
+      // Unresolved baseline entry is skipped → filters should be undefined
+      expect(lastCall[1].filters).toBeUndefined();
+      expect(debugSpy).toHaveBeenCalledWith(
+        'baselineFilter skipped (unresolved value)',
+        'workspace_path',
+        '{context.kcpPath}',
+      );
+    });
+
+    it('baseline + selected tab on same property: tab value wins', () => {
+      mockOpenSearchService.listResources.mockReturnValue(
+        of({ results: [], nextCursor: '', source: 'os', totalCount: 0 }),
+      );
+      mockOpenSearchService.listResources.mockClear();
+
+      const f = createComponent({
+        kcpPath: '/baseline',
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          ui: {
+            listView: {
+              baselineFilters: [
+                { property: 'workspace_path', value: '{context.kcpPath}' },
+              ],
+              filters: [
+                { label: 'Tab', property: 'workspace_path', value: '/tab' },
+              ],
+            },
+          },
+        },
+      });
+
+      // Explicitly trigger list() after init to ensure the selected tab filter is merged
+      mockOpenSearchService.listResources.mockClear();
+      mockOpenSearchService.listResources.mockReturnValue(
+        of({ results: [], nextCursor: '', source: 'os', totalCount: 0 }),
+      );
+      f.componentInstance.list();
+
+      const lastCall = mockOpenSearchService.listResources.mock.calls.at(-1)!;
+      // Tab value (/tab) must win over baseline value (/baseline)
+      expect(lastCall[1].filters).toEqual({ workspace_path: '/tab' });
+    });
+
+    it('loadFilterCounts carries baseline merged into each per-tab count query', () => {
+      mockOpenSearchService.listResources.mockReturnValue(
+        of({ results: [], nextCursor: '', source: 'os', totalCount: 5 }),
+      );
+      mockOpenSearchService.listResources.mockClear();
+
+      createComponent({
+        kcpPath: '/ws/test',
+        resourceDefinition: {
+          entityCollection: 'clusters',
+          ui: {
+            listView: {
+              baselineFilters: [
+                { property: 'workspace_path', value: '{context.kcpPath}' },
+              ],
+              filters: [
+                { label: 'All', property: 'status', value: '*' },
+                { label: 'Active', property: 'status', value: 'active' },
+              ],
+            },
+          },
+        },
+      });
+
+      // 1 list() + 2 filter count calls = 3 total
+      const countCalls = mockOpenSearchService.listResources.mock.calls.filter(
+        (call: any[]) => call[1].limit === 1 && call[1].page === 1,
+      );
+      expect(countCalls).toHaveLength(2);
+
+      // Every count call must include the baseline filter merged in
+      for (const call of countCalls) {
+        expect(call[1].filters).toEqual(
+          expect.objectContaining({ workspace_path: '/ws/test' }),
+        );
+      }
     });
   });
 });

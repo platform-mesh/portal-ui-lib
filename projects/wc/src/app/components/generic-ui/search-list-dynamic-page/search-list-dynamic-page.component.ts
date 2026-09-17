@@ -124,6 +124,27 @@ export class SearchListDynamicPage implements OnInit {
     }));
   });
 
+  private baselineFilters = computed<Record<string, string>>(() => {
+    const ctx = this.context();
+    const defs = ctx.resourceDefinition?.ui?.listView?.baselineFilters ?? [];
+    const record: Record<string, string> = {};
+    for (const f of defs) {
+      if (!f.property) continue;
+      const value = resolveContextPlaceholders(f.value, ctx);
+      if (!value || (value === f.value && /\{context\./.test(f.value ?? ''))) {
+        console.debug(
+          'baselineFilter skipped (unresolved value)',
+          f.property,
+          f.value,
+        );
+        continue;
+      }
+      record[f.property] = value;
+    }
+
+    return record;
+  });
+
   hasFilters = computed(() => (this.searchFilters()?.length ?? 0) > 0);
 
   filterTabs = computed(() => {
@@ -300,15 +321,17 @@ export class SearchListDynamicPage implements OnInit {
     const resource = this.resourceDefinition()?.entityCollection;
 
     this.loading.set(true);
+    const selected = filter?.property
+      ? { [filter.property]: filter.value }
+      : {};
+    const merged = { ...this.baselineFilters(), ...selected };
     this.listSubscription = this.openSearchService
       .listResources(context, {
         q: '*',
         resource,
         limit,
         page,
-        filters: filter?.property
-          ? { [filter.property]: filter.value }
-          : undefined,
+        filters: Object.keys(merged).length ? merged : undefined,
       })
       .pipe(
         finalize(() => this.loading.set(false)),
@@ -342,13 +365,15 @@ export class SearchListDynamicPage implements OnInit {
 
     const observables = filters.map((f) => {
       const key = this.filterKey(f);
+      const tabFilter = f.property ? { [f.property]: f.value } : {};
+      const merged = { ...this.baselineFilters(), ...tabFilter };
       return this.openSearchService
         .listResources(context, {
           q: '*',
           resource,
           limit: 1,
           page: 1,
-          filters: f.property ? { [f.property]: f.value } : undefined,
+          filters: Object.keys(merged).length ? merged : undefined,
         })
         .pipe(
           map((r) => ({ key, count: r.totalCount ?? 0 })),
