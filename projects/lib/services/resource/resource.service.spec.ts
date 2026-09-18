@@ -1822,6 +1822,41 @@ describe('ResourceService', () => {
 
         expect(result).toBeUndefined();
       });
+
+      it('should fall through to the search params when namespaceId is the -all- sentinel', () => {
+        service['luigiCoreService'].routing = vi.fn(() => ({
+          getSearchParams: () => ({ namespace: 'search-namespace' }),
+        }));
+
+        const result = service['getNamespace']({
+          ...namespacedNodeContext,
+          namespaceId: ALL_NAMESPACE,
+        });
+
+        expect(result).toBe('search-namespace');
+      });
+
+      it('should prefer the resource namespace when namespaceId is the -all- sentinel', () => {
+        const result = service['getNamespace'](
+          { ...namespacedNodeContext, namespaceId: ALL_NAMESPACE },
+          { metadata: { name: 'r', namespace: 'resource-namespace' } } as any,
+        );
+
+        expect(result).toBe('resource-namespace');
+      });
+
+      it('should return undefined when namespaceId and the search params both carry -all-', () => {
+        service['luigiCoreService'].routing = vi.fn(() => ({
+          getSearchParams: () => ({ namespace: ALL_NAMESPACE }),
+        }));
+
+        const result = service['getNamespace']({
+          ...namespacedNodeContext,
+          namespaceId: ALL_NAMESPACE,
+        });
+
+        expect(result).toBeUndefined();
+      });
     });
 
     describe('normalizeGqlBuilderVariables', () => {

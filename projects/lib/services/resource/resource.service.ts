@@ -526,7 +526,9 @@ export class ResourceService {
     nodeContext: ResourceNodeContext,
     resource?: Resource,
   ): string | undefined {
-    if (nodeContext.namespaceId) {
+    // namespaceId can carry the '-all-' sentinel when the portal forwards the
+    // namespace selection; it is never a real namespace, so fall through.
+    if (nodeContext.namespaceId && nodeContext.namespaceId !== ALL_NAMESPACE) {
       return nodeContext.namespaceId;
     }
 
