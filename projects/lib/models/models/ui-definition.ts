@@ -67,6 +67,7 @@ export interface UIDefinition {
 
 export interface ListView extends UiView {
   filters?: FieldFilterDefinition[];
+  baselineFilters?: FieldFilterDefinition[];
 }
 
 export interface DetailView extends UiView {

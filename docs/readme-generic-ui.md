@@ -95,6 +95,17 @@ In order to use the generic list view, you need to adjust the node’s `content-
         - `"value": "{context.user.email}"` → nested paths are supported.
       - If a placeholder resolves to `undefined` or `null`, it is left literal in the output (so the user sees the placeholder rather than the string `"undefined"`) — a signal that the expected context key is missing.
     - `"default"`: Optional boolean; when `true`, this tab is selected on initial render. If omitted on every entry, the first entry in the array is selected. On page load, a `?<property>=<value>` URL query param takes precedence over `default:` when it matches one of the entries — refreshing the page restores whichever tab the user last picked (for example, `?metadata.namespace=default` selects the tab with `property: "metadata.namespace"` and `value: "default"`).
+  - `"baselineFilter"`: Optional array of `FieldFilterDefinition` objects that are **always** merged into every OpenSearch request, regardless of which filter tab is selected. Unlike `filters`, baseline entries are **not** rendered as tabs and are **not** written to the URL. They are invisible to the user and act as a persistent query scope.
+    - Each entry has the same `"property"` and `"value"` fields as a `filters` entry.
+    - `"value"` supports the same `{context.<dot.path>}` runtime interpolation as `filters`. If a placeholder cannot be resolved (the context key is missing), that baseline entry is **silently skipped** (a `console.debug` message is logged) and the request proceeds without it. No error is thrown.
+    - When a baseline filter and the selected tab filter set the **same property**, the **tab value wins** — the baseline value is overwritten by the tab.
+    - Example — scope every list and count query to the current KCP workspace path:
+      ```json
+      "baselineFilter": [
+        { "property": "workspace_path", "value": "{context.kcpPath}" }
+      ]
+      ```
+      When the Luigi context provides `kcpPath: "/ws/my-workspace"`, every `listResources` call (both the main list and the per-tab count queries) will include `filters: { workspace_path: "/ws/my-workspace" }`. If `kcpPath` is absent from the context the entry is skipped and the request is sent without that filter.
 
 #### Detail View Configuration
 
@@ -128,6 +139,8 @@ In order to use the generic list view, you need to adjust the node’s `content-
 - `"createView"`: Defines the form for creating/updating resources
   - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value). Fields that represent **arrays of objects** (e.g. `status.conditions`) are declared with a `"property"` pointing at the array + a nested `"propertyCollection"` of sub-`FieldDefinition`s — see the [`propertyCollection` reference](#field-definition-properties).
   - for namespaced resources, the create form automatically adds a required `metadata.namespace` field with dynamic namespace options **only when no namespace is already resolved** — i.e. no namespace is selected in the navigation context (`namespaceId`) and the URL search param `namespace` is `-all-` (or missing). When a namespace is already resolved it is reused on create, so the field is omitted.
+
+On edit, `metadata.name`, `spec.alias`, `spec.type`, and `metadata.namespace` are shown but disabled.
 
 #### Field Definition Properties
 
@@ -735,7 +748,8 @@ A full-page list view using the SAP Fiori `ui5-dynamic-page` layout. Use it when
 
 - Table is rendered via `mfp-declarative-table`, columns driven by `resourceDefinition.ui.listView.fields`.
 - Pagination is page-based (`loadMode: pager`). Current page and limit are persisted as `?page=` / `?limit=` URL query params (default values `page=1` and `limit=20` are omitted to keep URLs clean).
-- Data is fetched via `ReadResourcesProxyService`: uses the GraphQL gateway by default; switches to OpenSearch when the `os-provider` Luigi feature toggle is active.
+- Data is fetched directly via `OpenSearchService` against the OpenSearch API configured in `portalContext.openSearchApiUrl`.
+- If `resourceDefinition.ui.listView.filters` is set, a tab strip is rendered above the table — one tab per filter entry. Each tab shows the item count in parentheses. The active tab is persisted as `?tab=<slug>` in the URL. See [List View Configuration](#list-view-configuration) for the full `filters` schema.
 - If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens a modal form.
 - If `resourceDefinition.readyCondition` is set, a status-alert column is prepended to the table.
 

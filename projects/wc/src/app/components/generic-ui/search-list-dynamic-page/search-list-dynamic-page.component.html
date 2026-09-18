@@ -35,8 +35,16 @@
 
   <ui5-dynamic-page-header slot="headerArea">
     <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
-    <!-- future: filter bar (#591) -->
   </ui5-dynamic-page-header>
+  @if (hasFilters()) {
+    <ui5-tabcontainer
+      (ui5TabSelect)="onFilterTabSelect($event.detail.tabIndex)"
+    >
+      @for (tab of filterTabs(); track tab.text) {
+        <ui5-tab [text]="tab.text" [selected]="tab.selected"></ui5-tab>
+      }
+    </ui5-tabcontainer>
+  }
   <mfp-declarative-table
     [columns]="columns()"
     [resources]="tableResources()"
