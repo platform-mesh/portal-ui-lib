@@ -121,11 +121,11 @@
   #createModal
   [fields]="resourceCreateEditFields()"
   (updateResource)="update($event)"
-  [context]="context()"
+  [context]="effectiveContext()"
 />
 
 <pm-delete-resource-modal
   #deleteModal
   (resource)="delete($event)"
-  [context]="context()"
+  [context]="effectiveContext()"
 />

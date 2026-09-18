@@ -37,6 +37,7 @@ import {
   SectionConfig,
 } from '@openmfp/ngx';
 import {
+  ALL_NAMESPACE,
   DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
   PlatformMeshFieldDefinition,
   Resource,
@@ -108,8 +109,30 @@ export class DetailView {
   context = input.required<ResourceNodeContext>();
   resource = signal<Resource | undefined>(undefined);
   protected readonly viewState = computed(() =>
-    this.context() === this.readContext() ? this.readState() : 'loading',
+    this.effectiveContext() === this.readContext()
+      ? this.readState()
+      : 'loading',
   );
+
+  // A detail view addresses exactly one resource, so the '-all-' namespace
+  // selection can never satisfy its reads or mutations. When no real
+  // namespace resolves from the context or the ?namespace param, recover it
+  // from the route's namespaceId path param.
+  protected effectiveContext = computed<ResourceNodeContext>(() => {
+    const context = this.context();
+    if (
+      !isNamespacedResource(context) ||
+      this.resourceService.getNamespace(context)
+    ) {
+      return context;
+    }
+    const routeNamespace = (
+      this.LuigiClient().getPathParams?.() as Record<string, string> | undefined
+    )?.namespaceId;
+    return routeNamespace && routeNamespace !== ALL_NAMESPACE
+      ? { ...context, namespaceId: routeNamespace }
+      : context;
+  });
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(
@@ -166,9 +189,9 @@ export class DetailView {
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
   private instancePermissions = computed(() => {
-    // The permission key derives entirely from the resource id and the
-    // effective namespace (which can come from the route), so this stays
-    // independent of the loaded resource() and is usable before the read.
+    // The permission key must mirror how the host seeded portalPermissions
+    // (namespace from the raw context, not the route-repaired one), or the
+    // lookup misses and action gating silently falls open.
     return this.permissionsFor(
       this.resourceId(),
       this.resourceService.getNamespace(this.context()),
@@ -218,7 +241,7 @@ export class DetailView {
             this.kubeconfigSecretService.isSecretReferenceAvailable(
               buttonSettings,
               this.resource(),
-              this.context(),
+              this.effectiveContext(),
             )
           );
         })
@@ -346,9 +369,10 @@ export class DetailView {
     this.resourceReadSubscription?.unsubscribe();
     this.resourceReadGeneration += 1;
     const generation = this.resourceReadGeneration;
-    const context = this.context();
+    const context = this.effectiveContext();
     const isCurrentRead = () =>
-      generation === this.resourceReadGeneration && context === this.context();
+      generation === this.resourceReadGeneration &&
+      context === this.effectiveContext();
     this.cancelKubeconfigRead.next();
 
     // A custom element can be reused with a different workspace or resource.
@@ -457,7 +481,7 @@ export class DetailView {
         this.getResourceId(),
         resourceDefinition,
         fields,
-        this.context(),
+        this.effectiveContext(),
         resourceDefinition.entity.toLowerCase() === 'account',
       )
       .pipe(take(1))
@@ -480,7 +504,7 @@ export class DetailView {
       .delete(
         resourceToDelete,
         resourceDefinition,
-        this.context(),
+        this.effectiveContext(),
         resourceDefinition.entity.toLowerCase() === 'account',
       )
       .subscribe({
@@ -513,7 +537,7 @@ export class DetailView {
       .update(
         resourceToUpdate,
         resourceDefinition,
-        this.context(),
+        this.effectiveContext(),
         resourceDefinition.entity.toLowerCase() === 'account',
         fields,
       )
@@ -574,7 +598,7 @@ export class DetailView {
     }
 
     const resource = this.resource();
-    const context = this.context();
+    const context = this.effectiveContext();
     const resourceReadGeneration = this.resourceReadGeneration;
 
     try {
@@ -587,7 +611,7 @@ export class DetailView {
 
       if (
         resourceReadGeneration !== this.resourceReadGeneration ||
-        context !== this.context() ||
+        context !== this.effectiveContext() ||
         resource !== this.resource()
       ) {
         return;
@@ -601,7 +625,7 @@ export class DetailView {
     } catch (error: unknown) {
       if (
         resourceReadGeneration !== this.resourceReadGeneration ||
-        context !== this.context() ||
+        context !== this.effectiveContext() ||
         resource !== this.resource()
       ) {
         return;
