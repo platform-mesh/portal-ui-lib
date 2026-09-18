@@ -40,7 +40,7 @@
     <ui5-input
       class="search-input"
       data-testid="search-list-search-input"
-      [formControl]="searchControl"
+      [formField]="searchControl"
       placeholder="Search"
       (keydown.enter)="submitSearch()">
       <ui5-icon
@@ -48,7 +48,7 @@
         name="decline"
         slot="icon"
         mode="Interactive"
-        [style.visibility]="searchControl.value ? 'visible' : 'hidden'"
+        [style.visibility]="searchControl().value() ? 'visible' : 'hidden'"
         (click)="clearSearch()"
         (keydown.enter)="clearSearch()">
       </ui5-icon>

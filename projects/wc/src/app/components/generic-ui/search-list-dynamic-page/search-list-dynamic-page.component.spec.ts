@@ -1029,7 +1029,7 @@ describe('SearchListDynamicPage', () => {
   describe('submitSearch', () => {
     it('sets searchKey, resets currentPage to 1, and triggers list()', () => {
       component.currentPage.set(3);
-      component.searchControl.setValue('my query');
+      component.searchControl().value.set('my query');
 
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
       component.submitSearch();
@@ -1042,7 +1042,7 @@ describe('SearchListDynamicPage', () => {
     });
 
     it('forwards an empty string to searchKey when the control is cleared', () => {
-      component.searchControl.setValue('');
+      component.searchControl().value.set('');
       component.submitSearch();
       expect(component.searchKey()).toBe('');
     });
@@ -1146,7 +1146,7 @@ describe('SearchListDynamicPage', () => {
   });
 
   describe('URL ?q= seeding on init', () => {
-    it('seeds searchControl.value and searchKey from the URL ?q= param', () => {
+    it('seeds searchControl value and searchKey from the URL ?q= param', () => {
       let href = 'http://localhost/?q=seeded-value';
       vi.stubGlobal('location', {
         get href() {
@@ -1170,7 +1170,7 @@ describe('SearchListDynamicPage', () => {
       // Create a fresh component after stubbing so readUrlSearchParam picks up ?q=
       const f = createComponent();
 
-      expect(f.componentInstance.searchControl.value).toBe('seeded-value');
+      expect(f.componentInstance.searchControl().value()).toBe('seeded-value');
       expect(f.componentInstance.searchKey()).toBe('seeded-value');
 
       vi.unstubAllGlobals();

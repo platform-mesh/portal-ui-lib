@@ -99,15 +99,17 @@ describe('OpenSearchService', () => {
       );
     });
 
-    it('should throw and alert when openSearchApiUrl is missing', () => {
+    it('should emit an error and alert when openSearchApiUrl is missing', async () => {
       const ctx = {
         ...baseContext,
         portalContext: { crdGatewayApiUrl: 'x' },
       } as any;
 
-      expect(() =>
-        service.listResources(ctx, { q: 'a' } as OpenSearchRequest),
-      ).toThrow();
+      await expect(
+        firstValueFrom(service.listResources(ctx, { q: 'a' })),
+      ).rejects.toThrow(
+        'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!',
+      );
       expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
         text: expect.stringContaining('OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL'),
         type: 'error',

@@ -23,8 +23,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormField, form } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   DynamicPage,
   DynamicPageHeader,
@@ -86,7 +86,7 @@ import { catchError, finalize, map } from 'rxjs/operators';
     Tab,
     Input,
     Icon,
-    ReactiveFormsModule,
+    FormField,
   ],
 })
 export class SearchListDynamicPage implements OnInit {
@@ -220,10 +220,9 @@ export class SearchListDynamicPage implements OnInit {
   hasMore = signal<boolean>(false);
   loading = signal<boolean>(false);
 
-  searchControl = new FormControl<string>(readUrlSearchParam('q') ?? '', {
-    nonNullable: true,
-  });
-  searchKey = signal<string>(readUrlSearchParam('q') ?? '');
+  private readonly searchModel = signal(readUrlSearchParam('q') ?? '');
+  readonly searchControl = form(this.searchModel);
+  searchKey = signal<string>(this.searchModel());
 
   private filterCounts = signal<Record<string, number | undefined>>({});
 
@@ -266,14 +265,14 @@ export class SearchListDynamicPage implements OnInit {
   }
 
   submitSearch(): void {
-    const q = this.searchControl.value;
+    const q = this.searchControl().value();
     this.searchKey.set(q);
     this.currentPage.set(1);
     this.list();
   }
 
   clearSearch(): void {
-    this.searchControl.setValue('');
+    this.searchControl().value.set('');
     this.submitSearch();
   }
 

@@ -10,7 +10,7 @@ import {
   ReadResourcesSubscriptionResult,
   ResourceNodeContext,
 } from '@platform-mesh/portal-ui-lib/services';
-import { EMPTY, Observable, of } from 'rxjs';
+import { EMPTY, Observable, of, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface OpenSearchRequest {
@@ -68,7 +68,8 @@ export class OpenSearchService {
       const message =
         'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!';
       this.alertErrors(message);
-      throw Error(message);
+
+      return throwError(() => new Error(message));
     }
 
     return this.httpClient
@@ -157,12 +158,10 @@ export class OpenSearchService {
         };
 
         return this.listResources(nodeContext, request).pipe(
-          map(
-            (result): ReadResourcesResult => ({
-              items: result?.results ?? [],
-              nextCursor: result?.nextCursor,
-            }),
-          ),
+          map((result): ReadResourcesResult => ({
+            items: result?.results ?? [],
+            nextCursor: result?.nextCursor,
+          })),
         );
       },
       subscribe: (): Observable<ReadResourcesSubscriptionResult | undefined> =>
