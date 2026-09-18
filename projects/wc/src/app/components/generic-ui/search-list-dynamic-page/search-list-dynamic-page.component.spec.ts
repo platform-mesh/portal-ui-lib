@@ -1026,6 +1026,157 @@ describe('SearchListDynamicPage', () => {
     });
   });
 
+  describe('submitSearch', () => {
+    it('sets searchKey, resets currentPage to 1, and triggers list()', () => {
+      component.currentPage.set(3);
+      component.searchControl().value.set('my query');
+
+      const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
+      component.submitSearch();
+
+      expect(component.searchKey()).toBe('my query');
+      expect(component.currentPage()).toBe(1);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore + 1,
+      );
+    });
+
+    it('forwards an empty string to searchKey when the control is cleared', () => {
+      component.searchControl().value.set('');
+      component.submitSearch();
+      expect(component.searchKey()).toBe('');
+    });
+  });
+
+  describe('list() with searchKey', () => {
+    it('sends the typed query to listResources when searchKey is set', () => {
+      component.searchKey.set('hello');
+      mockOpenSearchService.listResources.mockClear();
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+
+      component.list();
+
+      const lastCall = mockOpenSearchService.listResources.mock.calls.at(-1)!;
+      expect(lastCall[1]).toEqual(expect.objectContaining({ q: 'hello' }));
+    });
+
+    it('falls back to q: "*" when searchKey is empty string', () => {
+      component.searchKey.set('');
+      mockOpenSearchService.listResources.mockClear();
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+
+      component.list();
+
+      const lastCall = mockOpenSearchService.listResources.mock.calls.at(-1)!;
+      expect(lastCall[1]).toEqual(expect.objectContaining({ q: '*' }));
+    });
+
+    it('falls back to q: "*" when searchKey is whitespace only', () => {
+      component.searchKey.set('   ');
+      mockOpenSearchService.listResources.mockClear();
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+
+      component.list();
+
+      const lastCall = mockOpenSearchService.listResources.mock.calls.at(-1)!;
+      expect(lastCall[1]).toEqual(expect.objectContaining({ q: '*' }));
+    });
+  });
+
+  describe('URL ?q= param management', () => {
+    let href: string;
+    const makeLocation = () => ({
+      get href() {
+        return href;
+      },
+      set href(value: string) {
+        href = new URL(value, 'http://localhost/').href;
+      },
+      get search() {
+        return new URL(href).search;
+      },
+    });
+    const historyStub = {
+      replaceState: (
+        _state: unknown,
+        _title: string,
+        url?: string | URL | null,
+      ) => {
+        if (url != null) href = new URL(String(url), 'http://localhost/').href;
+      },
+    };
+    const params = () => new URL(href).searchParams;
+
+    beforeEach(() => {
+      href = 'http://localhost/';
+      vi.stubGlobal('location', makeLocation());
+      vi.stubGlobal('history', historyStub);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('writes ?q= to the URL when searchKey is non-empty', () => {
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+      component.searchKey.set('widgets');
+      component.list();
+
+      expect(params().get('q')).toBe('widgets');
+    });
+
+    it('strips ?q= from the URL when searchKey is empty', () => {
+      href = 'http://localhost/?q=old-query';
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+      component.searchKey.set('');
+      component.list();
+
+      expect(params().has('q')).toBe(false);
+    });
+  });
+
+  describe('URL ?q= seeding on init', () => {
+    it('seeds searchControl value and searchKey from the URL ?q= param', () => {
+      let href = 'http://localhost/?q=seeded-value';
+      vi.stubGlobal('location', {
+        get href() {
+          return href;
+        },
+        get search() {
+          return new URL(href).search;
+        },
+      });
+      vi.stubGlobal('history', {
+        replaceState: (
+          _state: unknown,
+          _title: string,
+          url?: string | URL | null,
+        ) => {
+          if (url != null)
+            href = new URL(String(url), 'http://localhost/').href;
+        },
+      });
+
+      // Create a fresh component after stubbing so readUrlSearchParam picks up ?q=
+      const f = createComponent();
+
+      expect(f.componentInstance.searchControl().value()).toBe('seeded-value');
+      expect(f.componentInstance.searchKey()).toBe('seeded-value');
+
+      vi.unstubAllGlobals();
+    });
+  });
+
   describe('baselineFilter', () => {
     it('baseline resolved + kcpPath present: list() sends merged filters', () => {
       mockOpenSearchService.listResources.mockClear();

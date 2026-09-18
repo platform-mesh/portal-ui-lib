@@ -2,21 +2,31 @@ ui5-dynamic-page::part(fit-content) {
   padding: 0;
 }
 
-.snapped-heading {
+.page-heading {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 }
-.snapped-heading ::ng-deep .resource-logo {
+.page-heading ::ng-deep .resource-logo {
   width: 2.5rem;
   padding-bottom: 0;
   display: block;
 }
-.snapped-heading-text {
-  margin-left: 0.5rem;
+.page-heading-text {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
-.snapped-heading-text p {
+.page-heading-text p {
   margin: 0;
+}
+
+.search-input {
+  width: 20rem;
+}
+
+.search-input ui5-icon[slot='icon']:hover {
+  outline: 0.0625rem solid var(--sapField_HoverBorderColor, #0064d9);
+  border-radius: 0.25rem;
+  cursor: pointer;
 }

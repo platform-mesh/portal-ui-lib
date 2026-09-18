@@ -23,12 +23,15 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormField, form } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   DynamicPage,
   DynamicPageHeader,
   DynamicPageTitle,
 } from '@fundamental-ngx/ui5-webcomponents-fiori';
+import { Icon } from '@fundamental-ngx/ui5-webcomponents/icon';
+import { Input } from '@fundamental-ngx/ui5-webcomponents/input';
 import { Tab } from '@fundamental-ngx/ui5-webcomponents/tab';
 import { TabContainer } from '@fundamental-ngx/ui5-webcomponents/tab-container';
 import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
@@ -81,6 +84,9 @@ import { catchError, finalize, map } from 'rxjs/operators';
     DeclarativeTable,
     TabContainer,
     Tab,
+    Input,
+    Icon,
+    FormField,
   ],
 })
 export class SearchListDynamicPage implements OnInit {
@@ -214,6 +220,10 @@ export class SearchListDynamicPage implements OnInit {
   hasMore = signal<boolean>(false);
   loading = signal<boolean>(false);
 
+  private readonly searchModel = signal(readUrlSearchParam('q') ?? '');
+  readonly searchControl = form(this.searchModel);
+  searchKey = signal<string>(this.searchModel());
+
   private filterCounts = signal<Record<string, number | undefined>>({});
 
   private resourceService = inject(ResourceService);
@@ -252,6 +262,18 @@ export class SearchListDynamicPage implements OnInit {
   ngOnInit(): void {
     this.list();
     this.loadFilterCounts();
+  }
+
+  submitSearch(): void {
+    const q = this.searchControl().value();
+    this.searchKey.set(q);
+    this.currentPage.set(1);
+    this.list();
+  }
+
+  clearSearch(): void {
+    this.searchControl().value.set('');
+    this.submitSearch();
   }
 
   openCreateModal(): void {
@@ -310,8 +332,10 @@ export class SearchListDynamicPage implements OnInit {
     const page = this.currentPage();
     const limit = this.paginationLimit();
     const filter = this.selectedSearchFilter();
+    const q = this.searchKey().trim();
 
     addSearchParams({
+      q: q || undefined,
       page: page > 1 ? String(page) : undefined,
       limit: limit !== 20 ? String(limit) : undefined,
       tab: filter ? this.tabSlug(filter) : undefined,
@@ -327,7 +351,7 @@ export class SearchListDynamicPage implements OnInit {
     const merged = { ...this.baselineFilters(), ...selected };
     this.listSubscription = this.openSearchService
       .listResources(context, {
-        q: '*',
+        q: q || '*',
         resource,
         limit,
         page,

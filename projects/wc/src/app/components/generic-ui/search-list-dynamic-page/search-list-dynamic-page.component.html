@@ -1,14 +1,17 @@
 <ui5-dynamic-page>
   <ui5-dynamic-page-title slot="titleArea">
-    <ui5-title slot="heading">{{ resourceTitleDefinition() }}</ui5-title>
-    <p slot="subheading">{{ resourceDescriptionDefinition() }}</p>
-
-    <div slot="snappedHeading" class="snapped-heading">
+    <div slot="heading" class="page-heading">
       <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
-      <div class="snapped-heading-text">
-        <ui5-title wrapping-type="None">{{
-          resourceTitleDefinition()
-        }}</ui5-title>
+      <div class="page-heading-text">
+        <ui5-title>{{ resourceTitleDefinition() }}</ui5-title>
+        <p>{{ resourceDescriptionDefinition() }}</p>
+      </div>
+    </div>
+
+    <div slot="snappedHeading" class="page-heading">
+      <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+      <div class="page-heading-text">
+        <ui5-title>{{ resourceTitleDefinition() }}</ui5-title>
         <p>{{ resourceDescriptionDefinition() }}</p>
       </div>
     </div>
@@ -34,7 +37,30 @@
   </ui5-dynamic-page-title>
 
   <ui5-dynamic-page-header slot="headerArea">
-    <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
+    <ui5-input
+      class="search-input"
+      data-testid="search-list-search-input"
+      [formField]="searchControl"
+      placeholder="Search"
+      (keydown.enter)="submitSearch()">
+      <ui5-icon
+        data-testid="search-list-clear-icon"
+        name="decline"
+        slot="icon"
+        mode="Interactive"
+        [style.visibility]="searchControl().value() ? 'visible' : 'hidden'"
+        (click)="clearSearch()"
+        (keydown.enter)="clearSearch()">
+      </ui5-icon>
+      <ui5-icon
+        data-testid="search-list-search-icon"
+        name="search"
+        slot="icon"
+        mode="Interactive"
+        (click)="submitSearch()"
+        (keydown.enter)="submitSearch()">
+      </ui5-icon>
+    </ui5-input>
   </ui5-dynamic-page-header>
   @if (hasFilters()) {
     <ui5-tabcontainer

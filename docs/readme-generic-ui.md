@@ -752,6 +752,7 @@ A full-page list view using the SAP Fiori `ui5-dynamic-page` layout. Use it when
 - If `resourceDefinition.ui.listView.filters` is set, a tab strip is rendered above the table — one tab per filter entry. Each tab shows the item count in parentheses. The active tab is persisted as `?tab=<slug>` in the URL. See [List View Configuration](#list-view-configuration) for the full `filters` schema.
 - If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens a modal form.
 - If `resourceDefinition.readyCondition` is set, a status-alert column is prepended to the table.
+- A **search input** is rendered in the page header. The search fires only when the user presses **Enter** or clicks the search icon — it does not filter as-you-type. The current query is persisted as `?q=` in the URL; clearing the input and re-submitting removes the param. On reload, `?q=` is read and pre-populates the input. An empty or whitespace-only query is sent to OpenSearch as `q: "*"` (match all).
 
 **Minimal node configuration:**
 
