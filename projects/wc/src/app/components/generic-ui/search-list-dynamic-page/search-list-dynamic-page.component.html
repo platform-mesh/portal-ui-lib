@@ -42,7 +42,8 @@
       data-testid="search-list-search-input"
       [formField]="searchControl"
       placeholder="Search"
-      (keydown.enter)="submitSearch()">
+      (keydown.enter)="submitSearch()"
+    >
       <ui5-icon
         data-testid="search-list-clear-icon"
         name="decline"
@@ -50,7 +51,8 @@
         mode="Interactive"
         [style.visibility]="searchControl().value() ? 'visible' : 'hidden'"
         (click)="clearSearch()"
-        (keydown.enter)="clearSearch()">
+        (keydown.enter)="clearSearch()"
+      >
       </ui5-icon>
       <ui5-icon
         data-testid="search-list-search-icon"
@@ -58,7 +60,8 @@
         slot="icon"
         mode="Interactive"
         (click)="submitSearch()"
-        (keydown.enter)="submitSearch()">
+        (keydown.enter)="submitSearch()"
+      >
       </ui5-icon>
     </ui5-input>
   </ui5-dynamic-page-header>
@@ -80,6 +83,7 @@
     [paginationLimit]="paginationLimit()"
     [hasMore]="hasMore()"
     [currentPage]="currentPage()"
+    [error]="error()"
     itemsPerPageLabel="Results per Page"
     totalItemsLabel="Results"
     loadMode="pager"
@@ -87,6 +91,7 @@
     (tableRowClicked)="navigateToResource($event)"
     (pageChange)="onPageChange($event)"
     (paginationLimitChanged)="onLimitChange($event)"
+    (retry)="list()"
   />
 </ui5-dynamic-page>
 
