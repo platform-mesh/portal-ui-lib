@@ -813,7 +813,7 @@ describe('ResourceTableCard', () => {
         newFixture.detectChanges();
 
         expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
-        expect((newComponent as any).listError()).toBe(false);
+        expect((newComponent as any).listError()).toBeNull();
       });
 
       it('should set remainingItemCount to 0 when not provided in response', () => {
@@ -885,10 +885,10 @@ describe('ResourceTableCard', () => {
         const { card } = createReactiveTable();
 
         expect(card.loading()).toBe(true);
-        expect((card as any).listError()).toBe(false);
+        expect((card as any).listError()).toBeNull();
         initial.error(new Error('Gateway unavailable'));
         expect(card.loading()).toBe(false);
-        expect((card as any).listError()).toBe(true);
+        expect((card as any).listError()).not.toBeNull();
         expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
 
         card.resources.set([row('stale')]);
@@ -896,7 +896,7 @@ describe('ResourceTableCard', () => {
         card.retryList();
         expect(mockResourceService.list).toHaveBeenCalledTimes(2);
         expect(card.loading()).toBe(true);
-        expect((card as any).listError()).toBe(false);
+        expect((card as any).listError()).toBeNull();
         retry.next({
           items: [row('current')],
           resourceVersion: '2',
@@ -928,7 +928,7 @@ describe('ResourceTableCard', () => {
         const { card } = createReactiveTable();
 
         card.loadMore();
-        expect((card as any).listError()).toBe(true);
+        expect((card as any).listError()).not.toBeNull();
         expect(card.resources()).toEqual([row('first')]);
         card.retryList();
 
@@ -939,7 +939,7 @@ describe('ResourceTableCard', () => {
           });
         }
         expect(card.resources()).toEqual([row('first'), row('second')]);
-        expect((card as any).listError()).toBe(false);
+        expect((card as any).listError()).toBeNull();
         expect(card.hasMore()).toBe(false);
       });
 
@@ -973,7 +973,7 @@ describe('ResourceTableCard', () => {
         oldRead.error(new Error('Forbidden'));
         expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
         expect(card.loading()).toBe(true);
-        expect((card as any).listError()).toBe(false);
+        expect((card as any).listError()).toBeNull();
         currentRead.next({
           items: [row('current')],
           resourceVersion: '2',
@@ -1005,7 +1005,7 @@ describe('ResourceTableCard', () => {
           .mockReturnValueOnce(currentRead);
         const { table, card, context } = createReactiveTable();
         card.loadMore();
-        expect((card as any).listError()).toBe(true);
+        expect((card as any).listError()).not.toBeNull();
 
         table.componentRef.setInput('context', {
           ...context,
@@ -1020,7 +1020,7 @@ describe('ResourceTableCard', () => {
         expect(card.resourceVersion()).toBeUndefined();
         expect(card.remainingItemCount()).toBe(0);
         expect(card.hasMore()).toBe(false);
-        expect((card as any).listError()).toBe(false);
+        expect((card as any).listError()).toBeNull();
         card.retryList();
         expect(mockResourceService.list).toHaveBeenCalledTimes(3);
         expect(mockResourceService.list.mock.calls.at(-1)?.[3]).toEqual({
@@ -1054,7 +1054,7 @@ describe('ResourceTableCard', () => {
           oldRequest.error(new Error('Forbidden'));
           expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
           expect(showAlert).not.toHaveBeenCalled();
-          expect((card as any).listError()).toBe(false);
+          expect((card as any).listError()).toBeNull();
 
           table.detectChanges();
           expect(currentRead.observed).toBe(true);
@@ -1085,10 +1085,10 @@ describe('ResourceTableCard', () => {
         const { table, card } = createReactiveTable();
         card.loadMore();
         oldWatch.error(new Error('Watch disconnected'));
-        expect((card as any).watchError()).toBe(true);
+        expect((card as any).watchError()).not.toBeNull();
         card.retryList();
         expect(mockResourceService.list).toHaveBeenCalledTimes(2);
-        expect((card as any).watchError()).toBe(true);
+        expect((card as any).watchError()).not.toBeNull();
 
         nextPage.next({
           items: [row('second')],
@@ -1104,7 +1104,7 @@ describe('ResourceTableCard', () => {
         expect(mockResourceService.list.mock.calls.at(-1)?.[3]).toEqual({
           pagination: { continue: undefined, limit: 5 },
         });
-        expect((card as any).watchError()).toBe(false);
+        expect((card as any).watchError()).toBeNull();
         expect(card.loading()).toBe(true);
 
         refresh.next({
@@ -1138,8 +1138,8 @@ describe('ResourceTableCard', () => {
         watch.error(error);
 
         expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
-        expect((card as any).watchError()).toBe(false);
-        expect((card as any).listError()).toBe(false);
+        expect((card as any).watchError()).toBeNull();
+        expect((card as any).listError()).toBeNull();
         card.retryList();
         expect(mockResourceService.list).toHaveBeenCalledTimes(1);
       });

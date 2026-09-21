@@ -421,6 +421,69 @@ describe('SearchListDynamicPage', () => {
       );
     });
 
+    it('sets error with status 403 when canDo("list") returns false', () => {
+      const f = createComponent({
+        portalPermissions: { clusters: ['get'] },
+        resourceDefinition: {
+          permissionsDefinition: { resource: 'clusters' },
+        },
+      });
+      f.componentInstance.list();
+      expect(f.componentInstance.error()).toEqual({
+        status: 403,
+        title: 'Permission denied',
+      });
+    });
+
+    it('sets error with API response fields on request failure', () => {
+      listSubject.next({ results: [], nextCursor: '', source: 'os' });
+      listSubject.complete();
+
+      const apiError = { status: 500, title: 'Server Error', detail: 'Something broke' };
+      mockOpenSearchService.listResources.mockReturnValue(
+        throwError(() => apiError),
+      );
+      component.list();
+
+      expect(component.error()).toEqual({
+        status: 500,
+        title: 'Server Error',
+        message: 'Something broke',
+        withRetryButton: true,
+      });
+    });
+
+    it('falls back to error.message when detail is absent', () => {
+      listSubject.next({ results: [], nextCursor: '', source: 'os' });
+      listSubject.complete();
+
+      const apiError = { status: 404, message: 'Not found' };
+      mockOpenSearchService.listResources.mockReturnValue(
+        throwError(() => apiError),
+      );
+      component.list();
+
+      expect(component.error()).toEqual(
+        expect.objectContaining({ message: 'Not found', status: 404 }),
+      );
+    });
+
+    it('falls back to status 400 when error.status is absent', () => {
+      listSubject.next({ results: [], nextCursor: '', source: 'os' });
+      listSubject.complete();
+
+      mockOpenSearchService.listResources.mockReturnValue(
+        throwError(() => ({ message: 'oops' })),
+      );
+      component.list();
+
+      expect(component.error()?.status).toBe(400);
+    });
+
+    it('error is null on initial component creation', () => {
+      expect(component.error()).toBeNull();
+    });
+
     it('calls listResources with correct context and request params', () => {
       // Reset state and call list() fresh so we control what the call contains
       mockOpenSearchService.listResources.mockClear();
