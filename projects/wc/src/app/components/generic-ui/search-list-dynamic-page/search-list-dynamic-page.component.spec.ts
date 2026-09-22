@@ -99,6 +99,7 @@ describe('SearchListDynamicPage', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    history.replaceState(null, '', '/');
   });
 
   it('should create and call list on init', () => {
