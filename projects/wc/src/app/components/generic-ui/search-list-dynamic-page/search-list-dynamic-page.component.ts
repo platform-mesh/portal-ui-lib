@@ -374,9 +374,22 @@ export class SearchListDynamicPage implements OnInit {
       )
       .subscribe({
         next: (result) => {
+          const total = result.totalCount;
+          this.totalItemsCount.set(total);
+
+          if (
+            page > 1 &&
+            total !== undefined &&
+            (result.results ?? []).length === 0
+          ) {
+            const lastPage = Math.max(1, Math.ceil(total / limit));
+            this.currentPage.set(lastPage);
+            this.list();
+            return;
+          }
+
           this.resources.set(result.results ?? []);
           this.hasMore.set(!!result.nextCursor);
-          this.totalItemsCount.set(result.totalCount ?? undefined);
         },
         error: (error: any) => {
           this.error.set({

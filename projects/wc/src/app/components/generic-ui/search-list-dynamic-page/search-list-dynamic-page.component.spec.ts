@@ -508,6 +508,122 @@ describe('SearchListDynamicPage', () => {
     });
   });
 
+  describe('list() out-of-range page fallback', () => {
+    const setupSubject = () => {
+      listSubject = new Subject<OpenSearchResult>();
+      mockOpenSearchService.listResources.mockReturnValue(
+        listSubject.asObservable(),
+      );
+    };
+
+    it('resets to last page and re-fetches when page > 1 returns empty with totalCount', () => {
+      setupSubject();
+      component.currentPage.set(5);
+      component.paginationLimit.set(20);
+      component.list();
+
+      // First response: page 5, empty results, totalCount = 42 → lastPage = ceil(42/20) = 3
+      const firstSubject = listSubject;
+      setupSubject();
+      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 42 });
+      firstSubject.complete();
+
+      expect(component.currentPage()).toBe(3);
+      expect(mockOpenSearchService.listResources.mock.calls.at(-1)![1]).toEqual(
+        expect.objectContaining({ page: 3 }),
+      );
+    });
+
+    it('calculates lastPage correctly for different limit/total combinations', () => {
+      setupSubject();
+      component.currentPage.set(10);
+      component.paginationLimit.set(10);
+      component.list();
+
+      // totalCount=25, limit=10 → lastPage = ceil(25/10) = 3
+      const firstSubject = listSubject;
+      setupSubject();
+      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 25 });
+      firstSubject.complete();
+
+      expect(component.currentPage()).toBe(3);
+    });
+
+    it('clamps to page 1 when totalCount is 0', () => {
+      setupSubject();
+      component.currentPage.set(3);
+      component.paginationLimit.set(20);
+      component.list();
+
+      const firstSubject = listSubject;
+      setupSubject();
+      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 0 });
+      firstSubject.complete();
+
+      expect(component.currentPage()).toBe(1);
+    });
+
+    it('does not redirect when page is 1 and results are empty (legitimate no-results)', () => {
+      setupSubject();
+      component.currentPage.set(1);
+      component.list();
+
+      const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
+      listSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 0 });
+      listSubject.complete();
+
+      expect(component.currentPage()).toBe(1);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(component.resources()).toEqual([]);
+    });
+
+    it('does not redirect when results are non-empty on page > 1', () => {
+      setupSubject();
+      component.currentPage.set(3);
+      component.list();
+
+      const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
+      listSubject.next({
+        results: [{ id: 'r1', metadata: { name: 'r1' } }] as any,
+        nextCursor: '',
+        source: 'os',
+        totalCount: 60,
+      });
+      listSubject.complete();
+
+      expect(component.currentPage()).toBe(3);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(component.resources()).toHaveLength(1);
+    });
+
+    it('does not redirect when totalCount is absent (API did not return a count)', () => {
+      setupSubject();
+      component.currentPage.set(5);
+      component.list();
+
+      const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
+      listSubject.next({ results: [], nextCursor: '', source: 'os' });
+      listSubject.complete();
+
+      expect(component.currentPage()).toBe(5);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+    });
+
+    it('sets totalItemsCount from the out-of-range response before redirecting', () => {
+      setupSubject();
+      component.currentPage.set(99);
+      component.list();
+
+      const firstSubject = listSubject;
+      setupSubject();
+      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 15 });
+      firstSubject.complete();
+
+      // totalCount was applied even though results were empty
+      expect(component.totalItemsCount()).toBe(15);
+    });
+  });
+
   describe('onLimitChange', () => {
     it('updates paginationLimit, resets to page 1, and re-fetches', () => {
       component.currentPage.set(4);
