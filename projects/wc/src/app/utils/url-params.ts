@@ -25,9 +25,13 @@ export const readUrlSearchParam = (key: string): string | undefined => {
 
 export const snapshotUrl = (): Record<string, string> => {
   if (typeof location === 'undefined') return {};
-  const out: Record<string, string> = {};
-  new URL(location.href).searchParams.forEach((value, key) => {
-    out[key] = value;
-  });
-  return out;
+  try {
+    const out: Record<string, string> = {};
+    new URL(location.href).searchParams.forEach((value, key) => {
+      out[key] = value;
+    });
+    return out;
+  } catch {
+    return {};
+  }
 };

@@ -114,6 +114,7 @@ describe('OpenSearchResourceTableCard', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    history.replaceState(null, '', '/');
   });
 
   it('should create the component and call list on init', () => {
