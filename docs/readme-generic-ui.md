@@ -753,6 +753,27 @@ A full-page list view using the SAP Fiori `ui5-dynamic-page` layout. Use it when
 - If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens a modal form.
 - If `resourceDefinition.readyCondition` is set, a status-alert column is prepended to the table.
 - A **search input** is rendered in the page header. The search fires only when the user presses **Enter** or clicks the search icon — it does not filter as-you-type. The current query is persisted as `?q=` in the URL; clearing the input and re-submitting removes the param. On reload, `?q=` is read and pre-populates the input. An empty or whitespace-only query is sent to OpenSearch as `q: "*"` (match all).
+- **Error handling**: the table shows an inline error state when a request fails. A retry button is rendered; clicking it re-triggers the current list request. If the user lacks `list` permission, a 403 error is shown without making a network call.
+
+**Test IDs:**
+
+| `data-testid` | Element | Notes |
+|---|---|---|
+| `search-list-dynamic-page` | Root `<ui5-dynamic-page>` | |
+| `search-list-title` | Page title (expanded heading) | |
+| `search-list-description` | Page description paragraph (expanded heading) | |
+| `search-list-snapped-title` | Page title (snapped/collapsed heading) | |
+| `search-list-snapped-description` | Page description paragraph (snapped/collapsed heading) | |
+| `search-list-actions-toolbar` | Toolbar in the title area | |
+| `search-list-create-button` | Create toolbar button | Only rendered when `createView.fields` is set and user has `create` permission |
+| `search-list-action-{action.property}` | Each action rendered via `mfp-resource-field` | Dynamic — one per entry in `listView.actions`; the button inside gets `{action.property}-button` from the library |
+| `search-list-search-input` | Search input field | |
+| `search-list-search-icon` | Search submit icon (click or Enter) | |
+| `search-list-clear-icon` | Clear search icon | Hidden when input is empty |
+| `search-list-tab-container` | Filter tab strip | Only rendered when `listView.filters` is set |
+| `search-list-tab-{i}` | Individual filter tab at index `i` | Dynamic — `i` is 0-based |
+| `search-list-table` | `mfp-declarative-table` | Internal table elements use `generic-table-*` test IDs from `@openmfp/ngx` |
+| `search-list-create-modal` | `pm-create-resource-modal` | Internal modal elements use `create-resource-*` test IDs |
 
 **Minimal node configuration:**
 

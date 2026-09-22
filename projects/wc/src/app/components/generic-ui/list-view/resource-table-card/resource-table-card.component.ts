@@ -33,6 +33,7 @@ import {
   ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
+  TableErrorConfig,
 } from '@openmfp/ngx';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
@@ -121,8 +122,8 @@ export class ResourceTableCard {
   hasMore = signal<boolean>(false);
   resourceVersion = signal<string | undefined>(undefined);
   loading = signal<boolean>(false);
-  protected listError = signal(false);
-  protected watchError = signal(false);
+  protected listError = signal<TableErrorConfig | null>(null);
+  protected watchError = signal<TableErrorConfig | null>(null);
 
   private createFieldErrors = signal<FormFieldErrors>({});
   createFormState = computed<TableCardFormState>(() => ({
@@ -186,8 +187,8 @@ export class ResourceTableCard {
       this.resourceVersion.set(undefined);
       this.remainingItemCount.set(0);
       this.hasMore.set(false);
-      this.listError.set(false);
-      this.watchError.set(false);
+      this.listError.set(null);
+      this.watchError.set(null);
       this.list(true);
       onCleanup(() => this.listSubscription?.unsubscribe());
     });
@@ -263,7 +264,7 @@ export class ResourceTableCard {
           if (this.errorHandlerService.isUnauthorizedAccess(error)) {
             this.errorHandlerService.handleError(error);
           } else {
-            this.watchError.set(true);
+            this.watchError.set(this.mapError(error));
           }
         },
       });
@@ -289,7 +290,7 @@ export class ResourceTableCard {
     if (!this.canDo('list')) return;
     if (untracked(this.loading)) return;
     this.lastListWasInitialLoad = isInitialLoad;
-    this.listError.set(false);
+    this.listError.set(null);
     this.loading.set(true);
 
     const fields = this.getListQueryFields();
@@ -336,7 +337,7 @@ export class ResourceTableCard {
           if (this.errorHandlerService.isUnauthorizedAccess(error)) {
             this.errorHandlerService.handleError(error);
           } else {
-            this.listError.set(true);
+            this.listError.set(this.mapError(error));
           }
         },
       });
@@ -349,7 +350,7 @@ export class ResourceTableCard {
       this.resourceVersion.set(undefined);
       this.hasMore.set(false);
       this.remainingItemCount.set(0);
-      this.watchError.set(false);
+      this.watchError.set(null);
       this.list(true);
       return;
     }
@@ -367,6 +368,13 @@ export class ResourceTableCard {
         mapSubscriptionObjectToItem: (object) => object,
       }),
     );
+  }
+
+  private mapError(error: any): TableErrorConfig {
+    return {
+      message: error.message,
+      withRetryButton: true,
+    };
   }
 
   navigateToResource(resource: Resource) {

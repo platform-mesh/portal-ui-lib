@@ -23,8 +23,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FormField, form } from '@angular/forms/signals';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormField, form } from '@angular/forms/signals';
 import {
   DynamicPage,
   DynamicPageHeader,
@@ -44,6 +44,7 @@ import {
   GenericResource,
   ResourceField,
   ResourceFieldButtonClickEvent,
+  TableErrorConfig,
 } from '@openmfp/ngx';
 import {
   ModalResult,
@@ -121,6 +122,8 @@ export class SearchListDynamicPage implements OnInit {
   );
 
   canCreate = computed(() => this.canDo('create'));
+
+  error = signal<TableErrorConfig | null>(null);
 
   searchFilters = computed<FieldFilterDefinition[] | undefined>(() => {
     const ctx = this.context();
@@ -326,7 +329,15 @@ export class SearchListDynamicPage implements OnInit {
   }
 
   list(): void {
-    if (!this.canDo('list')) return;
+    if (!this.canDo('list')) {
+      this.error.set({
+        status: 403,
+        title: 'Permission denied',
+      });
+
+      return;
+    }
+
     this.listSubscription?.unsubscribe();
 
     const page = this.currentPage();
@@ -363,11 +374,30 @@ export class SearchListDynamicPage implements OnInit {
       )
       .subscribe({
         next: (result) => {
+          const total = result.totalCount;
+          this.totalItemsCount.set(total);
+
+          if (
+            page > 1 &&
+            total !== undefined &&
+            (result.results ?? []).length === 0
+          ) {
+            const lastPage = Math.max(1, Math.ceil(total / limit));
+            this.currentPage.set(lastPage);
+            this.list();
+            return;
+          }
+
           this.resources.set(result.results ?? []);
           this.hasMore.set(!!result.nextCursor);
-          this.totalItemsCount.set(result.totalCount ?? undefined);
         },
-        error: (error) => {
+        error: (error: any) => {
+          this.error.set({
+            status: error.status ?? 400,
+            message: error?.detail ?? error?.message,
+            title: error.title,
+            withRetryButton: true,
+          });
           this.errorHandlerService.handleError(error);
         },
       });

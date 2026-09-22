@@ -1,22 +1,34 @@
-<ui5-dynamic-page>
+<ui5-dynamic-page data-testid="search-list-dynamic-page">
   <ui5-dynamic-page-title slot="titleArea">
     <div slot="heading" class="page-heading">
       <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
       <div class="page-heading-text">
-        <ui5-title>{{ resourceTitleDefinition() }}</ui5-title>
-        <p>{{ resourceDescriptionDefinition() }}</p>
+        <ui5-title data-testid="search-list-title">{{
+          resourceTitleDefinition()
+        }}</ui5-title>
+        <p data-testid="search-list-description">
+          {{ resourceDescriptionDefinition() }}
+        </p>
       </div>
     </div>
 
     <div slot="snappedHeading" class="page-heading">
       <pm-resource-logo [resourceDefinition]="resourceDefinition()" />
       <div class="page-heading-text">
-        <ui5-title>{{ resourceTitleDefinition() }}</ui5-title>
-        <p>{{ resourceDescriptionDefinition() }}</p>
+        <ui5-title data-testid="search-list-snapped-title">{{
+          resourceTitleDefinition()
+        }}</ui5-title>
+        <p data-testid="search-list-snapped-description">
+          {{ resourceDescriptionDefinition() }}
+        </p>
       </div>
     </div>
 
-    <ui5-toolbar slot="actionsBar" design="Transparent">
+    <ui5-toolbar
+      slot="actionsBar"
+      design="Transparent"
+      data-testid="search-list-actions-toolbar"
+    >
       @if (hasUiCreateViewFields() && canCreate()) {
         <ui5-toolbar-button
           design="Emphasized"
@@ -28,6 +40,7 @@
       @for (action of actions(); track action.property) {
         @if (canDo(action.requirePermission)) {
           <mfp-resource-field
+            [attr.data-testid]="'search-list-action-' + action.property"
             [fieldDefinition]="action"
             (buttonClick)="genericActionHandler($event)"
           />
@@ -42,7 +55,8 @@
       data-testid="search-list-search-input"
       [formField]="searchControl"
       placeholder="Search"
-      (keydown.enter)="submitSearch()">
+      (keydown.enter)="submitSearch()"
+    >
       <ui5-icon
         data-testid="search-list-clear-icon"
         name="decline"
@@ -50,7 +64,8 @@
         mode="Interactive"
         [style.visibility]="searchControl().value() ? 'visible' : 'hidden'"
         (click)="clearSearch()"
-        (keydown.enter)="clearSearch()">
+        (keydown.enter)="clearSearch()"
+      >
       </ui5-icon>
       <ui5-icon
         data-testid="search-list-search-icon"
@@ -58,20 +73,27 @@
         slot="icon"
         mode="Interactive"
         (click)="submitSearch()"
-        (keydown.enter)="submitSearch()">
+        (keydown.enter)="submitSearch()"
+      >
       </ui5-icon>
     </ui5-input>
   </ui5-dynamic-page-header>
   @if (hasFilters()) {
     <ui5-tabcontainer
+      data-testid="search-list-tab-container"
       (ui5TabSelect)="onFilterTabSelect($event.detail.tabIndex)"
     >
-      @for (tab of filterTabs(); track tab.text) {
-        <ui5-tab [text]="tab.text" [selected]="tab.selected"></ui5-tab>
+      @for (tab of filterTabs(); track tab.text; let i = $index) {
+        <ui5-tab
+          [attr.data-testid]="'search-list-tab-' + i"
+          [text]="tab.text"
+          [selected]="tab.selected"
+        ></ui5-tab>
       }
     </ui5-tabcontainer>
   }
   <mfp-declarative-table
+    data-testid="search-list-table"
     [columns]="columns()"
     [resources]="tableResources()"
     [loading]="loading()"
@@ -80,6 +102,7 @@
     [paginationLimit]="paginationLimit()"
     [hasMore]="hasMore()"
     [currentPage]="currentPage()"
+    [error]="error()"
     itemsPerPageLabel="Results per Page"
     totalItemsLabel="Results"
     loadMode="pager"
@@ -87,10 +110,12 @@
     (tableRowClicked)="navigateToResource($event)"
     (pageChange)="onPageChange($event)"
     (paginationLimitChanged)="onLimitChange($event)"
+    (retry)="list()"
   />
 </ui5-dynamic-page>
 
 <pm-create-resource-modal
+  data-testid="search-list-create-modal"
   #createModal
   [context]="context()"
   [fields]="createFields()"
