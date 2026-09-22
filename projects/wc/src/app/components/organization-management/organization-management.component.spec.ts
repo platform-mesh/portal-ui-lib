@@ -62,6 +62,7 @@ describe('OrganizationManagementComponent', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   describe('Component Initialization', () => {
@@ -518,10 +519,7 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should show success message in local setup', () => {
-      Object.defineProperty(window, 'location', {
-        value: { hostname: 'localhost' },
-        writable: true,
-      });
+      vi.stubGlobal('location', { hostname: 'localhost' });
       resourceService.create.mockReturnValue(of({} as any));
 
       component.onboardOrganization();
@@ -533,10 +531,7 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should show success message in non-local setup', () => {
-      Object.defineProperty(window, 'location', {
-        value: { hostname: 'example.com' },
-        writable: true,
-      });
+      vi.stubGlobal('location', { hostname: 'example.com' });
       resourceService.create.mockReturnValue(of({} as any));
 
       component.onboardOrganization();
@@ -579,10 +574,7 @@ describe('OrganizationManagementComponent', () => {
       envConfigService.getEnvConfig.mockResolvedValue({
         baseDomain: 'test.com',
       } as any);
-      Object.defineProperty(window, 'location', {
-        value: { protocol: 'https:', port: '8080', href: '' },
-        writable: true,
-      });
+      vi.stubGlobal('location', { protocol: 'https:', port: '8080', href: '' });
     });
 
     it('should switch organization successfully', async () => {
@@ -595,10 +587,7 @@ describe('OrganizationManagementComponent', () => {
 
     it('should switch organization without port', async () => {
       component.organizationToSwitch.set({ name: 'myorg', ready: true });
-      Object.defineProperty(window, 'location', {
-        value: { protocol: 'https:', port: '', href: '' },
-        writable: true,
-      });
+      vi.stubGlobal('location', { protocol: 'https:', port: '', href: '' });
 
       await component.switchOrganization();
 
@@ -607,10 +596,7 @@ describe('OrganizationManagementComponent', () => {
 
     it('should handle http protocol', async () => {
       component.organizationToSwitch.set({ name: 'testorg', ready: true });
-      Object.defineProperty(window, 'location', {
-        value: { protocol: 'http:', port: '3000', href: '' },
-        writable: true,
-      });
+      vi.stubGlobal('location', { protocol: 'http:', port: '3000', href: '' });
 
       await component.switchOrganization();
 
