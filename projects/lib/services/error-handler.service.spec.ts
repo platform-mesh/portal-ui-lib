@@ -8,15 +8,12 @@ import { mock } from 'vitest-mock-extended';
 describe('ErrorHandlerService', () => {
   let service: ErrorHandlerService;
   let luigiCoreService: MockedObject<LuigiCoreService>;
-
-  const mockNavigation = {
-    navigate: vi.fn(),
-  };
+  let postMessageSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     luigiCoreService = mock<LuigiCoreService>();
-    luigiCoreService.navigation.mockReturnValue(mockNavigation as any);
     luigiCoreService.showAlert = vi.fn();
+    postMessageSpy = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
 
     TestBed.configureTestingModule({
       providers: [
@@ -32,13 +29,23 @@ describe('ErrorHandlerService', () => {
     vi.clearAllMocks();
   });
 
+  function expectNavigatedTo(path: string) {
+    expect(postMessageSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: 'luigi.navigation.open',
+        params: expect.objectContaining({ link: path, preventHistoryEntry: true }),
+      }),
+      '*',
+    );
+  }
+
   describe('handleError', () => {
     it('should navigate to 403 when error message contains forbidden', () => {
       const error = { message: 'Access is forbidden' };
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -47,7 +54,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -56,7 +63,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -65,7 +72,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -74,7 +81,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -87,7 +94,7 @@ describe('ErrorHandlerService', () => {
         text: 'Resource not found',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should show alert with default message when error message is empty string', () => {
@@ -99,7 +106,7 @@ describe('ErrorHandlerService', () => {
         text: 'An unknown error occurred',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should show alert with default message when error message is undefined', () => {
@@ -111,7 +118,7 @@ describe('ErrorHandlerService', () => {
         text: 'An unknown error occurred',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should show alert with default message when error message is null', () => {
@@ -123,7 +130,7 @@ describe('ErrorHandlerService', () => {
         text: 'An unknown error occurred',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should show alert when received error with message', () => {
@@ -147,7 +154,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -160,7 +167,7 @@ describe('ErrorHandlerService', () => {
         text: 'Internal server error',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should show alert for validation errors', () => {
@@ -172,7 +179,7 @@ describe('ErrorHandlerService', () => {
         text: 'Invalid input provided',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should handle error message with forbidden in the middle', () => {
@@ -180,7 +187,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -189,7 +196,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -198,7 +205,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -207,7 +214,7 @@ describe('ErrorHandlerService', () => {
 
       service.handleError(error);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/403');
+      expectNavigatedTo('/error/403');
       expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
@@ -220,7 +227,7 @@ describe('ErrorHandlerService', () => {
         text: 'forbid access',
         type: 'error',
       });
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
 
     it('should handle errors array and join messages', () => {
@@ -260,24 +267,19 @@ describe('ErrorHandlerService', () => {
     it('should navigate to 422 error page', () => {
       service.handleResourcePendingDeletion(mockResource);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/422');
+      expectNavigatedTo('/error/422');
     });
 
-    it('should call luigiCoreService.navigation', () => {
-      service.handleResourcePendingDeletion(mockResource);
-      expect(luigiCoreService.navigation).toHaveBeenCalled();
-    });
-
-    it('should call navigation.navigate with exactly /error/422', () => {
+    it('should post navigation message with replaceHistory flag', () => {
       service.handleResourcePendingDeletion(mockResource);
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('/error/422');
-      expect(mockNavigation.navigate).toHaveBeenCalledTimes(1);
+      expect(postMessageSpy).toHaveBeenCalledTimes(1);
+      expectNavigatedTo('/error/422');
     });
   });
 
   describe('integration tests', () => {
-    it('should use same navigation instance for both methods', () => {
+    it('should post navigation messages for both error types', () => {
       const error = { message: 'forbidden' };
       const resource: Resource = {
         metadata: {
@@ -287,12 +289,9 @@ describe('ErrorHandlerService', () => {
       } as Resource;
 
       service.handleError(error);
-      const firstCallCount = mockNavigation.navigate.mock.calls.length;
-
       service.handleResourcePendingDeletion(resource);
-      const secondCallCount = mockNavigation.navigate.mock.calls.length;
 
-      expect(secondCallCount).toBe(firstCallCount + 1);
+      expect(postMessageSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should show alert for non-403 errors', () => {
@@ -301,7 +300,7 @@ describe('ErrorHandlerService', () => {
       service.handleError(error);
 
       expect(luigiCoreService.showAlert).toHaveBeenCalledTimes(1);
-      expect(mockNavigation.navigate).not.toHaveBeenCalled();
+      expect(postMessageSpy).not.toHaveBeenCalled();
     });
   });
 
