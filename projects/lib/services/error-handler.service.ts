@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { Resource } from '@platform-mesh/portal-ui-lib/models';
+import { luigiNavigateTo } from '@platform-mesh/portal-ui-lib/utils';
 
 @Injectable({ providedIn: 'root' })
 export class ErrorHandlerService {
@@ -8,7 +9,7 @@ export class ErrorHandlerService {
 
   handleError(error: any) {
     if (this.isUnauthorizedAccess(error)) {
-      this.luigiCoreService.navigation().navigate('/error/403');
+      this.navigateToErorPage(403);
     } else {
       const message =
         error?.message || error?.errors?.map((e: any) => e.message).join('\n');
@@ -20,8 +21,12 @@ export class ErrorHandlerService {
     }
   }
 
+  private navigateToErorPage(error: string | number) {
+    luigiNavigateTo(`/error/${error}`, true);
+  }
+
   handleResourcePendingDeletion(_resource: Resource) {
-    this.luigiCoreService.navigation().navigate('/error/422');
+    this.navigateToErorPage(422);
   }
 
   isUnauthorizedAccess(error: any): boolean {
