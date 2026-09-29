@@ -1,6 +1,7 @@
 import { downloadFile } from '../../../utils/download-file';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
+import { withRouteNamespace } from '../../../utils/route-namespace';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
 import { DeleteResourceModal } from '../delete-resource-confirmation-modal/delete-resource-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
@@ -37,7 +38,6 @@ import {
   SectionConfig,
 } from '@openmfp/ngx';
 import {
-  ALL_NAMESPACE,
   DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
   PlatformMeshFieldDefinition,
   Resource,
@@ -118,21 +118,13 @@ export class DetailView {
   // selection can never satisfy its reads or mutations. When no real
   // namespace resolves from the context or the ?namespace param, recover it
   // from the route's namespaceId path param.
-  protected effectiveContext = computed<ResourceNodeContext>(() => {
-    const context = this.context();
-    if (
-      !isNamespacedResource(context) ||
-      this.resourceService.getNamespace(context)
-    ) {
-      return context;
-    }
-    const routeNamespace = (
-      this.LuigiClient().getPathParams?.() as Record<string, string> | undefined
-    )?.namespaceId;
-    return routeNamespace && routeNamespace !== ALL_NAMESPACE
-      ? { ...context, namespaceId: routeNamespace }
-      : context;
-  });
+  protected effectiveContext = computed<ResourceNodeContext>(() =>
+    withRouteNamespace(
+      this.context(),
+      this.resourceService,
+      this.LuigiClient(),
+    ),
+  );
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(
