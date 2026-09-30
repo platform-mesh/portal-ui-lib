@@ -529,6 +529,141 @@ describe('ResourceTableCard', () => {
       expect(properties).toContain('metadata.namespace');
     });
 
+    describe('namespace for Create on a namespace route', () => {
+      const secretQuery =
+        'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }';
+
+      const makeCreateComponent = (
+        pathParams?: Record<string, string>,
+        contextOverrides: object = {},
+      ) => {
+        mockResourceService.getNamespace.mockImplementation(
+          (context: any) => context.namespaceId,
+        );
+        mockResourceService.list.mockImplementation(
+          (_operation: string, fieldsOrQuery: any) =>
+            typeof fieldsOrQuery === 'string'
+              ? of([{ metadata: { name: 'llm-credentials' } }])
+              : of({ items: [], resourceVersion: '1' }),
+        );
+        mockResourceService.create = vi.fn().mockReturnValue(of({}));
+
+        const newFixture = TestBed.createComponent(ResourceTableCard);
+        const newComponent = newFixture.componentInstance;
+        newComponent.context = signal({
+          resourceDefinition: {
+            entityCollection: 'ChatUIInstances',
+            entity: 'ChatUIInstance',
+            apiGroup: 'ui_privatellms_msp',
+            version: 'v1alpha1',
+            scope: 'Namespaced',
+            ui: {
+              createView: {
+                fields: [
+                  { property: 'metadata.name', required: true },
+                  {
+                    property: 'spec.credentialsSecretRef.name',
+                    required: true,
+                    dynamicValuesDefinition: {
+                      operation: 'v1.Secrets.items',
+                      gqlQuery: secretQuery,
+                      value: 'metadata.name',
+                      key: 'metadata.name',
+                    },
+                  },
+                ],
+              },
+              listView: { fields: [] },
+            },
+          },
+          ...contextOverrides,
+        }) as any;
+        const getPathParams = vi.fn(() => pathParams);
+        newComponent.LuigiClient = (() => ({
+          linkManager: () => ({ navigate: vi.fn() }),
+          uxManager: () => ({ showAlert: vi.fn() }),
+          getNodeParams: vi.fn(),
+          getPathParams,
+        })) as any;
+        vi.spyOn(newComponent as any, 'tableCard', 'get').mockReturnValue(
+          () => ({ closeCreateDialog: vi.fn() }),
+        );
+        newFixture.detectChanges();
+        return { newComponent, getPathParams };
+      };
+
+      const openCreate = (component: ResourceTableCard) =>
+        (
+          component.config().createResourceFormConfig!.fields as () => Promise<
+            any[]
+          >
+        )();
+
+      const secretQueryCalls = () =>
+        mockResourceService.list.mock.calls.filter(
+          (call) => call[1] === secretQuery,
+        );
+
+      it('keeps the route namespace when the selection is -all-', async () => {
+        const { newComponent } = makeCreateComponent({
+          accountId: 'demo',
+          namespaceId: 'default',
+        });
+
+        const fields = await openCreate(newComponent);
+        newComponent.onCreateSubmit({ metadata: { name: 'chat' } });
+
+        expect(fields.map((f) => f.name)).not.toContain('metadata.namespace');
+        expect(
+          fields.find((f) => f.name === 'spec.credentialsSecretRef.name')
+            ?.values,
+        ).toEqual(['llm-credentials']);
+        expect(secretQueryCalls()).toHaveLength(1);
+        expect(secretQueryCalls()[0][2].namespaceId).toBe('default');
+        expect(
+          (mockResourceService.create as any).mock.calls[0][2].namespaceId,
+        ).toBe('default');
+      });
+
+      it('lets a concrete namespace selection win over the route', async () => {
+        const { newComponent, getPathParams } = makeCreateComponent(
+          { namespaceId: 'default' },
+          { namespaceId: 'team-b' },
+        );
+
+        await openCreate(newComponent);
+        newComponent.onCreateSubmit({ metadata: { name: 'chat' } });
+
+        expect(secretQueryCalls()[0][2].namespaceId).toBe('team-b');
+        expect(
+          (mockResourceService.create as any).mock.calls[0][2].namespaceId,
+        ).toBe('team-b');
+        expect(getPathParams).not.toHaveBeenCalled();
+      });
+
+      it('skips a query that requires $namespace when no namespace resolves', async () => {
+        const { newComponent } = makeCreateComponent({ accountId: 'demo' });
+
+        const fields = await openCreate(newComponent);
+
+        expect(secretQueryCalls()).toHaveLength(0);
+        expect(fields.map((f) => f.name)).toContain('metadata.namespace');
+        expect(
+          fields.find((f) => f.name === 'spec.credentialsSecretRef.name')
+            ?.values,
+        ).toBeUndefined();
+      });
+
+      it('keeps the list query on the unresolved selection', () => {
+        makeCreateComponent({ namespaceId: 'default' });
+
+        const listCall = mockResourceService.list.mock.calls.find(
+          (call) => typeof call[1] !== 'string',
+        )!;
+        expect(listCall[2].namespaceId).toBeUndefined();
+      });
+    });
+
     it('should set required error for empty required field', async () => {
       const newFixture = TestBed.createComponent(ResourceTableCard);
       const newComponent = newFixture.componentInstance;
