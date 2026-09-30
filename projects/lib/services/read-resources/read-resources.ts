@@ -38,11 +38,7 @@ export interface ReadResourcesSubscriptionResult {
   object: GenericResource;
 }
 
-/**
- * Provider-agnostic read API for resource lists. Implementations can be backed
- * by the GraphQL gateway (ResourceService) or by OpenSearch (OpenSearchService);
- * the proxy chooses one based on the `os-provider` Luigi feature toggle.
- */
+/** Provider-agnostic read API for resource lists. Implementations can be backed by the GraphQL gateway (ResourceService) */
 export interface ReadResources {
   list(
     nodeContext: ResourceNodeContext,

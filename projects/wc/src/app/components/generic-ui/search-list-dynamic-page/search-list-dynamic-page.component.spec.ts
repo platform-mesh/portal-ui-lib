@@ -1,9 +1,9 @@
+import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
+import { SearchListDynamicPage } from './search-list-dynamic-page.component';
 import {
   OpenSearchResult,
   OpenSearchService,
-} from '../opensearch-list-view/services/open-search.service';
-import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
-import { SearchListDynamicPage } from './search-list-dynamic-page.component';
+} from './services/open-search.service';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -440,7 +440,11 @@ describe('SearchListDynamicPage', () => {
       listSubject.next({ results: [], nextCursor: '', source: 'os' });
       listSubject.complete();
 
-      const apiError = { status: 500, title: 'Server Error', detail: 'Something broke' };
+      const apiError = {
+        status: 500,
+        title: 'Server Error',
+        detail: 'Something broke',
+      };
       mockOpenSearchService.listResources.mockReturnValue(
         throwError(() => apiError),
       );
@@ -526,7 +530,12 @@ describe('SearchListDynamicPage', () => {
       // First response: page 5, empty results, totalCount = 42 → lastPage = ceil(42/20) = 3
       const firstSubject = listSubject;
       setupSubject();
-      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 42 });
+      firstSubject.next({
+        results: [],
+        nextCursor: '',
+        source: 'os',
+        totalCount: 42,
+      });
       firstSubject.complete();
 
       expect(component.currentPage()).toBe(3);
@@ -544,7 +553,12 @@ describe('SearchListDynamicPage', () => {
       // totalCount=25, limit=10 → lastPage = ceil(25/10) = 3
       const firstSubject = listSubject;
       setupSubject();
-      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 25 });
+      firstSubject.next({
+        results: [],
+        nextCursor: '',
+        source: 'os',
+        totalCount: 25,
+      });
       firstSubject.complete();
 
       expect(component.currentPage()).toBe(3);
@@ -558,7 +572,12 @@ describe('SearchListDynamicPage', () => {
 
       const firstSubject = listSubject;
       setupSubject();
-      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 0 });
+      firstSubject.next({
+        results: [],
+        nextCursor: '',
+        source: 'os',
+        totalCount: 0,
+      });
       firstSubject.complete();
 
       expect(component.currentPage()).toBe(1);
@@ -570,11 +589,18 @@ describe('SearchListDynamicPage', () => {
       component.list();
 
       const callsBefore = mockOpenSearchService.listResources.mock.calls.length;
-      listSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 0 });
+      listSubject.next({
+        results: [],
+        nextCursor: '',
+        source: 'os',
+        totalCount: 0,
+      });
       listSubject.complete();
 
       expect(component.currentPage()).toBe(1);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore,
+      );
       expect(component.resources()).toEqual([]);
     });
 
@@ -593,7 +619,9 @@ describe('SearchListDynamicPage', () => {
       listSubject.complete();
 
       expect(component.currentPage()).toBe(3);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore,
+      );
       expect(component.resources()).toHaveLength(1);
     });
 
@@ -607,7 +635,9 @@ describe('SearchListDynamicPage', () => {
       listSubject.complete();
 
       expect(component.currentPage()).toBe(5);
-      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(callsBefore);
+      expect(mockOpenSearchService.listResources.mock.calls.length).toBe(
+        callsBefore,
+      );
     });
 
     it('sets totalItemsCount from the out-of-range response before redirecting', () => {
@@ -617,7 +647,12 @@ describe('SearchListDynamicPage', () => {
 
       const firstSubject = listSubject;
       setupSubject();
-      firstSubject.next({ results: [], nextCursor: '', source: 'os', totalCount: 15 });
+      firstSubject.next({
+        results: [],
+        nextCursor: '',
+        source: 'os',
+        totalCount: 15,
+      });
       firstSubject.complete();
 
       // totalCount was applied even though results were empty

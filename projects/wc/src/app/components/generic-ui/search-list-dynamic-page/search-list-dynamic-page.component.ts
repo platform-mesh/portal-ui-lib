@@ -6,9 +6,9 @@ import {
   snapshotUrl,
 } from '../../../utils/url-params';
 import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
-import { OpenSearchService } from '../opensearch-list-view/services/open-search.service';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
+import { OpenSearchService } from './services/open-search.service';
 import {
   ChangeDetectionStrategy,
   Component,

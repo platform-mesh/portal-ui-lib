@@ -10,7 +10,7 @@ import {
   ReadResourcesSubscriptionResult,
   ResourceNodeContext,
 } from '@platform-mesh/portal-ui-lib/services';
-import { EMPTY, Observable, of, throwError } from 'rxjs';
+import { EMPTY, Observable, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface OpenSearchRequest {
