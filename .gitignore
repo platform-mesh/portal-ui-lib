@@ -3,6 +3,7 @@
 # Compiled output
 /dist
 /dist-wc
+/storybook-static/
 /tmp
 /out-tsc
 /bazel-out

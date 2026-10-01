@@ -78,21 +78,23 @@
       </ui5-icon>
     </ui5-input>
   </ui5-dynamic-page-header>
-  @if (hasFilters()) {
-    <ui5-tabcontainer
-      data-testid="search-list-tab-container"
-      (ui5TabSelect)="onFilterTabSelect($event.detail.tabIndex)"
-    >
-      @for (tab of filterTabs(); track tab.text; let i = $index) {
-        <ui5-tab
-          [attr.data-testid]="'search-list-tab-' + i"
-          [text]="tab.text"
-          [selected]="tab.selected"
-        ></ui5-tab>
-      }
-    </ui5-tabcontainer>
-  }
-  <mfp-declarative-table
+  <div class="table-container">
+    @if (hasFilters()) {
+      <ui5-tabcontainer
+        [collapsed]="true"
+        data-testid="search-list-tab-container"
+        (ui5TabSelect)="onFilterTabSelect($event.detail.tabIndex)"
+      >
+        @for (tab of filterTabs(); track tab.text; let i = $index) {
+          <ui5-tab
+            [attr.data-testid]="'search-list-tab-' + i"
+            [text]="tab.text"
+            [selected]="tab.selected"
+          ></ui5-tab>
+        }
+      </ui5-tabcontainer>
+    }
+    <mfp-declarative-table
     data-testid="search-list-table"
     [columns]="columns()"
     [resources]="tableResources()"
@@ -112,6 +114,7 @@
     (paginationLimitChanged)="onLimitChange($event)"
     (retry)="list()"
   />
+  </div>
 </ui5-dynamic-page>
 
 <pm-create-resource-modal
