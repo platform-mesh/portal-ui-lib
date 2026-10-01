@@ -802,20 +802,11 @@ describe('ResourceService', () => {
       const rawQuery = `query { myList { name } }`;
       const error = new Error('raw query fail');
       mockApollo.query.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
 
       await expect(
         firstValueFrom(service.list('myList', rawQuery, namespacedNodeContext)),
       ).rejects.toThrow();
-
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'raw query fail',
-        type: 'error',
-      });
+      expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
     });
 
     it('should list resources with pagination limit', async () => {
@@ -1459,21 +1450,13 @@ describe('ResourceService', () => {
     it('should handle delete error', async () => {
       const error = new Error('fail');
       mockApollo.mutate.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
 
       await expect(
         firstValueFrom(
           service.delete(resource, resourceDefinition, clusterScopeNodeContext),
         ),
       ).rejects.toThrow('fail');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'fail',
-        type: 'error',
-      });
+      expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
     });
   });
 
@@ -1592,21 +1575,13 @@ describe('ResourceService', () => {
     it('should handle create error', async () => {
       const error = new Error('fail');
       mockApollo.mutate.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
 
       await expect(
         firstValueFrom(
           service.create(resource, resourceDefinition, clusterScopeNodeContext),
         ),
       ).rejects.toThrow('fail');
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'fail',
-        type: 'error',
-      });
+      expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
     });
   });
 
@@ -1770,21 +1745,13 @@ describe('ResourceService', () => {
     it('should handle update error', async () => {
       const error = new Error('fail');
       mockApollo.mutate.mockReturnValue(throwError(() => error));
-      console.error = vi.fn();
 
       await expect(
         firstValueFrom(
           service.update(resource, resourceDefinition, clusterScopeNodeContext),
         ),
       ).rejects.toThrow();
-      expect(console.error).toHaveBeenCalledWith(
-        'Error executing GraphQL query.',
-        error,
-      );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: 'fail',
-        type: 'error',
-      });
+      expect(mockLuigiCoreService.showAlert).not.toHaveBeenCalled();
     });
   });
 

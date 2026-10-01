@@ -453,6 +453,35 @@ describe('ResourceTableCard', () => {
       expect(mockResourceService.create).toHaveBeenCalled();
     });
 
+    it('should pass a create error to the error handler', () => {
+      const error = new Error('create failed');
+      mockResourceService.create = vi
+        .fn()
+        .mockReturnValue(throwError(() => error));
+
+      component.onCreateSubmit({ metadata: { name: 'new' } });
+
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+    });
+
+    it('should pass a dynamic values read error to the error handler', async () => {
+      const error = new Error('list failed');
+      mockResourceService.list.mockReturnValue(throwError(() => error));
+
+      await expect(
+        (component as any).resolveDynamicValues({
+          dynamicValuesDefinition: {
+            operation: 'v1.Namespaces.items',
+            gqlQuery:
+              'query { v1 { Namespaces { items { metadata { name } } } } }',
+            value: 'metadata.name',
+          },
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+    });
+
     it('should reset createFieldErrors after successful create', () => {
       mockResourceService.create = vi
         .fn()
@@ -804,7 +833,7 @@ describe('ResourceTableCard', () => {
       it('should handle error and call error handler service', () => {
         const error = new Error('Forbidden');
         mockResourceService.list.mockReturnValue(throwError(() => error));
-        mockErrorHandlerService.isUnauthorizedAccess.mockReturnValue(true);
+        mockErrorHandlerService.redirectToErrorPage.mockReturnValue(true);
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
         const newComponent = newFixture.componentInstance;
@@ -812,7 +841,9 @@ describe('ResourceTableCard', () => {
         newComponent.LuigiClient = makeLuigiClient();
         newFixture.detectChanges();
 
-        expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+        expect(
+          mockErrorHandlerService.redirectToErrorPage,
+        ).toHaveBeenCalledWith(error);
         expect((newComponent as any).listError()).toBeNull();
       });
 
@@ -971,7 +1002,9 @@ describe('ResourceTableCard', () => {
           { pagination: { continue: undefined, limit: 5 } },
         ]);
         oldRead.error(new Error('Forbidden'));
-        expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
+        expect(
+          mockErrorHandlerService.redirectToErrorPage,
+        ).not.toHaveBeenCalled();
         expect(card.loading()).toBe(true);
         expect((card as any).listError()).toBeNull();
         currentRead.next({
@@ -1043,7 +1076,7 @@ describe('ResourceTableCard', () => {
           mockResourceService.resourceChangeSubscription.mockReturnValue(
             oldRequest,
           );
-          mockErrorHandlerService.isUnauthorizedAccess.mockReturnValue(true);
+          mockErrorHandlerService.redirectToErrorPage.mockReturnValue(true);
           const showAlert = vi.fn();
           const { table, card, context } = createReactiveTable(showAlert);
 
@@ -1052,7 +1085,9 @@ describe('ResourceTableCard', () => {
             kcpPath: 'root:orgs:example:second',
           });
           oldRequest.error(new Error('Forbidden'));
-          expect(mockErrorHandlerService.handleError).not.toHaveBeenCalled();
+          expect(
+            mockErrorHandlerService.redirectToErrorPage,
+          ).not.toHaveBeenCalled();
           expect(showAlert).not.toHaveBeenCalled();
           expect((card as any).listError()).toBeNull();
 
@@ -1132,12 +1167,14 @@ describe('ResourceTableCard', () => {
         mockResourceService.resourceChangeSubscription.mockReturnValueOnce(
           watch,
         );
-        mockErrorHandlerService.isUnauthorizedAccess.mockReturnValue(true);
+        mockErrorHandlerService.redirectToErrorPage.mockReturnValue(true);
         const { card } = createReactiveTable();
         const error = new Error('Forbidden');
         watch.error(error);
 
-        expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+        expect(
+          mockErrorHandlerService.redirectToErrorPage,
+        ).toHaveBeenCalledWith(error);
         expect((card as any).watchError()).toBeNull();
         expect((card as any).listError()).toBeNull();
         card.retryList();

@@ -1,15 +1,22 @@
 import * as wc from './wc';
-import { Injector, Type } from '@angular/core';
-import * as angularElements from '@angular/elements';
-import { MockedFunction } from 'vitest';
-import { mock } from 'vitest-mock-extended';
+import { Component, Injector, input } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { NgElementConstructor } from '@angular/elements';
 
-vi.mock('@angular/elements', () => ({
-  createCustomElement: vi.fn(),
-}));
+@Component({ selector: 'pm-first-test-element', template: '' })
+class FirstTestElement {
+  firstInput = input<string>();
+}
+
+@Component({ selector: 'pm-second-test-element', template: '' })
+class SecondTestElement {
+  secondInput = input<string>();
+}
 
 describe('Luigi WebComponents Utils', () => {
   let originalCurrentScript: any;
+  let injector: Injector;
+  let _registerWebcomponent: ReturnType<typeof vi.fn>;
 
   const setCurrentScript = (src: string | null) => {
     Object.defineProperty(document, 'currentScript', {
@@ -19,9 +26,17 @@ describe('Luigi WebComponents Utils', () => {
     });
   };
 
+  const registeredElement = (url: string): NgElementConstructor<unknown> =>
+    _registerWebcomponent.mock.calls.find(
+      ([calledUrl]) => calledUrl === url,
+    )?.[1];
+
   beforeEach(() => {
     originalCurrentScript = document.currentScript;
-    vi.clearAllMocks();
+    injector = TestBed.inject(Injector);
+    _registerWebcomponent = vi.fn();
+    // @ts-ignore
+    window.Luigi = { _registerWebcomponent };
   });
 
   afterEach(() => {
@@ -30,120 +45,56 @@ describe('Luigi WebComponents Utils', () => {
       writable: true,
       configurable: true,
     });
-    vi.restoreAllMocks();
   });
 
   it('registerLuigiWebComponent', () => {
-    const component = mock<Type<any>>();
-    const injector = mock<Injector>();
-    const element = mock<angularElements.NgElementConstructor<any>>();
     const src = 'src-of-the-script';
-
-    const createCustomElementSpy = (
-      angularElements.createCustomElement as MockedFunction<
-        typeof angularElements.createCustomElement
-      >
-    ).mockReturnValue(element);
-    const _registerWebcomponent = vi.fn();
-    // @ts-ignore
-    window.Luigi = { _registerWebcomponent };
-
     setCurrentScript(src);
 
-    wc.registerLuigiWebComponent(component, injector);
+    wc.registerLuigiWebComponent(FirstTestElement, injector);
 
-    expect(createCustomElementSpy).toHaveBeenCalledWith(component, {
-      injector,
-    });
-    expect(_registerWebcomponent).toHaveBeenCalledWith(src, element);
+    expect(_registerWebcomponent).toHaveBeenCalledTimes(1);
+    expect(registeredElement(src).observedAttributes).toEqual(['first-input']);
   });
 
   it('registerLuigiWebComponent with explicit url', () => {
-    const component = mock<Type<any>>();
-    const injector = mock<Injector>();
-    const element = mock<angularElements.NgElementConstructor<any>>();
+    const url = 'http://localhost:12345/main.js#explicit';
 
-    (
-      angularElements.createCustomElement as MockedFunction<
-        typeof angularElements.createCustomElement
-      >
-    ).mockReturnValue(element);
-    const _registerWebcomponent = vi.fn();
-    // @ts-ignore
-    window.Luigi = { _registerWebcomponent };
+    wc.registerLuigiWebComponent(FirstTestElement, injector, url);
 
-    wc.registerLuigiWebComponent(
-      component,
-      injector,
-      'http://localhost:12345/main.js#explicit',
-    );
-
-    expect(_registerWebcomponent).toHaveBeenCalledWith(
-      'http://localhost:12345/main.js#explicit',
-      element,
-    );
+    expect(_registerWebcomponent).toHaveBeenCalledTimes(1);
+    expect(registeredElement(url).observedAttributes).toEqual(['first-input']);
   });
 
   it('registerLuigiWebComponents registers every component under its own url hash', () => {
-    const component1 = mock<Type<any>>();
-    const component2 = mock<Type<any>>();
-    const components = {
-      component1,
-      component2,
-    };
-    const injector = mock<Injector>();
-    const element = mock<angularElements.NgElementConstructor<any>>();
-    const createCustomElementSpy = (
-      angularElements.createCustomElement as MockedFunction<
-        typeof angularElements.createCustomElement
-      >
-    ).mockReturnValue(element);
-    const _registerWebcomponent = vi.fn();
-    // @ts-ignore
-    window.Luigi = { _registerWebcomponent };
-
     setCurrentScript('http://localhost:12345/main.js#component1');
 
-    wc.registerLuigiWebComponents(components, injector);
+    wc.registerLuigiWebComponents(
+      { component1: FirstTestElement, component2: SecondTestElement },
+      injector,
+    );
 
-    expect(createCustomElementSpy).toHaveBeenCalledWith(component1, {
-      injector,
-    });
-    expect(createCustomElementSpy).toHaveBeenCalledWith(component2, {
-      injector,
-    });
-    expect(_registerWebcomponent).toHaveBeenCalledWith(
-      'http://localhost:12345/main.js#component1',
-      element,
-    );
-    expect(_registerWebcomponent).toHaveBeenCalledWith(
-      'http://localhost:12345/main.js#component2',
-      element,
-    );
+    expect(_registerWebcomponent).toHaveBeenCalledTimes(2);
+    expect(
+      registeredElement('http://localhost:12345/main.js#component1')
+        .observedAttributes,
+    ).toEqual(['first-input']);
+    expect(
+      registeredElement('http://localhost:12345/main.js#component2')
+        .observedAttributes,
+    ).toEqual(['second-input']);
   });
 
   it('registerLuigiWebComponents derives the base url when the current src has no hash', () => {
-    const component1 = mock<Type<any>>();
-    const components = { component1 };
-    const injector = mock<Injector>();
-    const element = mock<angularElements.NgElementConstructor<any>>();
-    (
-      angularElements.createCustomElement as MockedFunction<
-        typeof angularElements.createCustomElement
-      >
-    ).mockReturnValue(element);
-    const _registerWebcomponent = vi.fn();
-    // @ts-ignore
-    window.Luigi = { _registerWebcomponent };
-
     setCurrentScript('http://localhost:12345/main.js');
 
-    wc.registerLuigiWebComponents(components, injector);
+    wc.registerLuigiWebComponents({ component1: FirstTestElement }, injector);
 
-    expect(_registerWebcomponent).toHaveBeenCalledWith(
-      'http://localhost:12345/main.js#component1',
-      element,
-    );
+    expect(_registerWebcomponent).toHaveBeenCalledTimes(1);
+    expect(
+      registeredElement('http://localhost:12345/main.js#component1')
+        .observedAttributes,
+    ).toEqual(['first-input']);
   });
 
   describe('getSrc', () => {

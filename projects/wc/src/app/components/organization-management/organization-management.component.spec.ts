@@ -4,7 +4,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { EnvConfigService, I18nService } from '@openmfp/portal-ui-lib';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
+import {
+  ErrorHandlerService,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
@@ -13,6 +16,7 @@ describe('OrganizationManagementComponent', () => {
   let component: OrganizationManagementView;
   let fixture: ComponentFixture<OrganizationManagementView>;
   let resourceService: MockedObject<ResourceService>;
+  let errorHandlerService: MockedObject<ErrorHandlerService>;
   let i18nService: MockedObject<I18nService>;
   let envConfigService: MockedObject<EnvConfigService>;
   let luigiClient: MockedObject<LuigiClient>;
@@ -27,6 +31,7 @@ describe('OrganizationManagementComponent', () => {
     };
 
     resourceService = mock<ResourceService>();
+    errorHandlerService = mock<ErrorHandlerService>();
     i18nService = mock<I18nService>();
     envConfigService = mock<EnvConfigService>();
     luigiClient = mock<LuigiClient>();
@@ -38,6 +43,7 @@ describe('OrganizationManagementComponent', () => {
       imports: [OrganizationManagementView, FormsModule, ReactiveFormsModule],
       providers: [
         { provide: ResourceService, useValue: resourceService },
+        { provide: ErrorHandlerService, useValue: errorHandlerService },
         { provide: I18nService, useValue: i18nService },
         { provide: EnvConfigService, useValue: envConfigService },
       ],
@@ -543,16 +549,15 @@ describe('OrganizationManagementComponent', () => {
     });
 
     it('should handle creation error', () => {
-      resourceService.create.mockReturnValue(
-        throwError(() => new Error('Create failed')),
-      );
+      const error = new Error('Create failed');
+      resourceService.create.mockReturnValue(throwError(() => error));
 
       component.onboardOrganization();
 
-      expect(mockShowAlert).toHaveBeenCalledWith({
-        text: 'Failure! Could not create organization: neworg.',
-        type: 'error',
-      });
+      expect(errorHandlerService.handleError).toHaveBeenCalledWith(
+        error,
+        'Failure! Could not create organization: neworg.',
+      );
     });
 
     it('should log resource created on success', () => {

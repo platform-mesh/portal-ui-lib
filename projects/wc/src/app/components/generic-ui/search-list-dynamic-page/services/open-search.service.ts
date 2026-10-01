@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { GenericResource } from '@openmfp/ngx';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   ReadResources,
   ReadResourcesPagination,
@@ -55,7 +54,6 @@ export interface OpenSearchResource extends GenericResource {
 
 @Injectable({ providedIn: 'root' })
 export class OpenSearchService {
-  private luigiCoreService = inject(LuigiCoreService);
   private httpClient = inject(HttpClient);
 
   listResources = (
@@ -65,11 +63,12 @@ export class OpenSearchService {
     const openSearchApiUrl = nodeContext.portalContext.openSearchApiUrl;
 
     if (!openSearchApiUrl) {
-      const message =
-        'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!';
-      this.alertErrors(message);
-
-      return throwError(() => new Error(message));
+      return throwError(
+        () =>
+          new Error(
+            'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!',
+          ),
+      );
     }
 
     return this.httpClient
@@ -119,13 +118,6 @@ export class OpenSearchService {
     }
 
     return params;
-  }
-
-  private alertErrors(message: string) {
-    this.luigiCoreService.showAlert({
-      text: message,
-      type: 'error',
-    });
   }
 
   /**

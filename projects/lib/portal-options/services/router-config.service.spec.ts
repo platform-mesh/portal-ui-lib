@@ -12,6 +12,15 @@ describe('CustomRoutingConfigServiceImpl', () => {
     idpName: 'test-idp',
   } as ClientEnvironment;
 
+  const originalLocation = window.location;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+    });
+  });
+
   beforeEach(() => {
     const envConfigServiceMock = {
       getEnvConfig: vi.fn(),

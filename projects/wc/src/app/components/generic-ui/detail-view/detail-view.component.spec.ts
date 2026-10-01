@@ -464,23 +464,10 @@ describe('DetailViewComponent', () => {
     });
 
     it('should handle delete error', () => {
-      const showAlertSpy = vi.fn();
-      component.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-        getActiveFeatureToggles: () => [],
-      })) as any;
-
+      const error = new Error('Delete failed');
       mockResourceService.delete = vi
         .fn()
-        .mockReturnValue(throwError(() => new Error('Delete failed')));
+        .mockReturnValue(throwError(() => error));
 
       const resource: any = {
         metadata: { name: 'test-resource' },
@@ -488,10 +475,10 @@ describe('DetailViewComponent', () => {
 
       component.delete(resource);
 
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Failure! Could not delete resource: test-resource.',
-        type: 'error',
-      });
+      expect(errorHandlerServiceMock.handleError).toHaveBeenCalledWith(
+        error,
+        'Failure! Could not delete resource: test-resource.',
+      );
     });
 
     it('should delete account resource with account flag', () => {
@@ -606,23 +593,10 @@ describe('DetailViewComponent', () => {
     });
 
     it('should handle update error', () => {
-      const showAlertSpy = vi.fn();
-      component.LuigiClient = (() => ({
-        linkManager: () => ({
-          fromContext: vi.fn().mockReturnThis(),
-          navigate: vi.fn(),
-          withParams: vi.fn().mockReturnThis(),
-        }),
-        uxManager: () => ({
-          showAlert: showAlertSpy,
-        }),
-        getNodeParams: vi.fn(),
-        getActiveFeatureToggles: () => [],
-      })) as any;
-
+      const error = new Error('Update failed');
       mockResourceService.update = vi
         .fn()
-        .mockReturnValue(throwError(() => new Error('Update failed')));
+        .mockReturnValue(throwError(() => error));
 
       const resource: any = {
         metadata: { name: 'test-resource' },
@@ -630,10 +604,10 @@ describe('DetailViewComponent', () => {
 
       component.update(resource);
 
-      expect(showAlertSpy).toHaveBeenCalledWith({
-        text: 'Failure! Could not update resource: test-resource.',
-        type: 'error',
-      });
+      expect(errorHandlerServiceMock.handleError).toHaveBeenCalledWith(
+        error,
+        'Failure! Could not update resource: test-resource.',
+      );
     });
 
     it('should update account resource with account flag', () => {
@@ -2643,11 +2617,13 @@ describe('DetailViewComponent template', () => {
 
   it('preserves authorization handling without presenting a retryable error', () => {
     const error = new Error('Forbidden');
-    errorHandlerServiceMock.isUnauthorizedAccess.mockReturnValue(true);
+    errorHandlerServiceMock.redirectToErrorPage.mockReturnValue(true);
     mockResourceService.read.mockReturnValue(throwError(() => error));
     const { component, find } = createReactiveDetail();
 
-    expect(errorHandlerServiceMock.handleError).toHaveBeenCalledWith(error);
+    expect(errorHandlerServiceMock.redirectToErrorPage).toHaveBeenCalledWith(
+      error,
+    );
     expect(find('mfp-dashboard')).toBeNull();
     expect(find('ui5-illustrated-message')).toBeNull();
     expect(component.customActions()).toEqual([]);
@@ -2722,7 +2698,7 @@ describe('DetailViewComponent template', () => {
       mockResourceService.read
         .mockReturnValueOnce(oldRead)
         .mockReturnValueOnce(current);
-      errorHandlerServiceMock.isUnauthorizedAccess.mockReturnValue(forbidden);
+      errorHandlerServiceMock.redirectToErrorPage.mockReturnValue(forbidden);
       const { fixture, component, context, find } = createReactiveDetail();
 
       fixture.componentRef.setInput('context', {
@@ -2730,7 +2706,9 @@ describe('DetailViewComponent template', () => {
         resourceId: 'cluster-2',
       });
       oldRead.error(new Error('Forbidden'));
-      expect(errorHandlerServiceMock.handleError).not.toHaveBeenCalled();
+      expect(
+        errorHandlerServiceMock.redirectToErrorPage,
+      ).not.toHaveBeenCalled();
       expect(component.customActions()).toEqual([]);
       fixture.detectChanges();
       expect(find('mfp-dashboard').loading).toBe(true);

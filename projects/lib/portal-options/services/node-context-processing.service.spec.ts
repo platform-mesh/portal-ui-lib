@@ -3,13 +3,17 @@ import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
 import { NodeContextProcessingServiceImpl } from './node-context-processing.service';
 import { TestBed } from '@angular/core/testing';
-import { AccountInfo, PermissionsDefinition } from '@platform-mesh/portal-ui-lib/models';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
+import {
+  AccountInfo,
+  PermissionsDefinition,
+} from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
+  ErrorHandlerService,
   InstancePermissionsService,
   OrganizationReadyService,
 } from '@platform-mesh/portal-ui-lib/services';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
@@ -21,6 +25,7 @@ describe('NodeContextProcessingServiceImpl', () => {
   let organizationReadyService: MockedObject<OrganizationReadyService>;
   let instancePermissionsService: MockedObject<InstancePermissionsService>;
   let luigiCoreService: MockedObject<LuigiCoreService>;
+  let errorHandlerService: MockedObject<ErrorHandlerService>;
 
   const mockEntityId = 'entity-123';
   const mockKind = 'account';
@@ -52,6 +57,7 @@ describe('NodeContextProcessingServiceImpl', () => {
     organizationReadyService = mock<OrganizationReadyService>();
     instancePermissionsService = mock<InstancePermissionsService>();
     luigiCoreService = mock<LuigiCoreService>();
+    errorHandlerService = mock<ErrorHandlerService>();
 
     // Default: checkInstance returns an empty array
     instancePermissionsService.checkInstance.mockReturnValue(of([]));
@@ -91,6 +97,7 @@ describe('NodeContextProcessingServiceImpl', () => {
           useValue: instancePermissionsService,
         },
         { provide: LuigiCoreService, useValue: luigiCoreService },
+        { provide: ErrorHandlerService, useValue: errorHandlerService },
       ],
     });
 
@@ -291,18 +298,185 @@ describe('NodeContextProcessingServiceImpl', () => {
       ).toHaveBeenCalled();
     });
 
-    it('should handle accountInfoService error silently', async () => {
-      accountInfoService.read.mockReturnValue(
-        throwError(() => new Error('API error')),
-      );
+    it('should pass an accountInfoService error to the error handler', async () => {
+      const error = new Error('API error');
+      accountInfoService.read.mockReturnValue(throwError(() => error));
 
       await expect(
         service.processNodeContext(mockEntityId, mockEntityNode, mockContext),
       ).resolves.not.toThrow();
 
+      expect(errorHandlerService.handleError).toHaveBeenCalledWith(
+        error,
+        'Failed to read account info.',
+      );
       expect(
         organizationReadyService.checkOrganizationReady,
       ).not.toHaveBeenCalled();
+    });
+
+    it('should abandon the pending navigation when the accountInfoService error redirects to an error page', async () => {
+      const error = new Error('Forbidden');
+      const settled = vi.fn();
+      accountInfoService.read.mockReturnValue(throwError(() => error));
+      errorHandlerService.redirectToErrorPage.mockReturnValue(true);
+
+      void service
+        .processNodeContext(mockEntityId, mockEntityNode, mockContext)
+        .then(settled, settled);
+      await vi.waitFor(() =>
+        expect(errorHandlerService.redirectToErrorPage).toHaveBeenCalledWith(
+          error,
+          true,
+        ),
+      );
+      await new Promise((resolve) => setTimeout(resolve));
+
+      expect(settled).not.toHaveBeenCalled();
+      expect(errorHandlerService.handleError).not.toHaveBeenCalled();
+    });
+
+    describe('history entry of the error page redirect', () => {
+      const error = new Error('Forbidden');
+      let accountNode: PortalLuigiNode;
+
+      const redirectReplacesHistoryFrom = async (
+        locationPath: string,
+        entityNode: PortalLuigiNode,
+        dynamicEntityId: string,
+      ) => {
+        window.history.replaceState(null, '', locationPath);
+        void service.processNodeContext(
+          dynamicEntityId,
+          entityNode,
+          mockContext,
+        );
+        await vi.waitFor(() =>
+          expect(errorHandlerService.redirectToErrorPage).toHaveBeenCalled(),
+        );
+
+        return errorHandlerService.redirectToErrorPage.mock.calls[0][1];
+      };
+
+      beforeEach(() => {
+        accountInfoService.read.mockReturnValue(throwError(() => error));
+        errorHandlerService.redirectToErrorPage.mockReturnValue(true);
+
+        const homeNode = {
+          pathSegment: 'home',
+          context: {},
+        } as PortalLuigiNode;
+        const accountsNode = {
+          pathSegment: 'accounts',
+          context: {},
+          parent: homeNode,
+        } as PortalLuigiNode;
+        accountNode = {
+          pathSegment: ':accountId',
+          defineEntity: { type: 'account' },
+          context: {},
+          parent: accountsNode,
+        } as PortalLuigiNode;
+      });
+
+      afterEach(() => {
+        window.history.replaceState(null, '', '/');
+      });
+
+      it('should add a history entry when the location has not reached the entity yet', async () => {
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/accounts',
+            accountNode,
+            'a1',
+          ),
+        ).toBe(false);
+      });
+
+      it('should add a history entry when the location is within another entity', async () => {
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/accounts/a11/accounts',
+            accountNode,
+            'a1',
+          ),
+        ).toBe(false);
+      });
+
+      it('should replace the history entry when the location is the entity', async () => {
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/accounts/a1',
+            accountNode,
+            'a1',
+          ),
+        ).toBe(true);
+      });
+
+      it('should replace the history entry when the location is below the entity', async () => {
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/accounts/a1/accounts',
+            accountNode,
+            'a1',
+          ),
+        ).toBe(true);
+      });
+
+      it('should add a history entry when a static ancestor segment differs from the location', async () => {
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/projects/a1',
+            accountNode,
+            'a1',
+          ),
+        ).toBe(false);
+      });
+
+      it('should match any location segment for a dynamic ancestor segment', async () => {
+        const nestedAccountNode = {
+          pathSegment: ':subAccountId',
+          defineEntity: { type: 'account' },
+          context: {},
+          parent: {
+            pathSegment: 'accounts',
+            context: {},
+            parent: accountNode,
+          },
+        } as PortalLuigiNode;
+
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/accounts/a1/accounts/b1',
+            nestedAccountNode,
+            'b1',
+          ),
+        ).toBe(true);
+      });
+
+      it('should compare a static entity segment with the location', async () => {
+        const staticEntityNode = {
+          pathSegment: 'home',
+          defineEntity: { type: 'main' },
+          context: { resourceDefinition: { name: 'main' } },
+        } as unknown as PortalLuigiNode;
+
+        expect(
+          await redirectReplacesHistoryFrom('/home', staticEntityNode, ''),
+        ).toBe(true);
+      });
+
+      it('should skip ancestors without a path segment', async () => {
+        accountNode.parent!.parent!.parent = { context: {} } as PortalLuigiNode;
+
+        expect(
+          await redirectReplacesHistoryFrom(
+            '/home/accounts/a1',
+            accountNode,
+            'a1',
+          ),
+        ).toBe(true);
+      });
     });
 
     it('should handle special characters in CA certificate', async () => {
@@ -468,7 +642,9 @@ describe('NodeContextProcessingServiceImpl', () => {
       const ctx: PortalNodeContext = {
         ...mockContext,
         portalPermissions: { pods: ['get'] },
-        nodesPermissions: [{ resource: 'pods', actions: ['get', 'list', 'create'] }],
+        nodesPermissions: [
+          { resource: 'pods', actions: ['get', 'list', 'create'] },
+        ],
       };
 
       await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
@@ -489,7 +665,9 @@ describe('NodeContextProcessingServiceImpl', () => {
   });
 
   describe('getEntityPermissions', () => {
-    const makePermissionsDefinition = (overrides: Partial<PermissionsDefinition> = {}): PermissionsDefinition => ({
+    const makePermissionsDefinition = (
+      overrides: Partial<PermissionsDefinition> = {},
+    ): PermissionsDefinition => ({
       group: 'core.k8s.io',
       resource: 'clusters',
       entityActions: ['get', 'update', 'delete'],
@@ -531,7 +709,9 @@ describe('NodeContextProcessingServiceImpl', () => {
           entity: 'Cluster',
           entityCollection: 'clusters',
           version: 'v1alpha1',
-          permissionsDefinition: makePermissionsDefinition({ entityContextKey: 'customKey' as any }),
+          permissionsDefinition: makePermissionsDefinition({
+            entityContextKey: 'customKey' as any,
+          }),
         } as any,
       };
 
@@ -636,7 +816,11 @@ describe('NodeContextProcessingServiceImpl', () => {
     it('merges returned permissions into ctx.portalPermissions keyed by permissionKey', async () => {
       instancePermissionsService.checkInstance.mockReturnValue(
         of([
-          { resource: 'clusters', name: mockEntityId, actions: ['get', 'update'] },
+          {
+            resource: 'clusters',
+            name: mockEntityId,
+            actions: ['get', 'update'],
+          },
         ]),
       );
 
@@ -654,7 +838,10 @@ describe('NodeContextProcessingServiceImpl', () => {
       await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
 
       // permissionKey({ resource: 'clusters', name: mockEntityId }) = 'clusters/entity-123'
-      expect(ctx.portalPermissions?.[`clusters/${mockEntityId}`]).toEqual(['get', 'update']);
+      expect(ctx.portalPermissions?.[`clusters/${mockEntityId}`]).toEqual([
+        'get',
+        'update',
+      ]);
     });
 
     it('initialises portalPermissions to {} when undefined before merging instance permissions', async () => {
@@ -677,7 +864,9 @@ describe('NodeContextProcessingServiceImpl', () => {
       await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
 
       expect(ctx.portalPermissions).toBeDefined();
-      expect(ctx.portalPermissions?.[`clusters/${mockEntityId}`]).toEqual(['get']);
+      expect(ctx.portalPermissions?.[`clusters/${mockEntityId}`]).toEqual([
+        'get',
+      ]);
     });
   });
 });

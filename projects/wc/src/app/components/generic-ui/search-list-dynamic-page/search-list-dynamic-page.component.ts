@@ -294,6 +294,7 @@ export class SearchListDynamicPage implements OnInit {
           this.list();
           console.debug('Resource created', result);
         },
+        error: (error) => this.errorHandlerService.handleError(error),
       });
   }
 

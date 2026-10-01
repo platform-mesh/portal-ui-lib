@@ -1,7 +1,6 @@
 import { OpenSearchRequest, OpenSearchService } from './open-search.service';
 import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import { EMPTY, firstValueFrom, of } from 'rxjs';
 import { MockedObject } from 'vitest';
@@ -10,7 +9,6 @@ import { mock } from 'vitest-mock-extended';
 describe('OpenSearchService', () => {
   let service: OpenSearchService;
   let mockHttpClient: MockedObject<HttpClient>;
-  let mockLuigiCoreService: MockedObject<LuigiCoreService>;
 
   const baseContext: ResourceNodeContext = {
     token: 'tkn',
@@ -49,13 +47,11 @@ describe('OpenSearchService', () => {
 
   beforeEach(() => {
     mockHttpClient = mock();
-    mockLuigiCoreService = mock();
 
     TestBed.configureTestingModule({
       providers: [
         OpenSearchService,
         { provide: HttpClient, useValue: mockHttpClient },
-        { provide: LuigiCoreService, useValue: mockLuigiCoreService },
       ],
     });
 
@@ -99,7 +95,7 @@ describe('OpenSearchService', () => {
       );
     });
 
-    it('should emit an error and alert when openSearchApiUrl is missing', async () => {
+    it('should emit an error when openSearchApiUrl is missing', async () => {
       const ctx = {
         ...baseContext,
         portalContext: { crdGatewayApiUrl: 'x' },
@@ -110,10 +106,6 @@ describe('OpenSearchService', () => {
       ).rejects.toThrow(
         'OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL env variable is missing!',
       );
-      expect(mockLuigiCoreService.showAlert).toHaveBeenCalledWith({
-        text: expect.stringContaining('OPENMFP_PORTAL_CONTEXT_OPEN_SEARCH_API_URL'),
-        type: 'error',
-      });
     });
   });
 
@@ -124,11 +116,13 @@ describe('OpenSearchService', () => {
       );
 
       const result = await firstValueFrom(
-        service.asReadResources().list(
-          baseContext,
-          { limit: 5, cursor: 'prev' },
-          { q: 'foo', resource: 'testkinds' },
-        ),
+        service
+          .asReadResources()
+          .list(
+            baseContext,
+            { limit: 5, cursor: 'prev' },
+            { q: 'foo', resource: 'testkinds' },
+          ),
       );
 
       expect(result.items).toHaveLength(1);
@@ -142,9 +136,7 @@ describe('OpenSearchService', () => {
         of({ results: [], source: 'os', nextCursor: '' }) as any,
       );
 
-      await firstValueFrom(
-        service.asReadResources().list(baseContext, {}, {}),
-      );
+      await firstValueFrom(service.asReadResources().list(baseContext, {}, {}));
 
       const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
       expect(params.get('resource')).toBe('testkinds');
@@ -172,9 +164,7 @@ describe('OpenSearchService', () => {
     });
 
     it('should return EMPTY for subscribe', async () => {
-      const subscribed = service
-        .asReadResources()
-        .subscribe(baseContext, {});
+      const subscribed = service.asReadResources().subscribe(baseContext, {});
 
       // EMPTY completes immediately without emitting
       const events: any[] = [];
@@ -202,11 +192,17 @@ describe('OpenSearchService', () => {
         );
 
         await firstValueFrom(
-          service.asReadResources().list(
-            baseContext,
-            {},
-            { q: 'oprt', resource: 'testkinds', filter: 'metadata.namespace=default' },
-          ),
+          service
+            .asReadResources()
+            .list(
+              baseContext,
+              {},
+              {
+                q: 'oprt',
+                resource: 'testkinds',
+                filter: 'metadata.namespace=default',
+              },
+            ),
         );
 
         const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
@@ -223,11 +219,17 @@ describe('OpenSearchService', () => {
         );
 
         await firstValueFrom(
-          service.asReadResources().list(
-            baseContext,
-            {},
-            { q: '', resource: 'testkinds', filter: 'metadata.namespace=default' },
-          ),
+          service
+            .asReadResources()
+            .list(
+              baseContext,
+              {},
+              {
+                q: '',
+                resource: 'testkinds',
+                filter: 'metadata.namespace=default',
+              },
+            ),
         );
 
         const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
@@ -241,11 +243,9 @@ describe('OpenSearchService', () => {
         );
 
         await firstValueFrom(
-          service.asReadResources().list(
-            baseContext,
-            {},
-            { q: 'oprt', resource: 'testkinds' },
-          ),
+          service
+            .asReadResources()
+            .list(baseContext, {}, { q: 'oprt', resource: 'testkinds' }),
         );
 
         const params = mockHttpClient.get.mock.calls[0][1]?.params as any;
@@ -261,11 +261,17 @@ describe('OpenSearchService', () => {
         );
 
         await firstValueFrom(
-          service.asReadResources().list(
-            baseContext,
-            {},
-            { q: '', resource: 'testkinds', filter: 'metadata.namespace=kube-system' },
-          ),
+          service
+            .asReadResources()
+            .list(
+              baseContext,
+              {},
+              {
+                q: '',
+                resource: 'testkinds',
+                filter: 'metadata.namespace=kube-system',
+              },
+            ),
         );
 
         const params = mockHttpClient.get.mock.calls[0][1]?.params as any;

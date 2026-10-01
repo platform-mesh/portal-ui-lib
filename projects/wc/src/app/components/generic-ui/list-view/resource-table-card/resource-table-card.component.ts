@@ -228,12 +228,17 @@ export class ResourceTableCard {
   ): Promise<string[] | undefined> {
     const def = field.dynamicValuesDefinition;
     if (!def) return undefined;
-    const resources = await firstValueFrom(
-      this.resourceService.list(def.operation, def.gqlQuery, this.context()),
-    );
-    return (resources as Resource[])
-      .map((r) => getValueByPath(r, def.value) as string)
-      .filter(Boolean);
+    try {
+      const resources = await firstValueFrom(
+        this.resourceService.list(def.operation, def.gqlQuery, this.context()),
+      );
+      return (resources as Resource[])
+        .map((r) => getValueByPath(r, def.value) as string)
+        .filter(Boolean);
+    } catch (error) {
+      this.errorHandlerService.handleError(error);
+      return undefined;
+    }
   }
 
   private subscribeToResourceChange(version: string) {
@@ -261,9 +266,7 @@ export class ResourceTableCard {
         },
         error: (error) => {
           if (context !== this.context()) return;
-          if (this.errorHandlerService.isUnauthorizedAccess(error)) {
-            this.errorHandlerService.handleError(error);
-          } else {
+          if (!this.errorHandlerService.redirectToErrorPage(error)) {
             this.watchError.set(this.mapError(error));
           }
         },
@@ -334,9 +337,7 @@ export class ResourceTableCard {
         },
         error: (error) => {
           if (context !== this.context()) return;
-          if (this.errorHandlerService.isUnauthorizedAccess(error)) {
-            this.errorHandlerService.handleError(error);
-          } else {
+          if (!this.errorHandlerService.redirectToErrorPage(error)) {
             this.listError.set(this.mapError(error));
           }
         },
@@ -445,6 +446,7 @@ export class ResourceTableCard {
           this.tableCard().closeCreateDialog();
           console.debug('Resource created', result);
         },
+        error: (error) => this.errorHandlerService.handleError(error),
       });
   }
 
@@ -456,9 +458,7 @@ export class ResourceTableCard {
         next: () => {
           this.tableCard().closeDeleteDialog();
         },
-        error: (error) => {
-          this.errorHandlerService.handleError(error);
-        },
+        error: (error) => this.errorHandlerService.handleError(error),
       });
   }
 
