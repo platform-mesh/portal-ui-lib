@@ -744,6 +744,15 @@ describe('SearchListDynamicPage', () => {
       ).toBeGreaterThan(callsBefore);
     });
 
+    it('passes a create error to the error handler', () => {
+      const error = new Error('create failed');
+      mockResourceService.create.mockReturnValue(throwError(() => error));
+
+      component.onCreateSubmit({ id: 'r1', metadata: { name: 'r1' } } as any);
+
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
+    });
+
     it('does nothing when resourceDefinition is undefined', () => {
       const f = createComponent({ resourceDefinition: undefined });
       const resource = { id: 'r1', metadata: { name: 'r1' } } as any;

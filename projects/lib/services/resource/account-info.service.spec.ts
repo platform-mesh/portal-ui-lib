@@ -157,6 +157,73 @@ describe(AccountInfoService, () => {
       expect(mockApollo.query).toHaveBeenCalledTimes(2);
     });
 
+    it('should create separate cache entries for different gateway urls without kcpPath', async () => {
+      mockApollo.query.mockReturnValue(
+        of({
+          data: {
+            core_platform_mesh_io: {
+              v1alpha1: {
+                AccountInfo: {
+                  spec: {
+                    clusterInfo: { ca: 'cert-data' },
+                    oidc: {
+                      issuerUrl: 'issuer',
+                      clients: '{ "kubectl": { "clientId": "cIdD" } }',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      );
+      const accountContext = (account: string): any => ({
+        portalContext: {
+          crdGatewayApiUrl: `https://gateway.example.com/api/clusters/root:orgs:sub:${account}/graphql`,
+        },
+        token: 'token-1',
+        accountId: account,
+      });
+
+      await firstValueFrom(service.read(accountContext('a21')));
+      await firstValueFrom(service.read(accountContext('a11')));
+
+      expect(mockApollo.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('should keep a newer cache entry when a stale failed read is subscribed later', async () => {
+      const error = new Error('temporary fail');
+      mockApollo.query
+        .mockReturnValueOnce(throwError(() => error))
+        .mockReturnValueOnce(
+          of({
+            data: {
+              core_platform_mesh_io: {
+                v1alpha1: {
+                  AccountInfo: {
+                    spec: {
+                      clusterInfo: { ca: 'cert-data' },
+                      oidc: {
+                        issuerUrl: 'issuer',
+                        clients: '{ "kubectl": { "clientId": "cIdD" } }',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        );
+
+      const staleRead$ = service.read(namespacedNodeContext);
+      await expect(firstValueFrom(staleRead$)).rejects.toThrowError(error);
+      await firstValueFrom(service.read(namespacedNodeContext));
+      await expect(firstValueFrom(staleRead$)).rejects.toThrowError(error);
+      await firstValueFrom(service.read(namespacedNodeContext));
+
+      expect(mockApollo.query).toHaveBeenCalledTimes(2);
+    });
+
     it('should invalidate cache after error and retry next call', async () => {
       const error = new Error('temporary fail');
       const accountInfo = {

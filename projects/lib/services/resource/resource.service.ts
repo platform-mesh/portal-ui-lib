@@ -35,11 +35,7 @@ import type {
 } from 'gql-query-builder';
 import * as gqlBuilder from 'gql-query-builder';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-
-interface ResourceResponseError extends Record<string, any> {
-  message: string;
-}
+import { map } from 'rxjs/operators';
 
 export interface ResourceRequestParams {
   entity: string;
@@ -296,11 +292,6 @@ export class ResourceService {
           (res: any): Resource[] =>
             getValueByPath<any, any>(res.data, operation) ?? [],
         ),
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          return throwError(() => error);
-        }),
       );
   }
 
@@ -362,13 +353,6 @@ export class ResourceService {
       );
   }
 
-  private alertErrors(res: ResourceResponseError) {
-    this.luigiCoreService.showAlert({
-      text: res.message,
-      type: 'error',
-    });
-  }
-
   delete(
     resource: Resource,
     resourceDefinition: ResourceDefinition,
@@ -404,14 +388,7 @@ export class ResourceService {
       .mutate<void>({
         mutation: query,
         variables: mutation.variables,
-      })
-      .pipe(
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          return throwError(() => error);
-        }),
-      );
+      });
   }
 
   create(
@@ -445,20 +422,11 @@ export class ResourceService {
     const mutation = gqlBuilder.mutation(queryOptions);
     const query = this.parseGQLQuery(mutation.query);
 
-    return this.apolloFactory
-      .apollo(nodeContext)
-      .mutate({
-        mutation: query,
-        fetchPolicy: 'no-cache',
-        variables: mutation.variables,
-      })
-      .pipe(
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          return throwError(() => error);
-        }),
-      );
+    return this.apolloFactory.apollo(nodeContext).mutate({
+      mutation: query,
+      fetchPolicy: 'no-cache',
+      variables: mutation.variables,
+    });
   }
 
   update(
@@ -514,11 +482,6 @@ export class ResourceService {
             ),
           ),
         ),
-        catchError((error) => {
-          this.alertErrors(error);
-          console.error('Error executing GraphQL query.', error);
-          return throwError(() => error);
-        }),
       );
   }
 

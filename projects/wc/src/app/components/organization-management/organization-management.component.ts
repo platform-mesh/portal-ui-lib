@@ -33,6 +33,7 @@ import {
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
+  ErrorHandlerService,
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -63,6 +64,7 @@ import { map, switchMap } from 'rxjs';
 export class OrganizationManagementView implements OnInit {
   private i18nService = inject(I18nService);
   private resourceService = inject(ResourceService);
+  private errorHandlerService = inject(ErrorHandlerService);
   private envConfigService = inject(EnvConfigService);
   private destroyRef = inject(DestroyRef);
 
@@ -267,14 +269,11 @@ export class OrganizationManagementView implements OnInit {
           this.newOrganizationControl.reset();
           this.showOnboardingSuccessMessage();
         },
-        error: (_error) => {
-          this.LuigiClient()
-            .uxManager()
-            .showAlert({
-              text: `Failure! Could not create organization: ${resource.metadata.name}.`,
-              type: 'error',
-            });
-        },
+        error: (error) =>
+          this.errorHandlerService.handleError(
+            error,
+            `Failure! Could not create organization: ${resource.metadata.name}.`,
+          ),
       });
   }
 

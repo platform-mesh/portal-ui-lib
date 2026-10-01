@@ -37,6 +37,7 @@ import {
   Resource,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
+  ErrorHandlerService,
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
@@ -66,6 +67,7 @@ export class CreateResourceModal {
   isNamespacedResource = computed(() => isNamespacedResource(this.context()));
 
   private readonly resourceService = inject(ResourceService);
+  private readonly errorHandlerService = inject(ErrorHandlerService);
   private originalResource = signal<Resource | null>(null);
   private declarativeFormRef = viewChild.required(DeclarativeForm);
 
@@ -169,14 +171,19 @@ export class CreateResourceModal {
       ]),
     );
 
-    const resources = await firstValueFrom(
-      this.resourceService.list(def.operation, def.gqlQuery, ctx, {
-        variables,
-      }),
-    );
-    return (resources as Resource[])
-      .map((r) => getValueByPath(r, def.value) as string)
-      .filter(Boolean);
+    try {
+      const resources = await firstValueFrom(
+        this.resourceService.list(def.operation, def.gqlQuery, ctx, {
+          variables,
+        }),
+      );
+      return (resources as Resource[])
+        .map((r) => getValueByPath(r, def.value) as string)
+        .filter(Boolean);
+    } catch (error) {
+      this.errorHandlerService.handleError(error);
+      return undefined;
+    }
   }
 
   private calculateFields(): PlatformMeshFieldDefinition[] {

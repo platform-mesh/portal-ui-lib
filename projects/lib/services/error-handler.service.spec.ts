@@ -13,7 +13,9 @@ describe('ErrorHandlerService', () => {
   beforeEach(() => {
     luigiCoreService = mock<LuigiCoreService>();
     luigiCoreService.showAlert = vi.fn();
-    postMessageSpy = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
+    postMessageSpy = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => {});
 
     TestBed.configureTestingModule({
       providers: [
@@ -33,7 +35,10 @@ describe('ErrorHandlerService', () => {
     expect(postMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         msg: 'luigi.navigation.open',
-        params: expect.objectContaining({ link: path, preventHistoryEntry: true }),
+        params: expect.objectContaining({
+          link: path,
+          preventHistoryEntry: true,
+        }),
       }),
       '*',
     );
@@ -243,6 +248,51 @@ describe('ErrorHandlerService', () => {
       });
     });
 
+    it('should navigate to 404 without an alert when statusCode is 404', () => {
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const error = { message: 'Received status code 404', statusCode: 404 };
+
+      service.handleError(error);
+
+      expectNavigatedTo('/error/404');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should show the custom message followed by the error message', () => {
+      service.handleError(
+        { message: 'Some error' },
+        'Failure! Could not delete resource: test.',
+      );
+
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Failure! Could not delete resource: test.\nSome error',
+        type: 'error',
+      });
+    });
+
+    it('should show only the custom message when the error has no message', () => {
+      service.handleError({}, 'Failure! Could not delete resource: test.');
+
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Failure! Could not delete resource: test.',
+        type: 'error',
+      });
+    });
+
+    it('should navigate to 403 without showing the custom message', () => {
+      service.handleError(
+        { message: 'forbidden' },
+        'Failure! Could not delete resource: test.',
+      );
+
+      expectNavigatedTo('/error/403');
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
+    });
+
     it('should console.error the error for non-403 cases', () => {
       const consoleSpy = vi
         .spyOn(console, 'error')
@@ -304,29 +354,94 @@ describe('ErrorHandlerService', () => {
     });
   });
 
-  describe('isUnauthorizedAccess', () => {
-    it('should return true when message contains forbidden', () => {
-      const error = { message: 'Access is forbidden' };
+  describe('redirectToErrorPage', () => {
+    it('should navigate to 403 and return true when message contains forbidden', () => {
+      expect(
+        service.redirectToErrorPage({ message: 'Access is forbidden' }),
+      ).toBe(true);
 
-      expect(service.isUnauthorizedAccess(error)).toBe(true);
+      expectNavigatedTo('/error/403');
     });
 
-    it('should return true when message contains access denied', () => {
-      const error = { message: 'access denied' };
+    it('should navigate to 403 and return true when message contains access denied', () => {
+      expect(service.redirectToErrorPage({ message: 'access denied' })).toBe(
+        true,
+      );
 
-      expect(service.isUnauthorizedAccess(error)).toBe(true);
+      expectNavigatedTo('/error/403');
     });
 
-    it('should return false for other errors', () => {
-      const error = { message: 'Not found' };
+    it('should navigate to 404 and return true when statusCode is 404', () => {
+      expect(service.redirectToErrorPage({ statusCode: 404 })).toBe(true);
 
-      expect(service.isUnauthorizedAccess(error)).toBe(false);
+      expectNavigatedTo('/error/404');
     });
 
-    it('should handle undefined message', () => {
-      const error = { message: undefined };
+    it('should prefer 403 over 404 when the error matches both', () => {
+      expect(
+        service.redirectToErrorPage({ message: 'forbidden', statusCode: 404 }),
+      ).toBe(true);
 
-      expect(service.isUnauthorizedAccess(error)).toBe(false);
+      expect(postMessageSpy).toHaveBeenCalledTimes(1);
+      expectNavigatedTo('/error/403');
+    });
+
+    it('should return false without navigating for other status codes', () => {
+      expect(service.redirectToErrorPage({ statusCode: 500 })).toBe(false);
+
+      expect(postMessageSpy).not.toHaveBeenCalled();
+    });
+
+    it('should return false without navigating when only the message says not found', () => {
+      expect(service.redirectToErrorPage({ message: 'Not found' })).toBe(false);
+
+      expect(postMessageSpy).not.toHaveBeenCalled();
+    });
+
+    it('should return false without navigating for an undefined error', () => {
+      expect(service.redirectToErrorPage(undefined)).toBe(false);
+
+      expect(postMessageSpy).not.toHaveBeenCalled();
+    });
+
+    it('should add a history entry when replaceHistory is false', () => {
+      expect(service.redirectToErrorPage({ message: 'forbidden' }, false)).toBe(
+        true,
+      );
+
+      expect(postMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: 'luigi.navigation.open',
+          params: expect.objectContaining({
+            link: '/error/403',
+            preventHistoryEntry: false,
+          }),
+        }),
+        '*',
+      );
+    });
+
+    it('should add a history entry for 404 when replaceHistory is false', () => {
+      expect(service.redirectToErrorPage({ statusCode: 404 }, false)).toBe(
+        true,
+      );
+
+      expect(postMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: 'luigi.navigation.open',
+          params: expect.objectContaining({
+            link: '/error/404',
+            preventHistoryEntry: false,
+          }),
+        }),
+        '*',
+      );
+    });
+
+    it('should never show an alert', () => {
+      service.redirectToErrorPage({ message: 'Some error' });
+
+      expect(luigiCoreService.showAlert).not.toHaveBeenCalled();
     });
   });
 });

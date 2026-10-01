@@ -3,14 +3,18 @@ import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DeclarativeForm } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
-import { ResourceService } from '@platform-mesh/portal-ui-lib/services';
-import { of } from 'rxjs';
+import {
+  ErrorHandlerService,
+  ResourceService,
+} from '@platform-mesh/portal-ui-lib/services';
+import { of, throwError } from 'rxjs';
 import { mock } from 'vitest-mock-extended';
 
 describe('CreateResourceModalComponent', () => {
   let component: CreateResourceModal;
   let fixture: ComponentFixture<CreateResourceModal>;
   let resourceService: ReturnType<typeof mock<ResourceService>>;
+  let errorHandlerService: ReturnType<typeof mock<ErrorHandlerService>>;
 
   const testFields: PlatformMeshFieldDefinition[] = [
     { property: 'metadata.name', required: true, label: 'Name' },
@@ -29,12 +33,16 @@ describe('CreateResourceModalComponent', () => {
 
   beforeEach(async () => {
     resourceService = mock<ResourceService>();
+    errorHandlerService = mock<ErrorHandlerService>();
 
     await TestBed.configureTestingModule({
       imports: [CreateResourceModal],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
       teardown: { destroyAfterEach: true },
-      providers: [{ provide: ResourceService, useValue: resourceService }],
+      providers: [
+        { provide: ResourceService, useValue: resourceService },
+        { provide: ErrorHandlerService, useValue: errorHandlerService },
+      ],
     })
       .overrideComponent(CreateResourceModal, {
         set: {
@@ -231,6 +239,24 @@ describe('CreateResourceModalComponent', () => {
         .formFields()
         .find((f) => f.name === 'metadata.namespace');
       expect(nsField?.values).toEqual(['default', 'kube-system']);
+    });
+
+    it('should pass a dynamic values read error to the error handler', async () => {
+      const error = new Error('list failed');
+      resourceService.list.mockReturnValue(throwError(() => error));
+
+      await expect(
+        (component as any).resolveDynamicValues({
+          dynamicValuesDefinition: {
+            operation: 'v1.Namespaces.items',
+            gqlQuery:
+              'query { v1 { Namespaces { items { metadata { name } } } } }',
+            value: 'metadata.name',
+          },
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(errorHandlerService.handleError).toHaveBeenCalledWith(error);
     });
 
     it('should call resourceService.list with the correct operation and query when prefetching', async () => {

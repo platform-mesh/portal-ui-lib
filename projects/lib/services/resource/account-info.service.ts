@@ -1,5 +1,6 @@
 import { accountInfoRead } from './account-info.queries';
 import { ApolloFactory } from './apollo-factory';
+import { GatewayService } from './gateway.service';
 import { ResourceNodeContext } from './resource-node-context';
 import { Injectable, inject } from '@angular/core';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
@@ -11,10 +12,11 @@ import { catchError, map, shareReplay } from 'rxjs/operators';
 })
 export class AccountInfoService {
   private apolloFactory = inject(ApolloFactory);
+  private gatewayService = inject(GatewayService);
   private readCache = new Map<string, Observable<AccountInfo>>();
 
   read(nodeContext: ResourceNodeContext): Observable<AccountInfo> {
-    const cacheKey = nodeContext.kcpPath ?? '';
+    const cacheKey = this.gatewayService.getGatewayUrl(nodeContext);
     const cachedRead = this.readCache.get(cacheKey);
     if (cachedRead) {
       return cachedRead;
@@ -43,7 +45,9 @@ export class AccountInfoService {
         }),
         shareReplay(1),
         catchError((error) => {
-          this.readCache.delete(cacheKey);
+          if (this.readCache.get(cacheKey) === request$) {
+            this.readCache.delete(cacheKey);
+          }
           return throwError(() => error);
         }),
       );

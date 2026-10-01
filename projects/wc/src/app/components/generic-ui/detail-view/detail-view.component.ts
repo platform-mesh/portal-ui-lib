@@ -417,12 +417,11 @@ export class DetailView {
         },
         error: (error) => {
           if (!isCurrentRead()) return;
-          if (this.errorHandlerService.isUnauthorizedAccess(error)) {
-            this.readState.set('redirecting');
-            this.errorHandlerService.handleError(error);
-          } else {
-            this.readState.set('error');
-          }
+          this.readState.set(
+            this.errorHandlerService.redirectToErrorPage(error)
+              ? 'redirecting'
+              : 'error',
+          );
         },
         complete: () => {
           if (isCurrentRead() && untracked(this.readState) === 'loading') {
@@ -513,14 +512,11 @@ export class DetailView {
           console.debug('Resource deleted.');
           this.navigateToParent();
         },
-        error: (_error) => {
-          this.LuigiClient()
-            .uxManager()
-            .showAlert({
-              text: `Failure! Could not delete resource: ${resource.metadata.name}.`,
-              type: 'error',
-            });
-        },
+        error: (error) =>
+          this.errorHandlerService.handleError(
+            error,
+            `Failure! Could not delete resource: ${resource.metadata.name}.`,
+          ),
       });
   }
 
@@ -547,14 +543,11 @@ export class DetailView {
           this.createModal()?.close();
           console.debug('Resource updated', result);
         },
-        error: (_error) => {
-          this.LuigiClient()
-            .uxManager()
-            .showAlert({
-              text: `Failure! Could not update resource: ${resource.metadata.name}.`,
-              type: 'error',
-            });
-        },
+        error: (error) =>
+          this.errorHandlerService.handleError(
+            error,
+            `Failure! Could not update resource: ${resource.metadata.name}.`,
+          ),
       });
   }
 

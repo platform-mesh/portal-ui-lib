@@ -107,10 +107,53 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       // we were able to ready the account info so on this kcpPath we can query for the organization ready state
       this.organizationReadyService.checkOrganizationReady();
     } catch (e) {
-      if (!this.errorHandlerService.isUnauthorizedAccess(e)) {
-        console.error('Failed to read account info', e);
+      if (
+        this.errorHandlerService.redirectToErrorPage(
+          e,
+          this.isLocationWithinEntity(entityNode, dynamicEntityId),
+        )
+      ) {
+        await this.abandonPendingNavigation();
       }
+
+      this.errorHandlerService.handleError(e, 'Failed to read account info.');
     }
+  }
+
+  private abandonPendingNavigation(): Promise<never> {
+    return new Promise<never>(() => {});
+  }
+
+  private isLocationWithinEntity(
+    entityNode: PortalLuigiNode,
+    dynamicEntityId: string,
+  ): boolean {
+    const locationSegments = window.location.pathname
+      .split('/')
+      .filter(Boolean);
+    const entitySegments: (string | undefined)[] = [];
+
+    for (
+      let node: PortalLuigiNode | undefined = entityNode;
+      node;
+      node = node.parent
+    ) {
+      if (!node.pathSegment) {
+        continue;
+      }
+
+      const isDynamicSegment = node.pathSegment.startsWith(':');
+      const dynamicSegmentValue =
+        node === entityNode ? dynamicEntityId || undefined : undefined;
+      entitySegments.unshift(
+        isDynamicSegment ? dynamicSegmentValue : node.pathSegment,
+      );
+    }
+
+    return entitySegments.every(
+      (segment, index) =>
+        segment === undefined || segment === locationSegments[index],
+    );
   }
 
   private addFieldsToContext(
