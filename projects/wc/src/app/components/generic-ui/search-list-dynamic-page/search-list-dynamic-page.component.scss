@@ -2,6 +2,23 @@ ui5-dynamic-page::part(fit-content) {
   padding: 0;
 }
 
+// Consistent gap directly above the table in both states:
+//   no-filters  → header → (1rem) → table
+//   with-filters → header → tab-bar(flush) → (1rem) → table
+// mfp-declarative-table is a custom element whose :host has no explicit display
+// set in openmfp-ngx, so it defaults to inline — which ignores margin-top.
+// display:block makes the top margin apply.
+mfp-declarative-table {
+  display: block;
+  margin-top: 1rem;
+}
+
+// Ensure the tab bar sits flush under the dynamic-page header — no extra top
+// margin that would reintroduce a gap between the header and the filters.
+ui5-tabcontainer {
+  margin-top: 0;
+}
+
 .page-heading {
   display: flex;
   align-items: center;

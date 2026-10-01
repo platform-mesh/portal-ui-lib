@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "types": ["node"],
+    "rootDir": ".."
+  },
+  "include": [
+    "./**/*.ts",
+    "../projects/wc/src/app/**/*.ts",
+    "../projects/lib/**/*.ts"
+  ],
+  "exclude": [
+    "../projects/**/*.spec.ts"
+  ]
+}
