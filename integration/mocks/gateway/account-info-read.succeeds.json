@@ -1,0 +1,33 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "core_platform_mesh_io": {
+        "v1alpha1": {
+          "AccountInfo": {
+            "metadata": {
+              "name": "account",
+              "annotations": {}
+            },
+            "spec": {
+              "account": {
+                "originClusterId": "cluster-{{accountName}}"
+              },
+              "clusterInfo": {
+                "ca": "test-cluster-ca"
+              },
+              "organization": {
+                "originClusterId": "cluster-test-org",
+                "name": "test-org"
+              },
+              "oidc": {
+                "clients": "{}",
+                "issuerUrl": "https://idp.portal.test/realms/test-org"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

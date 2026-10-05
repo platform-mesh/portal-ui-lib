@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "userAvatarUrl": "",
+    "vpnCheckUrl": "",
+    "logoutRedirectUrl": "/logout",
+    "isLocal": false,
+    "developmentInstance": false,
+    "validWebcomponentUrls": [".?"],
+    "uiOptions": [""],
+    "idpName": "test-org",
+    "baseDomain": "portal.test"
+  }
+}

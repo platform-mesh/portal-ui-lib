@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.portal.json",
+  "files": ["src/main.ts"],
+  "include": []
+}

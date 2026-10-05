@@ -1,0 +1,30 @@
+{
+  "$schema": "../node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "portals",
+  "projects": {
+    "platform-mesh": {
+      "projectType": "application",
+      "root": "portals/platform-mesh",
+      "sourceRoot": "portals/platform-mesh/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "dist/portals/platform-mesh",
+            "index": "portals/platform-mesh/src/index.html",
+            "browser": "portals/platform-mesh/src/main.ts",
+            "polyfills": ["@angular/localize/init"],
+            "tsConfig": "portals/platform-mesh/tsconfig.app.json",
+            "optimization": false,
+            "extractLicenses": false,
+            "sourceMap": true
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  }
+}

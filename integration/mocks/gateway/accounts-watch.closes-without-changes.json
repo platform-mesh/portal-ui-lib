@@ -1,0 +1,5 @@
+{
+  "status": 200,
+  "contentType": "text/event-stream",
+  "body": "event: complete\ndata:\n\n"
+}

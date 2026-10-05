@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "the server is currently unable to handle the request"
+      }
+    ]
+  }
+}
