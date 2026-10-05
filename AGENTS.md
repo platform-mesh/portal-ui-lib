@@ -40,7 +40,10 @@ The final published artifact in `dist/` contains both the ng-packagr output (`fe
 npm run test               # run all projects with coverage (lib + wc)
 npm run test:lib           # run lib tests only
 npm run test:wc            # run wc tests only
+npm run test:integration   # Playwright tests against a mocked-backend portal (see integration/AGENTS.md)
 ```
+
+Before working on the Playwright integration tests, read `integration/AGENTS.md`.
 
 Tests use **Vitest** (via `@angular/build:unit-test` with `runnerConfig: vitest.config.ts`). Coverage is collected via v8 and enforced at:
 

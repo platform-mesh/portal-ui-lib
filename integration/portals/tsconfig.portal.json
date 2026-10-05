@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "paths": {
+      "@platform-mesh/portal-ui-lib/models": [
+        "../../projects/lib/models/public-api.ts"
+      ],
+      "@platform-mesh/portal-ui-lib/portal-options": [
+        "../../projects/lib/portal-options/public-api.ts"
+      ],
+      "@platform-mesh/portal-ui-lib/services": [
+        "../../projects/lib/services/public-api.ts"
+      ],
+      "@platform-mesh/portal-ui-lib/utils": [
+        "../../projects/lib/utils/public-api.ts"
+      ]
+    },
+    "types": []
+  }
+}

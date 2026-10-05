@@ -68,3 +68,7 @@ mfp-dashboard {
     font-size: 1.5rem;
   }
 }
+
+ui5-illustrated-message ui5-button + ui5-button {
+  margin-inline-start: 0.5rem;
+}

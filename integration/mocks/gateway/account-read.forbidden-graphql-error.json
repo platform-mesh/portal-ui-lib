@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "accounts.core.platform-mesh.io \"{{accountName}}\" is forbidden: User \"test-user\" cannot get resource \"accounts\" in API group \"core.platform-mesh.io\" at the cluster scope",
+        "path": ["core_platform_mesh_io", "v1alpha1", "Account"]
+      }
+    ]
+  }
+}

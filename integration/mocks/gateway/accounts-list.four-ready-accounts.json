@@ -1,0 +1,90 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "core_platform_mesh_io": {
+        "v1alpha1": {
+          "Accounts": {
+            "resourceVersion": "1000",
+            "remainingItemCount": 0,
+            "continue": "",
+            "items": [
+              {
+                "metadata": {
+                  "name": "account-alpha",
+                  "deletionTimestamp": null
+                },
+                "spec": {
+                  "displayName": "Account Alpha",
+                  "type": "account"
+                },
+                "status": {
+                  "conditions": [
+                    {
+                      "type": "Ready",
+                      "status": "True"
+                    }
+                  ]
+                }
+              },
+              {
+                "metadata": {
+                  "name": "account-beta",
+                  "deletionTimestamp": null
+                },
+                "spec": {
+                  "displayName": "Account Beta",
+                  "type": "account"
+                },
+                "status": {
+                  "conditions": [
+                    {
+                      "type": "Ready",
+                      "status": "True"
+                    }
+                  ]
+                }
+              },
+              {
+                "metadata": {
+                  "name": "account-gamma",
+                  "deletionTimestamp": null
+                },
+                "spec": {
+                  "displayName": "Account Gamma",
+                  "type": "account"
+                },
+                "status": {
+                  "conditions": [
+                    {
+                      "type": "Ready",
+                      "status": "True"
+                    }
+                  ]
+                }
+              },
+              {
+                "metadata": {
+                  "name": "account-delta",
+                  "deletionTimestamp": null
+                },
+                "spec": {
+                  "displayName": "Account Delta",
+                  "type": "account"
+                },
+                "status": {
+                  "conditions": [
+                    {
+                      "type": "Ready",
+                      "status": "True"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
