@@ -1,0 +1,13 @@
+<mfp-resource-form-dialog
+  [open]="dialogOpen()"
+  [fields]="formFields()"
+  [initialValues]="formInitialValues()"
+  [fieldErrors]="fieldErrors()"
+  [defaultTitle]="dialogTitle()"
+  [defaultConfirmLabel]="confirmLabel()"
+  [defaultCancelLabel]="'Cancel'"
+  [dataTestidPrefix]="dataTestidPrefix()"
+  (fieldChange)="onFieldChange($event)"
+  (submitted)="onFormSubmit($event)"
+  (cancelled)="close()"
+/>

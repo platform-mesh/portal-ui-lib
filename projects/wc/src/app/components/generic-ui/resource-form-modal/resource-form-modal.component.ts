@@ -8,7 +8,7 @@ import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
   ResourceFieldNames,
-} from './create-resource-modal.consts';
+} from '../create-resource-modal/create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,21 +16,14 @@ import {
   computed,
   inject,
   input,
-  linkedSignal,
   output,
   signal,
-  viewChild,
 } from '@angular/core';
-import { Bar } from '@fundamental-ngx/ui5-webcomponents/bar';
-import { Dialog } from '@fundamental-ngx/ui5-webcomponents/dialog';
-import { Title } from '@fundamental-ngx/ui5-webcomponents/title';
-import { Toolbar } from '@fundamental-ngx/ui5-webcomponents/toolbar';
-import { ToolbarButton } from '@fundamental-ngx/ui5-webcomponents/toolbar-button';
 import {
-  DeclarativeForm,
   FormFieldChangeEvent,
   FormFieldDefinition,
   FormFieldErrors,
+  ResourceFormDialog,
 } from '@openmfp/ngx';
 import {
   PlatformMeshFieldDefinition,
@@ -49,32 +42,36 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 @Component({
-  selector: 'pm-create-resource-modal',
+  selector: 'pm-resource-form-modal',
   standalone: true,
-  imports: [Dialog, ToolbarButton, Toolbar, DeclarativeForm, Bar, Title],
-  templateUrl: './create-resource-modal.component.html',
-  styleUrl: './create-resource-modal.component.scss',
+  imports: [ResourceFormDialog],
+  templateUrl: './resource-form-modal.component.html',
   encapsulation: ViewEncapsulation.ShadowDom,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateResourceModal {
+export class ResourceFormModal {
   context = input.required<ResourceNodeContext>();
   fields = input<PlatformMeshFieldDefinition[]>([]);
 
   resource = output<Resource>();
   updateResource = output<Resource>();
+
   dialogOpen = signal<boolean>(false);
   isNamespacedResource = computed(() => isNamespacedResource(this.context()));
 
   private readonly resourceService = inject(ResourceService);
   private readonly errorHandlerService = inject(ErrorHandlerService);
   private originalResource = signal<Resource | null>(null);
-  private declarativeFormRef = viewChild.required(DeclarativeForm);
 
   fieldErrors = signal<FormFieldErrors>({});
   formFields = signal<FormFieldDefinition[]>([]);
   formInitialValues = signal<Record<string, unknown>>({});
-  isFormValid = linkedSignal(() => this.checkFormValidity());
+
+  dialogTitle = computed(() => (this.isEditMode() ? 'Edit' : 'Create'));
+  confirmLabel = computed(() => (this.isEditMode() ? 'Save' : 'Create'));
+  dataTestidPrefix = computed(() =>
+    this.isEditMode() ? 'edit-resource-dialog' : 'create-resource-dialog',
+  );
 
   async open(resource?: Resource) {
     const fields = this.calculateFields();
@@ -83,7 +80,6 @@ export class CreateResourceModal {
     const initialValues = buildInitialValues(fields, resource);
 
     this.formFields.set(formFields);
-    this.isFormValid.set(this.checkFormValidity());
     this.formInitialValues.set(initialValues);
     this.dialogOpen.set(true);
   }
@@ -91,9 +87,7 @@ export class CreateResourceModal {
   close() {
     this.dialogOpen.set(false);
     this.fieldErrors.set({});
-    this.isFormValid.set(false);
     this.originalResource.set(null);
-    this.declarativeFormRef().clear();
   }
 
   isEditMode() {
@@ -112,10 +106,6 @@ export class CreateResourceModal {
     }
 
     this.resource.emit(value as Resource);
-  }
-
-  protected submitForm(): void {
-    this.declarativeFormRef().submit();
   }
 
   private validateField(name: string, value: string): void {
@@ -212,9 +202,5 @@ export class CreateResourceModal {
       this.isNamespacedResource() &&
       !this.resourceService.getNamespace(this.context())
     );
-  }
-
-  private checkFormValidity(): boolean {
-    return Object.values(this.fieldErrors()).filter(Boolean).length === 0;
   }
 }

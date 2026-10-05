@@ -9,7 +9,7 @@ The generic ui consists of the following components:
 
 - `generic-list-view`: Component for displaying and managing lists of resources, as well as creation, and deletion of the resources.
 - `generic-detail-view`: Component for displaying individual resource.
-- `search-list-dynamic-page`: Full-page list view with a Fiori Dynamic Page layout, paged table (via `mfp-declarative-table`), and optional create modal.
+- `search-list-dynamic-page`: Full-page list view with a Fiori Dynamic Page layout, paged table (via `mfp-declarative-table`), and optional create/edit form via `pm-resource-form-modal`.
 
 ## Configuration
 
@@ -136,7 +136,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 #### Create View Configuration
 
-- `"createView"`: Defines the form for creating/updating resources
+- `"createView"`: Defines the form for creating/updating resources. Both the create and edit flows use the `pm-resource-form-modal` facade component, which wraps `mfp-resource-form-dialog` from `@openmfp/ngx`. The delete flow in the detail view uses `mfp-delete-confirmation-dialog` from `@openmfp/ngx` driven by signals (`deleteDialogOpen`, `deleteTarget`, `deleteConfig`).
   - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value). Fields that represent **arrays of objects** (e.g. `status.conditions`) are declared with a `"property"` pointing at the array + a nested `"propertyCollection"` of sub-`FieldDefinition`s — see the [`propertyCollection` reference](#field-definition-properties).
   - for namespaced resources, the create form automatically adds a required `metadata.namespace` field with dynamic namespace options **only when no namespace is already resolved** — i.e. no namespace is selected in the navigation context (`namespaceId`) and the URL search param `namespace` is `-all-` (or missing). When a namespace is already resolved it is reused on create, so the field is omitted.
 
@@ -750,30 +750,30 @@ A full-page list view using the SAP Fiori `ui5-dynamic-page` layout. Use it when
 - Pagination is page-based (`loadMode: pager`). Current page and limit are persisted as `?page=` / `?limit=` URL query params (default values `page=1` and `limit=20` are omitted to keep URLs clean).
 - Data is fetched directly via `OpenSearchService` against the OpenSearch API configured in `portalContext.openSearchApiUrl`.
 - If `resourceDefinition.ui.listView.filters` is set, a tab strip is rendered above the table — one tab per filter entry. Each tab shows the item count in parentheses. The active tab is persisted as `?tab=<slug>` in the URL. See [List View Configuration](#list-view-configuration) for the full `filters` schema.
-- If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens a modal form.
+- If `resourceDefinition.ui.createView.fields` is set and the user has `create` permission, a **Create** button appears in the toolbar, which opens `pm-resource-form-modal` — a facade component wrapping `mfp-resource-form-dialog` from `@openmfp/ngx`.
 - If `resourceDefinition.readyCondition` is set, a status-alert column is prepended to the table.
 - A **search input** is rendered in the page header. The search fires only when the user presses **Enter** or clicks the search icon — it does not filter as-you-type. The current query is persisted as `?q=` in the URL; clearing the input and re-submitting removes the param. On reload, `?q=` is read and pre-populates the input. An empty or whitespace-only query is sent to OpenSearch as `q: "*"` (match all).
 - **Error handling**: the table shows an inline error state when a request fails. A retry button is rendered; clicking it re-triggers the current list request. If the user lacks `list` permission, a 403 error is shown without making a network call.
 
 **Test IDs:**
 
-| `data-testid` | Element | Notes |
-|---|---|---|
-| `search-list-dynamic-page` | Root `<ui5-dynamic-page>` | |
-| `search-list-title` | Page title (expanded heading) | |
-| `search-list-description` | Page description paragraph (expanded heading) | |
-| `search-list-snapped-title` | Page title (snapped/collapsed heading) | |
-| `search-list-snapped-description` | Page description paragraph (snapped/collapsed heading) | |
-| `search-list-actions-toolbar` | Toolbar in the title area | |
-| `search-list-create-button` | Create toolbar button | Only rendered when `createView.fields` is set and user has `create` permission |
-| `search-list-action-{action.property}` | Each action rendered via `mfp-resource-field` | Dynamic — one per entry in `listView.actions`; the button inside gets `{action.property}-button` from the library |
-| `search-list-search-input` | Search input field | |
-| `search-list-search-icon` | Search submit icon (click or Enter) | |
-| `search-list-clear-icon` | Clear search icon | Hidden when input is empty |
-| `search-list-tab-container` | Filter tab strip | Only rendered when `listView.filters` is set |
-| `search-list-tab-{i}` | Individual filter tab at index `i` | Dynamic — `i` is 0-based |
-| `search-list-table` | `mfp-declarative-table` | Internal table elements use `generic-table-*` test IDs from `@openmfp/ngx` |
-| `search-list-create-modal` | `pm-create-resource-modal` | Internal modal elements use `create-resource-*` test IDs |
+| `data-testid`                          | Element                                                | Notes                                                                                                                      |
+| -------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `search-list-dynamic-page`             | Root `<ui5-dynamic-page>`                              |                                                                                                                            |
+| `search-list-title`                    | Page title (expanded heading)                          |                                                                                                                            |
+| `search-list-description`              | Page description paragraph (expanded heading)          |                                                                                                                            |
+| `search-list-snapped-title`            | Page title (snapped/collapsed heading)                 |                                                                                                                            |
+| `search-list-snapped-description`      | Page description paragraph (snapped/collapsed heading) |                                                                                                                            |
+| `search-list-actions-toolbar`          | Toolbar in the title area                              |                                                                                                                            |
+| `search-list-create-button`            | Create toolbar button                                  | Only rendered when `createView.fields` is set and user has `create` permission                                             |
+| `search-list-action-{action.property}` | Each action rendered via `mfp-resource-field`          | Dynamic — one per entry in `listView.actions`; the button inside gets `{action.property}-button` from the library          |
+| `search-list-search-input`             | Search input field                                     |                                                                                                                            |
+| `search-list-search-icon`              | Search submit icon (click or Enter)                    |                                                                                                                            |
+| `search-list-clear-icon`               | Clear search icon                                      | Hidden when input is empty                                                                                                 |
+| `search-list-tab-container`            | Filter tab strip                                       | Only rendered when `listView.filters` is set                                                                               |
+| `search-list-tab-{i}`                  | Individual filter tab at index `i`                     | Dynamic — `i` is 0-based                                                                                                   |
+| `search-list-table`                    | `mfp-declarative-table`                                | Internal table elements use `generic-table-*` test IDs from `@openmfp/ngx`                                                 |
+| `search-list-create-modal`             | `pm-resource-form-modal`                               | The facade wraps `mfp-resource-form-dialog` from `@openmfp/ngx`; internal dialog elements use `create-resource-*` test IDs |
 
 **Minimal node configuration:**
 
