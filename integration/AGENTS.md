@@ -19,7 +19,7 @@ Playwright tests that start a **real portal frontend** built from this repositor
 ## Running
 
 ```bash
-npm run test:integration       # builds the web component bundle (dist-wc), then runs all tests
+npm run test:integration       # installs the Chromium headless shell if missing, builds the web component bundle (dist-wc), then runs all tests
 npm run test:integration:ui    # Playwright UI mode (expects dist-wc to be built already)
 npm run test:integration:v     # same as test:integration, records a video per test (PLAYWRIGHT_VIDEO=on)
 npx playwright test --config integration/playwright.config.ts --repeat-each=5   # stability check

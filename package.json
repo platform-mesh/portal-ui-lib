@@ -23,7 +23,7 @@
     "test": "ng test --watch=false && npm run test:integration",
     "test:lib": "ng test lib --watch=false",
     "test:wc": "ng test wc --watch=false",
-    "test:integration": "npm run build:wc && playwright test --config integration/playwright.config.ts",
+    "test:integration": "playwright install --with-deps --only-shell chromium && npm run build:wc && playwright test --config integration/playwright.config.ts",
     "test:integration:v": "PLAYWRIGHT_VIDEO=on npm run test:integration",
     "test:integration:ui": "playwright test --config integration/playwright.config.ts --ui",
     "storybook": "storybook dev -p 6006",
