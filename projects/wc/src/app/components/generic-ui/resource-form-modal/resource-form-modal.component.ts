@@ -1,5 +1,6 @@
 import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
 import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
+import { isMissingRequiredNamespace } from '../../../utils/route-namespace';
 import {
   buildInitialValues,
   toFormFields,
@@ -160,6 +161,14 @@ export class ResourceFormModal {
         { type: 'String', value: resolveContextPlaceholders(value, ctx) },
       ]),
     );
+
+    // ResourceService.list sends the context namespace unless the query
+    // variables override it. Skip a query that would lack a required one.
+    const contextNamespace = this.isNamespacedResource()
+      ? this.resourceService.getNamespace(ctx)
+      : undefined;
+    const namespace = variables['namespace']?.value ?? contextNamespace;
+    if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
 
     try {
       const resources = await firstValueFrom(

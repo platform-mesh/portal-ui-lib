@@ -1,6 +1,7 @@
 import { downloadFile } from '../../../utils/download-file';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
+import { withRouteNamespace } from '../../../utils/route-namespace';
 import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
@@ -38,7 +39,6 @@ import {
   SectionConfig,
 } from '@openmfp/ngx';
 import {
-  ALL_NAMESPACE,
   DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
   PlatformMeshFieldDefinition,
   Resource,
@@ -134,18 +134,11 @@ export class DetailView {
   // from the route's namespaceId path param.
   protected effectiveContext = computed<ResourceNodeContext>(() => {
     const context = this.context();
-    if (
-      !isNamespacedResource(context) ||
-      this.resourceService.getNamespace(context)
-    ) {
-      return context;
-    }
-    const routeNamespace = (
-      this.LuigiClient().getPathParams?.() as Record<string, string> | undefined
-    )?.namespaceId;
-    return routeNamespace && routeNamespace !== ALL_NAMESPACE
-      ? { ...context, namespaceId: routeNamespace }
-      : context;
+    return withRouteNamespace(
+      context,
+      this.resourceService.getNamespace(context),
+      this.LuigiClient().getPathParams?.(),
+    );
   });
 
   resourceDefinition = computed(() => this.context().resourceDefinition);

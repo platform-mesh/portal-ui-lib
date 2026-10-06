@@ -238,6 +238,96 @@ describe('ResourceFormModal', () => {
       );
     });
 
+    describe('dynamic values that require $namespace', () => {
+      const secretField: PlatformMeshFieldDefinition = {
+        property: 'spec.clusterRef.kubeconfigSecretName',
+        label: 'BYOC Cluster',
+        dynamicValuesDefinition: {
+          operation: 'v1.Secrets.items',
+          gqlQuery:
+            'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
+          value: 'metadata.name',
+          key: 'metadata.name',
+        },
+      };
+
+      const secretCalls = () =>
+        resourceService.list.mock.calls.filter(
+          (call) => call[0] === 'v1.Secrets.items',
+        );
+
+      beforeEach(() => {
+        resourceService.list.mockReturnValue(
+          of([{ metadata: { name: 'kubeconfig-a' } }]),
+        );
+      });
+
+      it('does not send the query when no namespace resolves', async () => {
+        resourceService.getNamespace.mockReturnValue(undefined);
+        fixture.componentRef.setInput('fields', [secretField]);
+        fixture.componentRef.setInput('context', namespacedContext);
+        fixture.detectChanges();
+
+        await component.open();
+
+        expect(secretCalls()).toHaveLength(0);
+        expect(component.dialogOpen()).toBe(true);
+        const field = component
+          .formFields()
+          .find((f) => f.name === 'spec.clusterRef.kubeconfigSecretName');
+        expect(field?.values).toBeUndefined();
+        expect(
+          component.formFields().some((f) => f.name === 'metadata.namespace'),
+        ).toBe(true);
+      });
+
+      it('does not send the query for a cluster-scoped context', async () => {
+        fixture.componentRef.setInput('fields', [secretField]);
+        fixture.detectChanges();
+
+        await component.open();
+
+        expect(secretCalls()).toHaveLength(0);
+      });
+
+      it('sends the query when the context resolves a namespace', async () => {
+        resourceService.getNamespace.mockReturnValue('default');
+        fixture.componentRef.setInput('fields', [secretField]);
+        fixture.componentRef.setInput('context', namespacedContext);
+        fixture.detectChanges();
+
+        await component.open();
+
+        expect(secretCalls()).toHaveLength(1);
+        const field = component
+          .formFields()
+          .find((f) => f.name === 'spec.clusterRef.kubeconfigSecretName');
+        expect(field?.values).toEqual(['kubeconfig-a']);
+      });
+
+      it('sends the query when gqlQueryVariables supply the namespace', async () => {
+        resourceService.getNamespace.mockReturnValue(undefined);
+        fixture.componentRef.setInput('fields', [
+          {
+            ...secretField,
+            dynamicValuesDefinition: {
+              ...secretField.dynamicValuesDefinition!,
+              gqlQueryVariables: { namespace: 'shared' },
+            },
+          },
+        ]);
+        fixture.componentRef.setInput('context', namespacedContext);
+        fixture.detectChanges();
+
+        await component.open();
+
+        expect(secretCalls()).toHaveLength(1);
+        expect(secretCalls()[0][3]).toEqual({
+          variables: { namespace: { type: 'String', value: 'shared' } },
+        });
+      });
+    });
+
     it('resolves dynamicValuesDefinition.gqlQueryVariables (context placeholder + literal) and passes them to list', async () => {
       resourceService.list.mockReturnValue(of([]));
 
