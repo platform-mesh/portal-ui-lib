@@ -183,13 +183,14 @@ export class ResourceTableCard {
   // The list follows the namespace selection, so '-all-' lists every
   // namespace. Create needs one namespace: on a namespace route with '-all-'
   // selected it uses the route's namespace instead of none.
-  private createContext = computed(() =>
-    withRouteNamespace(
-      this.context(),
-      this.resourceService,
-      this.LuigiClient(),
-    ),
-  );
+  private createContext = computed(() => {
+    const context = this.context();
+    return withRouteNamespace(
+      context,
+      this.resourceService.getNamespace(context),
+      this.LuigiClient().getPathParams?.(),
+    );
+  });
   private currentContinueToken: string | undefined = undefined;
   private listSubscription?: Subscription;
   private lastListWasInitialLoad = true;

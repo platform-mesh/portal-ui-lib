@@ -8,21 +8,14 @@ describe('withRouteNamespace', () => {
     resourceDefinition: { scope: 'Namespaced' },
     ...overrides,
   });
-  const resourceService = (resolved?: string): any => ({
-    getNamespace: vi.fn(() => resolved),
-  });
-  const luigiClient = (pathParams?: Record<string, string>): any => ({
-    getPathParams: vi.fn(() => pathParams),
-  });
 
   it('uses the route namespace when the selection resolves none (-all-)', () => {
     const context = namespacedContext();
 
-    const result = withRouteNamespace(
-      context,
-      resourceService(undefined),
-      luigiClient({ accountId: 'demo', namespaceId: 'default' }),
-    );
+    const result = withRouteNamespace(context, undefined, {
+      accountId: 'demo',
+      namespaceId: 'default',
+    });
 
     expect(result).toEqual({ ...context, namespaceId: 'default' });
     expect(context.namespaceId).toBeUndefined();
@@ -30,58 +23,40 @@ describe('withRouteNamespace', () => {
 
   it('keeps a namespace that already resolves, so a concrete selection wins', () => {
     const context = namespacedContext({ namespaceId: 'team-b' });
-    const client = luigiClient({ namespaceId: 'default' });
 
-    const result = withRouteNamespace(
-      context,
-      resourceService('team-b'),
-      client,
-    );
-
-    expect(result).toBe(context);
-    expect(client.getPathParams).not.toHaveBeenCalled();
+    expect(
+      withRouteNamespace(context, 'team-b', { namespaceId: 'default' }),
+    ).toBe(context);
   });
 
   it('keeps the context for cluster-scoped resources', () => {
     const context: any = { resourceDefinition: { scope: 'Cluster' } };
-    const client = luigiClient({ namespaceId: 'default' });
 
-    expect(withRouteNamespace(context, resourceService(), client)).toBe(
-      context,
-    );
-    expect(client.getPathParams).not.toHaveBeenCalled();
+    expect(
+      withRouteNamespace(context, undefined, { namespaceId: 'default' }),
+    ).toBe(context);
   });
 
   it('keeps the context when the route has no namespace', () => {
     const context = namespacedContext();
 
-    expect(
-      withRouteNamespace(
-        context,
-        resourceService(),
-        luigiClient({ accountId: 'demo' }),
-      ),
-    ).toBe(context);
+    expect(withRouteNamespace(context, undefined, { accountId: 'demo' })).toBe(
+      context,
+    );
   });
 
   it('does not adopt the -all- sentinel from the route', () => {
     const context = namespacedContext();
 
     expect(
-      withRouteNamespace(
-        context,
-        resourceService(),
-        luigiClient({ namespaceId: '-all-' }),
-      ),
+      withRouteNamespace(context, undefined, { namespaceId: '-all-' }),
     ).toBe(context);
   });
 
-  it('tolerates a Luigi client without getPathParams', () => {
+  it('keeps the context without path params', () => {
     const context = namespacedContext();
 
-    expect(withRouteNamespace(context, resourceService(), {} as any)).toBe(
-      context,
-    );
+    expect(withRouteNamespace(context, undefined, undefined)).toBe(context);
   });
 });
 

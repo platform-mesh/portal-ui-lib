@@ -607,18 +607,17 @@ describe('ResourceTableCard', () => {
           },
           ...contextOverrides,
         }) as any;
-        const getPathParams = vi.fn(() => pathParams);
         newComponent.LuigiClient = (() => ({
           linkManager: () => ({ navigate: vi.fn() }),
           uxManager: () => ({ showAlert: vi.fn() }),
           getNodeParams: vi.fn(),
-          getPathParams,
+          getPathParams: vi.fn(() => pathParams),
         })) as any;
         vi.spyOn(newComponent as any, 'tableCard', 'get').mockReturnValue(
           () => ({ closeCreateDialog: vi.fn() }),
         );
         newFixture.detectChanges();
-        return { newComponent, getPathParams };
+        return { newComponent };
       };
 
       const openCreate = (component: ResourceTableCard) =>
@@ -655,7 +654,7 @@ describe('ResourceTableCard', () => {
       });
 
       it('lets a concrete namespace selection win over the route', async () => {
-        const { newComponent, getPathParams } = makeCreateComponent(
+        const { newComponent } = makeCreateComponent(
           { namespaceId: 'default' },
           { namespaceId: 'team-b' },
         );
@@ -667,7 +666,6 @@ describe('ResourceTableCard', () => {
         expect(
           (mockResourceService.create as any).mock.calls[0][2].namespaceId,
         ).toBe('team-b');
-        expect(getPathParams).not.toHaveBeenCalled();
       });
 
       it('skips a query that requires $namespace when no namespace resolves', async () => {

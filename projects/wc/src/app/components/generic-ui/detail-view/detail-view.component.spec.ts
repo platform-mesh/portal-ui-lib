@@ -3067,20 +3067,17 @@ describe('DetailViewComponent — namespace repair from route path params', () =
   });
 
   it('should keep the original context when it already resolves a namespace', () => {
-    const getPathParams = vi.fn(() => ({ namespaceId: 'team-a' }));
     const fixture = TestBed.createComponent(DetailView);
     const component = fixture.componentInstance;
     component.context = makeContext({ namespaceId: 'ns1' });
-    component.LuigiClient = makeLuigiClient(getPathParams);
+    component.LuigiClient = makeLuigiClient(() => ({ namespaceId: 'team-a' }));
     fixture.detectChanges();
 
     const readContext = mockResourceService.read.mock.calls[0][3];
     expect(readContext).toBe(component.context());
-    expect(getPathParams).not.toHaveBeenCalled();
   });
 
   it('should keep the original context for cluster-scoped resources', () => {
-    const getPathParams = vi.fn(() => ({ namespaceId: 'team-a' }));
     const fixture = TestBed.createComponent(DetailView);
     const component = fixture.componentInstance;
     const context = makeContext();
@@ -3092,12 +3089,11 @@ describe('DetailViewComponent — namespace repair from route path params', () =
       },
     });
     component.context = context;
-    component.LuigiClient = makeLuigiClient(getPathParams);
+    component.LuigiClient = makeLuigiClient(() => ({ namespaceId: 'team-a' }));
     fixture.detectChanges();
 
     const readContext = mockResourceService.read.mock.calls[0][3];
     expect(readContext).toBe(component.context());
-    expect(getPathParams).not.toHaveBeenCalled();
   });
 
   it('should keep the permission lookup keyed on the raw context in the repaired flow', () => {

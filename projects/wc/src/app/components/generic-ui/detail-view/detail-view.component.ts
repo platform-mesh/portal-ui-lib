@@ -118,13 +118,14 @@ export class DetailView {
   // selection can never satisfy its reads or mutations. When no real
   // namespace resolves from the context or the ?namespace param, recover it
   // from the route's namespaceId path param.
-  protected effectiveContext = computed<ResourceNodeContext>(() =>
-    withRouteNamespace(
-      this.context(),
-      this.resourceService,
-      this.LuigiClient(),
-    ),
-  );
+  protected effectiveContext = computed<ResourceNodeContext>(() => {
+    const context = this.context();
+    return withRouteNamespace(
+      context,
+      this.resourceService.getNamespace(context),
+      this.LuigiClient().getPathParams?.(),
+    );
+  });
 
   resourceDefinition = computed(() => this.context().resourceDefinition);
   defaultTitle = computed(

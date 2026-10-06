@@ -1,9 +1,5 @@
-import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { ALL_NAMESPACE } from '@platform-mesh/portal-ui-lib/models';
-import {
-  ResourceNodeContext,
-  ResourceService,
-} from '@platform-mesh/portal-ui-lib/services';
+import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import { isNamespacedResource } from '@platform-mesh/portal-ui-lib/utils';
 
 const REQUIRED_NAMESPACE_VARIABLE = /\$namespace\s*:\s*\w+\s*!/;
@@ -13,18 +9,22 @@ const REQUIRED_NAMESPACE_VARIABLE = /\$namespace\s*:\s*\w+\s*!/;
  * namespaced context resolves no namespace, i.e. the namespace selection is
  * '-all-' (or missing) while the route points at one namespace. A namespace
  * that already resolves from the context or the ?namespace param is kept.
+ *
+ * @param namespace the namespace resolved for the context, as returned by
+ *   ResourceService.getNamespace
+ * @param pathParams the route's path params, as returned by
+ *   LuigiClient.getPathParams
  */
 export function withRouteNamespace(
   context: ResourceNodeContext,
-  resourceService: ResourceService,
-  luigiClient: LuigiClient,
+  namespace: string | undefined,
+  pathParams: object | undefined,
 ): ResourceNodeContext {
-  if (!isNamespacedResource(context) || resourceService.getNamespace(context)) {
+  if (!isNamespacedResource(context) || namespace) {
     return context;
   }
-  const routeNamespace = (
-    luigiClient.getPathParams?.() as Record<string, string> | undefined
-  )?.namespaceId;
+  const routeNamespace = (pathParams as Record<string, string> | undefined)
+    ?.namespaceId;
   return routeNamespace && routeNamespace !== ALL_NAMESPACE
     ? { ...context, namespaceId: routeNamespace }
     : context;
