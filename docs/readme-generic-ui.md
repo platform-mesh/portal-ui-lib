@@ -69,14 +69,14 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"listView"`: Defines how resources are displayed in table format
   - `"fields"`: Array of `FieldDefinition` objects defining table columns. Each field's `"label"` becomes the column header, and `"property"` is a JSON path to the resource property. Fields can be grouped using the `"group"` property to display related information in a single column. The `"uiSettings"` property allows customization of rendering (format, actions, styling).
-  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete-resource"` to open the resource deletion confirmation dialog. For example:
+  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete"` to open the resource deletion confirmation dialog. For example:
     ```json
     {
       "label": "Delete",
       "uiSettings": {
         "displayAs": "button",
         "buttonSettings": {
-          "action": "delete-resource",
+          "action": "delete",
           "icon": "delete",
           "design": "Negative"
         }
@@ -186,7 +186,7 @@ Each field definition supports the following properties:
     - `"endIcon"`: UI5 icon name to display at the end of the button
     - `"design"`: Button design variant (options: `"Default"`, `"Positive"`, `"Negative"`, `"Transparent"`, `"Emphasized"`, `"Attention"`)
     - `"tooltip"`: Tooltip text shown on hover
-    - `"action"`: Action to perform when button is clicked. `"openInModal"` and `"navigate"` use the URL from the field's `property` or static `value`; `"delete-resource"` is supported for `listView.actions` and opens the resource deletion confirmation dialog.
+    - `"action"`: Action to perform when button is clicked. `"openInModal"` and `"navigate"` use the URL from the field's `property` or static `value`; `"edit"` and `"delete"` are handled internally — `"delete"` is supported for `listView.actions` and opens the resource deletion confirmation dialog.
     - `"modalSettings"`: Configuration for modal when `action: "openInModal"`:
       - `"title"`: Modal title
       - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
