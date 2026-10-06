@@ -1,5 +1,9 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
 import {
+  isMissingRequiredNamespace,
+  withRouteNamespace,
+} from '../../../../utils/route-namespace';
+import {
   expandCollectionEntries,
   toFormFields,
 } from '../../../../utils/to-form-fields';
@@ -135,7 +139,7 @@ export class ResourceTableCard {
     if (
       this.hasUiCreateViewFields() &&
       this.isNamespaced() &&
-      !this.resourceService.getNamespace(this.context())
+      !this.resourceService.getNamespace(this.createContext())
     ) {
       fields = [
         ...fields,
@@ -176,6 +180,17 @@ export class ResourceTableCard {
   });
 
   private isNamespaced = computed(() => isNamespacedResource(this.context()));
+  // The list follows the namespace selection, so '-all-' lists every
+  // namespace. Create needs one namespace: on a namespace route with '-all-'
+  // selected it uses the route's namespace instead of none.
+  private createContext = computed(() => {
+    const context = this.context();
+    return withRouteNamespace(
+      context,
+      this.resourceService.getNamespace(context),
+      this.LuigiClient().getPathParams?.(),
+    );
+  });
   private currentContinueToken: string | undefined = undefined;
   private listSubscription?: Subscription;
   private lastListWasInitialLoad = true;
@@ -228,9 +243,16 @@ export class ResourceTableCard {
   ): Promise<string[] | undefined> {
     const def = field.dynamicValuesDefinition;
     if (!def) return undefined;
+    const context = this.createContext();
+    const namespace = this.isNamespaced()
+      ? this.resourceService.getNamespace(context)
+      : undefined;
+    // Without a namespace the query can only fail and raise an error alert.
+    // The field falls back to a plain input instead.
+    if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
     try {
       const resources = await firstValueFrom(
-        this.resourceService.list(def.operation, def.gqlQuery, this.context()),
+        this.resourceService.list(def.operation, def.gqlQuery, context),
       );
       return (resources as Resource[])
         .map((r) => getValueByPath(r, def.value) as string)
@@ -439,7 +461,7 @@ export class ResourceTableCard {
       this.createFormFields(),
     ) as Resource;
     this.resourceService
-      .create(expanded, resourceDefinition, this.context())
+      .create(expanded, resourceDefinition, this.createContext())
       .subscribe({
         next: (result) => {
           this.createFieldErrors.set({});
