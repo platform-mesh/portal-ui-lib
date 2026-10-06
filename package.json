@@ -80,6 +80,8 @@
   "overrides": {
     "esbuild": "0.28.2",
     "http-proxy-middleware": "4.2.0",
+    "proxy-addr": "2.0.8",
+    "source-map-js": "1.2.2",
     "uuid": "14.0.1",
     "@storybook/builder-webpack5": {
       "webpack-dev-middleware": "7.4.6"
