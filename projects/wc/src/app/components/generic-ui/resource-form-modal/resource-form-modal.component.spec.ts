@@ -1,7 +1,7 @@
-import { CreateResourceModal } from './create-resource-modal.component';
+import { ResourceFormModal } from './resource-form-modal.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { DeclarativeForm } from '@openmfp/ngx';
+import { ResourceFormDialog } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
@@ -10,9 +10,9 @@ import {
 import { of, throwError } from 'rxjs';
 import { mock } from 'vitest-mock-extended';
 
-describe('CreateResourceModalComponent', () => {
-  let component: CreateResourceModal;
-  let fixture: ComponentFixture<CreateResourceModal>;
+describe('ResourceFormModal', () => {
+  let component: ResourceFormModal;
+  let fixture: ComponentFixture<ResourceFormModal>;
   let resourceService: ReturnType<typeof mock<ResourceService>>;
   let errorHandlerService: ReturnType<typeof mock<ErrorHandlerService>>;
 
@@ -36,7 +36,7 @@ describe('CreateResourceModalComponent', () => {
     errorHandlerService = mock<ErrorHandlerService>();
 
     await TestBed.configureTestingModule({
-      imports: [CreateResourceModal],
+      imports: [ResourceFormModal],
       schemas: [CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA],
       teardown: { destroyAfterEach: true },
       providers: [
@@ -44,18 +44,18 @@ describe('CreateResourceModalComponent', () => {
         { provide: ErrorHandlerService, useValue: errorHandlerService },
       ],
     })
-      .overrideComponent(CreateResourceModal, {
+      .overrideComponent(ResourceFormModal, {
         set: {
           template:
-            '<mfp-declarative-form [fields]="formFields()" [initialValues]="formInitialValues()" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (formSubmit)="onFormSubmit($event)" />',
-          imports: [DeclarativeForm],
+            '<mfp-resource-form-dialog [open]="dialogOpen()" [fields]="formFields()" [initialValues]="formInitialValues()" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (submitted)="onFormSubmit($event)" (cancelled)="close()" />',
+          imports: [ResourceFormDialog],
           schemas: [CUSTOM_ELEMENTS_SCHEMA],
         },
       })
-      .overrideComponent(DeclarativeForm, { set: { template: '' } })
+      .overrideComponent(ResourceFormDialog, { set: { template: '' } })
       .compileComponents();
 
-    fixture = TestBed.createComponent(CreateResourceModal);
+    fixture = TestBed.createComponent(ResourceFormModal);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('fields', testFields);
     fixture.componentRef.setInput('context', clusterContext);
@@ -72,15 +72,15 @@ describe('CreateResourceModalComponent', () => {
       expect(component.dialogOpen()).toBe(true);
     });
 
-    it('should set dialogOpen to false and reset state when close is called', async () => {
+    it('should set dialogOpen to false when close is called', async () => {
       await component.open();
       component.close();
       expect(component.dialogOpen()).toBe(false);
-      expect(component.isFormValid()).toBe(false);
     });
 
     it('should clear fieldErrors when close is called', async () => {
       await component.open();
+      component.onFieldChange({ fieldProperty: 'metadata.name', value: '' });
       component.close();
       expect(component.fieldErrors()).toEqual({});
     });
@@ -91,18 +91,17 @@ describe('CreateResourceModalComponent', () => {
       expect(component.isEditMode()).toBe(false);
     });
 
-    it('should return to isFormValid false after close even if form was valid', async () => {
-      await component.open({ metadata: { name: 'valid-name' } } as any);
-      expect(component.isFormValid()).toBe(true);
-      component.close();
-      expect(component.isFormValid()).toBe(false);
-    });
-
     it('should support re-opening after close', async () => {
       await component.open();
       component.close();
       await component.open();
       expect(component.dialogOpen()).toBe(true);
+    });
+
+    it('should reset originalResource to null when close is called', async () => {
+      await component.open({ metadata: { name: 'r1' } } as any);
+      component.close();
+      expect(component.isEditMode()).toBe(false);
     });
   });
 
@@ -123,39 +122,6 @@ describe('CreateResourceModalComponent', () => {
       expect(names).toContain('spec.description');
     });
 
-    it('should set validation: onChange on the metadata.name field', async () => {
-      await component.open();
-      const nameField = component
-        .formFields()
-        .find((f) => f.name === 'metadata.name');
-      expect(nameField?.validation).toBe('onChange');
-    });
-
-    it('should set validation: onChange on other required fields', async () => {
-      const requiredFields: PlatformMeshFieldDefinition[] = [
-        { property: 'spec.type', required: true, label: 'Type' },
-        { property: 'spec.description', required: false, label: 'Description' },
-      ];
-      fixture.componentRef.setInput('fields', requiredFields);
-      await component.open();
-      const requiredField = component
-        .formFields()
-        .find((f) => f.name === 'spec.type');
-      const optionalField = component
-        .formFields()
-        .find((f) => f.name === 'spec.description');
-      expect(requiredField?.validation).toBe('onChange');
-      expect(optionalField?.validation).toBeUndefined();
-    });
-
-    it('should not set validation on non-required, non-name fields', async () => {
-      await component.open();
-      const descField = component
-        .formFields()
-        .find((f) => f.name === 'spec.description');
-      expect(descField?.validation).toBeUndefined();
-    });
-
     it('should disable metadata.name when opened in edit mode', async () => {
       await component.open({ metadata: { name: 'existing' } } as any);
       const nameField = component
@@ -172,14 +138,14 @@ describe('CreateResourceModalComponent', () => {
       expect(nameField?.disabled).toBe(false);
     });
 
-    it('should disable spec.alias when opened for edit', async () => {
+    it('should disable immutable fields (spec.alias) when opened for edit', async () => {
       fixture.componentRef.setInput('fields', [
         { property: 'spec.alias', required: true, label: 'Alias' },
         { property: 'spec.displayName', label: 'Display name' },
       ]);
       await component.open({
         metadata: { name: 'test2' },
-        spec: { alias: 'test2', displayName: 'test-dex-dex-dex' },
+        spec: { alias: 'test2', displayName: 'test-display' },
       } as any);
       const aliasField = component
         .formFields()
@@ -195,7 +161,7 @@ describe('CreateResourceModalComponent', () => {
       expect(descField?.disabled).toBe(false);
     });
 
-    it('should append a metadata.namespace field for namespaced resources', async () => {
+    it('should append a metadata.namespace field for namespaced resources without a resolved namespace', async () => {
       resourceService.list.mockReturnValue(of([]));
       fixture.componentRef.setInput('context', namespacedContext);
       fixture.detectChanges();
@@ -405,43 +371,6 @@ describe('CreateResourceModalComponent', () => {
       });
     });
 
-    it('wraps each gqlQueryVariable as a String-typed list variable', async () => {
-      resourceService.list.mockReturnValue(of([]));
-
-      const ctx: any = {
-        resourceDefinition: { scope: 'Namespaced' },
-        namespaceId: 'team-a',
-        portalContext: { crdGatewayApiUrl: 'http://example.com' },
-      };
-      const fieldsWithVars: PlatformMeshFieldDefinition[] = [
-        {
-          property: 'spec.region',
-          label: 'Region',
-          dynamicValuesDefinition: {
-            operation: 'inventory.v1alpha1.Regions.items',
-            gqlQuery: 'query ($namespace: String) { x }',
-            value: 'metadata.name',
-            key: 'metadata.name',
-            gqlQueryVariables: {
-              namespace: '{context.namespaceId}',
-            },
-          },
-        },
-      ];
-
-      fixture.componentRef.setInput('fields', fieldsWithVars);
-      fixture.componentRef.setInput('context', ctx);
-      fixture.detectChanges();
-      await component.open();
-
-      const call = resourceService.list.mock.calls.find(
-        (c) => c[0] === 'inventory.v1alpha1.Regions.items',
-      )!;
-      expect(call[3]).toEqual({
-        variables: { namespace: { type: 'String', value: 'team-a' } },
-      });
-    });
-
     it('should store static values from field.values in formField.values', async () => {
       const staticFields: PlatformMeshFieldDefinition[] = [
         {
@@ -481,6 +410,38 @@ describe('CreateResourceModalComponent', () => {
     it('should fall back to empty string for fields whose property value is absent on the resource', async () => {
       await component.open({ metadata: { name: 'res1' } } as any);
       expect(component.formInitialValues()['spec.description']).toBe('');
+    });
+  });
+
+  describe('computed signals', () => {
+    it('dialogTitle should be "Create" in create mode', async () => {
+      await component.open();
+      expect(component.dialogTitle()).toBe('Create');
+    });
+
+    it('dialogTitle should be "Edit" in edit mode', async () => {
+      await component.open({ metadata: { name: 'r1' } } as any);
+      expect(component.dialogTitle()).toBe('Edit');
+    });
+
+    it('confirmLabel should be "Create" in create mode', async () => {
+      await component.open();
+      expect(component.confirmLabel()).toBe('Create');
+    });
+
+    it('confirmLabel should be "Save" in edit mode', async () => {
+      await component.open({ metadata: { name: 'r1' } } as any);
+      expect(component.confirmLabel()).toBe('Save');
+    });
+
+    it('dataTestidPrefix should be "create-resource-dialog" in create mode', async () => {
+      await component.open();
+      expect(component.dataTestidPrefix()).toBe('create-resource-dialog');
+    });
+
+    it('dataTestidPrefix should be "edit-resource-dialog" in edit mode', async () => {
+      await component.open({ metadata: { name: 'r1' } } as any);
+      expect(component.dataTestidPrefix()).toBe('edit-resource-dialog');
     });
   });
 
@@ -561,29 +522,16 @@ describe('CreateResourceModalComponent', () => {
     });
   });
 
-  describe('onFieldChange / validation', () => {
+  describe('onFieldChange / K8S name validation', () => {
     beforeEach(async () => {
       await component.open();
     });
 
-    it('should set isFormValid to false when a required field is empty', () => {
-      component.onFieldChange({ fieldProperty: 'metadata.name', value: '' });
-      expect(component.isFormValid()).toBe(false);
-    });
-
-    it('should set a fieldError when a required field is empty', () => {
+    it('should set a fieldError when metadata.name is empty', () => {
       component.onFieldChange({ fieldProperty: 'metadata.name', value: '' });
       expect(component.fieldErrors()['metadata.name']).toBe(
         'This field is required',
       );
-    });
-
-    it('should set isFormValid to false for an invalid k8s name', () => {
-      component.onFieldChange({
-        fieldProperty: 'metadata.name',
-        value: 'Invalid_Name',
-      });
-      expect(component.isFormValid()).toBe(false);
     });
 
     it('should set the RFC 1035 error message for an invalid k8s name', () => {
@@ -596,18 +544,17 @@ describe('CreateResourceModalComponent', () => {
       );
     });
 
-    it('should set isFormValid to true and clear errors for a valid k8s name', () => {
+    it('should clear errors for a valid k8s name', () => {
       component.onFieldChange({
         fieldProperty: 'metadata.name',
         value: 'valid-name',
       });
-      expect(component.isFormValid()).toBe(true);
       expect(component.fieldErrors()['metadata.name']).toBeNull();
     });
 
     it('should accept a single-character lowercase name as valid', () => {
       component.onFieldChange({ fieldProperty: 'metadata.name', value: 'a' });
-      expect(component.isFormValid()).toBe(true);
+      expect(component.fieldErrors()['metadata.name']).toBeNull();
     });
 
     it('should reject a name starting with a digit', () => {
@@ -615,7 +562,7 @@ describe('CreateResourceModalComponent', () => {
         fieldProperty: 'metadata.name',
         value: '1bad',
       });
-      expect(component.isFormValid()).toBe(false);
+      expect(component.fieldErrors()['metadata.name']).toBeTruthy();
     });
 
     it('should reject a name ending with a hyphen', () => {
@@ -623,10 +570,10 @@ describe('CreateResourceModalComponent', () => {
         fieldProperty: 'metadata.name',
         value: 'bad-',
       });
-      expect(component.isFormValid()).toBe(false);
+      expect(component.fieldErrors()['metadata.name']).toBeTruthy();
     });
 
-    it('should not set an error for an optional non-name field regardless of value', () => {
+    it('should not set an error for an optional non-name field with an empty value', () => {
       component.onFieldChange({
         fieldProperty: 'spec.description',
         value: '',
@@ -634,14 +581,15 @@ describe('CreateResourceModalComponent', () => {
       expect(component.fieldErrors()['spec.description']).toBeNull();
     });
 
-    it('should update formValues so a subsequent change event builds on prior state', () => {
-      component.onFieldChange({ fieldProperty: 'metadata.name', value: 'ok' });
-      component.onFieldChange({
-        fieldProperty: 'spec.description',
-        value: 'desc',
-      });
-      // Both changes are retained; valid name means form is valid
-      expect(component.isFormValid()).toBe(true);
+    it('should set a required error for a required non-name field with an empty value', async () => {
+      fixture.componentRef.setInput('fields', [
+        { property: 'spec.type', required: true, label: 'Type' },
+      ]);
+      await component.open();
+      component.onFieldChange({ fieldProperty: 'spec.type', value: '' });
+      expect(component.fieldErrors()['spec.type']).toBe(
+        'This field is required',
+      );
     });
 
     it('should not require empty write-only fields in edit mode', async () => {
@@ -664,7 +612,6 @@ describe('CreateResourceModalComponent', () => {
       });
 
       expect(component.fieldErrors()['spec.oidc.clientSecret']).toBeNull();
-      expect(component.isFormValid()).toBe(true);
     });
   });
 

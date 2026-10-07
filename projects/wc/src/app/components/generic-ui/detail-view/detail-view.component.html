@@ -117,15 +117,16 @@
   </div>
 </ng-template>
 
-<pm-create-resource-modal
+<pm-resource-form-modal
   #createModal
   [fields]="resourceCreateEditFields()"
   (updateResource)="update($event)"
   [context]="effectiveContext()"
 />
 
-<pm-delete-resource-modal
-  #deleteModal
-  (resource)="delete($event)"
-  [context]="effectiveContext()"
+<mfp-delete-confirmation-dialog
+  [open]="deleteDialogOpen()"
+  [config]="deleteConfig()"
+  (confirmed)="delete(resource()!)"
+  (cancelled)="deleteDialogOpen.set(false)"
 />

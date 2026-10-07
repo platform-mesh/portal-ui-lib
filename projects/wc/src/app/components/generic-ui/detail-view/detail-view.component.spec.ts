@@ -333,25 +333,14 @@ describe('DetailViewComponent', () => {
   });
 
   describe('Modal operations', () => {
-    it('should open delete resource modal', () => {
-      const mockDeleteModal = {
-        open: vi.fn(),
-      };
-      (component as any).deleteModal = () => mockDeleteModal;
-
-      const resource: any = {
-        metadata: { name: 'test-resource' },
-      };
+    it('should set deleteDialogOpen when openDeleteResourceModal is called', () => {
       const event = new MouseEvent('click');
       const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
 
-      component.openDeleteResourceModal(event, resource);
+      component.openDeleteResourceModal(event);
 
       expect(stopPropagationSpy).toHaveBeenCalled();
-      expect(mockDeleteModal.open).toHaveBeenCalledWith({
-        ...resource,
-        metadata: { name: 'cluster-1' },
-      });
+      expect((component as any).deleteDialogOpen()).toBe(true);
     });
 
     it('should refetch the resource with createView fields and open the edit modal', () => {
@@ -422,10 +411,6 @@ describe('DetailViewComponent', () => {
     });
 
     it('should delete resource successfully', () => {
-      const mockDeleteModal = {
-        close: vi.fn(),
-      };
-      (component as any).deleteModal = () => mockDeleteModal;
       mockResourceService.delete = vi.fn().mockReturnValue(of({}));
 
       const resource: any = {
@@ -445,13 +430,10 @@ describe('DetailViewComponent', () => {
       );
     });
 
-    it('should navigate to parent after successful delete', () => {
-      const mockDeleteModal = {
-        close: vi.fn(),
-      };
-      (component as any).deleteModal = () => mockDeleteModal;
+    it('should set deleteDialogOpen to false and navigate to parent after successful delete', () => {
       mockResourceService.delete = vi.fn().mockReturnValue(of({}));
       const navigateSpy = vi.spyOn(component, 'navigateToParent');
+      (component as any).deleteDialogOpen.set(true);
 
       const resource: any = {
         metadata: { name: 'test-resource' },
@@ -459,7 +441,7 @@ describe('DetailViewComponent', () => {
 
       component.delete(resource);
 
-      expect(mockDeleteModal.close).toHaveBeenCalled();
+      expect((component as any).deleteDialogOpen()).toBe(false);
       expect(navigateSpy).toHaveBeenCalled();
     });
 
@@ -482,9 +464,6 @@ describe('DetailViewComponent', () => {
     });
 
     it('should delete account resource with account flag', () => {
-      const mockDeleteModal = {
-        close: vi.fn(),
-      };
       const newFixture = TestBed.createComponent(DetailView);
       const newComponent = newFixture.componentInstance;
 
@@ -507,7 +486,6 @@ describe('DetailViewComponent', () => {
       }) as any;
 
       newComponent.LuigiClient = component.LuigiClient;
-      (newComponent as any).deleteModal = () => mockDeleteModal;
       mockResourceService.delete = vi.fn().mockReturnValue(of({}));
 
       newFixture.detectChanges();
@@ -653,6 +631,59 @@ describe('DetailViewComponent', () => {
       const callArgs = updateSpy.mock.calls[0];
       expect(callArgs[3]).toBe(true);
       expect(callArgs.length).toBe(5);
+    });
+  });
+
+  describe('signal-driven delete dialog', () => {
+    it('deleteDialogOpen starts as false', () => {
+      expect((component as any).deleteDialogOpen()).toBe(false);
+    });
+
+    it('openDeleteResourceModal sets deleteDialogOpen to true', () => {
+      component.openDeleteResourceModal(new MouseEvent('click'));
+      expect((component as any).deleteDialogOpen()).toBe(true);
+    });
+
+    it('deleteConfig title is "Delete <name>" (lowercased resourceId)', () => {
+      const cfg = (component as any).deleteConfig();
+      expect(cfg.title).toBe('Delete cluster-1');
+    });
+
+    it('deleteConfig confirmationText is the lowercased resourceId', () => {
+      const cfg = (component as any).deleteConfig();
+      expect(cfg.confirmationText).toBe('cluster-1');
+    });
+
+    it('deleteConfig has expected labels', () => {
+      const cfg = (component as any).deleteConfig();
+      expect(cfg.confirmLabel).toBe('Delete');
+      expect(cfg.cancelLabel).toBe('Cancel');
+      expect(cfg.confirmationPlaceholder).toBe('Type name');
+    });
+
+    it('deleteConfig message contains the resource entity and name', () => {
+      const cfg = (component as any).deleteConfig();
+      expect(cfg.message).toContain('cluster-1');
+      expect(cfg.message).toContain('Cluster');
+    });
+
+    it('deleteConfig message warns the action cannot be undone', () => {
+      const cfg = (component as any).deleteConfig();
+      expect(cfg.message).toContain('dialog__message--critical');
+      expect(cfg.message).toContain('cannot');
+    });
+
+    it('delete() success path sets deleteDialogOpen to false', () => {
+      mockResourceService.delete = vi.fn().mockReturnValue(of({}));
+      (component as any).deleteDialogOpen.set(true);
+      component.delete({ metadata: { name: 'r1' } } as any);
+      expect((component as any).deleteDialogOpen()).toBe(false);
+    });
+
+    it('cancelled path sets deleteDialogOpen to false (simulated via signal)', () => {
+      (component as any).deleteDialogOpen.set(true);
+      (component as any).deleteDialogOpen.set(false);
+      expect((component as any).deleteDialogOpen()).toBe(false);
     });
   });
 
@@ -2255,7 +2286,7 @@ describe('DetailViewComponent', () => {
         event,
         action: { action: 'delete' },
       } as any);
-      expect(openDeleteSpy).toHaveBeenCalledWith(event, resource);
+      expect(openDeleteSpy).toHaveBeenCalledWith(event);
     });
 
     it('should not call openEditResourceModal for edit action when resource is undefined', () => {
@@ -3136,7 +3167,6 @@ describe('DetailViewComponent — namespace repair from route path params', () =
     component.LuigiClient = makeLuigiClient(() => ({ namespaceId: 'team-a' }));
     fixture.detectChanges();
 
-    (component as any).deleteModal = () => ({ close: vi.fn() });
     component.delete({ metadata: { name: 'claim-1' } } as any);
 
     expect(mockResourceService.delete).toHaveBeenCalled();

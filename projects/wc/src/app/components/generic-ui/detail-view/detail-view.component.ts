@@ -2,8 +2,7 @@ import { downloadFile } from '../../../utils/download-file';
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import { processGroupFields } from '../../../utils/proccess-fields';
 import { withRouteNamespace } from '../../../utils/route-namespace';
-import { CreateResourceModal } from '../create-resource-modal/create-resource-modal.component';
-import { DeleteResourceModal } from '../delete-resource-confirmation-modal/delete-resource-modal.component';
+import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';
 import { DashboardConfigService } from './dashboard-config.service';
@@ -33,6 +32,8 @@ import {
   ButtonSettings,
   CardConfig,
   Dashboard,
+  DeleteConfirmationDialog,
+  DeleteResourceConfirmationConfig,
   EN_DEFAULTS,
   ResourceField,
   SectionConfig,
@@ -76,8 +77,8 @@ type ResourceReadState =
     Button,
     Label,
     ResourceField,
-    CreateResourceModal,
-    DeleteResourceModal,
+    ResourceFormModal,
+    DeleteConfirmationDialog,
     ResourceLogo,
     Dashboard,
   ],
@@ -102,8 +103,21 @@ export class DetailView {
   private readonly readState = signal<ResourceReadState>('loading');
   private readonly cancelKubeconfigRead = new Subject<void>();
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
-  private createModal = viewChild<CreateResourceModal>('createModal');
-  private deleteModal = viewChild<DeleteResourceModal>('deleteModal');
+  private createModal = viewChild<ResourceFormModal>('createModal');
+  protected deleteDialogOpen = signal(false);
+  protected deleteConfig = computed<DeleteResourceConfirmationConfig>(() => {
+    const name = this.resourceId()?.toLowerCase() ?? '';
+    return {
+      title: `Delete ${name}`,
+      message: `<p>Are you sure you want to delete ${this.resourceDefinition()?.entity} <b>${name}</b>?</p>
+        <p class="dialog__message--critical">This action <b>cannot</b> be undone.</p>
+        <p>Please type <b>${name}</b> to confirm:</p>`,
+      confirmationText: name,
+      confirmationPlaceholder: 'Type name',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    };
+  });
 
   LuigiClient = input.required<LuigiClient>();
   context = input.required<ResourceNodeContext>();
@@ -311,7 +325,7 @@ export class DetailView {
         if (resource) this.openEditResourceModal(event);
         break;
       case 'delete':
-        if (resource) this.openDeleteResourceModal(event, resource);
+        if (resource) this.openDeleteResourceModal(event);
         break;
       default:
         this.executeConfiguredAction(action, resource);
@@ -451,13 +465,9 @@ export class DetailView {
       .navigate('/');
   }
 
-  openDeleteResourceModal(event: MouseEvent, resource: Resource) {
+  openDeleteResourceModal(event: MouseEvent) {
     event.stopPropagation?.();
-    const resourceToDelete: Resource = {
-      ...resource,
-      metadata: { name: this.getResourceId() },
-    };
-    this.deleteModal()?.open(resourceToDelete);
+    this.deleteDialogOpen.set(true);
   }
 
   openEditResourceModal(event: MouseEvent) {
@@ -501,7 +511,7 @@ export class DetailView {
       )
       .subscribe({
         next: async (_result) => {
-          this.deleteModal()?.close();
+          this.deleteDialogOpen.set(false);
           console.debug('Resource deleted.');
           this.navigateToParent();
         },
