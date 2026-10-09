@@ -110,4 +110,58 @@ describe('PlatformAdminPanelService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
+
+  it('load() sets loading to true while in flight and false after completion', async () => {
+    const loadPromise = service.load();
+
+    expect(service.loading()).toBe(true);
+
+    httpMock.expectOne(`${BASE}/apiexports`).flush([]);
+    httpMock.expectOne(`${BASE}/orgs`).flush([]);
+    httpMock.expectOne(`${BASE}/apiexport-policies`).flush([]);
+    await loadPromise;
+
+    expect(service.loading()).toBe(false);
+  });
+
+  it('load() sends no Authorization header when no token is available', async () => {
+    const luigiCoreMock = TestBed.inject(LuigiCoreService);
+    vi.spyOn(luigiCoreMock, 'getAuthData').mockReturnValue(undefined);
+
+    const loadPromise = service.load();
+    const req = httpMock.expectOne(`${BASE}/apiexports`);
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush([]);
+    httpMock.expectOne(`${BASE}/orgs`).flush([]);
+    httpMock.expectOne(`${BASE}/apiexport-policies`).flush([]);
+    await loadPromise;
+  });
+
+  it('createPolicy() sends Authorization header', () => {
+    service
+      .createPolicy({
+        name: 'exp-a',
+        apiExportName: 'exp-a',
+        clusterPath: 'root:providers:p1',
+        allowPathExpressions: [],
+      })
+      .subscribe();
+    const req = httpMock.expectOne(`${BASE}/apiexport-policies`);
+    expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+    req.flush(null);
+  });
+
+  it('updatePolicy() sends Authorization header', () => {
+    service.updatePolicy('exp-a', { allowPathExpressions: [] }).subscribe();
+    const req = httpMock.expectOne(`${BASE}/apiexport-policies/exp-a`);
+    expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+    req.flush(null);
+  });
+
+  it('deletePolicy() sends Authorization header', () => {
+    service.deletePolicy('exp-a').subscribe();
+    const req = httpMock.expectOne(`${BASE}/apiexport-policies/exp-a`);
+    expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+    req.flush(null);
+  });
 });

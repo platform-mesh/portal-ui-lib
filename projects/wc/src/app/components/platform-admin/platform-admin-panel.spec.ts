@@ -268,4 +268,116 @@ describe('PlatformAdminComponent', () => {
     expect(component.actionError()).toBeTruthy();
     expect(component.saving()).toBe(false);
   });
+
+  it('save() makes no request and closes edit when no policy exists and no orgs selected', async () => {
+    await init({
+      apiExports: [exportB],
+      orgs: [{ name: 'default' }],
+      policies: [],
+    });
+
+    const row = component.rows()[0];
+    component.startEdit(row);
+
+    const savePromise = component.save(row);
+    await tick();
+    flushLoad({ apiExports: [exportB], orgs: [{ name: 'default' }], policies: [] });
+    await savePromise;
+
+    httpMock.verify();
+    expect(component.editingKey()).toBeNull();
+  });
+
+  it('startEdit() clears a previous actionError', async () => {
+    await init({ apiExports: [exportA], orgs: [], policies: [] });
+    component.actionError.set('previous error');
+
+    const row = component.rows()[0];
+    component.startEdit(row);
+
+    expect(component.actionError()).toBeNull();
+  });
+
+  it('saving() is true while the HTTP request is in flight', async () => {
+    await init({
+      apiExports: [exportB],
+      orgs: [{ name: 'default' }],
+      policies: [],
+    });
+
+    const row = component.rows()[0];
+    component.startEdit(row);
+    component.toggleOrg('default', true);
+
+    const savePromise = component.save(row);
+
+    expect(component.saving()).toBe(true);
+
+    httpMock.expectOne(`${BASE}/apiexport-policies`).flush(null);
+    await tick();
+    flushLoad({ apiExports: [exportB], orgs: [{ name: 'default' }], policies: [] });
+    await savePromise;
+
+    expect(component.saving()).toBe(false);
+  });
+
+  it('shows error state in template when loading fails', async () => {
+    fixture = TestBed.createComponent(PlatformAdminComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    httpMock
+      .expectOne(`${BASE}/apiexports`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    httpMock.expectOne(`${BASE}/orgs`).flush([]);
+    httpMock.expectOne(`${BASE}/apiexport-policies`).flush([]);
+    await tick();
+    fixture.detectChanges();
+
+    const root: Element =
+      (fixture.nativeElement.shadowRoot as Element | null) ??
+      fixture.nativeElement;
+    expect(root.querySelector('[data-testid="state-error"]')).toBeTruthy();
+  });
+
+  it('wildcard * org selection toggles and maps to allowPathExpressions correctly', async () => {
+    await init({
+      apiExports: [exportB],
+      orgs: [{ name: 'default' }],
+      policies: [],
+    });
+
+    const row = component.rows()[0];
+    component.startEdit(row);
+    component.toggleOrg('*', true);
+
+    expect(component.isOrgSelected('*')).toBe(true);
+
+    const savePromise = component.save(row);
+
+    const req = httpMock.expectOne(`${BASE}/apiexport-policies`);
+    expect(req.request.body.allowPathExpressions).toContain(':root:orgs:*');
+    req.flush(null);
+
+    await tick();
+    flushLoad({ apiExports: [exportB], orgs: [{ name: 'default' }], policies: [] });
+    await savePromise;
+  });
+
+  it('rows() preserves a policy expression that lacks the org path prefix as-is', async () => {
+    const policyWithRawExpr: PolicyEntry = {
+      name: 'exp-a',
+      apiExportRef: { name: 'exp-a', clusterPath: 'root:providers:p1' },
+      allowPathExpressions: ['custom-expr'],
+    };
+
+    await init({
+      apiExports: [exportA],
+      orgs: [],
+      policies: [policyWithRawExpr],
+    });
+
+    const row = component.rows()[0];
+    expect(row.allowedOrgs).toEqual(['custom-expr']);
+  });
 });

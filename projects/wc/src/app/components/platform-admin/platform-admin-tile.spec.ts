@@ -1,6 +1,6 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { linkManager } from '@luigi-project/client';
+import { addInitListener, linkManager } from '@luigi-project/client';
 import { PlatformAdminTileComponent } from './platform-admin-tile';
 
 vi.mock('@luigi-project/client', () => ({
@@ -31,11 +31,15 @@ describe('PlatformAdminTileComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('registers an addInitListener callback on construction', () => {
+    expect(vi.mocked(addInitListener)).toHaveBeenCalledWith(expect.any(Function));
+  });
+
   it('navigate() calls linkManager().fromClosestContext().navigate with /platform-admin', () => {
     const mockNavigate = vi.fn();
     vi.mocked(linkManager).mockReturnValueOnce({
       fromClosestContext: () => ({ navigate: mockNavigate }),
-    } as ReturnType<typeof linkManager>);
+    } as unknown as ReturnType<typeof linkManager>);
 
     component.navigate();
 
