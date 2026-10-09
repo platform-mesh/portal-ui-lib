@@ -5,9 +5,7 @@ import { PlatformAdminTileComponent } from './platform-admin-tile';
 
 vi.mock('@luigi-project/client', () => ({
   addInitListener: vi.fn(),
-  linkManager: vi.fn(() => ({
-    fromClosestContext: vi.fn(() => ({ navigate: vi.fn() })),
-  })),
+  linkManager: vi.fn(),
 }));
 
 describe('PlatformAdminTileComponent', () => {
@@ -15,7 +13,9 @@ describe('PlatformAdminTileComponent', () => {
   let fixture: ComponentFixture<PlatformAdminTileComponent>;
 
   beforeEach(async () => {
-    vi.clearAllMocks();
+    vi.mocked(linkManager).mockImplementation(() => ({
+      fromClosestContext: vi.fn(() => ({ navigate: vi.fn() })),
+    } as unknown as ReturnType<typeof linkManager>));
 
     await TestBed.configureTestingModule({
       imports: [PlatformAdminTileComponent],
@@ -25,6 +25,10 @@ describe('PlatformAdminTileComponent', () => {
     fixture = TestBed.createComponent(PlatformAdminTileComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it('should create', () => {
@@ -37,9 +41,9 @@ describe('PlatformAdminTileComponent', () => {
 
   it('navigate() calls linkManager().fromClosestContext().navigate with /platform-admin', () => {
     const mockNavigate = vi.fn();
-    vi.mocked(linkManager).mockReturnValueOnce({
+    vi.mocked(linkManager).mockImplementationOnce(() => ({
       fromClosestContext: () => ({ navigate: mockNavigate }),
-    } as unknown as ReturnType<typeof linkManager>);
+    } as unknown as ReturnType<typeof linkManager>));
 
     component.navigate();
 
