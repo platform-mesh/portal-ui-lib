@@ -15,6 +15,8 @@ describe('PlatformAdminTileComponent', () => {
   let fixture: ComponentFixture<PlatformAdminTileComponent>;
 
   beforeEach(async () => {
+    vi.clearAllMocks();
+
     await TestBed.configureTestingModule({
       imports: [PlatformAdminTileComponent],
       schemas: [NO_ERRORS_SCHEMA],
@@ -31,9 +33,9 @@ describe('PlatformAdminTileComponent', () => {
 
   it('navigate() calls linkManager().fromClosestContext().navigate with /platform-admin', () => {
     const mockNavigate = vi.fn();
-    (linkManager as ReturnType<typeof vi.fn>).mockReturnValue({
-      fromClosestContext: vi.fn(() => ({ navigate: mockNavigate })),
-    });
+    vi.mocked(linkManager).mockReturnValueOnce({
+      fromClosestContext: () => ({ navigate: mockNavigate }),
+    } as ReturnType<typeof linkManager>);
 
     component.navigate();
 
