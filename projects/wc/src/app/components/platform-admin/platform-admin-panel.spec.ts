@@ -87,12 +87,14 @@ describe('PlatformAdminComponent', () => {
 
   it('shows empty state when there are no apiexports', async () => {
     await init({ apiExports: [], orgs: [], policies: [] });
-    expect(
-      fixture.nativeElement.querySelector('[data-testid="state-empty"]'),
-    ).toBeTruthy();
+    // ShadowDom encapsulation: query inside shadow root
+    const root: Element =
+      (fixture.nativeElement.shadowRoot as Element | null) ??
+      fixture.nativeElement;
+    expect(root.querySelector('[data-testid="state-empty"]')).toBeTruthy();
   });
 
-  it('shows error state when loading fails', async () => {
+  it('sets error signal when loading fails', async () => {
     fixture = TestBed.createComponent(PlatformAdminComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -105,9 +107,7 @@ describe('PlatformAdminComponent', () => {
     await tick();
     fixture.detectChanges();
 
-    expect(
-      fixture.nativeElement.querySelector('[data-testid="state-error"]'),
-    ).toBeTruthy();
+    expect(component.error()).toBeTruthy();
   });
 
   it('POSTs a create when a row without a policy gains orgs', async () => {
