@@ -1,7 +1,7 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 export interface ApiExportEntry {
   name: string;
@@ -47,9 +47,11 @@ export class PlatformAdminPanelService {
   readonly orgs = signal<OrgEntry[]>([]);
   readonly policies = signal<PolicyEntry[]>([]);
 
-  private get headers() {
+  private get headers(): HttpHeaders {
     const token = this.luigiCore.getAuthData()?.idToken ?? '';
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 
   async load(): Promise<void> {
@@ -57,23 +59,23 @@ export class PlatformAdminPanelService {
     this.error.set(null);
     try {
       const [apiExports, orgs, policies] = await Promise.all([
-        this.http
-          .get<ApiExportEntry[]>(`${BASE}/apiexports`, {
+        firstValueFrom(
+          this.http.get<ApiExportEntry[]>(`${BASE}/apiexports`, {
             headers: this.headers,
-          })
-          .toPromise(),
-        this.http
-          .get<OrgEntry[]>(`${BASE}/orgs`, { headers: this.headers })
-          .toPromise(),
-        this.http
-          .get<PolicyEntry[]>(`${BASE}/apiexport-policies`, {
+          }),
+        ),
+        firstValueFrom(
+          this.http.get<OrgEntry[]>(`${BASE}/orgs`, { headers: this.headers }),
+        ),
+        firstValueFrom(
+          this.http.get<PolicyEntry[]>(`${BASE}/apiexport-policies`, {
             headers: this.headers,
-          })
-          .toPromise(),
+          }),
+        ),
       ]);
-      this.apiExports.set(apiExports ?? []);
-      this.orgs.set(orgs ?? []);
-      this.policies.set(policies ?? []);
+      this.apiExports.set(apiExports);
+      this.orgs.set(orgs);
+      this.policies.set(policies);
     } catch {
       this.error.set('Failed to load Platform Admin data');
     } finally {
