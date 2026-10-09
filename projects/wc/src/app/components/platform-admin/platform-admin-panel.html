@@ -1,0 +1,114 @@
+<ui5-dynamic-page>
+  <ui5-dynamic-page-title slot="titleArea">
+    <div slot="heading" class="pm-admin-heading">
+      <ui5-title>Platform Admin</ui5-title>
+      <p class="pm-admin-subtitle">APIExport Enablement</p>
+    </div>
+    <div slot="snappedHeading" class="pm-admin-heading">
+      <ui5-title>Platform Admin — APIExport Enablement</ui5-title>
+    </div>
+    <ui5-toolbar slot="actionsBar" design="Transparent">
+      <ui5-toolbar-button
+        text="Refresh"
+        [disabled]="loading()"
+        (click)="reload()"
+      ></ui5-toolbar-button>
+    </ui5-toolbar>
+  </ui5-dynamic-page-title>
+  <ui5-dynamic-page-header slot="headerArea" class="pm-admin-header">
+    <p class="pm-admin-header-description">
+      Control which organizations are allowed to bind (install) each APIExport.
+      Enabling binding for an org allows its members to create an APIBinding,
+      which makes the APIExport available in that org's marketplace.
+    </p>
+  </ui5-dynamic-page-header>
+  @if (actionError()) {
+    <ui5-message-strip
+      design="Negative"
+      (close)="actionError.set(null)"
+      class="pm-admin-message-strip"
+      >{{ actionError() }}</ui5-message-strip
+    >
+  }
+  @if (loading()) {
+    <div class="pm-admin-state">
+      <ui5-busy-indicator size="M" [active]="true"></ui5-busy-indicator>
+    </div>
+  } @else if (error()) {
+    <div class="pm-admin-state" data-testid="state-error">
+      <span>{{ error() }}</span>
+      <ui5-button design="Transparent" (click)="reload()">Retry</ui5-button>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="pm-admin-state" data-testid="state-empty">
+      <span>No APIExports available to enable.</span>
+    </div>
+  } @else {
+    <ui5-table class="pm-admin-table">
+      <ui5-table-header-row slot="headerRow">
+        <ui5-table-header-cell>Name</ui5-table-header-cell>
+        <ui5-table-header-cell>Provider</ui5-table-header-cell>
+        <ui5-table-header-cell>Status</ui5-table-header-cell>
+        <ui5-table-header-cell>Binding allowed for</ui5-table-header-cell>
+      </ui5-table-header-row>
+      @for (row of rows(); track row.key) {
+        <ui5-table-row>
+          <ui5-table-cell><strong>{{ row.name }}</strong></ui5-table-cell>
+          <ui5-table-cell class="pm-admin-cell--provider">{{
+            row.clusterPath
+          }}</ui5-table-cell>
+          <ui5-table-cell>
+            <ui5-tag [attr.design]="row.enabled ? 'Positive' : 'Neutral'">{{
+              row.enabled ? 'Binding enabled' : 'Binding not enabled'
+            }}</ui5-tag>
+          </ui5-table-cell>
+          <ui5-table-cell>
+            @if (isEditing(row)) {
+              <div class="pm-admin-org-editor">
+                <ui5-checkbox
+                  text="All organizations (*)"
+                  [checked]="isOrgSelected('*')"
+                  (change)="onOrgChange('*', $event)"
+                ></ui5-checkbox>
+                @for (org of orgs(); track org.name) {
+                  <ui5-checkbox
+                    [text]="org.name"
+                    [checked]="isOrgSelected(org.name)"
+                    (change)="onOrgChange(org.name, $event)"
+                  ></ui5-checkbox>
+                }
+                <div class="pm-admin-org-actions">
+                  <ui5-button
+                    design="Emphasized"
+                    [disabled]="saving()"
+                    (click)="save(row)"
+                    >Save</ui5-button
+                  >
+                  <ui5-button
+                    design="Transparent"
+                    [disabled]="saving()"
+                    (click)="cancelEdit()"
+                    >Cancel</ui5-button
+                  >
+                </div>
+              </div>
+            } @else {
+              <div class="pm-admin-org-display">
+                @if (row.allowedOrgs.length === 0) {
+                  <span class="pm-admin-empty">—</span>
+                } @else {
+                  @for (org of row.allowedOrgs; track org) {
+                    <ui5-tag design="Information">{{ org }}</ui5-tag>
+                  }
+                }
+                <ui5-button design="Transparent" (click)="startEdit(row)"
+                  >Edit</ui5-button
+                >
+              </div>
+            }
+          </ui5-table-cell>
+        </ui5-table-row>
+      }
+    </ui5-table>
+  }
+</ui5-dynamic-page>

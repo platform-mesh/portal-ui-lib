@@ -1,0 +1,75 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+ui5-dynamic-page {
+  height: 100%;
+
+  &::part(fit-content) {
+    padding: 0;
+  }
+}
+
+.pm-admin-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-admin-subtitle {
+  margin: 0;
+  font-size: var(--sapFontSmallSize);
+  color: var(--sapContent_LabelColor);
+}
+
+.pm-admin-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2rem;
+  justify-content: center;
+}
+
+.pm-admin-header-description {
+  margin: 0;
+  font-size: var(--sapFontSize);
+  color: var(--sapTextColor);
+}
+
+.pm-admin-message-strip {
+  margin: 0.5rem 1rem;
+  display: block;
+}
+
+.pm-admin-table {
+  width: 100%;
+}
+
+.pm-admin-cell--provider {
+  font-family: monospace;
+  font-size: var(--sapFontSmallSize);
+}
+
+.pm-admin-org-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pm-admin-org-actions {
+  display: flex;
+  gap: 8px;
+  margin-block-start: 4px;
+}
+
+.pm-admin-org-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.pm-admin-empty {
+  color: var(--sapContent_LabelColor);
+}
