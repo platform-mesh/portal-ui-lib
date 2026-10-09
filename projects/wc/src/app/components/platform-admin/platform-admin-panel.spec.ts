@@ -216,4 +216,56 @@ describe('PlatformAdminComponent', () => {
     component.cancelEdit();
     expect(component.isEditing(row)).toBe(false);
   });
+
+  it('reload() clears actionError and reloads data', async () => {
+    await init({ apiExports: [exportA], orgs: [], policies: [] });
+    component.actionError.set('some error');
+
+    component.reload();
+
+    expect(component.actionError()).toBeNull();
+    flushLoad({ apiExports: [exportA], orgs: [], policies: [] });
+  });
+
+  it('onOrgChange() toggles an org via the event target', async () => {
+    await init({
+      apiExports: [exportB],
+      orgs: [{ name: 'default' }],
+      policies: [],
+    });
+
+    const row = component.rows()[0];
+    component.startEdit(row);
+
+    const fakeEvent = { target: { checked: true } } as unknown as Event;
+    component.onOrgChange('default', fakeEvent);
+    expect(component.isOrgSelected('default')).toBe(true);
+
+    const fakeEventOff = { target: { checked: false } } as unknown as Event;
+    component.onOrgChange('default', fakeEventOff);
+    expect(component.isOrgSelected('default')).toBe(false);
+  });
+
+  it('save() sets actionError when the HTTP request fails', async () => {
+    await init({
+      apiExports: [exportB],
+      orgs: [{ name: 'default' }],
+      policies: [],
+    });
+
+    const row = component.rows()[0];
+    component.startEdit(row);
+    component.toggleOrg('default', true);
+
+    const savePromise = component.save(row);
+
+    httpMock
+      .expectOne(`${BASE}/apiexport-policies`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+
+    await savePromise;
+
+    expect(component.actionError()).toBeTruthy();
+    expect(component.saving()).toBe(false);
+  });
 });

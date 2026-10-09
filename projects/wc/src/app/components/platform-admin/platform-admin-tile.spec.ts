@@ -1,5 +1,6 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { linkManager } from '@luigi-project/client';
 import { PlatformAdminTileComponent } from './platform-admin-tile';
 
 vi.mock('@luigi-project/client', () => ({
@@ -28,8 +29,7 @@ describe('PlatformAdminTileComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('navigate() calls linkManager().fromClosestContext().navigate with /platform-admin', async () => {
-    const { linkManager } = await import('@luigi-project/client');
+  it('navigate() calls linkManager().fromClosestContext().navigate with /platform-admin', () => {
     const mockNavigate = vi.fn();
     (linkManager as ReturnType<typeof vi.fn>).mockReturnValue({
       fromClosestContext: vi.fn(() => ({ navigate: mockNavigate })),
