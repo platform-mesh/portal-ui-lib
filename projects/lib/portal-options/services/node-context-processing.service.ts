@@ -1,15 +1,10 @@
 import { PortalNodeContext } from '../models/luigi-context';
 import { PortalLuigiNode } from '../models/luigi-node';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
+import { NamespacedResourceSelectionService } from './namespaced-resource-selection.service';
 import { Injectable, inject } from '@angular/core';
-import {
-  LuigiCoreService,
-  NodeContextProcessingService,
-} from '@openmfp/portal-ui-lib';
-import {
-  ALL_NAMESPACE,
-  AccountInfo,
-} from '@platform-mesh/portal-ui-lib/models';
+import { NodeContextProcessingService } from '@openmfp/portal-ui-lib';
+import { AccountInfo } from '@platform-mesh/portal-ui-lib/models';
 import {
   AccountInfoService,
   ErrorHandlerService,
@@ -33,7 +28,9 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   private instancePermissionsService = inject(InstancePermissionsService);
   private organizationReadyService = inject(OrganizationReadyService);
   private errorHandlerService = inject(ErrorHandlerService);
-  private luigiCoreService = inject(LuigiCoreService);
+  private namespacedResourceSelectionService = inject(
+    NamespacedResourceSelectionService,
+  );
 
   public async processNodeContext(
     dynamicEntityId: string,
@@ -55,11 +52,12 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
         kind,
       );
 
-    const namespace =
-      this.luigiCoreService.routing().getSearchParams().namespace !==
-      ALL_NAMESPACE
-        ? this.luigiCoreService.routing().getSearchParams().namespace
-        : undefined;
+    const namespace = this.namespacedResourceSelectionService.resolveNamespace(
+      entityNode,
+      entityId,
+      kcpPath,
+      ctx,
+    );
 
     // update the current already calculated by Luigi context for a node
     this.addFieldsToContext(

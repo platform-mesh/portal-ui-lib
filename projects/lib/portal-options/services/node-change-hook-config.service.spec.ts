@@ -1,5 +1,6 @@
 import { PersistentPanelService } from '../persistent-panel/persistent-panel.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
+import { NamespacedResourceSelectionService } from './namespaced-resource-selection.service';
 import { NodeChangeHookConfigServiceImpl } from './node-change-hook-config.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
@@ -64,6 +65,28 @@ describe('NodeChangeHookConfigServiceImpl', () => {
     expect(
       mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath,
     ).toHaveBeenCalledWith(nextNode);
+  });
+
+  it('restores the namespace of the selected resource before resolving the KCP path', async () => {
+    const restoreNamespaceSearchParam = vi.spyOn(
+      TestBed.inject(NamespacedResourceSelectionService),
+      'restoreNamespaceSearchParam',
+    );
+    mockCrdGatewayKcpPatchResolver.resolveCrdGatewayKcpPath.mockImplementation(
+      async () => {
+        expect(restoreNamespaceSearchParam).toHaveBeenCalled();
+        return {} as any;
+      },
+    );
+    const nextNode = { context: {} } as any;
+    const currentContext = { httpbinId: 'bin-1' } as any;
+
+    await service.nodeChangeHook({} as any, nextNode, currentContext);
+
+    expect(restoreNamespaceSearchParam).toHaveBeenCalledWith(
+      nextNode,
+      currentContext,
+    );
   });
 
   describe('persistent provider panel context', () => {

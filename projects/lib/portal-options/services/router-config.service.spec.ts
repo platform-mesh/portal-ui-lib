@@ -84,7 +84,7 @@ describe('CustomRoutingConfigServiceImpl', () => {
       const config = service.getRoutingConfig();
 
       expect(config).toBeDefined();
-      expect(config.preserveQueryParams).toBe(true);
+      expect(config).not.toHaveProperty('preserveQueryParams');
       expect(config.pageNotFoundHandler).toBeDefined();
       expect(typeof config.pageNotFoundHandler).toBe('function');
     });

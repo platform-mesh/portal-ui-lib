@@ -1,6 +1,7 @@
 import { PortalLuigiNode } from '../models/luigi-node';
 import { PersistentPanelService } from '../persistent-panel/persistent-panel.service';
 import { CrdGatewayKcpPatchResolver } from './crd-gateway-kcp-patch-resolver.service';
+import { NamespacedResourceSelectionService } from './namespaced-resource-selection.service';
 import { Injectable, inject } from '@angular/core';
 import {
   LuigiCoreService,
@@ -13,12 +14,20 @@ export class NodeChangeHookConfigServiceImpl implements NodeChangeHookConfigServ
   private luigiCoreService = inject(LuigiCoreService);
   private crdGatewayKcpPatchResolver = inject(CrdGatewayKcpPatchResolver);
   private persistentPanelService = inject(PersistentPanelService);
+  private namespacedResourceSelectionService = inject(
+    NamespacedResourceSelectionService,
+  );
 
   async nodeChangeHook(
     prevNode: PortalLuigiNode,
     nextNode: PortalLuigiNode,
     currentContext: NodeContext,
   ) {
+    this.namespacedResourceSelectionService.restoreNamespaceSearchParam(
+      nextNode,
+      currentContext,
+    );
+
     const updatePersistentPanelTarget =
       this.persistentPanelService.beginTargetUpdate();
 
