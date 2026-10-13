@@ -10,6 +10,7 @@ export type BackendEndpoint = GatewayOperation | 'accountEntityConfig';
 export interface BackendRequest {
   endpoint: BackendEndpoint;
   accountName: string | undefined;
+  namespace?: string;
 }
 
 const accountEntityConfigPath = '/rest/config/core_platform-mesh_io_account';
@@ -25,8 +26,14 @@ export class PortalBackendMock {
     accountInfoRead: gatewayMocks.accountInfoReadSucceeds,
     accountRead: gatewayMocks.accountReadSucceeds,
     logicalClusterRead: gatewayMocks.logicalClusterReadReady,
+    httpBinsList: gatewayMocks.httpBinsListWithTwoReadyHttpBins,
+    httpBinsWatch: gatewayMocks.httpBinsWatchClosingWithoutChanges,
+    httpBinRead: gatewayMocks.httpBinReadForHttpBinBetaInTeamB,
+    namespacesList: gatewayMocks.namespacesListWithTeamAAndTeamB,
+    namespacesWatch: gatewayMocks.namespacesWatchClosingWithoutChanges,
   };
   private readonly gatewayOverrides = new Map<string, string>();
+  private readonly accountEntityConfigOverrides = new Map<string, string>();
   private readonly page: Page;
   private readonly portalOrigin: string;
 
@@ -51,6 +58,17 @@ export class PortalBackendMock {
       this.overrideKey('accountRead', accountName),
       mockFile,
     );
+  }
+
+  respondToHttpBinRead(accountName: string, mockFile: string): void {
+    this.gatewayOverrides.set(
+      this.overrideKey('httpBinRead', accountName),
+      mockFile,
+    );
+  }
+
+  respondToAccountEntityConfig(accountName: string, mockFile: string): void {
+    this.accountEntityConfigOverrides.set(accountName, mockFile);
   }
 
   requestsTo(
@@ -89,9 +107,12 @@ export class PortalBackendMock {
       const accountName =
         url.searchParams.get(accountEntityConfigAccountParam) ?? '';
       this.requests.push({ endpoint: 'accountEntityConfig', accountName });
-      return this.fulfill(route, restMocks.accountEntityConfigWithDashboard, {
-        accountName,
-      });
+      return this.fulfill(
+        route,
+        this.accountEntityConfigOverrides.get(accountName) ??
+          restMocks.accountEntityConfigWithDashboard,
+        { accountName },
+      );
     }
 
     if (request.method() === 'POST' && isGatewayPath(url.pathname)) {
@@ -106,12 +127,14 @@ export class PortalBackendMock {
   }
 
   private async handleGatewayRequest(route: Route): Promise<void> {
-    const { operation, accountName } = parseGatewayRequest(route.request());
+    const { operation, accountName, namespace } = parseGatewayRequest(
+      route.request(),
+    );
     if (!operation) {
       return this.rejectUnhandled(route);
     }
 
-    this.requests.push({ endpoint: operation, accountName });
+    this.requests.push({ endpoint: operation, accountName, namespace });
     const mockFile =
       this.gatewayOverrides.get(this.overrideKey(operation, accountName)) ??
       this.gatewayDefaults[operation];

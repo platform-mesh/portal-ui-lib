@@ -131,25 +131,26 @@ New shared logic (services, models, utils) belongs in `lib`. New custom elements
 
 The library provides concrete Angular injectable implementations of interfaces defined in `@openmfp/portal-ui-lib`:
 
-| Class                                         | Implements                                | Purpose                                                                                |
-| --------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------- |
-| `HeaderBarConfigServiceImpl`                  | `HeaderBarConfigService`                  | Configures breadcrumb + namespace-selection header bar renderers                       |
-| `NavigationRedirectStrategyServiceImpl`       | `NavigationRedirectStrategy`              | Persists/restores last navigation URL in `localStorage`                                |
-| `NodeContextProcessingServiceImpl`            | `NodeContextProcessingService`            | Resolves KCP path, account path, and AccountInfo for each Luigi node                   |
-| `CustomGlobalNodesServiceImpl`                | `CustomGlobalNodesService`                | Injects global `/error/:id` and `/users/:userId` nodes                                 |
-| `NodeChangeHookConfigServiceImpl`             | `NodeChangeHookConfigService`             | Handles `initialRoute`/`virtualTree` navigation and KCP path resolution on node change |
-| `CustomRoutingConfigServiceImpl`              | `RoutingConfigService`                    | Preserves query params; redirects unknown routes to `/error/404` or `/welcome`         |
-| `UserProfileConfigServiceImpl`                | `UserProfileConfigService`                | Builds user profile menu with link to `/users/<email>/overview`                        |
-| `LuigiExtendedGlobalContextConfigServiceImpl` | `LuigiExtendedGlobalContextConfigService` | Adds `organization`, `kcpPath`, and `entityName` to Luigi global context               |
+| Class                                         | Implements                                | Purpose                                                                                  |
+| --------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `HeaderBarConfigServiceImpl`                  | `HeaderBarConfigService`                  | Configures breadcrumb + namespace-selection header bar renderers                         |
+| `NavigationRedirectStrategyServiceImpl`       | `NavigationRedirectStrategy`              | Persists/restores last navigation URL in `localStorage`                                  |
+| `NodeContextProcessingServiceImpl`            | `NodeContextProcessingService`            | Resolves KCP path, account path, and AccountInfo for each Luigi node                     |
+| `CustomGlobalNodesServiceImpl`                | `CustomGlobalNodesService`                | Injects global `/error/:id` and `/users/:userId` nodes                                   |
+| `NodeChangeHookConfigServiceImpl`             | `NodeChangeHookConfigService`             | Handles `initialRoute`/`virtualTree` navigation and KCP path resolution on node change   |
+| `CustomRoutingConfigServiceImpl`              | `RoutingConfigService`                    | Drops query params on navigation; redirects unknown routes to `/error/404` or `/welcome` |
+| `UserProfileConfigServiceImpl`                | `UserProfileConfigService`                | Builds user profile menu with link to `/users/<email>/overview`                          |
+| `LuigiExtendedGlobalContextConfigServiceImpl` | `LuigiExtendedGlobalContextConfigService` | Adds `organization`, `kcpPath`, and `entityName` to Luigi global context                 |
 
 Key internal services:
 
-| Class                        | Purpose                                                                                                                                  |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `CrdGatewayKcpPatchResolver` | Calculates the KCP workspace path (`root:orgs:<org>[:<account>...]`) and patches the live `crdGatewayApiUrl` in the Luigi global context |
-| `GatewayService`             | Extracts and replaces the KCP path segment within a `crdGatewayApiUrl`                                                                   |
-| `AccountInfoService`         | Reads `AccountInfo` CR via Apollo/GraphQL; caches per KCP path                                                                           |
-| `OrganizationReadyService`   | Polls `LogicalCluster` readiness; navigates to `/error/503` if not ready                                                                 |
+| Class                                | Purpose                                                                                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `CrdGatewayKcpPatchResolver`         | Calculates the KCP workspace path (`root:orgs:<org>[:<account>...]`) and patches the live `crdGatewayApiUrl` in the Luigi global context |
+| `GatewayService`                     | Extracts and replaces the KCP path segment within a `crdGatewayApiUrl`                                                                   |
+| `AccountInfoService`                 | Reads `AccountInfo` CR via Apollo/GraphQL; caches per KCP path                                                                           |
+| `OrganizationReadyService`           | Polls `LogicalCluster` readiness; navigates to `/error/503` if not ready                                                                 |
+| `NamespacedResourceSelectionService` | Remembers the namespace of the opened namespaced resource and restores `?namespace` on its nodes without a Luigi config update           |
 
 ## Code Conventions
 

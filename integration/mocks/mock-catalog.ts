@@ -4,6 +4,8 @@ export const restMocks = {
     'rest/config.main-entity-with-home-and-accounts.json',
   accountEntityConfigWithDashboard:
     'rest/config.account-entity-with-dashboard.json',
+  accountEntityConfigWithDashboardAndHttpBins:
+    'rest/config.account-entity-with-dashboard-and-httpbins.json',
 } as const;
 
 export const gatewayMocks = {
@@ -18,6 +20,18 @@ export const gatewayMocks = {
   accountReadForbiddenGraphqlError:
     'gateway/account-read.forbidden-graphql-error.json',
   logicalClusterReadReady: 'gateway/logical-cluster-read.ready.json',
+  httpBinsListWithTwoReadyHttpBins:
+    'gateway/httpbins-list.two-ready-httpbins.json',
+  httpBinsWatchClosingWithoutChanges:
+    'gateway/httpbins-watch.closes-without-changes.json',
+  httpBinReadForHttpBinBetaInTeamB:
+    'gateway/httpbin-read.httpbin-beta-in-team-b.json',
+  httpBinReadMissingNamespaceArgument:
+    'gateway/httpbin-read.missing-namespace-argument.json',
+  namespacesListWithTeamAAndTeamB:
+    'gateway/namespaces-list.team-a-and-team-b.json',
+  namespacesWatchClosingWithoutChanges:
+    'gateway/namespaces-watch.closes-without-changes.json',
 } as const;
 
 export const gatewayErrorMocks = {
