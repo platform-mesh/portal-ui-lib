@@ -44,6 +44,20 @@ describe('ErrorHandlerService', () => {
     );
   }
 
+  describe('showError', () => {
+    it('alerts the message and the error detail without redirecting a forbidden error', () => {
+      const error = { message: 'namespaces is forbidden' };
+
+      service.showError(error, 'Failed to read namespaces.');
+
+      expect(luigiCoreService.showAlert).toHaveBeenCalledWith({
+        text: 'Failed to read namespaces.\nnamespaces is forbidden',
+        type: 'error',
+      });
+      expect(postMessageSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('handleError', () => {
     it('should navigate to 403 when error message contains forbidden', () => {
       const error = { message: 'Access is forbidden' };

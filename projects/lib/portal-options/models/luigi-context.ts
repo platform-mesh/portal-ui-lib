@@ -18,6 +18,7 @@ export interface PortalNodeContext extends NodeContext {
   accountPath?: string;
   translationTable?: any;
   namespaceId?: string;
+  namespaces?: string[];
   entityName?: string;
   entityKind?: string;
   entityId?: string;
