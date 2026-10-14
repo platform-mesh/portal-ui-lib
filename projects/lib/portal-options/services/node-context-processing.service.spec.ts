@@ -12,6 +12,7 @@ import {
   AccountInfoService,
   ErrorHandlerService,
   InstancePermissionsService,
+  NamespaceService,
   OrganizationReadyService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { of, throwError } from 'rxjs';
@@ -26,6 +27,7 @@ describe('NodeContextProcessingServiceImpl', () => {
   let instancePermissionsService: MockedObject<InstancePermissionsService>;
   let luigiCoreService: MockedObject<LuigiCoreService>;
   let errorHandlerService: MockedObject<ErrorHandlerService>;
+  let namespaceService: MockedObject<NamespaceService>;
 
   const mockEntityId = 'entity-123';
   const mockKind = 'account';
@@ -58,6 +60,7 @@ describe('NodeContextProcessingServiceImpl', () => {
     instancePermissionsService = mock<InstancePermissionsService>();
     luigiCoreService = mock<LuigiCoreService>();
     errorHandlerService = mock<ErrorHandlerService>();
+    namespaceService = mock<NamespaceService>();
 
     // Default: checkInstance returns an empty array
     instancePermissionsService.checkInstance.mockReturnValue(of([]));
@@ -98,6 +101,7 @@ describe('NodeContextProcessingServiceImpl', () => {
         },
         { provide: LuigiCoreService, useValue: luigiCoreService },
         { provide: ErrorHandlerService, useValue: errorHandlerService },
+        { provide: NamespaceService, useValue: namespaceService },
       ],
     });
 
@@ -811,6 +815,78 @@ describe('NodeContextProcessingServiceImpl', () => {
       await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
 
       expect(ctx.namespaceId).toBe('team-a');
+    });
+
+    describe('namespaces', () => {
+      const namespacedResourceDefinition = {
+        entity: 'HttpBin',
+        entityCollection: 'HttpBins',
+        version: 'v1alpha1',
+        scope: 'Namespaced',
+      } as any;
+
+      it('puts the namespaces of the workspace into ctx.namespaces when a namespaced resource has no namespace', async () => {
+        namespaceService.list.mockReturnValue(of(['team-a', 'team-b']));
+        const ctx: PortalNodeContext = {
+          ...mockContext,
+          resourceDefinition: namespacedResourceDefinition,
+        };
+
+        await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+        expect(namespaceService.list).toHaveBeenCalledWith(
+          expect.objectContaining({ kcpPath: mockKcpPath, token: mockToken }),
+        );
+        expect(ctx.namespaces).toEqual(['team-a', 'team-b']);
+        expect(mockEntityNode.context.namespaces).toBeUndefined();
+      });
+
+      it('does not list namespaces when a namespace is selected', async () => {
+        luigiCoreService.routing.mockReturnValue({
+          getSearchParams: () => ({ namespace: 'team-a' }),
+        } as any);
+        const ctx: PortalNodeContext = {
+          ...mockContext,
+          resourceDefinition: namespacedResourceDefinition,
+        };
+
+        await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+        expect(namespaceService.list).not.toHaveBeenCalled();
+        expect(ctx.namespaces).toBeUndefined();
+      });
+
+      it('does not list namespaces for a cluster scoped resource', async () => {
+        const ctx: PortalNodeContext = {
+          ...mockContext,
+          resourceDefinition: {
+            ...namespacedResourceDefinition,
+            scope: 'Cluster',
+          },
+        };
+
+        await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+        expect(namespaceService.list).not.toHaveBeenCalled();
+      });
+
+      it('alerts the error, leaves ctx.namespaces unset and still reads the account info when listing fails', async () => {
+        const error = new Error('list failed');
+        namespaceService.list.mockReturnValue(throwError(() => error));
+        const ctx: PortalNodeContext = {
+          ...mockContext,
+          resourceDefinition: namespacedResourceDefinition,
+        };
+
+        await service.processNodeContext(mockEntityId, mockEntityNode, ctx);
+
+        expect(ctx.namespaces).toBeUndefined();
+        expect(errorHandlerService.showError).toHaveBeenCalledWith(
+          error,
+          'Failed to read namespaces.',
+        );
+        expect(accountInfoService.read).toHaveBeenCalled();
+      });
     });
 
     it('merges returned permissions into ctx.portalPermissions keyed by permissionKey', async () => {

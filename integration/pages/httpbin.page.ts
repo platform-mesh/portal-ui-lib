@@ -5,6 +5,10 @@ import type { Locator, Page } from '@playwright/test';
 export class HttpBinPage {
   static readonly viewName = 'generic-detail-view';
   static readonly readFailedTitle = 'Could not load resource';
+  static readonly readFailedSubtitle = 'Please try again.';
+  static readonly namespacesReadFailedAlert = 'Failed to read namespaces.';
+  static readonly namespaceMissingSubtitle =
+    'Select a namespace and try again.';
   static readonly dashboard: NavigationNode = {
     pathSegment: 'dashboard',
     label: 'Dashboard',
@@ -24,11 +28,21 @@ export class HttpBinPage {
   ];
 
   readonly readState: Locator;
+  readonly retryButton: Locator;
+  readonly namespaceSelect: Locator;
+  readonly namespaceRefreshButton: Locator;
   private readonly page: Page;
 
   constructor(page: Page) {
     this.page = page;
     this.readState = page.getByTestId('generic-detail-view-read-state');
+    this.retryButton = page.getByTestId('generic-detail-view-retry');
+    this.namespaceSelect = page.getByTestId(
+      'generic-detail-view-namespace-select',
+    );
+    this.namespaceRefreshButton = page.getByTestId(
+      'generic-detail-view-namespace-refresh',
+    );
   }
 
   static path(
@@ -37,6 +51,18 @@ export class HttpBinPage {
     node: NavigationNode,
   ): string {
     return `${HttpBinsListPage.path(accountName)}/${httpBinName}/${node.pathSegment}`;
+  }
+
+  namespaceOptions(): Locator {
+    return this.page.locator(
+      '[data-testid^="generic-detail-view-namespace-option-"]',
+    );
+  }
+
+  namespaceOption(namespace: string): Locator {
+    return this.page.getByTestId(
+      `generic-detail-view-namespace-option-${namespace}`,
+    );
   }
 
   field(property: string): Locator {

@@ -2,13 +2,14 @@ import { DetailView } from './detail-view.component';
 import { NgTemplateOutlet } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { EnvConfigService } from '@openmfp/portal-ui-lib';
+import { EnvConfigService, LuigiCoreService } from '@openmfp/portal-ui-lib';
 import { AccountInfo } from '@platform-mesh/portal-ui-lib/models/models';
 import {
   AccountInfoService,
   ErrorHandlerService,
   GatewayService,
   KubeconfigSecretService,
+  NamespaceService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import { EMPTY, Subject, of, throwError } from 'rxjs';
@@ -2514,6 +2515,9 @@ describe('DetailViewComponent template', () => {
   let envConfigServiceMock: MockedObject<EnvConfigService>;
   let accountInfoServiceMock: MockedObject<AccountInfoService>;
   let errorHandlerServiceMock: MockedObject<ErrorHandlerService>;
+  let addSearchParams: ReturnType<typeof vi.fn>;
+  let configChanged: ReturnType<typeof vi.fn>;
+  let namespaceServiceMock: MockedObject<NamespaceService>;
 
   beforeEach(() => {
     envConfigServiceMock = mock();
@@ -2527,6 +2531,9 @@ describe('DetailViewComponent template', () => {
     mockGatewayService = {
       resolveKcpPath: vi.fn().mockReturnValue('https://example.com'),
     };
+    addSearchParams = vi.fn();
+    configChanged = vi.fn();
+    namespaceServiceMock = mock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -2535,6 +2542,11 @@ describe('DetailViewComponent template', () => {
         { provide: EnvConfigService, useValue: envConfigServiceMock },
         { provide: AccountInfoService, useValue: accountInfoServiceMock },
         { provide: ErrorHandlerService, useValue: errorHandlerServiceMock },
+        {
+          provide: LuigiCoreService,
+          useValue: { routing: () => ({ addSearchParams }), configChanged },
+        },
+        { provide: NamespaceService, useValue: namespaceServiceMock },
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
     }).overrideComponent(DetailView, {
@@ -2544,7 +2556,7 @@ describe('DetailViewComponent template', () => {
 
   const loadedResource = { metadata: { name: 'cluster-1' } };
 
-  function createReactiveDetail() {
+  function createReactiveDetail(contextOverrides: object = {}) {
     const fixture = TestBed.createComponent(DetailView);
     const context = {
       resourceId: 'cluster-1',
@@ -2557,6 +2569,7 @@ describe('DetailViewComponent template', () => {
         ui: { detailView: { fields: [], showDownloadKubeconfig: true } },
       },
       parentNavigationContexts: ['project'],
+      ...contextOverrides,
     };
     const navigate = vi.fn();
     const showAlert = vi.fn();
@@ -2759,6 +2772,197 @@ describe('DetailViewComponent template', () => {
     expect(retry.observed).toBe(false);
     retry.next(loadedResource);
     expect(component.resource()).toBeUndefined();
+  });
+
+  describe('namespaced resource', () => {
+    const namespacedDefinition = {
+      version: 'v1alpha1',
+      entity: 'HttpBin',
+      entityCollection: 'HttpBins',
+      apiGroup: 'orchestrate_platform_mesh_io',
+      scope: 'Namespaced',
+      ui: { detailView: { fields: [] } },
+    };
+    const missingNamespaceError = new Error(
+      'missing required argument: namespace',
+    );
+
+    function selectNamespace(
+      find: (selector: string) => any,
+      namespace: string,
+    ) {
+      find(
+        '[data-testid="generic-detail-view-namespace-select"]',
+      ).dispatchEvent(
+        new CustomEvent('ui5Change', {
+          detail: { selectedOption: { value: namespace } },
+        }),
+      );
+    }
+
+    it('asks for a namespace and disables retry until one is selected when the namespace is missing', () => {
+      mockResourceService.read.mockReturnValue(
+        throwError(() => missingNamespaceError),
+      );
+      const { fixture, component, find } = createReactiveDetail({
+        resourceDefinition: namespacedDefinition,
+        namespaces: ['team-a', 'team-b'],
+      });
+      fixture.detectChanges();
+
+      expect(find('ui5-illustrated-message').subtitleText).toBe(
+        'Select a namespace and try again.',
+      );
+      expect(
+        [
+          ...fixture.nativeElement.querySelectorAll(
+            '[data-testid^="generic-detail-view-namespace-option-"]',
+          ),
+        ].map((option: any) => option.value),
+      ).toEqual(['team-a', 'team-b']);
+      expect(find('[data-testid="generic-detail-view-retry"]').disabled).toBe(
+        true,
+      );
+
+      component.retryRead();
+      expect(configChanged).not.toHaveBeenCalled();
+
+      selectNamespace(find, 'team-b');
+      fixture.detectChanges();
+      expect(addSearchParams).toHaveBeenCalledWith(
+        { namespace: 'team-b' },
+        false,
+        true,
+      );
+      expect(configChanged).not.toHaveBeenCalled();
+      expect(find('[data-testid="generic-detail-view-retry"]').disabled).toBe(
+        false,
+      );
+
+      find('[data-testid="generic-detail-view-retry"]').click();
+      expect(configChanged).toHaveBeenCalledTimes(1);
+      expect(mockResourceService.read).toHaveBeenCalledTimes(1);
+    });
+
+    it('removes the namespace parameter and disables retry again when the placeholder is selected', () => {
+      mockResourceService.read.mockReturnValue(
+        throwError(() => missingNamespaceError),
+      );
+      const { fixture, find } = createReactiveDetail({
+        resourceDefinition: namespacedDefinition,
+        namespaces: ['team-a'],
+      });
+      fixture.detectChanges();
+
+      selectNamespace(find, 'team-a');
+      selectNamespace(find, '');
+      fixture.detectChanges();
+
+      expect(find('[data-testid="generic-detail-view-retry"]').disabled).toBe(
+        true,
+      );
+      expect(addSearchParams).toHaveBeenLastCalledWith(
+        { namespace: undefined },
+        false,
+        true,
+      );
+    });
+
+    it('renders the namespace select without options when the context has no namespaces', () => {
+      mockResourceService.read.mockReturnValue(
+        throwError(() => missingNamespaceError),
+      );
+      const { fixture, find } = createReactiveDetail({
+        resourceDefinition: namespacedDefinition,
+      });
+      fixture.detectChanges();
+
+      expect(
+        find('[data-testid="generic-detail-view-namespace-select"]'),
+      ).not.toBeNull();
+      expect(
+        find('[data-testid^="generic-detail-view-namespace-option-"]'),
+      ).toBeNull();
+    });
+
+    it('replaces the namespace options with the refreshed namespaces', () => {
+      mockResourceService.read.mockReturnValue(
+        throwError(() => missingNamespaceError),
+      );
+      namespaceServiceMock.list.mockReturnValue(of(['team-a', 'team-c']));
+      const { fixture, context, find } = createReactiveDetail({
+        resourceDefinition: namespacedDefinition,
+      });
+      fixture.detectChanges();
+
+      find('[data-testid="generic-detail-view-namespace-refresh"]').click();
+      fixture.detectChanges();
+
+      expect(namespaceServiceMock.list).toHaveBeenCalledWith(
+        expect.objectContaining({ kcpPath: context.kcpPath }),
+      );
+      expect(
+        [
+          ...fixture.nativeElement.querySelectorAll(
+            '[data-testid^="generic-detail-view-namespace-option-"]',
+          ),
+        ].map((option: any) => option.value),
+      ).toEqual(['team-a', 'team-c']);
+      expect(errorHandlerServiceMock.showError).not.toHaveBeenCalled();
+    });
+
+    it('alerts a failed namespace refresh and keeps the namespace options', () => {
+      const error = new Error('list failed');
+      mockResourceService.read.mockReturnValue(
+        throwError(() => missingNamespaceError),
+      );
+      namespaceServiceMock.list.mockReturnValue(throwError(() => error));
+      const { fixture, find } = createReactiveDetail({
+        resourceDefinition: namespacedDefinition,
+        namespaces: ['team-a'],
+      });
+      fixture.detectChanges();
+
+      find('[data-testid="generic-detail-view-namespace-refresh"]').click();
+      fixture.detectChanges();
+
+      expect(errorHandlerServiceMock.showError).toHaveBeenCalledWith(
+        error,
+        'Failed to read namespaces.',
+      );
+      expect(
+        find('[data-testid="generic-detail-view-namespace-option-team-a"]'),
+      ).not.toBeNull();
+    });
+
+    it('retries the read without a namespace select when the namespace is known', () => {
+      mockResourceService.read
+        .mockReturnValueOnce(throwError(() => new Error('Gateway unavailable')))
+        .mockReturnValueOnce(of(loadedResource));
+      const { fixture, component, find } = createReactiveDetail({
+        resourceDefinition: namespacedDefinition,
+        namespaceId: 'team-b',
+        namespaces: ['team-a', 'team-b'],
+      });
+      fixture.detectChanges();
+
+      expect(find('ui5-illustrated-message').subtitleText).toBe(
+        'Please try again.',
+      );
+      expect(
+        find('[data-testid="generic-detail-view-namespace-select"]'),
+      ).toBeNull();
+      expect(find('[data-testid="generic-detail-view-retry"]').disabled).toBe(
+        false,
+      );
+
+      find('[data-testid="generic-detail-view-retry"]').click();
+      fixture.detectChanges();
+
+      expect(configChanged).not.toHaveBeenCalled();
+      expect(mockResourceService.read).toHaveBeenCalledTimes(2);
+      expect(component.resource()).toEqual(loadedResource);
+    });
   });
 
   it('should not render download button when disabled', () => {

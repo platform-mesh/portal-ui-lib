@@ -67,6 +67,13 @@ export class PortalBackendMock {
     );
   }
 
+  respondToNamespacesList(accountName: string, mockFile: string): void {
+    this.gatewayOverrides.set(
+      this.overrideKey('namespacesList', accountName),
+      mockFile,
+    );
+  }
+
   respondToAccountEntityConfig(accountName: string, mockFile: string): void {
     this.accountEntityConfigOverrides.set(accountName, mockFile);
   }

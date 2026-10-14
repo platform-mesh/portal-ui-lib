@@ -103,8 +103,20 @@ Every test can be run on its own in debug mode. The `-g` pattern is the test's i
   npx playwright test --config integration/playwright.config.ts integration/tests/platform-mesh/httpbin-navigation.spec.ts -g 'httpbin navigation within an account removes the namespace from the URL when navigating via the breadcrumbs out of the httpbin' --debug
   ```
 
-- httpbin deep link without a namespace › opens every httpbin node without a namespace and shows that the httpbin could not be read
+- when reading the httpbin fails › shows the read failure and retries in the known namespace for a GraphQL error
 
   ```bash
-  npx playwright test --config integration/playwright.config.ts integration/tests/platform-mesh/httpbin-navigation.spec.ts -g 'httpbin deep link without a namespace opens every httpbin node without a namespace and shows that the httpbin could not be read' --debug
+  npx playwright test --config integration/playwright.config.ts integration/tests/platform-mesh/httpbin-navigation.spec.ts -g 'when reading the httpbin fails shows the read failure and retries in the known namespace for a GraphQL error' --debug
+  ```
+
+- when reading the httpbin fails › asks for a namespace before retrying when the namespace parameter is missing
+
+  ```bash
+  npx playwright test --config integration/playwright.config.ts integration/tests/platform-mesh/httpbin-navigation.spec.ts -g 'when reading the httpbin fails asks for a namespace before retrying when the namespace parameter is missing' --debug
+  ```
+
+- when reading the httpbin fails › alerts a failed namespace read and loads the namespaces with the refresh button
+
+  ```bash
+  npx playwright test --config integration/playwright.config.ts integration/tests/platform-mesh/httpbin-navigation.spec.ts -g 'when reading the httpbin fails alerts a failed namespace read and loads the namespaces with the refresh button' --debug
   ```

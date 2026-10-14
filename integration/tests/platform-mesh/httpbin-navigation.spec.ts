@@ -1,6 +1,10 @@
 import type { PortalBackendMock } from '../../backend/portal-backend-mock.ts';
 import { expect, test } from '../../fixtures/portal-test.ts';
-import { gatewayMocks, restMocks } from '../../mocks/mock-catalog.ts';
+import {
+  gatewayErrorMocks,
+  gatewayMocks,
+  restMocks,
+} from '../../mocks/mock-catalog.ts';
 import { AccountDashboardPage } from '../../pages/account-dashboard.page.ts';
 import { AccountsListPage } from '../../pages/accounts-list.page.ts';
 import { HttpBinPage } from '../../pages/httpbin.page.ts';
@@ -158,7 +162,8 @@ test.describe('httpbin navigation within an account', () => {
   }
 });
 
-test.describe('httpbin deep link without a namespace', () => {
+test.describe('when reading the httpbin fails', () => {
+  const namespaces = ['team-a', 'team-b'];
   let httpBin: HttpBinPage;
   let portalShell: PortalShell;
 
@@ -169,80 +174,206 @@ test.describe('httpbin deep link without a namespace', () => {
       selectedAccount,
       restMocks.accountEntityConfigWithDashboardAndHttpBins,
     );
+  });
+
+  test('shows the read failure and retries in the known namespace for a GraphQL error', async ({
+    page,
+    portalBackend,
+  }) => {
+    portalBackend.respondToHttpBinRead(
+      selectedAccount,
+      gatewayErrorMocks.graphqlErrorServiceUnavailable,
+    );
+    const dashboardPath = `${HttpBinPage.path(selectedAccount, selectedHttpBin, HttpBinPage.dashboard)}?${namespaceSearchParam}=${selectedHttpBinNamespace}`;
+
+    await page.goto(dashboardPath);
+
+    await expectReadFailureShown(HttpBinPage.readFailedSubtitle);
+    await expect(portalShell.alert).toHaveCount(0);
+    await expect(httpBin.namespaceSelect).toHaveCount(0);
+    await expect(httpBin.retryButton).not.toHaveAttribute('disabled');
+    expect(httpBinReadNamespaces(portalBackend)).toEqual([
+      selectedHttpBinNamespace,
+    ]);
+    expect(portalBackend.requestsTo('namespacesList', selectedAccount)).toEqual(
+      [],
+    );
+
+    portalBackend.respondToHttpBinRead(
+      selectedAccount,
+      gatewayMocks.httpBinReadForHttpBinBetaInTeamB,
+    );
+    await httpBin.retryButton.click();
+
+    await expectHttpBinShown(page, dashboardPath);
+    expect(httpBinReadNamespaces(portalBackend)).toEqual([
+      selectedHttpBinNamespace,
+      selectedHttpBinNamespace,
+    ]);
+  });
+
+  test('asks for a namespace before retrying when the namespace parameter is missing', async ({
+    page,
+    portalBackend,
+  }) => {
     portalBackend.respondToHttpBinRead(
       selectedAccount,
       gatewayMocks.httpBinReadMissingNamespaceArgument,
     );
+    const dashboardPath = HttpBinPage.path(
+      selectedAccount,
+      selectedHttpBin,
+      HttpBinPage.dashboard,
+    );
+
+    await page.goto(dashboardPath);
+
+    await expectReadFailureShown(HttpBinPage.namespaceMissingSubtitle);
+    await expect(portalShell.alert).toHaveCount(0);
+    await expect(page).toHaveURL(dashboardPath);
+    expect(httpBinReadNamespaces(portalBackend)).toEqual([undefined]);
+    expect(
+      portalBackend.requestsTo('namespacesList', selectedAccount),
+    ).toHaveLength(1);
+    await expect(httpBin.namespaceSelect).toBeVisible();
+    await expect(httpBin.namespaceRefreshButton).toBeVisible();
+    await expect(httpBin.namespaceOptions()).toHaveText(namespaces);
+    await expect(httpBin.retryButton).toHaveAttribute('disabled');
+
+    await httpBin.namespaceSelect.click();
+    await httpBin.namespaceOption(selectedHttpBinNamespace).click();
+
+    await expect(page).toHaveURL(
+      `${dashboardPath}?${namespaceSearchParam}=${selectedHttpBinNamespace}`,
+    );
+    await expect(httpBin.retryButton).not.toHaveAttribute('disabled');
+    await expect(httpBin.readState).toBeVisible();
+    expect(httpBinReadNamespaces(portalBackend)).toEqual([undefined]);
+
+    portalBackend.respondToHttpBinRead(
+      selectedAccount,
+      gatewayMocks.httpBinReadForHttpBinBetaInTeamB,
+    );
+    await httpBin.retryButton.click();
+
+    await expectHttpBinShown(
+      page,
+      `${dashboardPath}?${namespaceSearchParam}=${selectedHttpBinNamespace}`,
+    );
+    expect(httpBinReadNamespaces(portalBackend)).toEqual([
+      undefined,
+      selectedHttpBinNamespace,
+    ]);
   });
 
-  test('opens every httpbin node without a namespace and shows that the httpbin could not be read', async ({
+  test('alerts a failed namespace read and loads the namespaces with the refresh button', async ({
     page,
     portalBackend,
   }) => {
-    test.info().annotations.push({
-      type: 'current behavior',
-      description:
-        'A deep link without ?namespace gives the portal no namespace for the httpbin: it does not add one to the URL and reads the httpbin without it, which the gateway rejects with "missing required argument: namespace".',
-    });
-    let httpBinReadsBefore = httpBinReads(portalBackend).length;
-
-    await page.goto(
-      HttpBinPage.path(selectedAccount, selectedHttpBin, HttpBinPage.dashboard),
+    portalBackend.respondToHttpBinRead(
+      selectedAccount,
+      gatewayMocks.httpBinReadMissingNamespaceArgument,
     );
-
-    await expectHttpBinNodeShownWithoutNamespace(
-      page,
-      portalBackend,
+    portalBackend.respondToNamespacesList(
+      selectedAccount,
+      gatewayErrorMocks.http500InternalServerError,
+    );
+    const dashboardPath = HttpBinPage.path(
+      selectedAccount,
+      selectedHttpBin,
       HttpBinPage.dashboard,
-      httpBinReadsBefore,
     );
 
-    for (const node of [HttpBinPage.details, HttpBinPage.status]) {
-      httpBinReadsBefore = httpBinReads(portalBackend).length;
+    await page.goto(dashboardPath);
 
-      await portalShell.navigationItem(node).click();
+    await expectReadFailureShown(HttpBinPage.namespaceMissingSubtitle);
+    await expectNamespaceReadFailureAlerted('Received status code 500');
+    await expect(httpBin.namespaceSelect).toBeVisible();
+    await expect(httpBin.namespaceOptions()).toHaveCount(0);
+    await expect(httpBin.retryButton).toHaveAttribute('disabled');
+    expect(
+      portalBackend.requestsTo('namespacesList', selectedAccount),
+    ).toHaveLength(1);
 
-      await expectHttpBinNodeShownWithoutNamespace(
-        page,
-        portalBackend,
-        node,
-        httpBinReadsBefore,
-      );
-    }
+    portalBackend.respondToNamespacesList(
+      selectedAccount,
+      gatewayErrorMocks.graphqlErrorServiceUnavailable,
+    );
+    await httpBin.namespaceRefreshButton.click();
+
+    await expectNamespaceReadFailureAlerted(
+      'the server is currently unable to handle the request',
+    );
+    await expect(httpBin.namespaceOptions()).toHaveCount(0);
+    expect(
+      portalBackend.requestsTo('namespacesList', selectedAccount),
+    ).toHaveLength(2);
+
+    portalBackend.respondToNamespacesList(
+      selectedAccount,
+      gatewayMocks.namespacesListWithTeamAAndTeamB,
+    );
+    await httpBin.namespaceRefreshButton.click();
+
+    await expect(httpBin.namespaceOptions()).toHaveText(namespaces);
+    expect(
+      portalBackend.requestsTo('namespacesList', selectedAccount),
+    ).toHaveLength(3);
+    await expect(httpBin.retryButton).toHaveAttribute('disabled');
+
+    await httpBin.namespaceSelect.click();
+    await httpBin.namespaceOption(selectedHttpBinNamespace).click();
+
+    await expect(page).toHaveURL(
+      `${dashboardPath}?${namespaceSearchParam}=${selectedHttpBinNamespace}`,
+    );
+    await expect(httpBin.retryButton).not.toHaveAttribute('disabled');
+
+    portalBackend.respondToHttpBinRead(
+      selectedAccount,
+      gatewayMocks.httpBinReadForHttpBinBetaInTeamB,
+    );
+    await httpBin.retryButton.click();
+
+    await expectHttpBinShown(
+      page,
+      `${dashboardPath}?${namespaceSearchParam}=${selectedHttpBinNamespace}`,
+    );
+    expect(httpBinReadNamespaces(portalBackend)).toEqual([
+      undefined,
+      selectedHttpBinNamespace,
+    ]);
   });
 
-  async function expectHttpBinNodeShownWithoutNamespace(
-    page: Page,
-    portalBackend: PortalBackendMock,
-    node: NavigationNode,
-    readsBefore: number,
-  ) {
-    await expect(portalShell.navigationItem(node)).toHaveClass(
+  async function expectNamespaceReadFailureAlerted(errorDetail: string) {
+    const alert = portalShell.alert.filter({ hasText: errorDetail });
+    await expect(alert).toBeVisible();
+    await expect(alert).toContainText(HttpBinPage.namespacesReadFailedAlert);
+  }
+
+  async function expectReadFailureShown(subtitle: string) {
+    await expect(portalShell.navigationItem(HttpBinPage.dashboard)).toHaveClass(
       PortalShell.selectedNavigationItemClass,
     );
     await expect(httpBin.readState).toHaveAttribute(
       'title-text',
       HttpBinPage.readFailedTitle,
     );
+    await expect(httpBin.readState).toHaveAttribute('subtitle-text', subtitle);
     await expect
       .poll(() => portalShell.renderedViews())
       .toEqual([HttpBinPage.viewName]);
-    await expect(page).toHaveURL(
-      HttpBinPage.path(selectedAccount, selectedHttpBin, node),
-    );
-    await expect(portalShell.alert).toHaveCount(0);
-    await expect
-      .poll(() => [
-        ...new Set(
-          httpBinReads(portalBackend)
-            .slice(readsBefore)
-            .map((request) => request.namespace),
-        ),
-      ])
-      .toEqual([undefined]);
   }
 
-  function httpBinReads(portalBackend: PortalBackendMock) {
-    return portalBackend.requestsTo('httpBinRead', selectedAccount);
+  async function expectHttpBinShown(page: Page, path: string) {
+    await expect(httpBin.field('metadata.name')).toContainText(selectedHttpBin);
+    await expect(httpBin.readState).toHaveCount(0);
+    await expect(page).toHaveURL(path);
+  }
+
+  function httpBinReadNamespaces(portalBackend: PortalBackendMock) {
+    return portalBackend
+      .requestsTo('httpBinRead', selectedAccount)
+      .map((request) => request.namespace);
   }
 });

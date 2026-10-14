@@ -9,11 +9,11 @@ import {
   AccountInfoService,
   ErrorHandlerService,
   InstancePermissionsService,
+  NamespaceService,
   OrganizationReadyService,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
-  generateGraphQLFields,
   isNamespacedResource,
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
@@ -28,6 +28,7 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
   private instancePermissionsService = inject(InstancePermissionsService);
   private organizationReadyService = inject(OrganizationReadyService);
   private errorHandlerService = inject(ErrorHandlerService);
+  private namespaceService = inject(NamespaceService);
   private namespacedResourceSelectionService = inject(
     NamespacedResourceSelectionService,
   );
@@ -78,6 +79,8 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
       kind,
       namespace,
     );
+
+    await this.addNamespacesToContext(ctx, namespace);
 
     this.accamulatePortalPermissions(ctx);
     this.getEntityPermissions(ctx, namespace);
@@ -167,6 +170,21 @@ export class NodeContextProcessingServiceImpl implements NodeContextProcessingSe
     ctx.entityKind = kind;
     ctx.accountPath = accountPath;
     ctx.namespaceId = namespace;
+  }
+
+  private async addNamespacesToContext(
+    ctx: PortalNodeContext,
+    namespace: string | undefined,
+  ) {
+    if (!isNamespacedResource(ctx) || namespace) {
+      return;
+    }
+
+    try {
+      ctx.namespaces = await firstValueFrom(this.namespaceService.list(ctx));
+    } catch (e) {
+      this.errorHandlerService.showError(e, 'Failed to read namespaces.');
+    }
   }
 
   private addFieldsToContextFromAccountInfo(
