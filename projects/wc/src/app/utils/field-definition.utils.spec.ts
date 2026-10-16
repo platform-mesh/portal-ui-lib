@@ -46,9 +46,9 @@ describe('field-definition.utils', () => {
 
     it('returns false for editable fields', () => {
       expect(isImmutableOnEdit({ property: 'spec.displayName' })).toBe(false);
-      expect(
-        isImmutableOnEdit({ property: 'spec.oidc.clientSecret' }),
-      ).toBe(false);
+      expect(isImmutableOnEdit({ property: 'spec.oidc.clientSecret' })).toBe(
+        false,
+      );
     });
   });
 
@@ -311,6 +311,7 @@ describe('field-definition.utils', () => {
         mockLuigiClient,
         field,
         undefined,
+        {},
         callBack,
       );
 
@@ -330,6 +331,7 @@ describe('field-definition.utils', () => {
         mockLuigiClient,
         field,
         undefined,
+        {},
         callBack,
       );
 
@@ -369,10 +371,67 @@ describe('field-definition.utils', () => {
         mockLuigiClient,
         field,
         undefined,
+        {},
         callBack,
       );
 
       expect(result).toBe('handled');
+    });
+
+    it('should resolve {context.*} placeholders in the path for navigate', () => {
+      const field: PlatformMeshFieldDefinition = {
+        value: '/workspaces/{context.workspace}/create-component',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      executeButtonAction(mockLuigiClient, field, undefined, {
+        workspace: 'my-ws',
+      });
+
+      expect(mockLinkManager.navigate).toHaveBeenCalledWith(
+        '/workspaces/my-ws/create-component',
+      );
+    });
+
+    it('should resolve {context.*} placeholders in the path for openInModal', () => {
+      const field: PlatformMeshFieldDefinition = {
+        value: '/workspaces/{context.workspace}/create-component',
+        uiSettings: {
+          buttonSettings: {
+            action: 'openInModal',
+          },
+        },
+      };
+
+      executeButtonAction(mockLuigiClient, field, undefined, {
+        workspace: 'my-ws',
+      });
+
+      expect(mockLinkManager.openAsModal).toHaveBeenCalledWith(
+        '/workspaces/my-ws/create-component',
+        undefined,
+      );
+    });
+
+    it('should leave unresolved {context.*} placeholders in place', () => {
+      const field: PlatformMeshFieldDefinition = {
+        value: '/workspaces/{context.workspace}/create-component',
+        uiSettings: {
+          buttonSettings: {
+            action: 'navigate',
+          },
+        },
+      };
+
+      executeButtonAction(mockLuigiClient, field, undefined, {});
+
+      expect(mockLinkManager.navigate).toHaveBeenCalledWith(
+        '/workspaces/{context.workspace}/create-component',
+      );
     });
 
     it('should throw error when buttonSettings is missing', () => {
