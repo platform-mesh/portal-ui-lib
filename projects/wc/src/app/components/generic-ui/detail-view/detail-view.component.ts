@@ -787,7 +787,7 @@ export class DetailView {
     }
 
     try {
-      executeButtonAction(this.LuigiClient(), action, resource);
+      executeButtonAction(this.LuigiClient(), action, resource, this.context());
     } catch {
       this.showConfiguredActionError();
     }

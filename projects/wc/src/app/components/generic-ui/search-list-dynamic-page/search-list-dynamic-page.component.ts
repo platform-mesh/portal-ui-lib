@@ -308,6 +308,7 @@ export class SearchListDynamicPage implements OnInit {
       this.LuigiClient(),
       event.field,
       event.resource,
+      this.context(),
       (result?: ModalResult) => this.handleModalResult(result),
     );
   }
