@@ -77,7 +77,7 @@ export function executeButtonAction<T, R = unknown>(
   luigiClient: LuigiClient,
   field: FieldDefinition,
   resource: T | undefined,
-  context: Record<string, any> = {},
+  context: Record<string, any>,
   callBack?: (result?: ModalResult<R>) => unknown,
 ) {
   const buttonSettings = field.uiSettings?.buttonSettings;

@@ -69,7 +69,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"listView"`: Defines how resources are displayed in table format
   - `"fields"`: Array of `FieldDefinition` objects defining table columns. Each field's `"label"` becomes the column header, and `"property"` is a JSON path to the resource property. Fields can be grouped using the `"group"` property to display related information in a single column. The `"uiSettings"` property allows customization of rendering (format, actions, styling).
-  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete"` to open the resource deletion confirmation dialog. For example:
+  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete"` to open the resource deletion confirmation dialog. The `navigate` / `openInModal` action path (`value` or `property`) supports `{context.<dot.path>}` runtime interpolation against the current Luigi node context, consistent with `filters` (see [Field Definition Properties](#field-definition-properties)). For example:
     ```json
     {
       "label": "Delete",
@@ -111,7 +111,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"detailView"`: Defines how a page view for individual resource is displayed
   - `"fields"`: Array of `FieldDefinition` objects defining which properties to display. Supports field grouping for a compact display of related data.
-  - `"actions"`: Array of `FieldDefinition` objects whose `uiSettings.buttonSettings` render as action buttons in the detail view header, exactly as configured. Supported actions are `navigate`, `openInModal`, and `download-kubeconfig-from-secret-ref`; an action that cannot be executed shows an error alert when clicked. An action with `requirePermission` is hidden when the user lacks that permission. The existing `navigate` and `openInModal` actions use the URL from the field's `property` or static `value`; dynamic properties must also be present in `detailView.fields`, because ordinary actions do not add fields to the detail query. The `download-kubeconfig-from-secret-ref` action reads a core Kubernetes Secret and downloads one base64-encoded data key as YAML. Its `buttonSettings.resourceProperty` must resolve to the Secret name. For cross-namespace references, `buttonSettings.namespaceProperty` must resolve to the Secret namespace; when omitted, the resource namespace and then the current navigation namespace are used.
+  - `"actions"`: Array of `FieldDefinition` objects whose `uiSettings.buttonSettings` render as action buttons in the detail view header, exactly as configured. Supported actions are `navigate`, `openInModal`, and `download-kubeconfig-from-secret-ref`; an action that cannot be executed shows an error alert when clicked. An action with `requirePermission` is hidden when the user lacks that permission. The existing `navigate` and `openInModal` actions use the URL from the field's `property` or static `value`, which supports `{context.<dot.path>}` runtime interpolation against the current Luigi node context (consistent with `filters`); dynamic properties must also be present in `detailView.fields`, because ordinary actions do not add fields to the detail query. The `download-kubeconfig-from-secret-ref` action reads a core Kubernetes Secret and downloads one base64-encoded data key as YAML. Its `buttonSettings.resourceProperty` must resolve to the Secret name. For cross-namespace references, `buttonSettings.namespaceProperty` must resolve to the Secret namespace; when omitted, the resource namespace and then the current navigation namespace are used.
     ```json
     {
       "uiSettings": {
@@ -187,6 +187,7 @@ Each field definition supports the following properties:
     - `"design"`: Button design variant (options: `"Default"`, `"Positive"`, `"Negative"`, `"Transparent"`, `"Emphasized"`, `"Attention"`)
     - `"tooltip"`: Tooltip text shown on hover
     - `"action"`: Action to perform when button is clicked. `"openInModal"` and `"navigate"` use the URL from the field's `property` or static `value`; `"edit"` and `"delete"` are handled internally — `"delete"` is supported for `listView.actions` and opens the resource deletion confirmation dialog.
+      - For `"navigate"` and `"openInModal"`, the resolved `value` (or `property`) supports the same `{context.<dot.path>}` **runtime interpolation** as `filters`: any occurrence of `{context.<dot.path>}` is replaced with the corresponding value from the current Luigi node context before the action runs (e.g. `"value": "/workspaces/{context.workspace}/create-component"`). Placeholders that resolve to `undefined` or `null` are left literal in the output.
     - `"modalSettings"`: Configuration for modal when `action: "openInModal"`:
       - `"title"`: Modal title
       - `"size"`: Predefined modal size (options: `"fullscreen"`, `"l"`, `"m"`, `"s"`)
