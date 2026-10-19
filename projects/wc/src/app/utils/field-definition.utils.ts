@@ -95,9 +95,8 @@ export function executeButtonAction<T, R = unknown>(
     );
   }
 
-  // Resolve `{context.<path>}` placeholders against the current Luigi context,
-  // consistent with how listView filters and view URLs are resolved. This lets a
-  // static action path target an entity-scoped node, e.g.
+  // Resolve `{context.<path>}` placeholders against the current Luigi context.
+  // This lets a static action path target an entity-scoped node, e.g.
   // "/workspaces/{context.workspace}/create-component".
   const synitzedPath = resolveContextPlaceholders(path.trim(), context);
 

@@ -69,7 +69,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 - `"listView"`: Defines how resources are displayed in table format
   - `"fields"`: Array of `FieldDefinition` objects defining table columns. Each field's `"label"` becomes the column header, and `"property"` is a JSON path to the resource property. Fields can be grouped using the `"group"` property to display related information in a single column. The `"uiSettings"` property allows customization of rendering (format, actions, styling).
-  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete"` to open the resource deletion confirmation dialog. The `navigate` / `openInModal` action path (`value` or `property`) supports `{context.<dot.path>}` runtime interpolation against the current Luigi node context, consistent with `filters` (see [Field Definition Properties](#field-definition-properties)). For example:
+  - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete"` to open the resource deletion confirmation dialog. For example:
     ```json
     {
       "label": "Delete",
@@ -83,6 +83,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
       }
     }
     ```
+    The `navigate` / `openInModal` action path (`value` or `property`) supports the same `{context.<dot.path>}` runtime interpolation as `filters`.
   - `"resourceTitle"`: A `FieldDefinition` object for rendering the view title. Supports all field definition features like `uiSettings`, `value`, etc. If not provided, defaults to the plural form of the resource.
   - `"resourceDescription"`: A `FieldDefinition` object for rendering the subtitle description. Supports all field definition features. If not provided, a default description is generated.
   - `"filters"`: Optional array of `FieldFilterDefinition` objects rendered as filter tabs above the table. Each entry defines a tab that scopes the list to rows whose `"property"` equals the given `"value"` (sent to the OpenSearch backend as `<property>=<value>`). The strip renders exactly what you author — if you want an "All / no filter" affordance, add it as a regular entry (for example `{ "label": "All", "property": "<some-field>", "value": "*" }`). Properties per entry:
