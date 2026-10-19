@@ -68,6 +68,14 @@ export interface UIDefinition {
 export interface ListView extends UiView {
   filters?: FieldFilterDefinition[];
   baselineFilters?: FieldFilterDefinition[];
+  /**
+   * Absolute path a row click navigates to, with `{resource.<dot.path>}`
+   * placeholders resolved against the clicked row — e.g.
+   * `"/workspaces/{resource.accountName}/components/{resource.metadata.name}"`.
+   * When set, overrides the default relative navigation to the row's detail
+   * view, so a flat list can link into an entity-scoped path.
+   */
+  navigateTo?: string;
 }
 
 export interface DetailView extends UiView {

@@ -68,6 +68,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 #### List View Configuration
 
 - `"listView"`: Defines how resources are displayed in table format
+  - `"navigateTo"`: Optional absolute path a **row click** navigates to, with `{resource.<dot.path>}` placeholders resolved against the clicked row (e.g. `"/workspaces/{resource.accountName}/components/{resource.metadata.name}"`). When set, it overrides the default relative navigation to the row's detail view — letting a flat/global list link into an entity-scoped path it cannot reach via the usual relative `navigate(name)`. Placeholders that resolve to `undefined` or `null` are left literal. Without `navigateTo`, a row click still requires a `detailView` to be present and navigates relatively to the row's own detail page.
   - `"fields"`: Array of `FieldDefinition` objects defining table columns. Each field's `"label"` becomes the column header, and `"property"` is a JSON path to the resource property. Fields can be grouped using the `"group"` property to display related information in a single column. The `"uiSettings"` property allows customization of rendering (format, actions, styling).
   - `"actions"`: Array of `FieldDefinition` objects with `displayAs: "button"` that render as row actions. In addition to navigation and modal actions, set `buttonSettings.action` to `"delete"` to open the resource deletion confirmation dialog. For example:
     ```json

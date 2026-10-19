@@ -1,4 +1,7 @@
-import { resolveContextPlaceholders } from './resolve-context-placeholders';
+import {
+  resolveContextPlaceholders,
+  resolveResourcePlaceholders,
+} from './resolve-context-placeholders';
 
 describe('resolveContextPlaceholders', () => {
   it('replaces a simple top-level placeholder', () => {
@@ -120,5 +123,28 @@ describe('resolveContextPlaceholders', () => {
     expect(
       resolveContextPlaceholders(null as unknown as string, { userId: 'u1' }),
     ).toBe('');
+  });
+});
+
+describe('resolveResourcePlaceholders', () => {
+  it('composes an absolute path from resource fields', () => {
+    expect(
+      resolveResourcePlaceholders(
+        '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
+        { accountName: 'ws1', metadata: { name: 'comp1' } },
+      ),
+    ).toBe('/workspaces/ws1/components/comp1');
+  });
+
+  it('leaves the placeholder literal when a resource field is missing', () => {
+    expect(
+      resolveResourcePlaceholders('/x/{resource.missing}', { metadata: {} }),
+    ).toBe('/x/{resource.missing}');
+  });
+
+  it('does not touch {context.*} placeholders', () => {
+    expect(
+      resolveResourcePlaceholders('{context.foo}', { foo: 'bar' }),
+    ).toBe('{context.foo}');
   });
 });

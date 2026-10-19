@@ -206,6 +206,40 @@ describe('ResourceTableCard', () => {
       expect(navSpy).toHaveBeenCalledWith('res1');
     });
 
+    it('should navigate using listView.navigateTo with resolved resource placeholders', () => {
+      const navSpy = vi.fn();
+      component.context = makeContext({
+        ui: {
+          listView: {
+            navigateTo:
+              '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
+          },
+        },
+      });
+      component.LuigiClient = makeLuigiClient(navSpy);
+
+      component.navigateToResource({
+        accountName: 'alert-notification-service',
+        metadata: { name: 'alert-notification-service' },
+      } as any);
+
+      expect(navSpy).toHaveBeenCalledWith(
+        '/workspaces/alert-notification-service/components/alert-notification-service',
+      );
+    });
+
+    it('should navigate via navigateTo even when detailView is not defined', () => {
+      const navSpy = vi.fn();
+      component.context = makeContext({
+        ui: { listView: { navigateTo: '/workspaces/{resource.metadata.name}' } },
+      });
+      component.LuigiClient = makeLuigiClient(navSpy);
+
+      component.navigateToResource({ metadata: { name: 'res1' } } as any);
+
+      expect(navSpy).toHaveBeenCalledWith('/workspaces/res1');
+    });
+
     it('should not navigate when detailView is not defined', () => {
       const navSpy = vi.fn();
       component.context = makeContext({ ui: { listView: { fields: [] } } });

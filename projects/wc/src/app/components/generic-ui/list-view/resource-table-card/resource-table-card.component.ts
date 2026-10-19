@@ -1,4 +1,5 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
+import { resolveResourcePlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   isMissingRequiredNamespace,
   withRouteNamespace,
@@ -402,7 +403,8 @@ export class ResourceTableCard {
 
   navigateToResource(resource: Resource) {
     const resourceDefinition = this.context().resourceDefinition;
-    if (!resourceDefinition?.ui?.detailView) return;
+    const navigateTo = resourceDefinition?.ui?.listView?.navigateTo;
+    if (!navigateTo && !resourceDefinition?.ui?.detailView) return;
 
     if (!resource.metadata.name) {
       this.LuigiClient().uxManager().showAlert({
@@ -423,6 +425,13 @@ export class ResourceTableCard {
     addSearchParams({
       namespace: this.isNamespaced() ? resource.metadata.namespace : undefined,
     });
+
+    if (navigateTo) {
+      this.LuigiClient()
+        .linkManager()
+        .navigate(resolveResourcePlaceholders(navigateTo, resource));
+      return;
+    }
 
     this.LuigiClient().linkManager().navigate(resource.metadata.name);
   }
