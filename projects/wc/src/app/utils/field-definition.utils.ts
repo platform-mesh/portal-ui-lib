@@ -98,11 +98,11 @@ export function executeButtonAction<T, R = unknown>(
   // Resolve `{context.<path>}` placeholders against the current Luigi context.
   // This lets a static action path target an entity-scoped node, e.g.
   // "/workspaces/{context.workspace}/create-component".
-  const synitzedPath = resolveContextPlaceholders(path.trim(), context);
+  const sanitizedPath = resolveContextPlaceholders(path.trim(), context);
 
   switch (buttonSettings.action) {
     case 'navigate':
-      luigiClient.linkManager().navigate(synitzedPath);
+      luigiClient.linkManager().navigate(sanitizedPath);
       return;
     case 'openInModal':
       // openAsModal returns a Promise resolved with a { data } envelope that
@@ -113,7 +113,7 @@ export function executeButtonAction<T, R = unknown>(
         luigiClient
           .linkManager()
           .openAsModal(
-            synitzedPath,
+            sanitizedPath,
             buttonSettings.modalSettings,
           ) as unknown as Promise<ModalResult<R> | undefined>
       ).then(callBack);
