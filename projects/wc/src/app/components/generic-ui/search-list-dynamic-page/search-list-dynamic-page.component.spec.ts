@@ -788,6 +788,50 @@ describe('SearchListDynamicPage', () => {
       expect(lc._navigate).toHaveBeenCalledWith('cluster-1');
     });
 
+    it('navigates using listView.navigateTo with resolved resource placeholders', () => {
+      const lc = buildLuigiClient();
+      const f = createComponent(
+        {
+          resourceDefinition: {
+            ui: {
+              listView: {
+                navigateTo:
+                  '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
+              },
+            },
+          },
+        },
+        lc,
+      );
+
+      f.componentInstance.navigateToResource({
+        accountName: 'alert-notification-service',
+        metadata: { name: 'alert-notification-service' },
+      } as any);
+
+      expect(lc._navigate).toHaveBeenCalledWith(
+        '/workspaces/alert-notification-service/components/alert-notification-service',
+      );
+    });
+
+    it('navigates via navigateTo even when detailView is not configured', () => {
+      const lc = buildLuigiClient();
+      const f = createComponent(
+        {
+          resourceDefinition: {
+            ui: { listView: { navigateTo: '/workspaces/{resource.metadata.name}' } },
+          },
+        },
+        lc,
+      );
+
+      f.componentInstance.navigateToResource({
+        metadata: { name: 'r1' },
+      } as any);
+
+      expect(lc._navigate).toHaveBeenCalledWith('/workspaces/r1');
+    });
+
     it('alerts and throws when resource.metadata.name is missing', () => {
       const showAlert = vi.fn();
       component.LuigiClient = (() => ({
