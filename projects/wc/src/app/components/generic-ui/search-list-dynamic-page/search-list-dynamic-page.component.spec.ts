@@ -788,6 +788,76 @@ describe('SearchListDynamicPage', () => {
       expect(lc._navigate).toHaveBeenCalledWith('cluster-1');
     });
 
+    it('navigates using listView.resourceURL, resolving resource and context placeholders', () => {
+      const lc = buildLuigiClient();
+      const f = createComponent(
+        {
+          resourceDefinition: {
+            ui: {
+              listView: {
+                resourceURL:
+                  '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
+              },
+            },
+          },
+        },
+        lc,
+      );
+
+      f.componentInstance.navigateToResource({
+        accountName: 'alert-notification-service',
+        metadata: { name: 'alert-notification-service' },
+      } as any);
+
+      expect(lc._navigate).toHaveBeenCalledWith(
+        '/workspaces/alert-notification-service/components/alert-notification-service',
+      );
+    });
+
+    it('resolves both {context.*} and {resource.*} in resourceURL', () => {
+      const lc = buildLuigiClient();
+      const f = createComponent(
+        {
+          organization: 'sap',
+          resourceDefinition: {
+            ui: {
+              listView: {
+                resourceURL:
+                  '/workspaces/{context.organization}/components/{resource.metadata.name}',
+              },
+            },
+          },
+        },
+        lc,
+      );
+
+      f.componentInstance.navigateToResource({
+        metadata: { name: 'comp1' },
+      } as any);
+
+      expect(lc._navigate).toHaveBeenCalledWith(
+        '/workspaces/sap/components/comp1',
+      );
+    });
+
+    it('navigates via resourceURL even when detailView is not configured', () => {
+      const lc = buildLuigiClient();
+      const f = createComponent(
+        {
+          resourceDefinition: {
+            ui: { listView: { resourceURL: '/workspaces/{resource.metadata.name}' } },
+          },
+        },
+        lc,
+      );
+
+      f.componentInstance.navigateToResource({
+        metadata: { name: 'r1' },
+      } as any);
+
+      expect(lc._navigate).toHaveBeenCalledWith('/workspaces/r1');
+    });
+
     it('alerts and throws when resource.metadata.name is missing', () => {
       const showAlert = vi.fn();
       component.LuigiClient = (() => ({
