@@ -13,6 +13,7 @@ Playwright tests that start a **real portal frontend** built from this repositor
 - **Tests assert requirements, annotated when they pin current behavior.** If a test documents behavior the user accepted as "current behavior" (not necessarily desired), add a `test.info().annotations` entry of type `current behavior` explaining it.
 - **Prove a test can fail.** After adding a test, temporarily break the code under test (keep a backup copy, do not use git to restore) and check that the test fails for the right reason. Restore the file and confirm `git diff` is clean for it.
 - **Check stability** with `--repeat-each=5` before declaring a test done.
+- **Keep a debug command for every test in `README.md`.** Whenever you add, rename or remove a test, update the "Debug a single test" list in the same change: one entry per test under its spec file, the bullet `<innermost describe> › <test title>` and the command `npx playwright test --config integration/playwright.config.ts integration/tests/<setup>/<spec> -g '<innermost describe> <test title>' --debug`. Take the titles from `npx playwright test --config integration/playwright.config.ts --list`, wrap the pattern in single quotes and escape regex characters. Do not use `file:line`: tests generated in a loop share one line. Run every command with `--list` instead of `--debug` and confirm it prints `Total: 1 test in 1 file` for the intended test.
 - **Keep everything test-related inside `integration/`.** The only files outside it are the `@playwright/test` devDependency and the `test:integration*` scripts in the root `package.json`, and the pointer in the root `AGENTS.md`.
 - Follow the repository conventions from the root `AGENTS.md` (Prettier config, Conventional Commits, no AI attribution, never commit without approval).
 
@@ -34,6 +35,7 @@ The web component bundle is **not** rebuilt by Playwright. After changing anythi
 ```
 integration/
 ├── AGENTS.md                     # this file
+├── README.md                     # running the portal with the mocks, one debug command per test
 ├── package.json                  # only marks the folder as ES modules ("type": "module")
 ├── tsconfig.json                 # type-check for tests, mocks, server (npx tsc -p integration/tsconfig.json)
 ├── angular.json                  # Angular workspace with one project per portal setup
@@ -57,7 +59,7 @@ integration/
 │   ├── gateway-request.ts        # identifies the GraphQL operation and account of a request
 │   └── portal-backend-mock.ts    # routes requests to mocks, per-account overrides, request log
 ├── fixtures/portal-test.ts       # `test` with the `portalBackend` fixture
-├── pages/                        # page objects (shell, overview, accounts list, account dashboard, error page)
+├── pages/                        # page objects (shell, overview, accounts list, account dashboard, httpbins list, httpbin, error page)
 └── tests/<setup-name>/           # specs, grouped by the portal setup they run against
 ```
 
@@ -112,19 +114,25 @@ Every mock file is one complete HTTP response:
 - `{{placeholders}}` are filled when loading: `{{portalOrigin}}` (the page origin, used in `crdGatewayApiUrl`) and `{{accountName}}` (the account the request is for). A placeholder without a value throws.
 - Reference files only through `mock-catalog.ts`, never by path in tests.
 - REST mocks are the **server output** of the real content configurations in `pm/platform-mesh/operators/platform-mesh-operator/manifests/kcp/01-platform-mesh-system/` (`contentconfiguration-main-home`, `-main-accounts`, `-account-home`), trimmed to what the tests need: the server adds `viewUrl` (= `url`) and `children: []`, wraps everything in one `platform-mesh-system` provider with `nodeContext.nodesPermissions`, and the account entity context is `{ id, policies }` (see `pm/portal-server-lib` `ContentConfigurationServiceProvidersService` and `AccountEntityContextProvider`). External `logoUrl` and kubeconfig download were left out.
+- `rest/config.account-entity-with-dashboard-and-httpbins.json` adds the httpbin list node of `pm/helm-charts/local-setup/example-data/root/providers/httpbin-provider/contentconfiguration.yaml` (Link column, delete button, `createView` and `logoUrl` left out) and the detail view that helm-charts commit `efb2a4ec` removed from it (`detailView`, the `:httpbinId` entity, the `dashboard` node), plus the `details` and `status` detail views the user asked for. The entity context leaves out the historical `"accountId": ":accountId"`: Luigi cannot resolve it below `:core_platform-mesh_io_accountId`. The server sends no permission checks for it (no `permissionsDefinition`), and the list view treats missing permissions as allowed (`resourceActionAllowed`).
 - GraphQL responses omit `__typename`; the real type names are unknown and Apollo does not need them here. Include every field the query selects (Apollo logs `Missing field` otherwise, e.g. `metadata.deletionTimestamp`).
 
 ### Gateway routing
 
-`crdGatewayApiUrl` is `<origin>/api/kubernetes-graphql-gateway/root:orgs:test-org/graphql`; the library rewrites the workspace segment per account. `gateway-request.ts` identifies the operation by the query text and the account by the workspace path or the `name` variable:
+`crdGatewayApiUrl` is `<origin>/api/kubernetes-graphql-gateway/root:orgs:test-org/graphql`; the library rewrites the workspace segment per account. `gateway-request.ts` identifies the operation by the query text and the account by the workspace path or the `name` variable, and records the `namespace` variable (`BackendRequest.namespace`):
 
-| Operation            | Observed request                                                                        | Default mock                                            |
-| -------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `accountsList`       | `Accounts(limit: $limit)` on `root:orgs:test-org`                                       | four ready accounts (`account-alpha` … `account-delta`) |
-| `accountsWatch`      | SSE subscription `core_platform_mesh_io_v1alpha1_accounts`, `Accept: text/event-stream` | `event: complete`, no changes                           |
-| `accountInfoRead`    | `AccountInfo(name: "account")` on `root:orgs:test-org:<account>`                        | succeeds                                                |
-| `accountRead`        | `Account(name: $name)` on `root:orgs:test-org`, `variables.name = <account>`            | succeeds                                                |
-| `logicalClusterRead` | `LogicalCluster(name: "cluster")` after a successful account info read                  | phase `Ready`                                           |
+| Operation            | Observed request                                                                                                                                               | Default mock                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `accountsList`       | `Accounts(limit: $limit)` on `root:orgs:test-org`                                                                                                              | four ready accounts (`account-alpha` … `account-delta`)     |
+| `accountsWatch`      | SSE subscription `core_platform_mesh_io_v1alpha1_accounts`, `Accept: text/event-stream`                                                                        | `event: complete`, no changes                               |
+| `accountInfoRead`    | `AccountInfo(name: "account")` on `root:orgs:test-org:<account>`                                                                                               | succeeds                                                    |
+| `accountRead`        | `Account(name: $name)` on `root:orgs:test-org`, `variables.name = <account>`                                                                                   | succeeds                                                    |
+| `logicalClusterRead` | `LogicalCluster(name: "cluster")` after a successful account info read                                                                                         | phase `Ready`                                               |
+| `httpBinsList`       | `HttpBins(namespace: $namespace, limit: $limit)` on `root:orgs:test-org:<account>`                                                                             | ready `httpbin-alpha` (`team-a`), `httpbin-beta` (`team-b`) |
+| `httpBinsWatch`      | SSE subscription `orchestrate_platform_mesh_io_v1alpha1_httpbins`                                                                                              | `event: complete`, no changes                               |
+| `httpBinRead`        | `HttpBin(name: $name, namespace: $namespace)` on `root:orgs:test-org:<account>`                                                                                | `httpbin-beta` in `team-b`                                  |
+| `namespacesList`     | `v1 { Namespaces }` for the header namespace selection and for a namespaced entity without a namespace (`NamespaceService`), on `root:orgs:test-org:<account>` | `team-a`, `team-b`                                          |
+| `namespacesWatch`    | SSE subscription `v1_namespaces`                                                                                                                               | `event: complete`, no changes                               |
 
 Override per account inside a test, before navigating:
 
@@ -137,7 +145,17 @@ portalBackend.respondToAccountRead(
   'account-gamma',
   gatewayMocks.accountReadForbiddenGraphqlError,
 );
+portalBackend.respondToAccountEntityConfig(
+  'account-gamma',
+  restMocks.accountEntityConfigWithDashboardAndHttpBins,
+);
+portalBackend.respondToHttpBinRead(
+  'account-gamma',
+  gatewayMocks.httpBinReadMissingNamespaceArgument,
+);
 ```
+
+`gateway/httpbin-read.missing-namespace-argument.json` is the gateway's answer to a read of a namespaced resource without `namespace`: `GetItem` requires the argument for namespace-scoped resources and fails with `missing required argument: namespace`, and the item field is non-null, so `data` is `null` (`pm/platform-mesh/services/kubernetes-graphql-gateway/gateway/resolver/resolver.go`, `resolver/arguments.go`, `schema/fields/query.go`).
 
 Assert which calls happened with `portalBackend.requestsTo(endpoint, accountName)` (endpoints: the gateway operations and `accountEntityConfig`).
 
@@ -166,3 +184,28 @@ Why: `ErrorHandlerService.redirectToErrorPage` redirects only for `statusCode ==
 The error page is checked for its title **and** its illustration: the `ui5-illustrated-message` shadow DOM must contain the `img` labelled with the scene from `error.component.ts` (404 `NoEntries`, 403 `tnt/UnsuccessfulAuth`) and the visible SVG drawing of that scene (`#sapIllus-Scene-NoEntries`, `#tnt-Scene-UnsuccessfulAuth`). A visible SVG has a size, so this proves the image was drawn, not only configured.
 
 Mutation checks done when the tests were written (rebuild `dist-wc` for mutations in `projects/wc`): removing `abandonPendingNavigation()` in `NodeContextProcessingServiceImpl` fails both AccountInfo redirect tests (URL stays on the dashboard); forcing `replaceHistory = true` fails their back-button step (Back lands on the overview instead of the list). Changing the 404 scene in `error.component.ts` to an unregistered one (`NoMail`) fails both 404 tests on the illustration check while the title still matches. Removing an illustration import from `error.component.ts` is **not** a valid mutation: `NoEntries` is also imported by the detail view and `tnt/UnsuccessfulAuth` by `@openmfp/ngx`, so both stay in the bundle.
+
+### Httpbin navigation (`httpbin-navigation.spec.ts`)
+
+Starts like the account tests with the httpbin account entity config for `account-gamma`, waits until the account dashboard is rendered, then clicks the Http Bins nav item. The header namespace selection writes `?namespace=-all-` to the list URL. Opening `httpbin-beta` lands on `/home/accounts/account-gamma/orchestrate_platform-mesh_io_httpbins/httpbin-beta/dashboard?namespace=team-b`. Details, Status and Dashboard again must each show exactly `?namespace=team-b`, be the selected nav item, render only `generic-detail-view` with the httpbin name, and read the `HttpBin` with namespace `team-b`. `CustomRoutingConfigServiceImpl` leaves Luigi's `preserveQueryParams` unset (off), so Luigi drops the query on every navigation; `NamespacedResourceSelectionService` remembers the namespace of the opened namespaced resource in `NodeContextProcessingServiceImpl` and the node change hook writes it back to the URL (`addSearchParams(..., false, true)`: `replaceState` without a Luigi config update) on every node inside that resource.
+
+A second test opens the same httpbin dashboard, then clicks the Accounts breadcrumb (`/home/accounts`) and the Home breadcrumb (`/home/overview`) and requires the `namespace` parameter to be gone on both. The paths are hard assertions, the missing parameter is a soft assertion so both steps are always checked. With `preserveQueryParams: true` it failed on both steps (`namespace=team-b` kept). Breadcrumb links are found by accessible name, which ui5 builds as `<label> <n> of <total>` (their inner text is empty, the label is slotted).
+
+Nav item test ids follow Luigi `NavigationHelpers.prepareForTests`: `pathSegment` and `label` are each lowercased, stripped of spaces and URI-encoded, then joined with `_` (`orchestrate_platform-mesh_io_httpbins_httpbins`). `PortalShell.navigationItem` builds them the same way.
+
+Why the test waits for the account dashboard: Luigi renders `compound` nodes (both dashboards) asynchronously (`renderWebComponentCompound` → `createCompoundContainerAsync`) and appends the result even after navigating away. Clicking the next nav item before the dashboard is rendered leaves both views in `.wcContainer` (seen in 6 of 20 runs before the wait was added).
+
+Mutation checks: without the namespace restore (`preserveQueryParams` off and no `restoreNamespaceSearchParam` call in `NodeChangeHookConfigServiceImpl`) both tests fail on the dashboard URL (`.../httpbin-beta/dashboard` without `?namespace=team-b`): the parameter is already lost when the httpbin is opened, before any sibling node. Restoring the namespace on every node, also outside the resource, fails only the breadcrumb test (`namespace=team-b` on `/home/accounts` and `/home/overview`).
+
+### Httpbin read failures (`httpbin-navigation.spec.ts`, `when reading the httpbin fails`)
+
+All three tests open the httpbin dashboard directly and check the read state of `generic-detail-view` (title `Could not load resource`, no alert, only that view rendered), then answer the next `HttpBin` read with the default success mock and click Retry.
+
+- **Namespace known, other GraphQL error:** `.../httpbin-beta/dashboard?namespace=team-b` with `gateway/errors/graphql-error-service-unavailable.json`. Subtitle `Please try again.`, no namespace select, Retry enabled, no `namespacesList` request. Retry reads the httpbin again in `team-b` and the URL keeps `?namespace=team-b`.
+- **Namespace parameter missing:** `.../httpbin-beta/dashboard` with `gateway/httpbin-read.missing-namespace-argument.json`. The read is sent without `namespace`. `NodeContextProcessingServiceImpl` lists the workspace namespaces through `NamespaceService` (`namespacesList`) for a namespaced entity without a namespace and puts them into the node context as `namespaces`, the detail view renders them in a select (`generic-detail-view-namespace-select`, options `team-a`, `team-b`), the subtitle is `Select a namespace and try again.` and Retry carries the `disabled` attribute until a namespace is selected. Selecting `team-b` writes `?namespace=team-b` at once (`LuigiCoreService.routing().addSearchParams(..., false, true)`: `replaceState` without a Luigi config update) and sends no read. Retry calls `LuigiCoreService.configChanged()`; the node context is processed again with the namespace and the view gets a context with `namespaceId`, which triggers exactly one new read in `team-b` (calling `readResource()` in addition sent a second, duplicate read).
+
+- **Namespace read fails:** as above, but `namespacesList` answers HTTP 500. `NodeContextProcessingServiceImpl` alerts `Failed to read namespaces.` with the error detail through `ErrorHandlerService.showError` (no 403/404 redirect: a failed namespace read must not move the user away from the resource) and the select has no options. The icon-only refresh button next to the select (`generic-detail-view-namespace-refresh`) lists the namespaces again through `NamespaceService`: a GraphQL error is alerted the same way, a successful answer fills the select (`team-a`, `team-b`) and the flow continues as in the missing-namespace test. Each alert is found by its error detail (`portalShell.alert.filter({ hasText })`) because earlier alerts can still be open. `portalBackend.respondToNamespacesList(account, mock)` overrides the answer per account.
+
+Disabled state is asserted with `toHaveAttribute('disabled')`: the button is a `ui5-button`, not a native button.
+
+Mutation checks: not listing the namespaces in `NodeContextProcessingServiceImpl` fails the missing-namespace test on the options (`element(s) not found`); removing the `[disabled]` binding fails it on the disabled check; not writing the search param on selection fails it on the URL right after selecting (no `?namespace=team-b`). Logging instead of alerting the failed namespace read in `NodeContextProcessingServiceImpl` fails the namespace-read test on the first alert; logging instead of alerting a failed refresh fails it on the alert after the refresh; ignoring a successful refresh result fails it on the options.

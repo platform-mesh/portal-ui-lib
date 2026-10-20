@@ -23,7 +23,21 @@ export class PortalShell {
   }
 
   navigationItem({ pathSegment, label }: NavigationNode): Locator {
-    return this.page.getByTestId(`${pathSegment}_${label}`.toLowerCase());
+    return this.page.getByTestId(
+      [pathSegment, label]
+        .map((part) =>
+          encodeURIComponent(part.toLowerCase().split(' ').join('')),
+        )
+        .join('_'),
+    );
+  }
+
+  breadcrumb(label: string): Locator {
+    return this.page
+      .getByRole('navigation', { name: 'Breadcrumb Trail' })
+      .getByRole('link', {
+        name: new RegExp(`^${this.escapeForRegExp(label)} \\d+ of \\d+$`),
+      });
   }
 
   async renderedViews(): Promise<string[]> {
@@ -36,6 +50,10 @@ export class PortalShell {
     return tagNames
       .filter((tagName) => tagName.startsWith(luigiWebComponentTagPrefix))
       .map((tagName) => this.viewNameOf(tagName));
+  }
+
+  private escapeForRegExp(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private viewNameOf(luigiWebComponentTagName: string): string {

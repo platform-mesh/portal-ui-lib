@@ -13,6 +13,7 @@ import '@ui5/webcomponents-icons/dist/hint.js';
 import '@ui5/webcomponents-icons/dist/log.js';
 import '@ui5/webcomponents-icons/dist/menu2.js';
 import '@ui5/webcomponents-icons/dist/message-information.js';
+import '@ui5/webcomponents-icons/dist/refresh.js';
 import '@ui5/webcomponents-icons/dist/show.js';
 
 ignoreCustomElements('pm-');

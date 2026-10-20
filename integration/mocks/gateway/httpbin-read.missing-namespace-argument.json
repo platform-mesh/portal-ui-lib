@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "missing required argument: namespace",
+        "path": ["orchestrate_platform_mesh_io", "v1alpha1", "HttpBin"]
+      }
+    ]
+  }
+}

@@ -1,4 +1,5 @@
 import { ResourceFieldNames } from '../components/generic-ui/create-resource-modal/create-resource-modal.consts';
+import { resolveContextPlaceholders } from './resolve-context-placeholders';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import { FieldDefinition } from '@openmfp/ngx';
 import {
@@ -35,6 +36,11 @@ export function getFieldValue<T>(
  * - `'openInModal'` — opens the route at `path` in a Luigi modal via
  *   `LuigiClient.linkManager().openAsModal(path, modalSettings)`.
  *
+ * The resolved `path` has its `{context.<path>}` placeholders substituted from the
+ * current Luigi context (same as listView filters and view URLs), so a static action
+ * path can target an entity-scoped node — e.g.
+ * `"/workspaces/{context.workspace}/create-component"`.
+ *
  * **`openInModal` / `openAsModal` return value**
  *
  * `openAsModal` returns a `Promise` that resolves when the modal is closed.
@@ -56,6 +62,7 @@ export function getFieldValue<T>(
  * @param luigiClient - The `LuigiClient` instance bound to the current element.
  * @param field - Field definition that carries the action type, path, and modal settings.
  * @param resource - Optional resource whose properties may be used as the navigation path.
+ * @param context - Luigi node context used to resolve `{context.*}` placeholders in the path.
  * @param callBack - Optional function invoked with the `ModalResult` once the modal closes.
  *   Only called for `openInModal` actions. Return value propagates as the resolved value.
  *
@@ -70,6 +77,7 @@ export function executeButtonAction<T, R = unknown>(
   luigiClient: LuigiClient,
   field: FieldDefinition,
   resource: T | undefined,
+  context: Record<string, any>,
   callBack?: (result?: ModalResult<R>) => unknown,
 ) {
   const buttonSettings = field.uiSettings?.buttonSettings;
@@ -87,11 +95,14 @@ export function executeButtonAction<T, R = unknown>(
     );
   }
 
-  const synitzedPath = path.trim();
+  // Resolve `{context.<path>}` placeholders against the current Luigi context.
+  // This lets a static action path target an entity-scoped node, e.g.
+  // "/workspaces/{context.workspace}/create-component".
+  const sanitizedPath = resolveContextPlaceholders(path.trim(), context);
 
   switch (buttonSettings.action) {
     case 'navigate':
-      luigiClient.linkManager().navigate(synitzedPath);
+      luigiClient.linkManager().navigate(sanitizedPath);
       return;
     case 'openInModal':
       // openAsModal returns a Promise resolved with a { data } envelope that
@@ -102,7 +113,7 @@ export function executeButtonAction<T, R = unknown>(
         luigiClient
           .linkManager()
           .openAsModal(
-            synitzedPath,
+            sanitizedPath,
             buttonSettings.modalSettings,
           ) as unknown as Promise<ModalResult<R> | undefined>
       ).then(callBack);

@@ -428,7 +428,12 @@ export class ResourceTableCard {
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {
-    executeButtonAction(this.LuigiClient(), event.field, event.resource);
+    executeButtonAction(
+      this.LuigiClient(),
+      event.field,
+      event.resource,
+      this.context(),
+    );
   }
 
   async onCreateFieldChange(event: FormFieldChangeEvent) {

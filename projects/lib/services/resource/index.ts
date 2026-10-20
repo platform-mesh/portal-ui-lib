@@ -6,3 +6,4 @@ export * from './resource-node-context';
 export * from './resource.service';
 export * from './account-info.service';
 export * from './logical-cluster.service';
+export * from './namespace.service';

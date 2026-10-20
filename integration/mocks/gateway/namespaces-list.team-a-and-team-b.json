@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "v1": {
+        "Namespaces": {
+          "resourceVersion": "3000",
+          "remainingItemCount": 0,
+          "continue": "",
+          "items": [
+            {
+              "metadata": {
+                "name": "team-a"
+              }
+            },
+            {
+              "metadata": {
+                "name": "team-b"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

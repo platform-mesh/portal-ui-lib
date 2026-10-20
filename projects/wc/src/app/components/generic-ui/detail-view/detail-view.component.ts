@@ -20,6 +20,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
   untracked,
   viewChild,
@@ -27,6 +28,8 @@ import {
 import { IllustratedMessage } from '@fundamental-ngx/ui5-webcomponents-fiori/illustrated-message';
 import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
 import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
+import { Option } from '@fundamental-ngx/ui5-webcomponents/option';
+import { Select } from '@fundamental-ngx/ui5-webcomponents/select';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
 import {
   ButtonSettings,
@@ -38,6 +41,7 @@ import {
   ResourceField,
   SectionConfig,
 } from '@openmfp/ngx';
+import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   DOWNLOAD_KUBECONFIG_FROM_SECRET_REF_ACTION,
   PlatformMeshFieldDefinition,
@@ -48,6 +52,7 @@ import {
   ErrorHandlerService,
   GatewayService,
   KubeconfigSecretService,
+  NamespaceService,
   ResourceNodeContext,
   ResourceRequestParams,
   ResourceService,
@@ -60,8 +65,10 @@ import {
   isNamespacedResource,
   permissionKey,
 } from '@platform-mesh/portal-ui-lib/utils';
+import { UI5CustomEvent } from '@ui5/webcomponents-base';
 import '@ui5/webcomponents-fiori/dist/illustrations/NoEntries.js';
 import '@ui5/webcomponents-fiori/dist/illustrations/UnableToLoad.js';
+import _Select from '@ui5/webcomponents/dist/Select.js';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
 
@@ -76,6 +83,8 @@ type ResourceReadState =
     IllustratedMessage,
     Button,
     Label,
+    Option,
+    Select,
     ResourceField,
     ResourceFormModal,
     DeleteConfirmationDialog,
@@ -94,6 +103,8 @@ export class DetailView {
   private kubeconfigSecretService = inject(KubeconfigSecretService);
   private errorHandlerService = inject(ErrorHandlerService);
   private dashboardConfigService = inject(DashboardConfigService);
+  private luigiCoreService = inject(LuigiCoreService);
+  private namespaceService = inject(NamespaceService);
   private destroyRef = inject(DestroyRef);
   private resourceReadGeneration = 0;
   private resourceReadSubscription?: Subscription;
@@ -101,6 +112,11 @@ export class DetailView {
     undefined,
   );
   private readonly readState = signal<ResourceReadState>('loading');
+  protected readonly namespaceRequired = signal(false);
+  protected readonly selectedNamespace = signal<string | undefined>(undefined);
+  protected readonly namespaces = linkedSignal(
+    () => this.context().namespaces ?? [],
+  );
   private readonly cancelKubeconfigRead = new Subject<void>();
   protected readonly getResourceValueByJsonPath = getResourceValueByJsonPath;
   private createModal = viewChild<ResourceFormModal>('createModal');
@@ -388,6 +404,10 @@ export class DetailView {
     this.resource.set(undefined);
     this.readContext.set(context);
     this.readState.set('loading');
+    this.namespaceRequired.set(
+      this.isNamespaced() && !this.resourceService.getNamespace(context),
+    );
+    this.selectedNamespace.set(undefined);
     const resourceDefinition = this.getResourceDefinition();
     const fields = this.getDetailViewQueryFields();
 
@@ -441,9 +461,32 @@ export class DetailView {
 
   retryRead() {
     const state = untracked(this.viewState);
-    if (state === 'error' || state === 'not-found') {
-      this.readResource();
+    if (state !== 'error' && state !== 'not-found') {
+      return;
     }
+
+    if (!untracked(this.namespaceRequired)) {
+      this.readResource();
+      return;
+    }
+
+    if (untracked(this.selectedNamespace)) {
+      this.luigiCoreService.configChanged();
+    }
+  }
+
+  protected refreshNamespaces() {
+    this.namespaceService.list(this.effectiveContext()).subscribe({
+      next: (namespaces) => this.namespaces.set(namespaces),
+      error: (error) =>
+        this.errorHandlerService.showError(error, 'Failed to read namespaces.'),
+    });
+  }
+
+  protected selectNamespace(event: UI5CustomEvent<_Select, 'change'>) {
+    const namespace = event.detail.selectedOption.value || undefined;
+    this.selectedNamespace.set(namespace);
+    this.luigiCoreService.routing().addSearchParams({ namespace }, false, true);
   }
 
   navigateToParent() {
@@ -744,7 +787,7 @@ export class DetailView {
     }
 
     try {
-      executeButtonAction(this.LuigiClient(), action, resource);
+      executeButtonAction(this.LuigiClient(), action, resource, this.context());
     } catch {
       this.showConfiguredActionError();
     }

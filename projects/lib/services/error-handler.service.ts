@@ -12,6 +12,10 @@ export class ErrorHandlerService {
       return;
     }
 
+    this.showError(error, msg);
+  }
+
+  showError(error: any, msg?: string) {
     const message =
       error?.message || error?.errors?.map((e: any) => e.message).join('\n');
     this.luigiCoreService.showAlert({
