@@ -15,6 +15,27 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
   async getCustomGlobalNodes(): Promise<PortalLuigiNode[]> {
     return [
       {
+        pathSegment: 'admin',
+        label: 'Admin',
+        order: 900,
+        hideFromNav: false,
+        context: {} as PortalNodeContext,
+        children: [
+          {
+            pathSegment: 'apiexports',
+            label: 'APIExport Enablement',
+            hideFromNav: false,
+            viewUrl:
+              '/assets/platform-mesh-portal-ui-wc.js#api-export-admin',
+            context: {} as PortalNodeContext,
+            webcomponent: {
+              selfRegistered: true,
+              type: 'module',
+            },
+          },
+        ],
+      },
+      {
         pathSegment: 'error',
         order: 1000,
         hideFromNav: true,
