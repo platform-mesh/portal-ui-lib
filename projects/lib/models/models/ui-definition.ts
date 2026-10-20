@@ -69,13 +69,14 @@ export interface ListView extends UiView {
   filters?: FieldFilterDefinition[];
   baselineFilters?: FieldFilterDefinition[];
   /**
-   * Absolute path a row click navigates to, with `{resource.<dot.path>}`
-   * placeholders resolved against the clicked row — e.g.
-   * `"/workspaces/{resource.accountName}/components/{resource.metadata.name}"`.
+   * Absolute path a row click navigates to, with `{resource.<dot.path>}` and
+   * `{context.<dot.path>}` placeholders resolved against the clicked row and the
+   * current Luigi context respectively — e.g.
+   * `"/workspaces/{context.org}/components/{resource.metadata.name}"`.
    * When set, overrides the default relative navigation to the row's detail
    * view, so a flat list can link into an entity-scoped path.
    */
-  navigateTo?: string;
+  resourceURL?: string;
 }
 
 export interface DetailView extends UiView {

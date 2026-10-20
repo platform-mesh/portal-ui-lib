@@ -35,14 +35,21 @@ export function resolveContextPlaceholders(
 }
 
 /**
- * Replaces `{resource.<dot.path>}` placeholders in `value` with values from `resource`.
+ * Replaces both `{resource.<dot.path>}` (from `resource`) and `{context.<dot.path>}`
+ * (from `ctx`) placeholders in `value`, so a single string can mix the two:
  *
- *   "{resource.metadata.name}"                                   → resource.metadata.name
- *   "/workspaces/{resource.accountName}/components/{resource.metadata.name}"
+ *   "/workspaces/{context.org}/components/{resource.metadata.name}"
+ *
+ * Unresolved placeholders of either kind are left literal.
  */
-export function resolveResourcePlaceholders(
+export function resolveAllPlaceholders(
   value: string | undefined,
   resource: Record<string, any>,
+  ctx: Record<string, any>,
 ): string {
-  return resolvePlaceholders(value, 'resource', resource);
+  return resolvePlaceholders(
+    resolvePlaceholders(value, 'resource', resource),
+    'context',
+    ctx,
+  );
 }

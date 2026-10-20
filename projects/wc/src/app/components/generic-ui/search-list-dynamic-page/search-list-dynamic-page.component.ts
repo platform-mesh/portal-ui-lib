@@ -1,7 +1,7 @@
 import { executeButtonAction } from '../../../utils/field-definition.utils';
 import {
+  resolveAllPlaceholders,
   resolveContextPlaceholders,
-  resolveResourcePlaceholders,
 } from '../../../utils/resolve-context-placeholders';
 import {
   addSearchParams,
@@ -482,8 +482,8 @@ export class SearchListDynamicPage implements OnInit {
       throw new Error('Resource definition is not defined');
     }
 
-    const navigateTo = resourceDefinition.ui?.listView?.navigateTo;
-    if (!navigateTo && !resourceDefinition.ui?.detailView) {
+    const resourceURL = resourceDefinition.ui?.listView?.resourceURL;
+    if (!resourceURL && !resourceDefinition.ui?.detailView) {
       return;
     }
 
@@ -495,16 +495,13 @@ export class SearchListDynamicPage implements OnInit {
       throw new Error('Resource name is not defined');
     }
 
-    if (navigateTo) {
-      this.LuigiClient()
-        .linkManager()
-        .navigate(resolveResourcePlaceholders(navigateTo, resource));
-      return;
-    }
-
     this.LuigiClient()
       .linkManager()
-      .navigate((resource as any).metadata.name);
+      .navigate(
+        resourceURL
+          ? resolveAllPlaceholders(resourceURL, resource, this.context())
+          : (resource as any).metadata.name,
+      );
   }
 
   canDo(action: string | undefined): boolean {

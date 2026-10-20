@@ -1,6 +1,6 @@
 import {
+  resolveAllPlaceholders,
   resolveContextPlaceholders,
-  resolveResourcePlaceholders,
 } from './resolve-context-placeholders';
 
 describe('resolveContextPlaceholders', () => {
@@ -126,25 +126,30 @@ describe('resolveContextPlaceholders', () => {
   });
 });
 
-describe('resolveResourcePlaceholders', () => {
+describe('resolveAllPlaceholders', () => {
   it('composes an absolute path from resource fields', () => {
     expect(
-      resolveResourcePlaceholders(
+      resolveAllPlaceholders(
         '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
         { accountName: 'ws1', metadata: { name: 'comp1' } },
+        {},
       ),
     ).toBe('/workspaces/ws1/components/comp1');
   });
 
-  it('leaves the placeholder literal when a resource field is missing', () => {
+  it('resolves both {resource.*} and {context.*} in one string', () => {
     expect(
-      resolveResourcePlaceholders('/x/{resource.missing}', { metadata: {} }),
-    ).toBe('/x/{resource.missing}');
+      resolveAllPlaceholders(
+        '/workspaces/{context.org}/components/{resource.metadata.name}',
+        { metadata: { name: 'comp1' } },
+        { org: 'acme' },
+      ),
+    ).toBe('/workspaces/acme/components/comp1');
   });
 
-  it('does not touch {context.*} placeholders', () => {
+  it('leaves the placeholder literal when a field is missing', () => {
     expect(
-      resolveResourcePlaceholders('{context.foo}', { foo: 'bar' }),
-    ).toBe('{context.foo}');
+      resolveAllPlaceholders('/x/{resource.missing}/{context.gone}', { metadata: {} }, {}),
+    ).toBe('/x/{resource.missing}/{context.gone}');
   });
 });

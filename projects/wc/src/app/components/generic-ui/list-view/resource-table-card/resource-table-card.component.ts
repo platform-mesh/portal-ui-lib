@@ -1,5 +1,5 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { resolveResourcePlaceholders } from '../../../../utils/resolve-context-placeholders';
+import { resolveAllPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   isMissingRequiredNamespace,
   withRouteNamespace,
@@ -403,8 +403,8 @@ export class ResourceTableCard {
 
   navigateToResource(resource: Resource) {
     const resourceDefinition = this.context().resourceDefinition;
-    const navigateTo = resourceDefinition?.ui?.listView?.navigateTo;
-    if (!navigateTo && !resourceDefinition?.ui?.detailView) return;
+    const resourceURL = resourceDefinition?.ui?.listView?.resourceURL;
+    if (!resourceURL && !resourceDefinition?.ui?.detailView) return;
 
     if (!resource.metadata.name) {
       this.LuigiClient().uxManager().showAlert({
@@ -426,14 +426,13 @@ export class ResourceTableCard {
       namespace: this.isNamespaced() ? resource.metadata.namespace : undefined,
     });
 
-    if (navigateTo) {
-      this.LuigiClient()
-        .linkManager()
-        .navigate(resolveResourcePlaceholders(navigateTo, resource));
-      return;
-    }
-
-    this.LuigiClient().linkManager().navigate(resource.metadata.name);
+    this.LuigiClient()
+      .linkManager()
+      .navigate(
+        resourceURL
+          ? resolveAllPlaceholders(resourceURL, resource, this.context())
+          : resource.metadata.name,
+      );
   }
 
   executeAction(event: ResourceFieldButtonClickEvent<Resource>) {

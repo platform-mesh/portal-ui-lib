@@ -206,12 +206,12 @@ describe('ResourceTableCard', () => {
       expect(navSpy).toHaveBeenCalledWith('res1');
     });
 
-    it('should navigate using listView.navigateTo with resolved resource placeholders', () => {
+    it('should navigate using listView.resourceURL with resolved resource placeholders', () => {
       const navSpy = vi.fn();
       component.context = makeContext({
         ui: {
           listView: {
-            navigateTo:
+            resourceURL:
               '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
           },
         },
@@ -228,10 +228,10 @@ describe('ResourceTableCard', () => {
       );
     });
 
-    it('should navigate via navigateTo even when detailView is not defined', () => {
+    it('should navigate via resourceURL even when detailView is not defined', () => {
       const navSpy = vi.fn();
       component.context = makeContext({
-        ui: { listView: { navigateTo: '/workspaces/{resource.metadata.name}' } },
+        ui: { listView: { resourceURL: '/workspaces/{resource.metadata.name}' } },
       });
       component.LuigiClient = makeLuigiClient(navSpy);
 
