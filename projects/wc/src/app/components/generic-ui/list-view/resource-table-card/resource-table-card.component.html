@@ -6,6 +6,7 @@
   [error]="listError() || watchError()"
   [permissions]="instancePermissionsStore.permissions()"
   [createFormState]="createFormState()"
+  [editFormState]="editFormState()"
   (tableRowClicked)="navigateToResource($event)"
   (loadMoreResources)="loadMore()"
   (retry)="retryList()"
@@ -13,5 +14,7 @@
   (actionButtonClick)="executeAction($event)"
   (createFieldChange)="onCreateFieldChange($event)"
   (createSubmit)="onCreateSubmit($event)"
+  (editFieldChange)="onEditFieldChange($event)"
+  (editSubmit)="onEditSubmit($event)"
   (deleteSubmit)="delete($event)"
 />

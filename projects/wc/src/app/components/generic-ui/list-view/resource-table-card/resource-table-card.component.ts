@@ -1,8 +1,8 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import {
-  isMissingRequiredNamespace,
-  withRouteNamespace,
-} from '../../../../utils/route-namespace';
+import { applyDependencyTriggers } from '../../../../utils/field-dependencies';
+import { resolveDependentFields } from '../../../../utils/resolve-dependent-fields';
+import { resolveFieldDynamicValues } from '../../../../utils/resolve-dynamic-values';
+import { withRouteNamespace } from '../../../../utils/route-namespace';
 import {
   expandCollectionEntries,
   toFormFields,
@@ -33,13 +33,13 @@ import {
   DeclarativeTableCard,
   DeleteResourceConfirmationConfig,
   FormFieldChangeEvent,
+  FormFieldDefinition,
   FormFieldErrors,
   ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
   TableErrorConfig,
 } from '@openmfp/ngx';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   PlatformMeshFieldDefinition,
   Resource,
@@ -54,13 +54,12 @@ import {
 import {
   buildResourcePath,
   generateGraphQLFields,
-  getValueByPath,
   isNamespacedResource,
   mergeListWithSubscriptionResult,
   permissionKey,
   resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -134,6 +133,11 @@ export class ResourceTableCard {
     fieldErrors: this.createFieldErrors(),
   }));
 
+  private editFieldErrors = signal<FormFieldErrors>({});
+  editFormState = computed<TableCardFormState>(() => ({
+    fieldErrors: this.editFieldErrors(),
+  }));
+
   createFormFields = computed(() => {
     let fields = this.resourceDefinition()?.ui?.createView?.fields || [];
     if (
@@ -142,13 +146,13 @@ export class ResourceTableCard {
       !this.resourceService.getNamespace(this.createContext())
     ) {
       fields = [
-        ...fields,
         {
           property: ResourceFieldNames.MetadataNamespace,
           required: true,
           label: 'Namespace',
           values: this.context().namespaces,
         },
+        ...fields,
       ];
     }
 
@@ -156,6 +160,12 @@ export class ResourceTableCard {
   });
 
   config = computed<TableCardConfig<Resource>>(() => {
+    // Shared handler for both create and edit — both paths have identical semantics.
+    const onFieldChange = (
+      event: FormFieldChangeEvent,
+      currentFields: FormFieldDefinition[],
+    ) => this.onFormFieldChange(event, currentFields);
+
     return {
       header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
@@ -167,13 +177,40 @@ export class ResourceTableCard {
       ...(this.hasUiCreateViewFields() &&
         this.canDo('create') && {
           createResourceFormConfig: {
-            fields: () =>
-              toFormFields(this.createFormFields(), {
-                disabled: (field) => false,
+            fields: async () => {
+              const formFields = await toFormFields(this.createFormFields(), {
+                disabled: () => false,
                 resolveDynamicValues: (field) =>
                   this.resolveDynamicValues(field),
-              }),
+              });
+              // B3: ensure parent fields emit onChange so onFieldChange is triggered
+              return applyDependencyTriggers(
+                formFields,
+                this.createFormFields(),
+              );
+            },
+            // B1: re-resolve dependent fields when a parent field changes
+            onFieldChange,
           },
+        }),
+      ...(this.hasUiCreateViewFields() &&
+        this.canDo('update') && {
+          editResourceFormConfig: (_resource: Resource) => ({
+            fields: async () => {
+              const formFields = await toFormFields(this.createFormFields(), {
+                disabled: () => false,
+                resolveDynamicValues: (field) =>
+                  this.resolveDynamicValues(field),
+              });
+              // ensure parent fields emit onChange so onFieldChange is triggered
+              return applyDependencyTriggers(
+                formFields,
+                this.createFormFields(),
+              );
+            },
+            // re-resolve dependent fields when a parent field changes in edit mode
+            onFieldChange,
+          }),
         }),
       deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
     };
@@ -240,27 +277,93 @@ export class ResourceTableCard {
 
   private async resolveDynamicValues(
     field: PlatformMeshFieldDefinition,
+    formValues: Record<string, unknown> = {},
   ): Promise<string[] | undefined> {
-    const def = field.dynamicValuesDefinition;
-    if (!def) return undefined;
-    const context = this.createContext();
-    const namespace = this.isNamespaced()
-      ? this.resourceService.getNamespace(context)
-      : undefined;
-    // Without a namespace the query can only fail and raise an error alert.
-    // The field falls back to a plain input instead.
-    if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
-    try {
-      const resources = await firstValueFrom(
-        this.resourceService.list(def.operation, def.gqlQuery, context),
+    return resolveFieldDynamicValues(
+      field,
+      this.createContext(),
+      this.isNamespaced(),
+      formValues,
+      {
+        list: (operation, gqlQuery, context, options) =>
+          this.resourceService.list(operation, gqlQuery, context, options),
+        getNamespace: (c) => this.resourceService.getNamespace(c),
+        handleError: (error) => this.errorHandlerService.handleError(error),
+      },
+    );
+  }
+
+  /** Shared handler for the create and edit form `onFieldChange` hook.
+   *  Re-resolves dependent fields and returns updated fields + cleared initialValues.
+   *  The ngx dialog owns the last-write-wins race guard around this call. */
+  private onFormFieldChange(
+    event: FormFieldChangeEvent,
+    currentFields: FormFieldDefinition[],
+  ): Promise<
+    | {
+        fields: FormFieldDefinition[];
+        initialValues?: Record<string, unknown>;
+      }
+    | undefined
+  > {
+    return resolveDependentFields(
+      event,
+      currentFields,
+      this.createFormFields(),
+      (f, fv) => this.resolveDynamicValues(f, fv),
+    );
+  }
+
+  async onEditFieldChange({
+    formChangeEvent,
+  }: {
+    resource: Resource;
+    formChangeEvent: FormFieldChangeEvent;
+  }): Promise<void> {
+    const event = formChangeEvent;
+    const name = event.fieldProperty;
+    const value = String(event.value ?? '').trim();
+    let error: string | null = null;
+
+    if (name === ResourceFieldNames.MetadataName) {
+      if (!value) {
+        error = 'This field is required';
+      } else if (!K8S_NAME_RE.test(value)) {
+        error = K8S_NAME_ERROR;
+      }
+    } else {
+      const field = (await toFormFields(this.createFormFields())).find(
+        (f) => f.name === name,
       );
-      return (resources as Resource[])
-        .map((r) => getValueByPath(r, def.value) as string)
-        .filter(Boolean);
-    } catch (error) {
-      this.errorHandlerService.handleError(error);
-      return undefined;
+      if (field?.required && !value) {
+        error = 'This field is required';
+      }
     }
+
+    this.editFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+  }
+
+  onEditSubmit({
+    value,
+  }: {
+    resource: Resource;
+    value: Record<string, unknown>;
+  }): void {
+    const resourceDefinition = this.getResourceDefinition();
+    const expanded = expandCollectionEntries(
+      value as Record<string, unknown>,
+      this.createFormFields(),
+    ) as Resource;
+    this.resourceService
+      .update(expanded, resourceDefinition, this.context())
+      .subscribe({
+        next: (result) => {
+          this.editFieldErrors.set({});
+          this.tableCard().closeEditDialog();
+          console.debug('Resource updated', result);
+        },
+        error: (error) => this.errorHandlerService.handleError(error),
+      });
   }
 
   private subscribeToResourceChange(version: string) {

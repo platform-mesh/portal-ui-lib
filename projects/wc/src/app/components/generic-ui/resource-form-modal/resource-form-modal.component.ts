@@ -1,6 +1,7 @@
 import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
-import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
-import { isMissingRequiredNamespace } from '../../../utils/route-namespace';
+import { applyDependencyTriggers } from '../../../utils/field-dependencies';
+import { resolveDependentFields } from '../../../utils/resolve-dependent-fields';
+import { resolveFieldDynamicValues } from '../../../utils/resolve-dynamic-values';
 import {
   buildInitialValues,
   toFormFields,
@@ -24,6 +25,7 @@ import {
   FormFieldChangeEvent,
   FormFieldDefinition,
   FormFieldErrors,
+  ResourceFormConfig,
   ResourceFormDialog,
 } from '@openmfp/ngx';
 import {
@@ -36,11 +38,9 @@ import {
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
 import {
-  getValueByPath,
   isNamespacedResource,
   omitEmptyWriteOnlyFields,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'pm-resource-form-modal',
@@ -74,11 +74,28 @@ export class ResourceFormModal {
     this.isEditMode() ? 'edit-resource-dialog' : 'create-resource-dialog',
   );
 
+  /**
+   * Config passed to the dialog so it can run the `onFieldChange` hook via the
+   * shared ngx guard. The hook returns `{ fields, initialValues }` and the
+   * dialog applies them — host no longer writes `formFields` / `formInitialValues`
+   * from field changes. Error clearing stays here because it is not part of
+   * the hook's return shape.
+   */
+  dialogConfig = computed<ResourceFormConfig>(() => ({
+    fields: this.formFields(),
+    onFieldChange: (event, currentFields) =>
+      this.resolveDependents(event, currentFields),
+  }));
+
   async open(resource?: Resource) {
     const fields = this.calculateFields();
     this.originalResource.set(resource ?? null);
-    const formFields = await this.buildFormFieldsAsync(fields);
     const initialValues = buildInitialValues(fields, resource);
+    const formFields = await this.buildFormFieldsAsync(fields, initialValues);
+
+    // Wire parent triggers: fields that others depend on need onChange so
+    // their changes are observable via fieldChange.
+    applyDependencyTriggers(formFields, fields);
 
     this.formFields.set(formFields);
     this.formInitialValues.set(initialValues);
@@ -95,8 +112,48 @@ export class ResourceFormModal {
     return !!this.originalResource();
   }
 
+  /**
+   * Called by the dialog on every form field change. Validation stays here
+   * (field-level, synchronous). The async dependent re-resolution is split
+   * out into `resolveDependents`, which the dialog invokes via `dialogConfig`.
+   */
   onFieldChange(event: FormFieldChangeEvent): void {
-    this.validateField(event.fieldProperty, String(event.value ?? '').trim());
+    const name = event.fieldProperty;
+    this.validateField(name, String(event.value ?? '').trim());
+  }
+
+  /**
+   * Re-resolves dependent fields when a parent changes. The ngx dialog owns
+   * the last-write-wins guard around this call — a slower resolver whose
+   * result would clobber a faster one is dropped there.
+   */
+  private async resolveDependents(
+    event: FormFieldChangeEvent,
+    currentFields: FormFieldDefinition[],
+  ): Promise<
+    | {
+        fields: FormFieldDefinition[];
+        initialValues?: Record<string, unknown>;
+      }
+    | undefined
+  > {
+    const result = await resolveDependentFields(
+      event,
+      currentFields,
+      this.calculateFields(),
+      (f, fv) => this.resolveDynamicValues(f, fv),
+    );
+    if (result) {
+      // Clearing errors is a side effect not representable in the hook's return
+      // shape, so it stays here.
+      this.fieldErrors.update((errs) => {
+        const next = { ...errs };
+        for (const n of result.resolvedNames) next[n] = null;
+        return next;
+      });
+      return { fields: result.fields, initialValues: result.initialValues };
+    }
+    return undefined;
   }
 
   onFormSubmit(value: Record<string, unknown>): void {
@@ -139,57 +196,43 @@ export class ResourceFormModal {
 
   private buildFormFieldsAsync(
     fields: PlatformMeshFieldDefinition[],
+    formValues: Record<string, unknown> = {},
   ): Promise<FormFieldDefinition[]> {
     const editMode = this.isEditMode();
     return toFormFields(fields, {
       disabled: (field) => editMode && isImmutableOnEdit(field),
-      resolveDynamicValues: (field) => this.resolveDynamicValues(field),
+      resolveDynamicValues: (field, fv) =>
+        this.resolveDynamicValues(field, fv),
       editMode,
+      formValues,
     });
   }
 
   private async resolveDynamicValues(
     field: PlatformMeshFieldDefinition,
+    formValues: Record<string, unknown> = {},
   ): Promise<string[] | undefined> {
-    const def = field.dynamicValuesDefinition;
-    if (!def) return undefined;
-
-    const ctx = this.context();
-    const variables = Object.fromEntries(
-      Object.entries(def.gqlQueryVariables ?? {}).map(([name, value]) => [
-        name,
-        { type: 'String', value: resolveContextPlaceholders(value, ctx) },
-      ]),
+    return resolveFieldDynamicValues(
+      field,
+      this.context(),
+      this.isNamespacedResource(),
+      formValues,
+      {
+        list: (operation, gqlQuery, context, options) =>
+          this.resourceService.list(operation, gqlQuery, context, options),
+        getNamespace: (c) => this.resourceService.getNamespace(c),
+        handleError: (error) => this.errorHandlerService.handleError(error),
+      },
     );
-
-    // ResourceService.list sends the context namespace unless the query
-    // variables override it. Skip a query that would lack a required one.
-    const contextNamespace = this.isNamespacedResource()
-      ? this.resourceService.getNamespace(ctx)
-      : undefined;
-    const namespace = variables['namespace']?.value ?? contextNamespace;
-    if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
-
-    try {
-      const resources = await firstValueFrom(
-        this.resourceService.list(def.operation, def.gqlQuery, ctx, {
-          variables,
-        }),
-      );
-      return (resources as Resource[])
-        .map((r) => getValueByPath(r, def.value) as string)
-        .filter(Boolean);
-    } catch (error) {
-      this.errorHandlerService.handleError(error);
-      return undefined;
-    }
   }
 
   private calculateFields(): PlatformMeshFieldDefinition[] {
     const fields = this.fields().slice();
 
     if (this.shouldAddNamespaceControl()) {
-      fields.push({
+      // Namespace field is placed FIRST so it acts as the visible root of the
+      // dependency chain (dependent fields resolve against its selected value).
+      fields.unshift({
         property: ResourceFieldNames.MetadataNamespace,
         required: true,
         label: 'Namespace',

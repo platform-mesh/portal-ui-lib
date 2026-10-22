@@ -10,6 +10,7 @@ export type DisabledPredicate = (field: PlatformMeshFieldDefinition) => boolean;
 
 export type DynamicValuesResolver = (
   field: PlatformMeshFieldDefinition,
+  formValues?: Record<string, unknown>,
 ) => Promise<string[] | undefined>;
 
 const METADATA_NAME_FIELD = 'metadata.name';
@@ -19,6 +20,8 @@ export interface ToFormFieldsOptions {
   resolveDynamicValues?: DynamicValuesResolver;
   /** When true, write-only fields are optional and show a keep-unchanged placeholder. */
   editMode?: boolean;
+  /** Current form values forwarded to each `resolveDynamicValues` call. */
+  formValues?: Record<string, unknown>;
 }
 
 /**
@@ -62,7 +65,10 @@ async function mapFieldsAsync(
       const formField = buildFormField(field, options, parentCollectionPath);
 
       if (field.dynamicValuesDefinition && options.resolveDynamicValues) {
-        const resolved = await options.resolveDynamicValues(field);
+        const resolved = await options.resolveDynamicValues(
+          field,
+          options.formValues ?? {},
+        );
         if (resolved !== undefined) {
           formField.values = resolved;
         }
