@@ -1259,6 +1259,89 @@ describe('ResourceTableCard', () => {
       expect(result).toBeUndefined();
     });
 
+    it('editResourceFormConfig fields thunk resolves dependent values against the prefilled parent (initial edit-open resolve)', async () => {
+      // Regression test for the edit-open empty-options bug: BEFORE this fix,
+      // the edit thunk passed `{}` as formValues to resolveDynamicValues, so
+      // dependent fields saw an unresolved `{form.metadata.namespace}` and
+      // their resolver returned [] (or no call at all). AFTER this fix, the
+      // thunk uses `buildInitialValues(createFormFields(), resource)` as the
+      // parent-value map — so the dependent's values are resolved against the
+      // prefilled parent before the dialog ever mounts.
+      const depQuery =
+        'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }';
+      mockResourceService.getNamespace.mockReturnValue(undefined);
+      mockResourceService.list.mockImplementation((_op: string, q: any) =>
+        typeof q === 'string'
+          ? of([{ metadata: { name: 'secret-for-ns-a' } }])
+          : of({ items: [], resourceVersion: '1' }),
+      );
+
+      const newFixture = TestBed.createComponent(ResourceTableCard);
+      const newComponent = newFixture.componentInstance;
+      newComponent.context = signal({
+        resourceDefinition: {
+          entityCollection: 'ChatUIInstances',
+          entity: 'ChatUIInstance',
+          apiGroup: 'ui_privatellms_msp',
+          version: 'v1alpha1',
+          scope: 'Namespaced',
+          ui: {
+            createView: {
+              fields: [
+                { property: 'metadata.name', required: true },
+                {
+                  property: 'spec.secretRef',
+                  required: true,
+                  dynamicValuesDefinition: {
+                    operation: 'v1.Secrets.items',
+                    gqlQuery: depQuery,
+                    value: 'metadata.name',
+                    key: 'metadata.name',
+                    gqlQueryVariables: {
+                      namespace: '{form.metadata.namespace}',
+                    },
+                    dependsOn: ['metadata.namespace'],
+                  },
+                },
+              ],
+            },
+            listView: { fields: [] },
+          },
+        },
+      }) as any;
+      newComponent.LuigiClient = (() => ({
+        linkManager: () => ({ navigate: vi.fn() }),
+        uxManager: () => ({ showAlert: vi.fn() }),
+        getNodeParams: vi.fn(),
+        getPathParams: vi.fn(() => undefined),
+      })) as any;
+      newFixture.detectChanges();
+
+      // Resource with a prefilled namespace. The edit thunk MUST pass this
+      // namespace to resolveDynamicValues so the dependent's options list is
+      // populated before the user interacts.
+      const resource = {
+        metadata: { name: 'edited', namespace: 'ns-a' },
+        spec: { secretRef: 'secret-for-ns-a' },
+      } as any;
+      const editConfig =
+        newComponent.config().editResourceFormConfig!(resource);
+      const fields = await (editConfig.fields as () => Promise<any[]>)();
+
+      const dep = fields.find((f: any) => f.name === 'spec.secretRef');
+      expect(dep?.values).toEqual(['secret-for-ns-a']);
+
+      // And the resolver was actually called with the resolved namespace,
+      // confirming parentValues flowed through.
+      const secretCalls = mockResourceService.list.mock.calls.filter(
+        (c) => c[0] === 'v1.Secrets.items',
+      );
+      expect(secretCalls.length).toBeGreaterThan(0);
+      expect(secretCalls[0][3]).toEqual({
+        variables: { namespace: { type: 'String', value: 'ns-a' } },
+      });
+    });
+
 
     it('onEditSubmit calls resourceService.update and closes the edit dialog', () => {
       const closeEditDialog = vi.fn();

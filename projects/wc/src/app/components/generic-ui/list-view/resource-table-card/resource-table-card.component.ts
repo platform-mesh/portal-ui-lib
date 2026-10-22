@@ -4,13 +4,13 @@ import { resolveDependentFields } from '../../../../utils/resolve-dependent-fiel
 import { resolveFieldDynamicValues } from '../../../../utils/resolve-dynamic-values';
 import { withRouteNamespace } from '../../../../utils/route-namespace';
 import {
+  buildInitialValues,
   expandCollectionEntries,
   toFormFields,
 } from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
+import { validateFormField } from '../../../../utils/validate-form-field';
 import {
-  K8S_NAME_ERROR,
-  K8S_NAME_RE,
   ResourceFieldNames,
 } from '../../create-resource-modal/create-resource-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
@@ -178,37 +178,43 @@ export class ResourceTableCard {
         this.canDo('create') && {
           createResourceFormConfig: {
             fields: async () => {
+              // Dependents resolve against `{}` until the user picks a parent.
+              const parentValues: Record<string, unknown> = {};
               const formFields = await toFormFields(this.createFormFields(), {
                 disabled: () => false,
                 resolveDynamicValues: (field) =>
-                  this.resolveDynamicValues(field),
+                  this.resolveDynamicValues(field, parentValues),
               });
-              // B3: ensure parent fields emit onChange so onFieldChange is triggered
+              // Ensure parent fields emit onChange so onFieldChange is triggered.
               return applyDependencyTriggers(
                 formFields,
                 this.createFormFields(),
               );
             },
-            // B1: re-resolve dependent fields when a parent field changes
             onFieldChange,
           },
         }),
       ...(this.hasUiCreateViewFields() &&
         this.canDo('update') && {
-          editResourceFormConfig: (_resource: Resource) => ({
+          editResourceFormConfig: (resource: Resource) => ({
             fields: async () => {
+              // Resolve dependent OPTIONS against prefilled parent values so
+              // the user sees a populated option list immediately. Dependent
+              // VALUES are seeded separately via `patchForm({ emitEvent: false })`.
+              const parentValues = buildInitialValues(
+                this.createFormFields(),
+                resource,
+              );
               const formFields = await toFormFields(this.createFormFields(), {
                 disabled: () => false,
                 resolveDynamicValues: (field) =>
-                  this.resolveDynamicValues(field),
+                  this.resolveDynamicValues(field, parentValues),
               });
-              // ensure parent fields emit onChange so onFieldChange is triggered
               return applyDependencyTriggers(
                 formFields,
                 this.createFormFields(),
               );
             },
-            // re-resolve dependent fields when a parent field changes in edit mode
             onFieldChange,
           }),
         }),
@@ -314,32 +320,19 @@ export class ResourceTableCard {
     );
   }
 
-  async onEditFieldChange({
+  onEditFieldChange({
     formChangeEvent,
   }: {
     resource: Resource;
     formChangeEvent: FormFieldChangeEvent;
-  }): Promise<void> {
-    const event = formChangeEvent;
-    const name = event.fieldProperty;
-    const value = String(event.value ?? '').trim();
-    let error: string | null = null;
-
-    if (name === ResourceFieldNames.MetadataName) {
-      if (!value) {
-        error = 'This field is required';
-      } else if (!K8S_NAME_RE.test(value)) {
-        error = K8S_NAME_ERROR;
-      }
-    } else {
-      const field = (await toFormFields(this.createFormFields())).find(
-        (f) => f.name === name,
-      );
-      if (field?.required && !value) {
-        error = 'This field is required';
-      }
-    }
-
+  }): void {
+    const name = formChangeEvent.fieldProperty;
+    const error = validateFormField({
+      name,
+      value: formChangeEvent.value,
+      fields: this.createFormFields(),
+      editMode: true,
+    });
     this.editFieldErrors.update((errors) => ({ ...errors, [name]: error }));
   }
 
@@ -539,26 +532,14 @@ export class ResourceTableCard {
     );
   }
 
-  async onCreateFieldChange(event: FormFieldChangeEvent) {
+  onCreateFieldChange(event: FormFieldChangeEvent): void {
     const name = event.fieldProperty;
-    const value = String(event.value ?? '').trim();
-    let error: string | null = null;
-
-    if (name === ResourceFieldNames.MetadataName) {
-      if (!value) {
-        error = 'This field is required';
-      } else if (!K8S_NAME_RE.test(value)) {
-        error = K8S_NAME_ERROR;
-      }
-    } else {
-      const field = (await toFormFields(this.createFormFields())).find(
-        (f) => f.name === name,
-      );
-      if (field?.required && !value) {
-        error = 'This field is required';
-      }
-    }
-
+    const error = validateFormField({
+      name,
+      value: event.value,
+      fields: this.createFormFields(),
+      editMode: false,
+    });
     this.createFieldErrors.update((errors) => ({ ...errors, [name]: error }));
   }
 

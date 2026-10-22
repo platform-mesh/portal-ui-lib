@@ -47,7 +47,7 @@ describe('ResourceFormModal', () => {
       .overrideComponent(ResourceFormModal, {
         set: {
           template:
-            '<mfp-resource-form-dialog [open]="dialogOpen()" [fields]="formFields()" [initialValues]="formInitialValues()" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (submitted)="onFormSubmit($event)" (cancelled)="close()" />',
+            '<mfp-resource-form-dialog #dialog [open]="dialogOpen()" [fields]="formFields()" [initialValues]="{}" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (fieldsUpdated)="onFieldsUpdated($event)" (submitted)="onFormSubmit($event)" (cancelled)="close()" />',
           imports: [ResourceFormDialog],
           schemas: [CUSTOM_ELEMENTS_SCHEMA],
         },
@@ -388,28 +388,42 @@ describe('ResourceFormModal', () => {
     });
   });
 
-  describe('formInitialValues', () => {
-    it('should be empty before open is called', () => {
-      expect(component.formInitialValues()).toEqual({});
-    });
+  describe('open seeding', () => {
+    it('calls dialog.patchForm({ emitEvent: false }) with resource-derived initial values on edit open', async () => {
+      // Grab the dialog view-child before open() so we can observe the call.
+      // The dialog is always rendered (no `@if`) so the view-child is set
+      // after the first detectChanges.
+      const dialog = fixture.debugElement.query(
+        (de) => de.componentInstance instanceof ResourceFormDialog,
+      )?.componentInstance as ResourceFormDialog;
+      expect(dialog).toBeDefined();
+      const spy = vi.spyOn(dialog, 'patchForm');
 
-    it('should be empty when opened without a resource', async () => {
-      await component.open();
-      expect(component.formInitialValues()).toEqual({});
-    });
-
-    it('should populate from resource properties using dot-notation keys', async () => {
       await component.open({
         metadata: { name: 'res1' },
         spec: { description: 'hello' },
       } as any);
-      expect(component.formInitialValues()['metadata.name']).toBe('res1');
-      expect(component.formInitialValues()['spec.description']).toBe('hello');
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      const [values, options] = spy.mock.calls[0];
+      expect(values['metadata.name']).toBe('res1');
+      expect(values['spec.description']).toBe('hello');
+      expect(options).toEqual({ emitEvent: false });
     });
 
-    it('should fall back to empty string for fields whose property value is absent on the resource', async () => {
-      await component.open({ metadata: { name: 'res1' } } as any);
-      expect(component.formInitialValues()['spec.description']).toBe('');
+    it('calls dialog.patchForm (non-silent) with initial values on create open', async () => {
+      const dialog = fixture.debugElement.query(
+        (de) => de.componentInstance instanceof ResourceFormDialog,
+      )?.componentInstance as ResourceFormDialog;
+      const spy = vi.spyOn(dialog, 'patchForm');
+
+      await component.open();
+
+      // Create path uses the input-driven seed path (patchForm with
+      // default emitEvent: true) so required-missing fields can be flagged
+      // through the seed echo.
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][1]).toBeUndefined();
     });
   });
 
@@ -634,6 +648,59 @@ describe('ResourceFormModal', () => {
       await component.open({ metadata: { name: 'r1' } } as any);
       component.close();
       expect(component.isEditMode()).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // onFieldsUpdated — write-back from dialog's `fieldsUpdated` output
+  // ---------------------------------------------------------------------------
+
+  describe('onFieldsUpdated', () => {
+    const updatedFields: FormFieldDefinition[] = [
+      { name: 'metadata.namespace', label: 'Namespace' },
+      { name: 'spec.secretName', label: 'Secret', values: ['a', 'b'] },
+    ];
+
+    it('writes fields and applies initialValues via dialog.patchForm({emitEvent:false})', async () => {
+      // Open the dialog first so the viewChild is populated.
+      await component.open();
+      fixture.detectChanges();
+
+      const dialogDe = fixture.debugElement.query(
+        (de) => de.componentInstance instanceof ResourceFormDialog,
+      );
+      const dialog = dialogDe.componentInstance as ResourceFormDialog;
+      // Reset the spy history to isolate this call from the open() call.
+      const spy = vi.spyOn(dialog, 'patchForm');
+      spy.mockClear();
+
+      component.onFieldsUpdated({
+        fields: updatedFields,
+        initialValues: { 'spec.secretName': '' },
+      });
+
+      expect(component.formFields()).toEqual(updatedFields);
+      expect(spy).toHaveBeenCalledWith(
+        { 'spec.secretName': '' },
+        { emitEvent: false },
+      );
+    });
+
+    it('does not call patchForm when payload omits initialValues', async () => {
+      await component.open();
+      fixture.detectChanges();
+
+      const dialogDe = fixture.debugElement.query(
+        (de) => de.componentInstance instanceof ResourceFormDialog,
+      );
+      const dialog = dialogDe.componentInstance as ResourceFormDialog;
+      const spy = vi.spyOn(dialog, 'patchForm');
+      spy.mockClear();
+
+      component.onFieldsUpdated({ fields: updatedFields });
+
+      expect(component.formFields()).toEqual(updatedFields);
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 
@@ -932,6 +999,49 @@ describe('ResourceFormModal', () => {
         expect(result?.initialValues).toEqual({
           'spec.secretName': '',
           'spec.anotherSecret': '',
+        });
+      });
+    });
+
+    describe('open(resource) — initial dependsOn resolve on edit-open', () => {
+      // Guards that opening the modal in EDIT mode (resource argument supplied)
+      // resolves the dependent field's `values` against the prefilled parent
+      // BEFORE the user interacts — so the user sees a populated option list
+      // from the moment the dialog mounts. Pre-fix behavior passed `{}` to the
+      // resolver, which produced an empty option list on edit-open.
+      it('resolves dependent values against the prefilled parent', async () => {
+        resourceService.getNamespace.mockReturnValue(undefined);
+        resourceService.list.mockImplementation(
+          (op: string) =>
+            op === 'v1.Secrets.items'
+              ? of([{ metadata: { name: 'secret-for-ns-a' } }])
+              : of([{ metadata: { name: 'ns-a' } }, { metadata: { name: 'ns-b' } }]),
+        );
+
+        fixture.componentRef.setInput('fields', [namespaceField, secretField]);
+        fixture.componentRef.setInput('context', namespacedContext);
+        fixture.detectChanges();
+
+        const resource = {
+          metadata: { name: 'edited', namespace: 'ns-a' },
+          spec: { secretName: 'secret-for-ns-a' },
+        } as any;
+
+        await component.open(resource);
+
+        const secretsFromThunk = component
+          .formFields()
+          .find((f) => f.name === 'spec.secretName');
+        expect(secretsFromThunk?.values).toEqual(['secret-for-ns-a']);
+
+        // And the list call MUST have been made with the resolved namespace,
+        // not the unresolved placeholder.
+        const secretCalls = resourceService.list.mock.calls.filter(
+          (c) => c[0] === 'v1.Secrets.items',
+        );
+        expect(secretCalls.length).toBeGreaterThan(0);
+        expect(secretCalls[0][3]).toEqual({
+          variables: { namespace: { type: 'String', value: 'ns-a' } },
         });
       });
     });

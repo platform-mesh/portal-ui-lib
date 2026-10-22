@@ -6,11 +6,8 @@ import {
   buildInitialValues,
   toFormFields,
 } from '../../../utils/to-form-fields';
-import {
-  K8S_NAME_ERROR,
-  K8S_NAME_RE,
-  ResourceFieldNames,
-} from '../create-resource-modal/create-resource-modal.consts';
+import { validateFormField } from '../../../utils/validate-form-field';
+import { ResourceFieldNames } from '../create-resource-modal/create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -20,6 +17,7 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   FormFieldChangeEvent,
@@ -62,11 +60,11 @@ export class ResourceFormModal {
 
   private readonly resourceService = inject(ResourceService);
   private readonly errorHandlerService = inject(ErrorHandlerService);
+  private readonly dialog = viewChild<ResourceFormDialog>('dialog');
   private originalResource = signal<Resource | null>(null);
 
   fieldErrors = signal<FormFieldErrors>({});
   formFields = signal<FormFieldDefinition[]>([]);
-  formInitialValues = signal<Record<string, unknown>>({});
 
   dialogTitle = computed(() => (this.isEditMode() ? 'Edit' : 'Create'));
   confirmLabel = computed(() => (this.isEditMode() ? 'Save' : 'Create'));
@@ -74,13 +72,6 @@ export class ResourceFormModal {
     this.isEditMode() ? 'edit-resource-dialog' : 'create-resource-dialog',
   );
 
-  /**
-   * Config passed to the dialog so it can run the `onFieldChange` hook via the
-   * shared ngx guard. The hook returns `{ fields, initialValues }` and the
-   * dialog applies them — host no longer writes `formFields` / `formInitialValues`
-   * from field changes. Error clearing stays here because it is not part of
-   * the hook's return shape.
-   */
   dialogConfig = computed<ResourceFormConfig>(() => ({
     fields: this.formFields(),
     onFieldChange: (event, currentFields) =>
@@ -93,13 +84,16 @@ export class ResourceFormModal {
     const initialValues = buildInitialValues(fields, resource);
     const formFields = await this.buildFormFieldsAsync(fields, initialValues);
 
-    // Wire parent triggers: fields that others depend on need onChange so
-    // their changes are observable via fieldChange.
     applyDependencyTriggers(formFields, fields);
 
     this.formFields.set(formFields);
-    this.formInitialValues.set(initialValues);
     this.dialogOpen.set(true);
+
+    if (resource !== undefined) {
+      this.dialog()?.patchForm(initialValues, { emitEvent: false });
+    } else {
+      this.dialog()?.patchForm(initialValues);
+    }
   }
 
   close() {
@@ -118,8 +112,24 @@ export class ResourceFormModal {
    * out into `resolveDependents`, which the dialog invokes via `dialogConfig`.
    */
   onFieldChange(event: FormFieldChangeEvent): void {
-    const name = event.fieldProperty;
-    this.validateField(name, String(event.value ?? '').trim());
+    this.validateField(event.fieldProperty, event.value);
+  }
+
+  /**
+   * Called by the dialog when the `onFieldChange` hook returns a result.
+   * Writes `fields` back through the signal (input re-flows) and seeds any
+   * reset `initialValues` silently via `patchForm({ emitEvent: false })`
+   * so the dependent-clear does not echo through `fieldChange` and
+   * re-trigger the hook (loop prevention).
+   */
+  onFieldsUpdated(payload: {
+    fields: FormFieldDefinition[];
+    initialValues?: Record<string, unknown>;
+  }): void {
+    this.formFields.set(payload.fields);
+    if (payload.initialValues !== undefined) {
+      this.dialog()?.patchForm(payload.initialValues, { emitEvent: false });
+    }
   }
 
   /**
@@ -166,32 +176,14 @@ export class ResourceFormModal {
     this.resource.emit(value as Resource);
   }
 
-  private validateField(name: string, value: string): void {
-    let error: string | null = null;
-
-    switch (name) {
-      case ResourceFieldNames.MetadataName:
-        if (!value) {
-          error = 'This field is required';
-        } else if (!K8S_NAME_RE.test(value)) {
-          error = K8S_NAME_ERROR;
-        }
-        break;
-      default: {
-        const field = this.formFields().find((f) => f.name === name);
-        if (field?.writeOnly && !value && this.isEditMode()) {
-          error = null;
-        } else if (field?.required && !value) {
-          error = 'This field is required';
-        }
-      }
-    }
-
-    this.fieldErrors.update((errors) => {
-      const updated = { ...errors };
-      updated[name] = error;
-      return updated;
+  private validateField(name: string, value: unknown): void {
+    const error = validateFormField({
+      name,
+      value,
+      fields: this.calculateFields(),
+      editMode: this.isEditMode(),
     });
+    this.fieldErrors.update((errors) => ({ ...errors, [name]: error }));
   }
 
   private buildFormFieldsAsync(
@@ -201,8 +193,7 @@ export class ResourceFormModal {
     const editMode = this.isEditMode();
     return toFormFields(fields, {
       disabled: (field) => editMode && isImmutableOnEdit(field),
-      resolveDynamicValues: (field, fv) =>
-        this.resolveDynamicValues(field, fv),
+      resolveDynamicValues: (field, fv) => this.resolveDynamicValues(field, fv),
       editMode,
       formValues,
     });
