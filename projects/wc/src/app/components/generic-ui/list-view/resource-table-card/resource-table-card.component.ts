@@ -1,7 +1,14 @@
-import { executeButtonAction } from '../../../../utils/field-definition.utils';
+import {
+  executeButtonAction,
+  isImmutableOnEdit,
+} from '../../../../utils/field-definition.utils';
 import { applyDependencyTriggers } from '../../../../utils/field-dependencies';
-import { resolveDependentFields } from '../../../../utils/resolve-dependent-fields';
-import { resolveFieldDynamicValues } from '../../../../utils/resolve-dynamic-values';
+import {
+  DependentFieldUpdate,
+  DynamicValuesResult,
+  FormDependencyController,
+} from '../../../../utils/form-dependency-controller';
+import { resolveFieldDynamicValuesResult } from '../../../../utils/resolve-dynamic-values';
 import { withRouteNamespace } from '../../../../utils/route-namespace';
 import {
   buildInitialValues,
@@ -10,9 +17,7 @@ import {
 } from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
 import { validateFormField } from '../../../../utils/validate-form-field';
-import {
-  ResourceFieldNames,
-} from '../../create-resource-modal/create-resource-modal.consts';
+import { ResourceFieldNames } from '../../create-resource-modal/create-resource-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {
   ChangeDetectionStrategy,
@@ -129,21 +134,36 @@ export class ResourceTableCard {
   protected watchError = signal<TableErrorConfig | null>(null);
 
   private createFieldErrors = signal<FormFieldErrors>({});
+  private createPending = signal(false);
   createFormState = computed<TableCardFormState>(() => ({
     fieldErrors: this.createFieldErrors(),
+    pending: this.createPending(),
   }));
 
   private editFieldErrors = signal<FormFieldErrors>({});
+  private editPending = signal(false);
   editFormState = computed<TableCardFormState>(() => ({
     fieldErrors: this.editFieldErrors(),
+    pending: this.editPending(),
   }));
+  private readonly createDependencies = new FormDependencyController(
+    (field, values) => this.resolveDynamicValuesResult(field, values),
+    (update) => this.applyDependentUpdate(update, false),
+  );
+  private readonly editDependencies = new FormDependencyController(
+    (field, values) => this.resolveDynamicValuesResult(field, values),
+    (update) => this.applyDependentUpdate(update, true),
+  );
 
   createFormFields = computed(() => {
     let fields = this.resourceDefinition()?.ui?.createView?.fields || [];
     if (
       this.hasUiCreateViewFields() &&
       this.isNamespaced() &&
-      !this.resourceService.getNamespace(this.createContext())
+      !this.resourceService.getNamespace(this.createContext()) &&
+      !fields.some(
+        (field) => field.property === ResourceFieldNames.MetadataNamespace,
+      )
     ) {
       fields = [
         {
@@ -160,12 +180,6 @@ export class ResourceTableCard {
   });
 
   config = computed<TableCardConfig<Resource>>(() => {
-    // Shared handler for both create and edit — both paths have identical semantics.
-    const onFieldChange = (
-      event: FormFieldChangeEvent,
-      currentFields: FormFieldDefinition[],
-    ) => this.onFormFieldChange(event, currentFields);
-
     return {
       header: this.resourceDefinition()?.entityCollection,
       tableConfig: {
@@ -178,44 +192,38 @@ export class ResourceTableCard {
         this.canDo('create') && {
           createResourceFormConfig: {
             fields: async () => {
-              // Dependents resolve against `{}` until the user picks a parent.
-              const parentValues: Record<string, unknown> = {};
-              const formFields = await toFormFields(this.createFormFields(), {
-                disabled: () => false,
-                resolveDynamicValues: (field) =>
-                  this.resolveDynamicValues(field, parentValues),
-              });
-              // Ensure parent fields emit onChange so onFieldChange is triggered.
-              return applyDependencyTriggers(
-                formFields,
-                this.createFormFields(),
+              const fields = this.createFormFields();
+              const values = buildInitialValues(fields, undefined);
+              this.onCreateDialogClosed();
+              const generation = this.createDependencies.begin(fields, values);
+              const formFields = await this.buildFormFields(
+                fields,
+                values,
+                false,
+                this.createContext(),
               );
+              if (!this.createDependencies.isCurrent(generation)) return [];
+              return formFields;
             },
-            onFieldChange,
           },
         }),
       ...(this.hasUiCreateViewFields() &&
         this.canDo('update') && {
           editResourceFormConfig: (resource: Resource) => ({
             fields: async () => {
-              // Resolve dependent OPTIONS against prefilled parent values so
-              // the user sees a populated option list immediately. Dependent
-              // VALUES are seeded separately via `patchForm({ emitEvent: false })`.
-              const parentValues = buildInitialValues(
-                this.createFormFields(),
-                resource,
+              const fields = this.createFormFields();
+              const values = buildInitialValues(fields, resource);
+              this.onEditDialogClosed();
+              const generation = this.editDependencies.begin(fields, values);
+              const formFields = await this.buildFormFields(
+                fields,
+                values,
+                true,
+                this.createContext(),
               );
-              const formFields = await toFormFields(this.createFormFields(), {
-                disabled: () => false,
-                resolveDynamicValues: (field) =>
-                  this.resolveDynamicValues(field, parentValues),
-              });
-              return applyDependencyTriggers(
-                formFields,
-                this.createFormFields(),
-              );
+              if (!this.editDependencies.isCurrent(generation)) return [];
+              return formFields;
             },
-            onFieldChange,
           }),
         }),
       deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
@@ -239,6 +247,10 @@ export class ResourceTableCard {
   private lastListWasInitialLoad = true;
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.createDependencies.end();
+      this.editDependencies.end();
+    });
     effect((onCleanup) => {
       this.currentContinueToken = undefined;
       this.resources.set([]);
@@ -281,43 +293,104 @@ export class ResourceTableCard {
     });
   }
 
-  private async resolveDynamicValues(
+  private resolveDynamicValuesResult(
     field: PlatformMeshFieldDefinition,
-    formValues: Record<string, unknown> = {},
-  ): Promise<string[] | undefined> {
-    return resolveFieldDynamicValues(
+    values: Record<string, unknown>,
+    context: ResourceNodeContext = this.createContext(),
+  ): Promise<DynamicValuesResult> {
+    return resolveFieldDynamicValuesResult(
       field,
-      this.createContext(),
+      context,
       this.isNamespaced(),
-      formValues,
+      values,
       {
-        list: (operation, gqlQuery, context, options) =>
-          this.resourceService.list(operation, gqlQuery, context, options),
-        getNamespace: (c) => this.resourceService.getNamespace(c),
+        list: (operation, gqlQuery, currentContext, options) =>
+          this.resourceService.list(
+            operation,
+            gqlQuery,
+            currentContext,
+            options,
+          ),
+        getNamespace: (currentContext) =>
+          this.resourceService.getNamespace(currentContext),
         handleError: (error) => this.errorHandlerService.handleError(error),
       },
     );
   }
 
-  /** Shared handler for the create and edit form `onFieldChange` hook.
-   *  Re-resolves dependent fields and returns updated fields + cleared initialValues.
-   *  The ngx dialog owns the last-write-wins race guard around this call. */
-  private onFormFieldChange(
-    event: FormFieldChangeEvent,
-    currentFields: FormFieldDefinition[],
-  ): Promise<
-    | {
-        fields: FormFieldDefinition[];
-        initialValues?: Record<string, unknown>;
-      }
-    | undefined
-  > {
-    return resolveDependentFields(
-      event,
-      currentFields,
-      this.createFormFields(),
-      (f, fv) => this.resolveDynamicValues(f, fv),
-    );
+  private async buildFormFields(
+    fields: PlatformMeshFieldDefinition[],
+    values: Record<string, unknown>,
+    editMode: boolean,
+    context: ResourceNodeContext,
+  ): Promise<FormFieldDefinition[]> {
+    const formFields = await toFormFields(fields, {
+      disabled: (field) => editMode && isImmutableOnEdit(field),
+      editMode,
+      formValues: values,
+      resolveDynamicValues: async (field, formValues) => {
+        if (
+          field.dynamicValuesDefinition?.dependsOn?.some(
+            (parent) =>
+              formValues?.[parent] == null || formValues[parent] === '',
+          )
+        ) {
+          return [];
+        }
+        const result = await this.resolveDynamicValuesResult(
+          field,
+          formValues ?? {},
+          context,
+        );
+        return result.kind === 'ready'
+          ? result.values
+          : field.dynamicValuesDefinition?.dependsOn?.length
+            ? []
+            : undefined;
+      },
+    });
+    applyDependencyTriggers(formFields, fields);
+    return formFields;
+  }
+
+  private applyDependentUpdate(
+    update: DependentFieldUpdate,
+    editMode: boolean,
+  ): void {
+    const errors = editMode ? this.editFieldErrors : this.createFieldErrors;
+    const pending = editMode ? this.editPending : this.createPending;
+    const patch = {
+      ...(update.clear && { values: { [update.name]: '' } }),
+      fieldUpdates: {
+        [update.name]: { values: update.values },
+      },
+    };
+    if (editMode) this.tableCard().applyEditFormPatch(patch);
+    else this.tableCard().applyCreateFormPatch(patch);
+    if (update.clear) {
+      errors.update((current) => ({
+        ...current,
+        [update.name]: validateFormField({
+          name: update.name,
+          value: '',
+          fields: this.createFormFields(),
+          editMode,
+        }),
+      }));
+    }
+    pending.set(update.pending);
+  }
+
+  onCreateDialogClosed(): void {
+    this.createDependencies.end();
+    this.createFieldErrors.set({});
+    this.createPending.set(false);
+  }
+
+  onEditDialogClosed(): void {
+    this.editDependencies.end();
+    this.editFieldErrors.set({});
+    this.editPending.set(false);
   }
 
   onEditFieldChange({
@@ -334,6 +407,7 @@ export class ResourceTableCard {
       editMode: true,
     });
     this.editFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+    this.editDependencies.handleChange(formChangeEvent);
   }
 
   onEditSubmit({
@@ -541,6 +615,7 @@ export class ResourceTableCard {
       editMode: false,
     });
     this.createFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+    this.createDependencies.handleChange(event);
   }
 
   onCreateSubmit(value: Resource): void {

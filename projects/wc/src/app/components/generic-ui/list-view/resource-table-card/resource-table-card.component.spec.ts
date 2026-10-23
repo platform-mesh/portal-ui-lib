@@ -468,17 +468,19 @@ describe('ResourceTableCard', () => {
       const error = new Error('list failed');
       mockResourceService.list.mockReturnValue(throwError(() => error));
 
-      await expect(
-        (component as any).resolveDynamicValues({
+      const result = await (component as any).resolveDynamicValuesResult(
+        {
           dynamicValuesDefinition: {
             operation: 'v1.Namespaces.items',
             gqlQuery:
               'query { v1 { Namespaces { items { metadata { name } } } } }',
             value: 'metadata.name',
           },
-        }),
-      ).resolves.toBeUndefined();
+        },
+        {},
+      );
 
+      expect(result).toEqual({ kind: 'error', error });
       expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(error);
     });
 
@@ -805,13 +807,12 @@ describe('ResourceTableCard', () => {
         expect(fields[0].property).toBe('metadata.namespace');
       });
 
-      it('resolveDynamicValues injects {form.namespace} into list call variables', async () => {
+      it('resolveDynamicValuesResult injects {form.namespace} into list call variables', async () => {
         mockResourceService.list.mockClear();
-        mockResourceService.list.mockImplementation(
-          (_op: string, q: any) =>
-            typeof q === 'string'
-              ? of([{ metadata: { name: 'secret-a' } }])
-              : of({ items: [], resourceVersion: '1' }),
+        mockResourceService.list.mockImplementation((_op: string, q: any) =>
+          typeof q === 'string'
+            ? of([{ metadata: { name: 'secret-a' } }])
+            : of({ items: [], resourceVersion: '1' }),
         );
         mockResourceService.getNamespace.mockReturnValue('ns-test');
 
@@ -839,7 +840,7 @@ describe('ResourceTableCard', () => {
         })) as any;
         newFixture.detectChanges();
 
-        const result = await (newComponent as any).resolveDynamicValues(
+        const result = await (newComponent as any).resolveDynamicValuesResult(
           {
             dynamicValuesDefinition: {
               operation: 'v1.Secrets.items',
@@ -851,7 +852,7 @@ describe('ResourceTableCard', () => {
           { 'metadata.namespace': 'injected-ns' },
         );
 
-        expect(result).toEqual(['secret-a']);
+        expect(result).toEqual({ kind: 'ready', values: ['secret-a'] });
         const depQueryCalls = mockResourceService.list.mock.calls.filter(
           (c) => c[1] === depQuery,
         );
@@ -863,7 +864,7 @@ describe('ResourceTableCard', () => {
         });
       });
 
-      it('resolveDynamicValues skips a query with unresolved {form.*} namespace placeholder', async () => {
+      it('resolveDynamicValuesResult returns blocked for a query with unresolved {form.*} namespace placeholder', async () => {
         mockResourceService.list.mockClear();
         mockResourceService.getNamespace.mockReturnValue(undefined);
 
@@ -890,8 +891,7 @@ describe('ResourceTableCard', () => {
         })) as any;
         newFixture.detectChanges();
 
-        // formValues has no 'metadata.namespace' — placeholder stays unresolved
-        const result = await (newComponent as any).resolveDynamicValues(
+        const result = await (newComponent as any).resolveDynamicValuesResult(
           {
             dynamicValuesDefinition: {
               operation: 'v1.Secrets.items',
@@ -903,65 +903,20 @@ describe('ResourceTableCard', () => {
           {},
         );
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({ kind: 'blocked' });
         expect(
           mockResourceService.list.mock.calls.filter((c) => c[1] === depQuery),
         ).toHaveLength(0);
       });
 
-      it('onFieldChange hook re-resolves dependent field and returns cleared initialValues', async () => {
-        const comp = makeDepComponent({ namespaceId: 'ns-from-path' });
-
-        const { onFieldChange } = comp.config().createResourceFormConfig!;
-        expect(onFieldChange).toBeDefined();
-
-        const currentFields = [
-          { name: 'metadata.namespace', values: ['old-ns'] },
-          { name: 'spec.secretRef', values: ['stale-secret'] },
-        ] as any[];
-
-        const result = await onFieldChange!(
-          { fieldProperty: 'metadata.namespace', value: 'ns-from-path' },
-          currentFields,
-        );
-
-        expect(result).toBeDefined();
-        const updatedDep = result!.fields.find(
-          (f) => f.name === 'spec.secretRef',
-        );
-        expect(updatedDep?.values).toEqual(['secret-a']);
-        const parentField = result!.fields.find(
-          (f) => f.name === 'metadata.namespace',
-        );
-        expect(parentField?.values).toEqual(['old-ns']);
-        expect(result!.initialValues?.['spec.secretRef']).toBe('');
-      });
-
-      it('onFieldChange hook returns undefined when field has no dependents (backward compat)', async () => {
-        const comp = makeDepComponent({ namespaceId: 'ns-from-path' });
-        const { onFieldChange } = comp.config().createResourceFormConfig!;
-        const currentFields = [
-          { name: 'metadata.name', values: [] },
-        ] as any[];
-
-        const result = await onFieldChange!(
-          { fieldProperty: 'metadata.name', value: 'my-name' },
-          currentFields,
-        );
-
-        expect(result).toBeUndefined();
-      });
-
-
       it('parent trigger field gets validation:onChange set in the fields thunk', async () => {
         // Use a namespaced context with NO resolved namespace so the synthetic
         // namespace field is added to createFormFields and becomes a trigger.
         mockResourceService.getNamespace.mockReturnValue(undefined);
-        mockResourceService.list.mockImplementation(
-          (_op: string, q: any) =>
-            typeof q === 'string'
-              ? of([{ metadata: { name: 'secret-a' } }])
-              : of({ items: [], resourceVersion: '1' }),
+        mockResourceService.list.mockImplementation((_op: string, q: any) =>
+          typeof q === 'string'
+            ? of([{ metadata: { name: 'secret-a' } }])
+            : of({ items: [], resourceVersion: '1' }),
         );
 
         const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -1006,9 +961,7 @@ describe('ResourceTableCard', () => {
         newFixture.detectChanges();
 
         const formConfig = newComponent.config().createResourceFormConfig!;
-        const fields = await (
-          formConfig.fields as () => Promise<any[]>
-        )();
+        const fields = await (formConfig.fields as () => Promise<any[]>)();
 
         // metadata.namespace is a parent trigger (spec.secretRef dependsOn it)
         const nsField = fields.find((f) => f.name === 'metadata.namespace');
@@ -1026,7 +979,11 @@ describe('ResourceTableCard', () => {
           apiGroup: 'core_k8s_io',
           version: 'v1alpha1',
           ui: {
-            createView: { fields: [{ property: 'metadata.name', label: 'Name', required: true }] },
+            createView: {
+              fields: [
+                { property: 'metadata.name', label: 'Name', required: true },
+              ],
+            },
             listView: { fields: [] },
           },
           ...overrides,
@@ -1051,7 +1008,8 @@ describe('ResourceTableCard', () => {
       newFixture.detectChanges();
 
       const resource = { metadata: { name: 'test' } } as any;
-      const editConfig = newComponent.config().editResourceFormConfig!(resource);
+      const editConfig =
+        newComponent.config().editResourceFormConfig!(resource);
       expect(editConfig).toBeDefined();
       expect(typeof editConfig.fields).toBe('function');
 
@@ -1099,11 +1057,10 @@ describe('ResourceTableCard', () => {
       const depQuery =
         'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }';
       mockResourceService.getNamespace.mockReturnValue(undefined);
-      mockResourceService.list.mockImplementation(
-        (_op: string, q: any) =>
-          typeof q === 'string'
-            ? of([{ metadata: { name: 'secret-a' } }])
-            : of({ items: [], resourceVersion: '1' }),
+      mockResourceService.list.mockImplementation((_op: string, q: any) =>
+        typeof q === 'string'
+          ? of([{ metadata: { name: 'secret-a' } }])
+          : of({ items: [], resourceVersion: '1' }),
       );
 
       const newFixture = TestBed.createComponent(ResourceTableCard);
@@ -1127,7 +1084,9 @@ describe('ResourceTableCard', () => {
                     gqlQuery: depQuery,
                     value: 'metadata.name',
                     key: 'metadata.name',
-                    gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
+                    gqlQueryVariables: {
+                      namespace: '{form.metadata.namespace}',
+                    },
                     dependsOn: ['metadata.namespace'],
                   },
                 },
@@ -1146,111 +1105,13 @@ describe('ResourceTableCard', () => {
       newFixture.detectChanges();
 
       const resource = { metadata: { name: 'test' } } as any;
-      const editConfig = newComponent.config().editResourceFormConfig!(resource);
+      const editConfig =
+        newComponent.config().editResourceFormConfig!(resource);
       const fields = await (editConfig.fields as () => Promise<any[]>)();
 
       // metadata.namespace is a parent trigger (spec.secretRef dependsOn it)
       const nsField = fields.find((f: any) => f.name === 'metadata.namespace');
       expect(nsField?.validation).toBe('onChange');
-    });
-
-    it('onEditFieldChange re-resolves a dependent field and returns cleared initialValues', async () => {
-      const depQuery =
-        'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }';
-      mockResourceService.getNamespace.mockImplementation(
-        (context: any) => context.namespaceId,
-      );
-      mockResourceService.list.mockImplementation(
-        (_op: string, q: any) =>
-          typeof q === 'string'
-            ? of([{ metadata: { name: 'secret-a' } }])
-            : of({ items: [], resourceVersion: '1' }),
-      );
-
-      const newFixture = TestBed.createComponent(ResourceTableCard);
-      const newComponent = newFixture.componentInstance;
-      newComponent.context = signal({
-        namespaceId: 'ns-from-context',
-        resourceDefinition: {
-          entityCollection: 'ChatUIInstances',
-          entity: 'ChatUIInstance',
-          apiGroup: 'ui_privatellms_msp',
-          version: 'v1alpha1',
-          scope: 'Namespaced',
-          ui: {
-            createView: {
-              fields: [
-                { property: 'metadata.name', required: true },
-                {
-                  property: 'spec.secretRef',
-                  required: true,
-                  dynamicValuesDefinition: {
-                    operation: 'v1.Secrets.items',
-                    gqlQuery: depQuery,
-                    value: 'metadata.name',
-                    key: 'metadata.name',
-                    gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
-                    dependsOn: ['metadata.namespace'],
-                  },
-                },
-              ],
-            },
-            listView: { fields: [] },
-          },
-        },
-      }) as any;
-      newComponent.LuigiClient = (() => ({
-        linkManager: () => ({ navigate: vi.fn() }),
-        uxManager: () => ({ showAlert: vi.fn() }),
-        getNodeParams: vi.fn(),
-        getPathParams: vi.fn(() => ({ namespaceId: 'ns-from-path' })),
-      })) as any;
-      vi.spyOn(newComponent as any, 'tableCard', 'get').mockReturnValue(
-        () => ({ closeEditDialog: vi.fn() }),
-      );
-      newFixture.detectChanges();
-
-      const resource = { metadata: { name: 'test' } } as any;
-      const editConfig = newComponent.config().editResourceFormConfig!(resource);
-      const { onFieldChange } = editConfig;
-      expect(onFieldChange).toBeDefined();
-
-      const currentFields = [
-        { name: 'metadata.namespace', values: ['old-ns'] },
-        { name: 'spec.secretRef', values: ['stale-secret'] },
-      ] as any[];
-
-      const result = await onFieldChange!(
-        { fieldProperty: 'metadata.namespace', value: 'ns-from-path' },
-        currentFields,
-      );
-
-      expect(result).toBeDefined();
-      const updatedDep = result!.fields.find((f: any) => f.name === 'spec.secretRef');
-      expect(updatedDep?.values).toEqual(['secret-a']);
-      const parentField = result!.fields.find((f: any) => f.name === 'metadata.namespace');
-      expect(parentField?.values).toEqual(['old-ns']);
-      expect(result!.initialValues?.['spec.secretRef']).toBe('');
-    });
-
-    it('onEditFieldChange returns undefined when field has no dependents', async () => {
-      const newFixture = TestBed.createComponent(ResourceTableCard);
-      const newComponent = newFixture.componentInstance;
-      newComponent.context = makeEditContext();
-      newComponent.LuigiClient = makeLuigiClient();
-      newFixture.detectChanges();
-
-      const resource = { metadata: { name: 'test' } } as any;
-      const editConfig = newComponent.config().editResourceFormConfig!(resource);
-      const { onFieldChange } = editConfig;
-
-      const currentFields = [{ name: 'metadata.name', values: [] }] as any[];
-      const result = await onFieldChange!(
-        { fieldProperty: 'metadata.name', value: 'my-name' },
-        currentFields,
-      );
-
-      expect(result).toBeUndefined();
     });
 
     it('editResourceFormConfig fields thunk resolves dependent values against the prefilled parent (initial edit-open resolve)', async () => {
@@ -1336,6 +1197,104 @@ describe('ResourceTableCard', () => {
       });
     });
 
+    it('keeps metadata.namespace immutable while an editable parent refreshes its dependent', async () => {
+      const query =
+        'query ($namespace: String!) { Secrets(namespace: $namespace) { items { metadata { name } } } }';
+      mockResourceService.getNamespace.mockReturnValue('prod');
+      mockResourceService.list.mockImplementation(
+        (_op: string, fieldsOrQuery: unknown) =>
+          typeof fieldsOrQuery === 'string'
+            ? of([{ metadata: { name: 'db-password' } }])
+            : of({ items: [], resourceVersion: '1' }),
+      );
+
+      const localFixture = TestBed.createComponent(ResourceTableCard);
+      const local = localFixture.componentInstance;
+      local.context = signal({
+        resourceDefinition: {
+          entityCollection: 'Resources',
+          entity: 'Resource',
+          apiGroup: 'example.io',
+          version: 'v1',
+          scope: 'Namespaced',
+          ui: {
+            listView: { fields: [] },
+            createView: {
+              fields: [
+                { property: 'metadata.namespace' },
+                { property: 'spec.targetNamespace' },
+                {
+                  property: 'spec.secretRef.name',
+                  required: true,
+                  dynamicValuesDefinition: {
+                    operation: 'Secrets.items',
+                    gqlQuery: query,
+                    key: 'metadata.name',
+                    value: 'metadata.name',
+                    gqlQueryVariables: {
+                      namespace: '{form.spec.targetNamespace}',
+                    },
+                    dependsOn: ['spec.targetNamespace'],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      }) as any;
+      local.LuigiClient = makeLuigiClient();
+      const applyPatch = vi.fn();
+      (local as any).tableCard = () => ({ applyEditFormPatch: applyPatch });
+      localFixture.detectChanges();
+
+      const resource = {
+        metadata: { namespace: 'prod' },
+        spec: { targetNamespace: 'prod', secretRef: { name: 'db-password' } },
+      } as any;
+      const config = local.config().editResourceFormConfig!(resource);
+      const fields = await (config.fields as () => Promise<any[]>)();
+      expect(
+        fields.find((field) => field.name === 'metadata.namespace')?.disabled,
+      ).toBe(true);
+      expect(
+        fields.find((field) => field.name === 'spec.targetNamespace')?.disabled,
+      ).toBe(false);
+      expect(
+        fields.find((field) => field.name === 'spec.secretRef.name')?.values,
+      ).toEqual(['db-password']);
+
+      mockResourceService.list.mockClear();
+      local.onEditFieldChange({
+        resource,
+        formChangeEvent: {
+          fieldProperty: 'spec.targetNamespace',
+          value: 'staging',
+          source: 'user',
+          formValues: {
+            'metadata.namespace': 'prod',
+            'spec.targetNamespace': 'staging',
+            'spec.secretRef.name': 'db-password',
+          },
+        },
+      });
+      expect(applyPatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          values: { 'spec.secretRef.name': '' },
+        }),
+      );
+      expect(local.editFormState().pending).toBe(true);
+      expect(local.editFormState().fieldErrors?.['spec.secretRef.name']).toBe(
+        'This field is required',
+      );
+
+      await vi.waitFor(() => expect(local.editFormState().pending).toBe(false));
+      expect(mockResourceService.list).toHaveBeenCalledWith(
+        'Secrets.items',
+        query,
+        expect.anything(),
+        { variables: { namespace: { type: 'String', value: 'staging' } } },
+      );
+    });
 
     it('onEditSubmit calls resourceService.update and closes the edit dialog', () => {
       const closeEditDialog = vi.fn();
@@ -1390,23 +1349,35 @@ describe('ResourceTableCard', () => {
     it('onEditFieldChange validates metadata.name with k8s name regex via wrapper shape', async () => {
       await component.onEditFieldChange({
         resource: { metadata: { name: 'existing' } } as any,
-        formChangeEvent: { fieldProperty: 'metadata.name', value: 'Invalid Name!!' },
+        formChangeEvent: {
+          fieldProperty: 'metadata.name',
+          value: 'Invalid Name!!',
+        },
       });
-      expect(component.editFormState().fieldErrors?.['metadata.name']).toBeTruthy();
+      expect(
+        component.editFormState().fieldErrors?.['metadata.name'],
+      ).toBeTruthy();
     });
 
     it('onEditFieldChange clears error for valid metadata.name', async () => {
       await component.onEditFieldChange({
         resource: { metadata: { name: 'existing' } } as any,
-        formChangeEvent: { fieldProperty: 'metadata.name', value: 'Invalid Name!!' },
+        formChangeEvent: {
+          fieldProperty: 'metadata.name',
+          value: 'Invalid Name!!',
+        },
       });
       await component.onEditFieldChange({
         resource: { metadata: { name: 'existing' } } as any,
-        formChangeEvent: { fieldProperty: 'metadata.name', value: 'valid-name' },
+        formChangeEvent: {
+          fieldProperty: 'metadata.name',
+          value: 'valid-name',
+        },
       });
-      expect(component.editFormState().fieldErrors?.['metadata.name']).toBeFalsy();
+      expect(
+        component.editFormState().fieldErrors?.['metadata.name'],
+      ).toBeFalsy();
     });
-
   });
 
   describe('List subscription', () => {

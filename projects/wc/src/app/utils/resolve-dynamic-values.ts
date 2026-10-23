@@ -1,17 +1,20 @@
-import { PlatformMeshFieldDefinition, Resource } from '@platform-mesh/portal-ui-lib/models';
+import type { DynamicValuesResult } from './form-dependency-controller';
+import { resolveContextPlaceholders } from './resolve-context-placeholders';
+import { resolveFormPlaceholders } from './resolve-form-placeholders';
+import { isMissingRequiredNamespace } from './route-namespace';
+import {
+  PlatformMeshFieldDefinition,
+  Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import { getValueByPath } from '@platform-mesh/portal-ui-lib/utils';
 import { Observable, firstValueFrom } from 'rxjs';
 
-import { resolveContextPlaceholders } from './resolve-context-placeholders';
-import { resolveFormPlaceholders } from './resolve-form-placeholders';
-import { isMissingRequiredNamespace } from './route-namespace';
-
 /**
- * Dependencies that `resolveFieldDynamicValues` needs from the host component.
- *
- * The function stays pure (no `this`) by taking these callbacks as a bundle.
- * Call sites pass thin wrappers around `ResourceService` + `ErrorHandlerService`.
+ * Dependencies that `resolveFieldDynamicValuesResult` needs from the host
+ * component. The function stays pure (no `this`) by taking these callbacks
+ * as a bundle. Call sites pass thin wrappers around `ResourceService` +
+ * `ErrorHandlerService`.
  */
 export interface ResolveFieldDynamicValuesDeps {
   list: (
@@ -37,26 +40,26 @@ export interface ResolveFieldDynamicValuesDeps {
  * Steps:
  * 1. Build GraphQL variables by resolving both `{context.*}` and `{form.*}`
  *    placeholders in `dynamicValuesDefinition.gqlQueryVariables`.
- * 2. Harden the `namespace` variable: an UNRESOLVED `{context.*}`/`{form.*}`
- *    literal is NOT a usable namespace — fall back to the context namespace.
- * 3. Skip when the query declares a required `$namespace` but none is
- *    available (`isMissingRequiredNamespace`).
+ * 2. Replace an unresolved namespace placeholder with the context namespace,
+ *    when one is available. Never send a literal placeholder to GraphQL.
+ * 3. Skip when any variable remains unresolved or a required `$namespace`
+ *    is unavailable (`isMissingRequiredNamespace`).
  * 4. Call `deps.list(...)`, map each row with `getValueByPath(row, def.value)`,
  *    filter falsy entries.
- * 5. On error, forward to `deps.handleError` and return `undefined`.
  *
- * Contract: returns `undefined` on skip or error (mirrors previous component
- * behavior), otherwise a possibly-empty string[] of resolved option values.
+ * Returns a tagged `DynamicValuesResult` with explicit `kind: 'ready' |
+ * 'blocked' | 'error'` so callers can distinguish available options from
+ * unresolved dependencies and failed requests.
  */
-export async function resolveFieldDynamicValues(
+export async function resolveFieldDynamicValuesResult(
   field: PlatformMeshFieldDefinition,
   context: ResourceNodeContext,
   isNamespaced: boolean,
   formValues: Record<string, unknown>,
   deps: ResolveFieldDynamicValuesDeps,
-): Promise<string[] | undefined> {
+): Promise<DynamicValuesResult> {
   const def = field.dynamicValuesDefinition;
-  if (!def) return undefined;
+  if (!def) return { kind: 'blocked' };
 
   // Resolve {context.*} then {form.*} in each gqlQueryVariable value.
   const variables = Object.fromEntries(
@@ -74,23 +77,39 @@ export async function resolveFieldDynamicValues(
 
   // Harden namespace fallback: an unresolved {context.*}/{form.*} literal is
   // NOT a usable namespace value — fall back to the context namespace.
-  const contextNamespace = isNamespaced ? deps.getNamespace(context) : undefined;
+  const contextNamespace = isNamespaced
+    ? deps.getNamespace(context)
+    : undefined;
   const nsRaw = variables['namespace']?.value as string | undefined;
   const namespace =
     nsRaw && !/\{(context|form)\./.test(nsRaw) ? nsRaw : contextNamespace;
+  if (variables['namespace'] && namespace)
+    variables['namespace'].value = namespace;
 
-  // Without a namespace the query can only fail. Fall back to a plain input.
-  if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
+  if (
+    Object.values(variables).some(
+      ({ value }) =>
+        typeof value === 'string' && /\{(context|form)\./.test(value),
+    )
+  )
+    return { kind: 'blocked' };
+
+  // Without a required namespace the query can only fail.
+  if (isMissingRequiredNamespace(def.gqlQuery, namespace))
+    return { kind: 'blocked' };
 
   try {
     const resources = await firstValueFrom(
       deps.list(def.operation, def.gqlQuery, context, { variables }),
     );
-    return (resources as Resource[])
-      .map((r) => getValueByPath(r, def.value) as string)
-      .filter(Boolean);
+    return {
+      kind: 'ready',
+      values: (resources as Resource[])
+        .map((r) => getValueByPath(r, def.value) as string)
+        .filter(Boolean),
+    };
   } catch (error) {
     deps.handleError(error);
-    return undefined;
+    return { kind: 'error', error };
   }
 }

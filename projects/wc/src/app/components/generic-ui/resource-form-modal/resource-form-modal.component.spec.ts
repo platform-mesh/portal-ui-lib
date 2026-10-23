@@ -1,7 +1,7 @@
 import { ResourceFormModal } from './resource-form-modal.component';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormFieldDefinition, ResourceFormDialog } from '@openmfp/ngx';
+import { ResourceFormDialog } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import {
   ErrorHandlerService,
@@ -47,7 +47,7 @@ describe('ResourceFormModal', () => {
       .overrideComponent(ResourceFormModal, {
         set: {
           template:
-            '<mfp-resource-form-dialog #dialog [open]="dialogOpen()" [fields]="formFields()" [initialValues]="{}" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (fieldsUpdated)="onFieldsUpdated($event)" (submitted)="onFormSubmit($event)" (cancelled)="close()" />',
+            '<mfp-resource-form-dialog #dialog [open]="dialogOpen()" [fields]="formFields()" [initialValues]="initialValues()" [fieldErrors]="fieldErrors()" (fieldChange)="onFieldChange($event)" (submitted)="onFormSubmit($event)" (cancelled)="close()" />',
           imports: [ResourceFormDialog],
           schemas: [CUSTOM_ELEMENTS_SCHEMA],
         },
@@ -210,17 +210,26 @@ describe('ResourceFormModal', () => {
     it('should pass a dynamic values read error to the error handler', async () => {
       const error = new Error('list failed');
       resourceService.list.mockReturnValue(throwError(() => error));
-
-      await expect(
-        (component as any).resolveDynamicValues({
-          dynamicValuesDefinition: {
-            operation: 'v1.Namespaces.items',
-            gqlQuery:
-              'query { v1 { Namespaces { items { metadata { name } } } } }',
-            value: 'metadata.name',
+      resourceService.getNamespace.mockReturnValue('default');
+      fixture.componentRef.setInput(
+        'fields',
+        [
+          {
+            property: 'spec.region',
+            dynamicValuesDefinition: {
+              operation: 'v1.Namespaces.items',
+              gqlQuery:
+                'query { v1 { Namespaces { items { metadata { name } } } } }',
+              value: 'metadata.name',
+              key: 'metadata.name',
+            },
           },
-        }),
-      ).resolves.toBeUndefined();
+        ] as any,
+      );
+      fixture.componentRef.setInput('context', namespacedContext);
+      fixture.detectChanges();
+
+      await component.open();
 
       expect(errorHandlerService.handleError).toHaveBeenCalledWith(error);
     });
@@ -389,7 +398,7 @@ describe('ResourceFormModal', () => {
   });
 
   describe('open seeding', () => {
-    it('calls dialog.patchForm({ emitEvent: false }) with resource-derived initial values on edit open', async () => {
+    it('sets stable initial values on edit open', async () => {
       const dialog = fixture.debugElement.query(
         (de) => de.componentInstance instanceof ResourceFormDialog,
       )?.componentInstance as ResourceFormDialog;
@@ -401,14 +410,14 @@ describe('ResourceFormModal', () => {
         spec: { description: 'hello' },
       } as any);
 
-      expect(spy).toHaveBeenCalledTimes(1);
-      const [values, options] = spy.mock.calls[0];
-      expect(values['metadata.name']).toBe('res1');
-      expect(values['spec.description']).toBe('hello');
-      expect(options).toEqual({ emitEvent: false });
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.initialValues()).toMatchObject({
+        'metadata.name': 'res1',
+        'spec.description': 'hello',
+      });
     });
 
-    it('calls dialog.patchForm (non-silent) with initial values on create open', async () => {
+    it('sets stable initial values on create open', async () => {
       const dialog = fixture.debugElement.query(
         (de) => de.componentInstance instanceof ResourceFormDialog,
       )?.componentInstance as ResourceFormDialog;
@@ -416,8 +425,8 @@ describe('ResourceFormModal', () => {
 
       await component.open();
 
-      expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy.mock.calls[0][1]).toBeUndefined();
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.initialValues()).toEqual({});
     });
   });
 
@@ -645,53 +654,6 @@ describe('ResourceFormModal', () => {
     });
   });
 
-  describe('onFieldsUpdated', () => {
-    const updatedFields: FormFieldDefinition[] = [
-      { name: 'metadata.namespace', label: 'Namespace' },
-      { name: 'spec.secretName', label: 'Secret', values: ['a', 'b'] },
-    ];
-
-    it('writes fields and applies initialValues via dialog.patchForm({emitEvent:false})', async () => {
-      await component.open();
-      fixture.detectChanges();
-
-      const dialogDe = fixture.debugElement.query(
-        (de) => de.componentInstance instanceof ResourceFormDialog,
-      );
-      const dialog = dialogDe.componentInstance as ResourceFormDialog;
-      const spy = vi.spyOn(dialog, 'patchForm');
-      spy.mockClear();
-
-      component.onFieldsUpdated({
-        fields: updatedFields,
-        initialValues: { 'spec.secretName': '' },
-      });
-
-      expect(component.formFields()).toEqual(updatedFields);
-      expect(spy).toHaveBeenCalledWith(
-        { 'spec.secretName': '' },
-        { emitEvent: false },
-      );
-    });
-
-    it('does not call patchForm when payload omits initialValues', async () => {
-      await component.open();
-      fixture.detectChanges();
-
-      const dialogDe = fixture.debugElement.query(
-        (de) => de.componentInstance instanceof ResourceFormDialog,
-      );
-      const dialog = dialogDe.componentInstance as ResourceFormDialog;
-      const spy = vi.spyOn(dialog, 'patchForm');
-      spy.mockClear();
-
-      component.onFieldsUpdated({ fields: updatedFields });
-
-      expect(component.formFields()).toEqual(updatedFields);
-      expect(spy).not.toHaveBeenCalled();
-    });
-  });
-
   describe('field-to-field dependencies', () => {
     const nsQuery =
       'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }';
@@ -710,6 +672,7 @@ describe('ResourceFormModal', () => {
 
     const secretField: PlatformMeshFieldDefinition = {
       property: 'spec.secretName',
+      required: true,
       label: 'Secret',
       dynamicValuesDefinition: {
         operation: 'v1.Secrets.items',
@@ -738,7 +701,8 @@ describe('ResourceFormModal', () => {
       label: 'Zone',
       dynamicValuesDefinition: {
         operation: 'zones.items',
-        gqlQuery: 'query ($region: String!) { zones(region: $region) { items { name } } }',
+        gqlQuery:
+          'query ($region: String!) { zones(region: $region) { items { name } } }',
         value: 'name',
         key: 'name',
         gqlQueryVariables: { region: '{form.spec.region}' },
@@ -763,8 +727,10 @@ describe('ResourceFormModal', () => {
           (c) => c[0] === 'v1.Secrets.items',
         );
         expect(secretCalls).toHaveLength(0);
-        const sf = component.formFields().find((f) => f.name === 'spec.secretName');
-        expect(sf?.values).toBeUndefined();
+        const sf = component
+          .formFields()
+          .find((f) => f.name === 'spec.secretName');
+        expect(sf?.values).toEqual([]);
       });
 
       it('resolves a dependent from the parent initial value in edit mode', async () => {
@@ -793,7 +759,9 @@ describe('ResourceFormModal', () => {
           variables: { namespace: { type: 'String', value: 'my-ns' } },
         });
 
-        const sf = component.formFields().find((f) => f.name === 'spec.secretName');
+        const sf = component
+          .formFields()
+          .find((f) => f.name === 'spec.secretName');
         expect(sf?.values).toEqual(['my-secret']);
       });
     });
@@ -807,11 +775,13 @@ describe('ResourceFormModal', () => {
 
         await component.open();
 
-        const nff = component.formFields().find((f) => f.name === 'metadata.namespace');
+        const nff = component
+          .formFields()
+          .find((f) => f.name === 'metadata.namespace');
         expect(nff?.validation).toBe('onChange');
       });
 
-      it('does not force onChange on a field that is not a parent', async () => {
+      it('keeps required dependent validation onChange', async () => {
         resourceService.getNamespace.mockReturnValue('default');
         fixture.componentRef.setInput('fields', [namespaceField, secretField]);
         fixture.componentRef.setInput('context', namespacedContext);
@@ -819,13 +789,15 @@ describe('ResourceFormModal', () => {
 
         await component.open();
 
-        // secretField is a dependent, not a parent — no forced onChange beyond defaults
-        const sf = component.formFields().find((f) => f.name === 'spec.secretName');
-        expect(sf?.validation).toBeUndefined();
+        // Required fields validate on change independently of dependencies.
+        const sf = component
+          .formFields()
+          .find((f) => f.name === 'spec.secretName');
+        expect(sf?.validation).toBe('onChange');
       });
     });
 
-    describe('onFieldChange — parent triggers dependent update', () => {
+    describe('user changes', () => {
       beforeEach(async () => {
         resourceService.getNamespace.mockReturnValue(undefined);
         fixture.componentRef.setInput('fields', [namespaceField, secretField]);
@@ -835,148 +807,56 @@ describe('ResourceFormModal', () => {
         resourceService.list.mockReset();
       });
 
-      // The host's `resolveDependents` policy is called by the ngx dialog
-      // through `dialogConfig.onFieldChange`. The dialog owns the race-guard
-      // and applies the returned fields/initialValues; these tests invoke the
-      // policy directly and inspect its return shape.
-      const invokeHook = (
-        event: { fieldProperty: string; value: unknown },
-      ): Promise<
-        | {
-            fields: FormFieldDefinition[];
-            initialValues?: Record<string, unknown>;
-          }
-        | undefined
-      > => component.dialogConfig().onFieldChange!(event, component.formFields());
-
-      it('replaces dependent values when the parent changes', async () => {
+      it('clears immediately and loads options for the selected parent', async () => {
         resourceService.list.mockReturnValue(
           of([{ metadata: { name: 'secret-a' } }]),
         );
 
-        const result = await invokeHook({
-          fieldProperty: 'metadata.namespace',
-          value: 'my-ns',
-        });
-
-        const sf = result?.fields.find((f) => f.name === 'spec.secretName');
-        expect(sf?.values).toEqual(['secret-a']);
-      });
-
-      it('calls list with the resolved {form.X} variable', async () => {
-        resourceService.list.mockReturnValue(of([]));
-
-        await invokeHook({
+        component.onFieldChange({
           fieldProperty: 'metadata.namespace',
           value: 'team-a',
+          source: 'user',
+          formValues: {
+            'metadata.namespace': 'team-a',
+            'spec.secretName': 'old',
+          },
         });
 
-        const secretCalls = resourceService.list.mock.calls.filter(
-          (c) => c[0] === 'v1.Secrets.items',
+        expect(
+          component
+            .formFields()
+            .find((field) => field.name === 'spec.secretName')?.values,
+        ).toEqual([]);
+        expect(component.pending()).toBe(true);
+        expect(component.fieldErrors()['spec.secretName']).toBe(
+          'This field is required',
         );
-        expect(secretCalls).toHaveLength(1);
-        expect(secretCalls[0][3]).toEqual({
-          variables: { namespace: { type: 'String', value: 'team-a' } },
+
+        await vi.waitFor(() => {
+          expect(
+            component
+              .formFields()
+              .find((field) => field.name === 'spec.secretName')?.values,
+          ).toEqual(['secret-a']);
         });
-      });
-
-      it('clears the dependent value via a partial initialValues push', async () => {
-        resourceService.list.mockReturnValue(
-          of([{ metadata: { name: 'secret-b' } }]),
-        );
-
-        const result = await invokeHook({
-          fieldProperty: 'metadata.namespace',
-          value: 'other-ns',
-        });
-
-        expect(result?.initialValues).toEqual({ 'spec.secretName': '' });
-      });
-
-      it('clears the dependent field error', async () => {
-        component['fieldErrors'].set({ 'spec.secretName': 'This field is required' });
-
-        resourceService.list.mockReturnValue(of([]));
-
-        await invokeHook({
-          fieldProperty: 'metadata.namespace',
-          value: 'ns1',
-        });
-
-        expect(component.fieldErrors()['spec.secretName']).toBeNull();
-      });
-
-      it('returns undefined (loop-safety) when the changed field has no dependents', async () => {
-        const result = await invokeHook({
-          fieldProperty: 'spec.description',
-          value: 'hello',
-        });
-
-        expect(result).toBeUndefined();
-        expect(resourceService.list).not.toHaveBeenCalled();
-      });
-
-      it('returns [] values when parent value is empty (no list call for secrets)', async () => {
-        const result = await invokeHook({
-          fieldProperty: 'metadata.namespace',
-          value: '',
-        });
-
-        // The {form.metadata.namespace} placeholder stays literal → namespace-skip fires
-        expect(resourceService.list).not.toHaveBeenCalledWith(
+        expect(component.pending()).toBe(false);
+        expect(resourceService.list).toHaveBeenCalledWith(
           'v1.Secrets.items',
           expect.anything(),
           expect.anything(),
-          expect.anything(),
+          { variables: { namespace: { type: 'String', value: 'team-a' } } },
         );
-        const sf = result?.fields.find((f) => f.name === 'spec.secretName');
-        expect(sf?.values).toEqual([]);
       });
-    });
 
-    describe('onFieldChange — multiple dependents on one parent', () => {
-      it('updates all dependents in one call', async () => {
-        const secondSecret: PlatformMeshFieldDefinition = {
-          property: 'spec.anotherSecret',
-          label: 'Another Secret',
-          dynamicValuesDefinition: {
-            operation: 'v1.Secrets.items',
-            gqlQuery: nsQuery,
-            value: 'metadata.name',
-            key: 'metadata.name',
-            gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
-            dependsOn: ['metadata.namespace'],
-          },
-        };
-
-        resourceService.getNamespace.mockReturnValue(undefined);
-        fixture.componentRef.setInput('fields', [
-          namespaceField,
-          secretField,
-          secondSecret,
-        ]);
-        fixture.componentRef.setInput('context', namespacedContext);
-        fixture.detectChanges();
-        await component.open();
-
-        resourceService.list.mockReset();
-        resourceService.list.mockReturnValue(
-          of([{ metadata: { name: 'sec-x' } }]),
-        );
-
-        const result = await component.dialogConfig().onFieldChange!(
-          { fieldProperty: 'metadata.namespace', value: 'shared' },
-          component.formFields(),
-        );
-
-        const sf1 = result?.fields.find((f) => f.name === 'spec.secretName');
-        const sf2 = result?.fields.find((f) => f.name === 'spec.anotherSecret');
-        expect(sf1?.values).toEqual(['sec-x']);
-        expect(sf2?.values).toEqual(['sec-x']);
-        expect(result?.initialValues).toEqual({
-          'spec.secretName': '',
-          'spec.anotherSecret': '',
+      it('does not clear or re-query on a seed event', () => {
+        component.onFieldChange({
+          fieldProperty: 'metadata.namespace',
+          value: 'team-a',
+          source: 'seed',
+          formValues: { 'metadata.namespace': 'team-a' },
         });
+        expect(resourceService.list).not.toHaveBeenCalled();
+        expect(component.pending()).toBe(false);
       });
     });
 
@@ -988,11 +868,13 @@ describe('ResourceFormModal', () => {
       // resolver, which produced an empty option list on edit-open.
       it('resolves dependent values against the prefilled parent', async () => {
         resourceService.getNamespace.mockReturnValue(undefined);
-        resourceService.list.mockImplementation(
-          (op: string) =>
-            op === 'v1.Secrets.items'
-              ? of([{ metadata: { name: 'secret-for-ns-a' } }])
-              : of([{ metadata: { name: 'ns-a' } }, { metadata: { name: 'ns-b' } }]),
+        resourceService.list.mockImplementation((op: string) =>
+          op === 'v1.Secrets.items'
+            ? of([{ metadata: { name: 'secret-for-ns-a' } }])
+            : of([
+                { metadata: { name: 'ns-a' } },
+                { metadata: { name: 'ns-b' } },
+              ]),
         );
 
         fixture.componentRef.setInput('fields', [namespaceField, secretField]);
@@ -1043,14 +925,15 @@ describe('ResourceFormModal', () => {
         expect(resourceService.list.mock.calls).toHaveLength(listCallsBefore);
       });
 
-      it('resolveDynamicValues works when called without formValues (existing call sites)', async () => {
+      it('resolveDynamicValuesResult works when called without extra formValues (existing call sites)', async () => {
         resourceService.getNamespace.mockReturnValue('default');
-        resourceService.list.mockReturnValue(
-          of([{ name: 'region-a' }]),
-        );
+        resourceService.list.mockReturnValue(of([{ name: 'region-a' }]));
 
-        const result = await (component as any).resolveDynamicValues(regionField);
-        expect(result).toEqual(['region-a']);
+        const result = await (component as any).resolveDynamicValuesResult(
+          regionField,
+          {},
+        );
+        expect(result).toEqual({ kind: 'ready', values: ['region-a'] });
       });
     });
 
@@ -1061,14 +944,16 @@ describe('ResourceFormModal', () => {
         fixture.componentRef.setInput('context', namespacedContext);
         fixture.detectChanges();
 
-        const result = await (component as any).resolveDynamicValues(
+        const result = await (component as any).resolveDynamicValuesResult(
           secretField,
           {},
         );
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({ kind: 'blocked' });
         expect(
-          resourceService.list.mock.calls.some((c) => c[0] === 'v1.Secrets.items'),
+          resourceService.list.mock.calls.some(
+            (c) => c[0] === 'v1.Secrets.items',
+          ),
         ).toBe(false);
       });
     });

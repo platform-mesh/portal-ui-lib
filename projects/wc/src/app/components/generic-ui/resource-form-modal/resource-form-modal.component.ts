@@ -1,7 +1,11 @@
 import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
 import { applyDependencyTriggers } from '../../../utils/field-dependencies';
-import { resolveDependentFields } from '../../../utils/resolve-dependent-fields';
-import { resolveFieldDynamicValues } from '../../../utils/resolve-dynamic-values';
+import {
+  DependentFieldUpdate,
+  DynamicValuesResult,
+  FormDependencyController,
+} from '../../../utils/form-dependency-controller';
+import { resolveFieldDynamicValuesResult } from '../../../utils/resolve-dynamic-values';
 import {
   buildInitialValues,
   toFormFields,
@@ -11,6 +15,7 @@ import { ResourceFieldNames } from '../create-resource-modal/create-resource-mod
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ViewEncapsulation,
   computed,
   inject,
@@ -23,7 +28,6 @@ import {
   FormFieldChangeEvent,
   FormFieldDefinition,
   FormFieldErrors,
-  ResourceFormConfig,
   ResourceFormDialog,
 } from '@openmfp/ngx';
 import {
@@ -60,11 +64,19 @@ export class ResourceFormModal {
 
   private readonly resourceService = inject(ResourceService);
   private readonly errorHandlerService = inject(ErrorHandlerService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = viewChild<ResourceFormDialog>('dialog');
   private originalResource = signal<Resource | null>(null);
 
   fieldErrors = signal<FormFieldErrors>({});
   formFields = signal<FormFieldDefinition[]>([]);
+  initialValues = signal<Record<string, unknown>>({});
+  pending = signal(false);
+  private dependencyContext?: ResourceNodeContext;
+  private readonly dependencies = new FormDependencyController(
+    (field, values) => this.resolveDynamicValuesResult(field, values),
+    (update) => this.applyDependentUpdate(update),
+  );
 
   dialogTitle = computed(() => (this.isEditMode() ? 'Edit' : 'Create'));
   confirmLabel = computed(() => (this.isEditMode() ? 'Save' : 'Create'));
@@ -72,32 +84,33 @@ export class ResourceFormModal {
     this.isEditMode() ? 'edit-resource-dialog' : 'create-resource-dialog',
   );
 
-  dialogConfig = computed<ResourceFormConfig>(() => ({
-    fields: this.formFields(),
-    onFieldChange: (event, currentFields) =>
-      this.resolveDependents(event, currentFields),
-  }));
+  constructor() {
+    this.destroyRef.onDestroy(() => this.dependencies.end());
+  }
 
   async open(resource?: Resource) {
+    this.dependencies.end();
+    this.dialogOpen.set(false);
+    this.pending.set(false);
+    this.fieldErrors.set({});
     const fields = this.calculateFields();
     this.originalResource.set(resource ?? null);
-    const initialValues = buildInitialValues(fields, resource);
-    const formFields = await this.buildFormFieldsAsync(fields, initialValues);
+    const values = buildInitialValues(fields, resource);
+    const generation = this.dependencies.begin(fields, values);
+    this.dependencyContext = this.context();
+    const formFields = await this.buildFormFieldsAsync(fields, values);
+    if (!this.dependencies.isCurrent(generation)) return;
 
     applyDependencyTriggers(formFields, fields);
-
     this.formFields.set(formFields);
+    this.initialValues.set(values);
     this.dialogOpen.set(true);
-
-    if (resource !== undefined) {
-      this.dialog()?.patchForm(initialValues, { emitEvent: false });
-    } else {
-      this.dialog()?.patchForm(initialValues);
-    }
   }
 
   close() {
+    this.dependencies.end();
     this.dialogOpen.set(false);
+    this.pending.set(false);
     this.fieldErrors.set({});
     this.originalResource.set(null);
   }
@@ -106,64 +119,27 @@ export class ResourceFormModal {
     return !!this.originalResource();
   }
 
-  /**
-   * Called by the dialog on every form field change. Validation stays here
-   * (field-level, synchronous). The async dependent re-resolution is split
-   * out into `resolveDependents`, which the dialog invokes via `dialogConfig`.
-   */
   onFieldChange(event: FormFieldChangeEvent): void {
     this.validateField(event.fieldProperty, event.value);
+    this.dependencies.handleChange(event);
   }
 
-  /**
-   * Called by the dialog when the `onFieldChange` hook returns a result.
-   * Writes `fields` back through the signal (input re-flows) and seeds any
-   * reset `initialValues` silently via `patchForm({ emitEvent: false })`
-   * so the dependent-clear does not echo through `fieldChange` and
-   * re-trigger the hook (loop prevention).
-   */
-  onFieldsUpdated(payload: {
-    fields: FormFieldDefinition[];
-    initialValues?: Record<string, unknown>;
-  }): void {
-    this.formFields.set(payload.fields);
-    if (payload.initialValues !== undefined) {
-      this.dialog()?.patchForm(payload.initialValues, { emitEvent: false });
+  private applyDependentUpdate(update: DependentFieldUpdate): void {
+    if (update.clear) {
+      this.dialog()?.patchForm(
+        { [update.name]: '' },
+        { emitEvent: false, markAsDirty: true },
+      );
+      this.validateField(update.name, '');
     }
-  }
-
-  /**
-   * Re-resolves dependent fields when a parent changes. The ngx dialog owns
-   * the last-write-wins guard around this call — a slower resolver whose
-   * result would clobber a faster one is dropped there.
-   */
-  private async resolveDependents(
-    event: FormFieldChangeEvent,
-    currentFields: FormFieldDefinition[],
-  ): Promise<
-    | {
-        fields: FormFieldDefinition[];
-        initialValues?: Record<string, unknown>;
-      }
-    | undefined
-  > {
-    const result = await resolveDependentFields(
-      event,
-      currentFields,
-      this.calculateFields(),
-      (f, fv) => this.resolveDynamicValues(f, fv),
+    this.formFields.update((fields) =>
+      fields.map((field) =>
+        field.name === update.name
+          ? { ...field, values: update.values }
+          : field,
+      ),
     );
-    if (result) {
-      // Clearing errors is a side effect not representable in the hook's return
-      // shape, so it stays here.
-      this.fieldErrors.update((errs) => {
-        const next = { ...errs };
-        for (const n of result.resolvedNames) next[n] = null;
-        return next;
-      });
-      return { fields: result.fields, initialValues: result.initialValues };
-    }
-    return undefined;
+    this.pending.set(update.pending);
   }
 
   onFormSubmit(value: Record<string, unknown>): void {
@@ -193,21 +169,35 @@ export class ResourceFormModal {
     const editMode = this.isEditMode();
     return toFormFields(fields, {
       disabled: (field) => editMode && isImmutableOnEdit(field),
-      resolveDynamicValues: (field, fv) => this.resolveDynamicValues(field, fv),
+      resolveDynamicValues: async (field, fv) => {
+        if (
+          field.dynamicValuesDefinition?.dependsOn?.some(
+            (parent) => fv?.[parent] == null || fv[parent] === '',
+          )
+        ) {
+          return [];
+        }
+        const result = await this.resolveDynamicValuesResult(field, fv ?? {});
+        return result.kind === 'ready'
+          ? result.values
+          : field.dynamicValuesDefinition?.dependsOn?.length
+            ? []
+            : undefined;
+      },
       editMode,
       formValues,
     });
   }
 
-  private async resolveDynamicValues(
+  private resolveDynamicValuesResult(
     field: PlatformMeshFieldDefinition,
-    formValues: Record<string, unknown> = {},
-  ): Promise<string[] | undefined> {
-    return resolveFieldDynamicValues(
+    values: Record<string, unknown>,
+  ): Promise<DynamicValuesResult> {
+    return resolveFieldDynamicValuesResult(
       field,
-      this.context(),
+      this.dependencyContext ?? this.context(),
       this.isNamespacedResource(),
-      formValues,
+      values,
       {
         list: (operation, gqlQuery, context, options) =>
           this.resourceService.list(operation, gqlQuery, context, options),
@@ -243,7 +233,10 @@ export class ResourceFormModal {
   private shouldAddNamespaceControl() {
     return (
       this.isNamespacedResource() &&
-      !this.resourceService.getNamespace(this.context())
+      !this.resourceService.getNamespace(this.context()) &&
+      !this.fields().some(
+        (field) => field.property === ResourceFieldNames.MetadataNamespace,
+      )
     );
   }
 }
