@@ -1,4 +1,7 @@
-import { resolveContextPlaceholders } from './resolve-context-placeholders';
+import {
+  resolveAllPlaceholders,
+  resolveContextPlaceholders,
+} from './resolve-context-placeholders';
 
 describe('resolveContextPlaceholders', () => {
   it('replaces a simple top-level placeholder', () => {
@@ -120,5 +123,33 @@ describe('resolveContextPlaceholders', () => {
     expect(
       resolveContextPlaceholders(null as unknown as string, { userId: 'u1' }),
     ).toBe('');
+  });
+});
+
+describe('resolveAllPlaceholders', () => {
+  it('composes an absolute path from resource fields', () => {
+    expect(
+      resolveAllPlaceholders(
+        '/workspaces/{resource.accountName}/components/{resource.metadata.name}',
+        { accountName: 'ws1', metadata: { name: 'comp1' } },
+        {},
+      ),
+    ).toBe('/workspaces/ws1/components/comp1');
+  });
+
+  it('resolves both {resource.*} and {context.*} in one string', () => {
+    expect(
+      resolveAllPlaceholders(
+        '/workspaces/{context.org}/components/{resource.metadata.name}',
+        { metadata: { name: 'comp1' } },
+        { org: 'acme' },
+      ),
+    ).toBe('/workspaces/acme/components/comp1');
+  });
+
+  it('leaves the placeholder literal when a field is missing', () => {
+    expect(
+      resolveAllPlaceholders('/x/{resource.missing}/{context.gone}', { metadata: {} }, {}),
+    ).toBe('/x/{resource.missing}/{context.gone}');
   });
 });
