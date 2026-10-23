@@ -390,9 +390,6 @@ describe('ResourceFormModal', () => {
 
   describe('open seeding', () => {
     it('calls dialog.patchForm({ emitEvent: false }) with resource-derived initial values on edit open', async () => {
-      // Grab the dialog view-child before open() so we can observe the call.
-      // The dialog is always rendered (no `@if`) so the view-child is set
-      // after the first detectChanges.
       const dialog = fixture.debugElement.query(
         (de) => de.componentInstance instanceof ResourceFormDialog,
       )?.componentInstance as ResourceFormDialog;
@@ -419,9 +416,6 @@ describe('ResourceFormModal', () => {
 
       await component.open();
 
-      // Create path uses the input-driven seed path (patchForm with
-      // default emitEvent: true) so required-missing fields can be flagged
-      // through the seed echo.
       expect(spy).toHaveBeenCalledTimes(1);
       expect(spy.mock.calls[0][1]).toBeUndefined();
     });
@@ -651,10 +645,6 @@ describe('ResourceFormModal', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // onFieldsUpdated — write-back from dialog's `fieldsUpdated` output
-  // ---------------------------------------------------------------------------
-
   describe('onFieldsUpdated', () => {
     const updatedFields: FormFieldDefinition[] = [
       { name: 'metadata.namespace', label: 'Namespace' },
@@ -662,7 +652,6 @@ describe('ResourceFormModal', () => {
     ];
 
     it('writes fields and applies initialValues via dialog.patchForm({emitEvent:false})', async () => {
-      // Open the dialog first so the viewChild is populated.
       await component.open();
       fixture.detectChanges();
 
@@ -670,7 +659,6 @@ describe('ResourceFormModal', () => {
         (de) => de.componentInstance instanceof ResourceFormDialog,
       );
       const dialog = dialogDe.componentInstance as ResourceFormDialog;
-      // Reset the spy history to isolate this call from the open() call.
       const spy = vi.spyOn(dialog, 'patchForm');
       spy.mockClear();
 
@@ -703,10 +691,6 @@ describe('ResourceFormModal', () => {
       expect(spy).not.toHaveBeenCalled();
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // field-to-field dependencies
-  // ---------------------------------------------------------------------------
 
   describe('field-to-field dependencies', () => {
     const nsQuery =
@@ -797,7 +781,6 @@ describe('ResourceFormModal', () => {
         fixture.componentRef.setInput('context', namespacedContext);
         fixture.detectChanges();
 
-        // Open in edit mode with a resource that already has a namespace value
         await component.open({
           metadata: { name: 'res1', namespace: 'my-ns' },
         } as any);
@@ -838,7 +821,6 @@ describe('ResourceFormModal', () => {
 
         // secretField is a dependent, not a parent — no forced onChange beyond defaults
         const sf = component.formFields().find((f) => f.name === 'spec.secretName');
-        // its validation is whatever buildFormField set (it's not required, so undefined)
         expect(sf?.validation).toBeUndefined();
       });
     });
@@ -908,14 +890,10 @@ describe('ResourceFormModal', () => {
           value: 'other-ns',
         });
 
-        // The partial push should only contain the dependent key — the dialog
-        // then applies this as initialValues override, which the inner form
-        // treats as patchValue.
         expect(result?.initialValues).toEqual({ 'spec.secretName': '' });
       });
 
       it('clears the dependent field error', async () => {
-        // Seed a pre-existing error on the dependent
         component['fieldErrors'].set({ 'spec.secretName': 'This field is required' });
 
         resourceService.list.mockReturnValue(of([]));
@@ -995,7 +973,6 @@ describe('ResourceFormModal', () => {
         const sf2 = result?.fields.find((f) => f.name === 'spec.anotherSecret');
         expect(sf1?.values).toEqual(['sec-x']);
         expect(sf2?.values).toEqual(['sec-x']);
-        // partial initialValues must clear both
         expect(result?.initialValues).toEqual({
           'spec.secretName': '',
           'spec.anotherSecret': '',
@@ -1084,7 +1061,6 @@ describe('ResourceFormModal', () => {
         fixture.componentRef.setInput('context', namespacedContext);
         fixture.detectChanges();
 
-        // call resolveDynamicValues directly with an empty formValues
         const result = await (component as any).resolveDynamicValues(
           secretField,
           {},

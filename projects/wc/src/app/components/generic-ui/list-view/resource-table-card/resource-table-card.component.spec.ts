@@ -903,7 +903,6 @@ describe('ResourceTableCard', () => {
           {},
         );
 
-        // isMissingRequiredNamespace fired → returns undefined, no list call
         expect(result).toBeUndefined();
         expect(
           mockResourceService.list.mock.calls.filter((c) => c[1] === depQuery),
@@ -913,11 +912,9 @@ describe('ResourceTableCard', () => {
       it('onFieldChange hook re-resolves dependent field and returns cleared initialValues', async () => {
         const comp = makeDepComponent({ namespaceId: 'ns-from-path' });
 
-        // Grab the onFieldChange from the computed config
         const { onFieldChange } = comp.config().createResourceFormConfig!;
         expect(onFieldChange).toBeDefined();
 
-        // Build a minimal currentFields array with the dependent
         const currentFields = [
           { name: 'metadata.namespace', values: ['old-ns'] },
           { name: 'spec.secretRef', values: ['stale-secret'] },
@@ -929,17 +926,14 @@ describe('ResourceTableCard', () => {
         );
 
         expect(result).toBeDefined();
-        // The dependent's values should be updated
         const updatedDep = result!.fields.find(
           (f) => f.name === 'spec.secretRef',
         );
         expect(updatedDep?.values).toEqual(['secret-a']);
-        // Parent field is unchanged
         const parentField = result!.fields.find(
           (f) => f.name === 'metadata.namespace',
         );
         expect(parentField?.values).toEqual(['old-ns']);
-        // Cleared initialValues for the dependent
         expect(result!.initialValues?.['spec.secretRef']).toBe('');
       });
 
@@ -1369,7 +1363,6 @@ describe('ResourceTableCard', () => {
         closeEditDialog: vi.fn(),
       }));
 
-      // Set a pre-existing error
       (component as any).editFieldErrors.set({ 'metadata.name': 'Some error' });
 
       component.onEditSubmit({
