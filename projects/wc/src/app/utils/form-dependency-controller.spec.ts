@@ -209,13 +209,10 @@ describe('FormDependencyController', () => {
     );
   });
 
-  it('rejects duplicate, missing, self and transitive dependencies', () => {
+  it('rejects duplicate, self and transitive dependencies', () => {
     const controller = new FormDependencyController(vi.fn(), vi.fn());
     expect(() => controller.begin([field('a'), field('a')], {})).toThrow(
       'Duplicate form field',
-    );
-    expect(() => controller.begin([field('a', ['missing'])], {})).toThrow(
-      'Invalid dependency',
     );
     expect(() => controller.begin([field('a', ['a'])], {})).toThrow(
       'Invalid dependency',
@@ -223,5 +220,15 @@ describe('FormDependencyController', () => {
     expect(() =>
       controller.begin([field('a'), field('b', ['a']), field('c', ['b'])], {}),
     ).toThrow('Transitive dependency is not supported');
+  });
+
+  it('silently ignores dependsOn parents that are not in the form', () => {
+    const controller = new FormDependencyController(vi.fn(), vi.fn());
+    // Parent 'missing' is not registered as a form field (e.g. namespace fixed
+    // by context). Begin must not throw — the dependent field just has no
+    // in-form trigger wired up.
+    expect(() =>
+      controller.begin([field('a', ['missing'])], {}),
+    ).not.toThrow();
   });
 });

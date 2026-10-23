@@ -47,9 +47,13 @@ export class FormDependencyController {
 
     for (const [name, field] of this.fields) {
       for (const parent of field.dynamicValuesDefinition?.dependsOn ?? []) {
-        if (parent === name || !this.fields.has(parent)) {
+        if (parent === name) {
           throw new Error(`Invalid dependency: ${name} depends on ${parent}`);
         }
+        // Parent not in the form (e.g. namespace already fixed by context):
+        // no change event will ever fire for it, so skip the trigger wiring.
+        // The field still resolves its values via the context-aware resolver.
+        if (!this.fields.has(parent)) continue;
         if (
           this.fields.get(parent)?.dynamicValuesDefinition?.dependsOn?.length
         ) {

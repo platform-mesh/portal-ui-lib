@@ -1,19 +1,15 @@
-import {
-  executeButtonAction,
-  isImmutableOnEdit,
-} from '../../../../utils/field-definition.utils';
-import { applyDependencyTriggers } from '../../../../utils/field-dependencies';
+import { executeButtonAction } from '../../../../utils/field-definition.utils';
 import {
   DependentFieldUpdate,
   DynamicValuesResult,
   FormDependencyController,
 } from '../../../../utils/form-dependency-controller';
 import { resolveFieldDynamicValuesResult } from '../../../../utils/resolve-dynamic-values';
+import { buildResourceFormFields } from '../../../../utils/resolve-form-field-values';
 import { withRouteNamespace } from '../../../../utils/route-namespace';
 import {
   buildInitialValues,
   expandCollectionEntries,
-  toFormFields,
 } from '../../../../utils/to-form-fields';
 import { addSearchParams } from '../../../../utils/url-params';
 import { validateFormField } from '../../../../utils/validate-form-field';
@@ -196,11 +192,14 @@ export class ResourceTableCard {
               const values = buildInitialValues(fields, undefined);
               this.onCreateDialogClosed();
               const generation = this.createDependencies.begin(fields, values);
-              const formFields = await this.buildFormFields(
+              const formFields = await buildResourceFormFields(
                 fields,
                 values,
-                false,
-                this.createContext(),
+                {
+                  editMode: false,
+                  resolveResult: (field, formValues) =>
+                    this.resolveDynamicValuesResult(field, formValues),
+                },
               );
               if (!this.createDependencies.isCurrent(generation)) return [];
               return formFields;
@@ -215,11 +214,14 @@ export class ResourceTableCard {
               const values = buildInitialValues(fields, resource);
               this.onEditDialogClosed();
               const generation = this.editDependencies.begin(fields, values);
-              const formFields = await this.buildFormFields(
+              const formFields = await buildResourceFormFields(
                 fields,
                 values,
-                true,
-                this.createContext(),
+                {
+                  editMode: true,
+                  resolveResult: (field, formValues) =>
+                    this.resolveDynamicValuesResult(field, formValues),
+                },
               );
               if (!this.editDependencies.isCurrent(generation)) return [];
               return formFields;
@@ -296,11 +298,10 @@ export class ResourceTableCard {
   private resolveDynamicValuesResult(
     field: PlatformMeshFieldDefinition,
     values: Record<string, unknown>,
-    context: ResourceNodeContext = this.createContext(),
   ): Promise<DynamicValuesResult> {
     return resolveFieldDynamicValuesResult(
       field,
-      context,
+      this.createContext(),
       this.isNamespaced(),
       values,
       {
@@ -316,41 +317,6 @@ export class ResourceTableCard {
         handleError: (error) => this.errorHandlerService.handleError(error),
       },
     );
-  }
-
-  private async buildFormFields(
-    fields: PlatformMeshFieldDefinition[],
-    values: Record<string, unknown>,
-    editMode: boolean,
-    context: ResourceNodeContext,
-  ): Promise<FormFieldDefinition[]> {
-    const formFields = await toFormFields(fields, {
-      disabled: (field) => editMode && isImmutableOnEdit(field),
-      editMode,
-      formValues: values,
-      resolveDynamicValues: async (field, formValues) => {
-        if (
-          field.dynamicValuesDefinition?.dependsOn?.some(
-            (parent) =>
-              formValues?.[parent] == null || formValues[parent] === '',
-          )
-        ) {
-          return [];
-        }
-        const result = await this.resolveDynamicValuesResult(
-          field,
-          formValues ?? {},
-          context,
-        );
-        return result.kind === 'ready'
-          ? result.values
-          : field.dynamicValuesDefinition?.dependsOn?.length
-            ? []
-            : undefined;
-      },
-    });
-    applyDependencyTriggers(formFields, fields);
-    return formFields;
   }
 
   private applyDependentUpdate(

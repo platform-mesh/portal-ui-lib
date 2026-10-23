@@ -1,15 +1,11 @@
-import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
-import { applyDependencyTriggers } from '../../../utils/field-dependencies';
 import {
   DependentFieldUpdate,
   DynamicValuesResult,
   FormDependencyController,
 } from '../../../utils/form-dependency-controller';
 import { resolveFieldDynamicValuesResult } from '../../../utils/resolve-dynamic-values';
-import {
-  buildInitialValues,
-  toFormFields,
-} from '../../../utils/to-form-fields';
+import { buildResourceFormFields } from '../../../utils/resolve-form-field-values';
+import { buildInitialValues } from '../../../utils/to-form-fields';
 import { validateFormField } from '../../../utils/validate-form-field';
 import { ResourceFieldNames } from '../create-resource-modal/create-resource-modal.consts';
 import {
@@ -72,7 +68,6 @@ export class ResourceFormModal {
   formFields = signal<FormFieldDefinition[]>([]);
   initialValues = signal<Record<string, unknown>>({});
   pending = signal(false);
-  private dependencyContext?: ResourceNodeContext;
   private readonly dependencies = new FormDependencyController(
     (field, values) => this.resolveDynamicValuesResult(field, values),
     (update) => this.applyDependentUpdate(update),
@@ -97,11 +92,13 @@ export class ResourceFormModal {
     this.originalResource.set(resource ?? null);
     const values = buildInitialValues(fields, resource);
     const generation = this.dependencies.begin(fields, values);
-    this.dependencyContext = this.context();
-    const formFields = await this.buildFormFieldsAsync(fields, values);
+    const formFields = await buildResourceFormFields(fields, values, {
+      editMode: this.isEditMode(),
+      resolveResult: (field, formValues) =>
+        this.resolveDynamicValuesResult(field, formValues),
+    });
     if (!this.dependencies.isCurrent(generation)) return;
 
-    applyDependencyTriggers(formFields, fields);
     this.formFields.set(formFields);
     this.initialValues.set(values);
     this.dialogOpen.set(true);
@@ -162,40 +159,13 @@ export class ResourceFormModal {
     this.fieldErrors.update((errors) => ({ ...errors, [name]: error }));
   }
 
-  private buildFormFieldsAsync(
-    fields: PlatformMeshFieldDefinition[],
-    formValues: Record<string, unknown> = {},
-  ): Promise<FormFieldDefinition[]> {
-    const editMode = this.isEditMode();
-    return toFormFields(fields, {
-      disabled: (field) => editMode && isImmutableOnEdit(field),
-      resolveDynamicValues: async (field, fv) => {
-        if (
-          field.dynamicValuesDefinition?.dependsOn?.some(
-            (parent) => fv?.[parent] == null || fv[parent] === '',
-          )
-        ) {
-          return [];
-        }
-        const result = await this.resolveDynamicValuesResult(field, fv ?? {});
-        return result.kind === 'ready'
-          ? result.values
-          : field.dynamicValuesDefinition?.dependsOn?.length
-            ? []
-            : undefined;
-      },
-      editMode,
-      formValues,
-    });
-  }
-
   private resolveDynamicValuesResult(
     field: PlatformMeshFieldDefinition,
     values: Record<string, unknown>,
   ): Promise<DynamicValuesResult> {
     return resolveFieldDynamicValuesResult(
       field,
-      this.dependencyContext ?? this.context(),
+      this.context(),
       this.isNamespacedResource(),
       values,
       {
