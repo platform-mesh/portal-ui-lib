@@ -1,57 +1,10 @@
 <div class="api-export-admin" data-testid="api-export-admin">
   <h2 class="api-export-admin__title">APIExport Enablement</h2>
-
-  @if (loading()) {
-    <div class="api-export-admin__loading" data-testid="api-export-admin-loading">
-      Loading APIExports…
-    </div>
-  } @else if (error()) {
-    <div class="api-export-admin__error" data-testid="api-export-admin-error">
-      {{ error() }}
-    </div>
-  } @else if (apiExports().length === 0) {
-    <div class="api-export-admin__empty" data-testid="api-export-admin-empty">
-      No APIExports available.
-    </div>
-  } @else {
-    <table class="api-export-admin__table" data-testid="api-export-admin-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (apiExport of apiExports(); track apiExport.metadata.name) {
-          <tr
-            [attr.data-testid]="'api-export-row-' + apiExport.metadata.name"
-          >
-            <td>
-              <ui5-label>{{ apiExport.metadata.name }}</ui5-label>
-            </td>
-            <td>
-              <span
-                class="api-export-admin__status"
-                [class.api-export-admin__status--enabled]="apiExport.enabled"
-                [attr.data-testid]="'api-export-status-' + apiExport.metadata.name"
-              >
-                {{ apiExport.enabled ? 'Enabled' : 'Disabled' }}
-              </span>
-            </td>
-            <td>
-              <ui5-button
-                [attr.data-testid]="'api-export-toggle-' + apiExport.metadata.name"
-                [design]="apiExport.enabled ? 'Negative' : 'Positive'"
-                [disabled]="isToggling(apiExport.metadata.name)"
-                (ui5Click)="toggle(apiExport)"
-              >
-                {{ apiExport.enabled ? 'Disable' : 'Enable' }}
-              </ui5-button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
+  <mfp-declarative-table
+    [columns]="tableColumns"
+    [resources]="$any(apiExports())"
+    [loading]="loading()"
+    [error]="tableError()"
+    (buttonClick)="onButtonClick($event)"
+  />
 </div>

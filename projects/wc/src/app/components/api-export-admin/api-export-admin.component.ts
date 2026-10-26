@@ -4,14 +4,20 @@ import {
   DestroyRef,
   OnInit,
   ViewEncapsulation,
+  computed,
   inject,
   input,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Button } from '@fundamental-ngx/ui5-webcomponents/button';
-import { Label } from '@fundamental-ngx/ui5-webcomponents/label';
 import { LuigiClient } from '@luigi-project/client/luigi-element';
+import {
+  DeclarativeTable,
+  GenericResource,
+  ResourceFieldButtonClickEvent,
+  TableErrorConfig,
+  TableFieldDefinition,
+} from '@openmfp/ngx';
 import { ResourceNodeContext } from '@platform-mesh/portal-ui-lib/services';
 import {
   ApiExport,
@@ -21,7 +27,7 @@ import {
 @Component({
   selector: 'pm-api-export-admin',
   standalone: true,
-  imports: [Button, Label],
+  imports: [DeclarativeTable],
   templateUrl: './api-export-admin.component.html',
   styleUrl: './api-export-admin.component.scss',
   encapsulation: ViewEncapsulation.ShadowDom,
@@ -38,6 +44,27 @@ export class ApiExportAdminView implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
   togglingName = signal<string | null>(null);
+
+  readonly tableColumns: TableFieldDefinition[] = [
+    { label: 'Name', property: 'metadata.name' },
+    { label: 'Status', property: 'enabled', uiSettings: { displayAs: 'boolIcon' } },
+    {
+      label: 'Action',
+      property: 'enabled',
+      uiSettings: {
+        displayAs: 'button',
+        buttonSettings: { action: 'toggle' },
+        valueRules: [
+          { if: { condition: 'equals', value: 'true' }, then: 'Disable' },
+          { if: { condition: 'equals', value: 'false' }, then: 'Enable' },
+        ],
+      },
+    },
+  ];
+
+  tableError = computed<TableErrorConfig | null>(() =>
+    this.error() ? { message: this.error()! } : null,
+  );
 
   ngOnInit(): void {
     this.loadApiExports();
@@ -91,6 +118,12 @@ export class ApiExportAdminView implements OnInit {
           });
       },
     });
+  }
+
+  onButtonClick({ resource }: ResourceFieldButtonClickEvent<GenericResource>): void {
+    if (resource) {
+      this.toggle(resource as unknown as ApiExport);
+    }
   }
 
   isToggling(name: string): boolean {

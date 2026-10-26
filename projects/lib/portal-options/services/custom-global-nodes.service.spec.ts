@@ -44,6 +44,9 @@ describe('CustomGlobalNodesServiceImpl', () => {
         const [adminNode] = await service.getCustomGlobalNodes();
         expect(adminNode.pathSegment).toBe('admin');
         expect(adminNode.hideFromNav).toBe(false);
+        expect(adminNode.label).toBe('APIExports');
+        expect(adminNode.icon).toBe('connected');
+        expect(adminNode.category).toEqual({ label: 'Admin', icon: 'user-settings' });
       });
 
       it('should expose a single apiexports child', async () => {
@@ -55,6 +58,7 @@ describe('CustomGlobalNodesServiceImpl', () => {
           '/assets/platform-mesh-portal-ui-wc.js#api-export-admin',
         );
         expect(child.webcomponent).toEqual({ selfRegistered: true, type: 'module' });
+        expect(child.openNodeInModal).toEqual({ size: 'l' });
       });
     });
 

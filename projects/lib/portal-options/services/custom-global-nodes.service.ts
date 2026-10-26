@@ -16,7 +16,9 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
     return [
       {
         pathSegment: 'admin',
-        label: 'Admin',
+        label: 'APIExports',
+        icon: 'connected',
+        category: { label: 'Admin', icon: 'user-settings' },
         order: 900,
         hideFromNav: false,
         context: {} as PortalNodeContext,
@@ -25,6 +27,7 @@ export class CustomGlobalNodesServiceImpl implements CustomGlobalNodesService {
             pathSegment: 'apiexports',
             label: 'APIExport Enablement',
             hideFromNav: false,
+            openNodeInModal: { size: 'l' },
             viewUrl:
               '/assets/platform-mesh-portal-ui-wc.js#api-export-admin',
             context: {} as PortalNodeContext,

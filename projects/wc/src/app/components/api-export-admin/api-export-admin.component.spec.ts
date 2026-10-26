@@ -160,4 +160,39 @@ describe('ApiExportAdminView', () => {
       expect(component.isToggling('beta')).toBe(false);
     });
   });
+
+  describe('tableError', () => {
+    it('returns null when error is null', () => {
+      fixture.detectChanges();
+      expect(component.tableError()).toBeNull();
+    });
+
+    it('returns a TableErrorConfig with message when error is set', () => {
+      apiExportAdminService.listApiExports.mockReturnValue(
+        throwError(() => new Error('server error')),
+      );
+      fixture.detectChanges();
+      expect(component.tableError()).toEqual({ message: 'Failed to load APIExports.' });
+    });
+  });
+
+  describe('onButtonClick', () => {
+    beforeEach(() => fixture.detectChanges());
+
+    it('calls toggle with the resource when resource is defined', () => {
+      apiExportAdminService.enableApiExport.mockReturnValue(of(undefined));
+      const alphaExport = component.apiExports().find((e) => e.metadata.name === 'alpha')!;
+
+      component.onButtonClick({ event: new MouseEvent('click'), field: {} as any, resource: alphaExport as any });
+
+      expect(apiExportAdminService.enableApiExport).toHaveBeenCalledWith('test-org', 'alpha');
+    });
+
+    it('does nothing when resource is undefined', () => {
+      component.onButtonClick({ event: new MouseEvent('click'), field: {} as any, resource: undefined });
+
+      expect(apiExportAdminService.enableApiExport).not.toHaveBeenCalled();
+      expect(apiExportAdminService.disableApiExport).not.toHaveBeenCalled();
+    });
+  });
 });
