@@ -3,7 +3,7 @@ import {
   DashboardConfigKeyParams,
   readConfig,
   writeConfig,
-} from '../../../utils/dashboard-config';
+} from '../../../utils';
 import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })

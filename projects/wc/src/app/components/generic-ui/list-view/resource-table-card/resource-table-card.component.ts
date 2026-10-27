@@ -1,21 +1,21 @@
-import { executeButtonAction } from '../../../../utils/field-definition.utils';
+import {
+  addSearchParams,
+  executeButtonAction,
+  resolveAllPlaceholders,
+  withRouteNamespace,
+} from '../../../../utils';
 import {
   DependentFieldUpdate,
   DynamicValuesResult,
   FormDependencyController,
-} from '../../../../utils/forms/form-dependency-controller';
-import { FormValidationController } from '../../../../utils/forms/form-validation-controller';
-import { omitEmptyWriteOnlyFields } from '../../../../utils/forms/omit-empty-write-only-fields';
-import { resolveFieldDynamicValuesResult } from '../../../../utils/forms/resolve-dynamic-values';
-import { buildResourceFormFields } from '../../../../utils/forms/resolve-form-field-values';
-import {
+  FormValidationController,
   buildInitialValues,
+  buildResourceFormFields,
   expandCollectionEntries,
-} from '../../../../utils/forms/to-form-fields';
-import { validateFormField } from '../../../../utils/forms/validate-form-field';
-import { resolveAllPlaceholders } from '../../../../utils/resolve-context-placeholders';
-import { withRouteNamespace } from '../../../../utils/route-namespace';
-import { addSearchParams } from '../../../../utils/url-params';
+  omitEmptyWriteOnlyFields,
+  resolveFieldDynamicValuesResult,
+  validateFormField,
+} from '../../../../utils/forms';
 import { ResourceFieldNames } from '../../create-resource-modal/create-resource-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {

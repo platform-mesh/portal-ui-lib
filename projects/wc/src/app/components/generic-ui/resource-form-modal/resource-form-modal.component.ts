@@ -2,13 +2,13 @@ import {
   DependentFieldUpdate,
   DynamicValuesResult,
   FormDependencyController,
-} from '../../../utils/forms/form-dependency-controller';
-import { FormValidationController } from '../../../utils/forms/form-validation-controller';
-import { omitEmptyWriteOnlyFields } from '../../../utils/forms/omit-empty-write-only-fields';
-import { resolveFieldDynamicValuesResult } from '../../../utils/forms/resolve-dynamic-values';
-import { buildResourceFormFields } from '../../../utils/forms/resolve-form-field-values';
-import { buildInitialValues } from '../../../utils/forms/to-form-fields';
-import { validateFormField } from '../../../utils/forms/validate-form-field';
+  FormValidationController,
+  buildInitialValues,
+  buildResourceFormFields,
+  omitEmptyWriteOnlyFields,
+  resolveFieldDynamicValuesResult,
+  validateFormField,
+} from '../../../utils/forms';
 import { ResourceFieldNames } from '../create-resource-modal/create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
