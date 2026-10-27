@@ -1,19 +1,22 @@
-import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { resolveAllPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
-  isMissingRequiredNamespace,
+  addSearchParams,
+  executeButtonAction,
+  resolveAllPlaceholders,
   withRouteNamespace,
-} from '../../../../utils/route-namespace';
+} from '../../../../utils';
 import {
+  DependentFieldUpdate,
+  DynamicValuesResult,
+  FormDependencyController,
+  FormValidationController,
+  buildInitialValues,
+  buildResourceFormFields,
   expandCollectionEntries,
-  toFormFields,
-} from '../../../../utils/to-form-fields';
-import { addSearchParams } from '../../../../utils/url-params';
-import {
-  K8S_NAME_ERROR,
-  K8S_NAME_RE,
-  ResourceFieldNames,
-} from '../../create-resource-modal/create-resource-modal.consts';
+  omitEmptyWriteOnlyFields,
+  resolveFieldDynamicValuesResult,
+  validateFormField,
+} from '../../../../utils/forms';
+import { ResourceFieldNames } from '../../create-resource-modal/create-resource-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {
   ChangeDetectionStrategy,
@@ -34,13 +37,12 @@ import {
   DeclarativeTableCard,
   DeleteResourceConfirmationConfig,
   FormFieldChangeEvent,
-  FormFieldErrors,
+  FormFieldDefinition,
   ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
   TableErrorConfig,
 } from '@openmfp/ngx';
-import { LuigiCoreService } from '@openmfp/portal-ui-lib';
 import {
   PlatformMeshFieldDefinition,
   Resource,
@@ -55,13 +57,12 @@ import {
 import {
   buildResourcePath,
   generateGraphQLFields,
-  getValueByPath,
   isNamespacedResource,
   mergeListWithSubscriptionResult,
   permissionKey,
   resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -130,26 +131,48 @@ export class ResourceTableCard {
   protected listError = signal<TableErrorConfig | null>(null);
   protected watchError = signal<TableErrorConfig | null>(null);
 
-  private createFieldErrors = signal<FormFieldErrors>({});
+  private readonly createValidation = this.createValidationController(false);
+  private createFieldErrors = this.createValidation.errors;
+  private createPending = signal(false);
   createFormState = computed<TableCardFormState>(() => ({
     fieldErrors: this.createFieldErrors(),
+    pending: this.createPending() || this.createValidation.hasDeferredErrors(),
   }));
+
+  private readonly editValidation = this.createValidationController(true);
+  private editFieldErrors = this.editValidation.errors;
+  private editPending = signal(false);
+  editFormState = computed<TableCardFormState>(() => ({
+    fieldErrors: this.editFieldErrors(),
+    pending: this.editPending() || this.editValidation.hasDeferredErrors(),
+  }));
+  private readonly createDependencies = new FormDependencyController(
+    (field, values) => this.resolveDynamicValuesResult(field, values),
+    (update) => this.applyDependentUpdate(update, false),
+  );
+  private readonly editDependencies = new FormDependencyController(
+    (field, values) => this.resolveDynamicValuesResult(field, values),
+    (update) => this.applyDependentUpdate(update, true),
+  );
 
   createFormFields = computed(() => {
     let fields = this.resourceDefinition()?.ui?.createView?.fields || [];
     if (
       this.hasUiCreateViewFields() &&
       this.isNamespaced() &&
-      !this.resourceService.getNamespace(this.createContext())
+      !this.resourceService.getNamespace(this.createContext()) &&
+      !fields.some(
+        (field) => field.property === ResourceFieldNames.MetadataNamespace,
+      )
     ) {
       fields = [
-        ...fields,
         {
           property: ResourceFieldNames.MetadataNamespace,
           required: true,
           label: 'Namespace',
           values: this.context().namespaces,
         },
+        ...fields,
       ];
     }
 
@@ -168,13 +191,14 @@ export class ResourceTableCard {
       ...(this.hasUiCreateViewFields() &&
         this.canDo('create') && {
           createResourceFormConfig: {
-            fields: () =>
-              toFormFields(this.createFormFields(), {
-                disabled: (field) => false,
-                resolveDynamicValues: (field) =>
-                  this.resolveDynamicValues(field),
-              }),
+            fields: () => this.buildFormFields(false),
           },
+        }),
+      ...(this.hasUiCreateViewFields() &&
+        this.canDo('update') && {
+          editResourceFormConfig: (resource: Resource) => ({
+            fields: () => this.buildFormFields(true, resource),
+          }),
         }),
       deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
     };
@@ -197,6 +221,10 @@ export class ResourceTableCard {
   private lastListWasInitialLoad = true;
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.createDependencies.end();
+      this.editDependencies.end();
+    });
     effect((onCleanup) => {
       this.currentContinueToken = undefined;
       this.resources.set([]);
@@ -239,29 +267,143 @@ export class ResourceTableCard {
     });
   }
 
-  private async resolveDynamicValues(
-    field: PlatformMeshFieldDefinition,
-  ): Promise<string[] | undefined> {
-    const def = field.dynamicValuesDefinition;
-    if (!def) return undefined;
-    const context = this.createContext();
-    const namespace = this.isNamespaced()
-      ? this.resourceService.getNamespace(context)
-      : undefined;
-    // Without a namespace the query can only fail and raise an error alert.
-    // The field falls back to a plain input instead.
-    if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
+  private createValidationController(
+    editMode: boolean,
+  ): FormValidationController {
+    return new FormValidationController((name, value) =>
+      validateFormField({
+        name,
+        value,
+        fields: this.createFormFields(),
+        editMode,
+      }),
+    );
+  }
+
+  private async buildFormFields(
+    editMode: boolean,
+    resource?: Resource,
+  ): Promise<FormFieldDefinition[]> {
+    this.resetFormState(editMode);
+    const dependencies = editMode
+      ? this.editDependencies
+      : this.createDependencies;
+    const fields = this.createFormFields();
+    const values = buildInitialValues(fields, resource);
+    let generation: number | undefined;
     try {
-      const resources = await firstValueFrom(
-        this.resourceService.list(def.operation, def.gqlQuery, context),
-      );
-      return (resources as Resource[])
-        .map((r) => getValueByPath(r, def.value) as string)
-        .filter(Boolean);
+      generation = dependencies.begin(fields, values);
+      const formFields = await buildResourceFormFields(fields, values, {
+        editMode,
+        resolveResult: (field, formValues) =>
+          this.resolveDynamicValuesResult(field, formValues),
+      });
+      return dependencies.isCurrent(generation) ? formFields : [];
     } catch (error) {
+      if (generation !== undefined && !dependencies.isCurrent(generation))
+        return [];
+      this.resetFormState(editMode);
+      if (editMode) this.tableCard().closeEditDialog();
+      else this.tableCard().closeCreateDialog();
       this.errorHandlerService.handleError(error);
-      return undefined;
+      return [];
     }
+  }
+
+  private resolveDynamicValuesResult(
+    field: PlatformMeshFieldDefinition,
+    values: Record<string, unknown>,
+  ): Promise<DynamicValuesResult> {
+    return resolveFieldDynamicValuesResult(
+      field,
+      this.createContext(),
+      this.isNamespaced(),
+      values,
+      {
+        list: (operation, gqlQuery, currentContext, options) =>
+          this.resourceService.list(
+            operation,
+            gqlQuery,
+            currentContext,
+            options,
+          ),
+        getNamespace: (currentContext) =>
+          this.resourceService.getNamespace(currentContext),
+        handleError: (error) => this.errorHandlerService.handleError(error),
+      },
+    );
+  }
+
+  private applyDependentUpdate(
+    update: DependentFieldUpdate,
+    editMode: boolean,
+  ): void {
+    const validation = editMode ? this.editValidation : this.createValidation;
+    const pending = editMode ? this.editPending : this.createPending;
+    const patch = {
+      ...(update.clear && { values: { [update.name]: '' } }),
+      fieldUpdates: {
+        [update.name]: { values: update.values },
+      },
+    };
+    if (editMode) this.tableCard().applyEditFormPatch(patch);
+    else this.tableCard().applyCreateFormPatch(patch);
+    if (update.clear) {
+      validation.resetField(update.name, '');
+    }
+    pending.set(update.pending);
+  }
+
+  onCreateDialogClosed(): void {
+    this.resetFormState(false);
+  }
+
+  onEditDialogClosed(): void {
+    this.resetFormState(true);
+  }
+
+  private resetFormState(editMode: boolean): void {
+    const dependencies = editMode
+      ? this.editDependencies
+      : this.createDependencies;
+    const validation = editMode ? this.editValidation : this.createValidation;
+    const pending = editMode ? this.editPending : this.createPending;
+    dependencies.end();
+    validation.reset();
+    pending.set(false);
+  }
+
+  onEditFieldChange({
+    formChangeEvent,
+  }: {
+    resource: Resource;
+    formChangeEvent: FormFieldChangeEvent;
+  }): void {
+    this.editValidation.handleChange(formChangeEvent);
+    this.editDependencies.handleChange(formChangeEvent);
+  }
+
+  onEditSubmit({
+    value,
+  }: {
+    resource: Resource;
+    value: Record<string, unknown>;
+  }): void {
+    const resourceDefinition = this.getResourceDefinition();
+    const expanded = expandCollectionEntries(
+      omitEmptyWriteOnlyFields(value, this.createFormFields()),
+      this.createFormFields(),
+    ) as Resource;
+    this.resourceService
+      .update(expanded, resourceDefinition, this.context())
+      .subscribe({
+        next: (result) => {
+          this.editValidation.reset();
+          this.tableCard().closeEditDialog();
+          console.debug('Resource updated', result);
+        },
+        error: (error) => this.errorHandlerService.handleError(error),
+      });
   }
 
   private subscribeToResourceChange(version: string) {
@@ -444,27 +586,9 @@ export class ResourceTableCard {
     );
   }
 
-  async onCreateFieldChange(event: FormFieldChangeEvent) {
-    const name = event.fieldProperty;
-    const value = String(event.value ?? '').trim();
-    let error: string | null = null;
-
-    if (name === ResourceFieldNames.MetadataName) {
-      if (!value) {
-        error = 'This field is required';
-      } else if (!K8S_NAME_RE.test(value)) {
-        error = K8S_NAME_ERROR;
-      }
-    } else {
-      const field = (await toFormFields(this.createFormFields())).find(
-        (f) => f.name === name,
-      );
-      if (field?.required && !value) {
-        error = 'This field is required';
-      }
-    }
-
-    this.createFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+  onCreateFieldChange(event: FormFieldChangeEvent): void {
+    this.createValidation.handleChange(event);
+    this.createDependencies.handleChange(event);
   }
 
   onCreateSubmit(value: Resource): void {
@@ -477,7 +601,7 @@ export class ResourceTableCard {
       .create(expanded, resourceDefinition, this.createContext())
       .subscribe({
         next: (result) => {
-          this.createFieldErrors.set({});
+          this.createValidation.reset();
           this.tableCard().closeCreateDialog();
           console.debug('Resource created', result);
         },

@@ -1,29 +1,30 @@
-import { isImmutableOnEdit } from '../../../utils/field-definition.utils';
-import { resolveContextPlaceholders } from '../../../utils/resolve-context-placeholders';
-import { isMissingRequiredNamespace } from '../../../utils/route-namespace';
 import {
+  DependentFieldUpdate,
+  DynamicValuesResult,
+  FormDependencyController,
+  FormValidationController,
   buildInitialValues,
-  toFormFields,
-} from '../../../utils/to-form-fields';
-import {
-  K8S_NAME_ERROR,
-  K8S_NAME_RE,
-  ResourceFieldNames,
-} from '../create-resource-modal/create-resource-modal.consts';
+  buildResourceFormFields,
+  omitEmptyWriteOnlyFields,
+  resolveFieldDynamicValuesResult,
+  validateFormField,
+} from '../../../utils/forms';
+import { ResourceFieldNames } from '../create-resource-modal/create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ViewEncapsulation,
   computed,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   FormFieldChangeEvent,
   FormFieldDefinition,
-  FormFieldErrors,
   ResourceFormDialog,
 } from '@openmfp/ngx';
 import {
@@ -35,12 +36,7 @@ import {
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import {
-  getValueByPath,
-  isNamespacedResource,
-  omitEmptyWriteOnlyFields,
-} from '@platform-mesh/portal-ui-lib/utils';
-import { firstValueFrom } from 'rxjs';
+import { isNamespacedResource } from '@platform-mesh/portal-ui-lib/utils';
 
 @Component({
   selector: 'pm-resource-form-modal',
@@ -62,11 +58,29 @@ export class ResourceFormModal {
 
   private readonly resourceService = inject(ResourceService);
   private readonly errorHandlerService = inject(ErrorHandlerService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = viewChild<ResourceFormDialog>('dialog');
   private originalResource = signal<Resource | null>(null);
 
-  fieldErrors = signal<FormFieldErrors>({});
+  private readonly validation = new FormValidationController((name, value) =>
+    validateFormField({
+      name,
+      value,
+      fields: this.calculateFields(),
+      editMode: this.isEditMode(),
+    }),
+  );
+  fieldErrors = this.validation.errors;
   formFields = signal<FormFieldDefinition[]>([]);
-  formInitialValues = signal<Record<string, unknown>>({});
+  initialValues = signal<Record<string, unknown>>({});
+  pending = signal(false);
+  formPending = computed(
+    () => this.pending() || this.validation.hasDeferredErrors(),
+  );
+  private readonly dependencies = new FormDependencyController(
+    (field, values) => this.resolveDynamicValuesResult(field, values),
+    (update) => this.applyDependentUpdate(update),
+  );
 
   dialogTitle = computed(() => (this.isEditMode() ? 'Edit' : 'Create'));
   confirmLabel = computed(() => (this.isEditMode() ? 'Save' : 'Create'));
@@ -74,20 +88,44 @@ export class ResourceFormModal {
     this.isEditMode() ? 'edit-resource-dialog' : 'create-resource-dialog',
   );
 
+  constructor() {
+    this.destroyRef.onDestroy(() => this.dependencies.end());
+  }
+
   async open(resource?: Resource) {
+    this.dependencies.end();
+    this.dialogOpen.set(false);
+    this.pending.set(false);
+    this.validation.reset();
     const fields = this.calculateFields();
     this.originalResource.set(resource ?? null);
-    const formFields = await this.buildFormFieldsAsync(fields);
-    const initialValues = buildInitialValues(fields, resource);
+    const values = buildInitialValues(fields, resource);
+    let generation: number | undefined;
+    try {
+      generation = this.dependencies.begin(fields, values);
+      const formFields = await buildResourceFormFields(fields, values, {
+        editMode: this.isEditMode(),
+        resolveResult: (field, formValues) =>
+          this.resolveDynamicValuesResult(field, formValues),
+      });
+      if (!this.dependencies.isCurrent(generation)) return;
 
-    this.formFields.set(formFields);
-    this.formInitialValues.set(initialValues);
-    this.dialogOpen.set(true);
+      this.formFields.set(formFields);
+      this.initialValues.set(values);
+      this.dialogOpen.set(true);
+    } catch (error) {
+      if (generation !== undefined && !this.dependencies.isCurrent(generation))
+        return;
+      this.close();
+      this.errorHandlerService.handleError(error);
+    }
   }
 
   close() {
+    this.dependencies.end();
     this.dialogOpen.set(false);
-    this.fieldErrors.set({});
+    this.pending.set(false);
+    this.validation.reset();
     this.originalResource.set(null);
   }
 
@@ -96,7 +134,23 @@ export class ResourceFormModal {
   }
 
   onFieldChange(event: FormFieldChangeEvent): void {
-    this.validateField(event.fieldProperty, String(event.value ?? '').trim());
+    this.validation.handleChange(event);
+    this.dependencies.handleChange(event);
+  }
+
+  private applyDependentUpdate(update: DependentFieldUpdate): void {
+    if (update.clear) {
+      this.dialog()?.patchForm({ [update.name]: '' }, { emitEvent: false });
+      this.validation.resetField(update.name, '');
+    }
+    this.formFields.update((fields) =>
+      fields.map((field) =>
+        field.name === update.name
+          ? { ...field, values: update.values }
+          : field,
+      ),
+    );
+    this.pending.set(update.pending);
   }
 
   onFormSubmit(value: Record<string, unknown>): void {
@@ -109,87 +163,31 @@ export class ResourceFormModal {
     this.resource.emit(value as Resource);
   }
 
-  private validateField(name: string, value: string): void {
-    let error: string | null = null;
-
-    switch (name) {
-      case ResourceFieldNames.MetadataName:
-        if (!value) {
-          error = 'This field is required';
-        } else if (!K8S_NAME_RE.test(value)) {
-          error = K8S_NAME_ERROR;
-        }
-        break;
-      default: {
-        const field = this.formFields().find((f) => f.name === name);
-        if (field?.writeOnly && !value && this.isEditMode()) {
-          error = null;
-        } else if (field?.required && !value) {
-          error = 'This field is required';
-        }
-      }
-    }
-
-    this.fieldErrors.update((errors) => {
-      const updated = { ...errors };
-      updated[name] = error;
-      return updated;
-    });
-  }
-
-  private buildFormFieldsAsync(
-    fields: PlatformMeshFieldDefinition[],
-  ): Promise<FormFieldDefinition[]> {
-    const editMode = this.isEditMode();
-    return toFormFields(fields, {
-      disabled: (field) => editMode && isImmutableOnEdit(field),
-      resolveDynamicValues: (field) => this.resolveDynamicValues(field),
-      editMode,
-    });
-  }
-
-  private async resolveDynamicValues(
+  private resolveDynamicValuesResult(
     field: PlatformMeshFieldDefinition,
-  ): Promise<string[] | undefined> {
-    const def = field.dynamicValuesDefinition;
-    if (!def) return undefined;
-
-    const ctx = this.context();
-    const variables = Object.fromEntries(
-      Object.entries(def.gqlQueryVariables ?? {}).map(([name, value]) => [
-        name,
-        { type: 'String', value: resolveContextPlaceholders(value, ctx) },
-      ]),
+    values: Record<string, unknown>,
+  ): Promise<DynamicValuesResult> {
+    return resolveFieldDynamicValuesResult(
+      field,
+      this.context(),
+      this.isNamespacedResource(),
+      values,
+      {
+        list: (operation, gqlQuery, context, options) =>
+          this.resourceService.list(operation, gqlQuery, context, options),
+        getNamespace: (c) => this.resourceService.getNamespace(c),
+        handleError: (error) => this.errorHandlerService.handleError(error),
+      },
     );
-
-    // ResourceService.list sends the context namespace unless the query
-    // variables override it. Skip a query that would lack a required one.
-    const contextNamespace = this.isNamespacedResource()
-      ? this.resourceService.getNamespace(ctx)
-      : undefined;
-    const namespace = variables['namespace']?.value ?? contextNamespace;
-    if (isMissingRequiredNamespace(def.gqlQuery, namespace)) return undefined;
-
-    try {
-      const resources = await firstValueFrom(
-        this.resourceService.list(def.operation, def.gqlQuery, ctx, {
-          variables,
-        }),
-      );
-      return (resources as Resource[])
-        .map((r) => getValueByPath(r, def.value) as string)
-        .filter(Boolean);
-    } catch (error) {
-      this.errorHandlerService.handleError(error);
-      return undefined;
-    }
   }
 
   private calculateFields(): PlatformMeshFieldDefinition[] {
     const fields = this.fields().slice();
 
     if (this.shouldAddNamespaceControl()) {
-      fields.push({
+      // Namespace field is placed FIRST so it acts as the visible root of the
+      // dependency chain (dependent fields resolve against its selected value).
+      fields.unshift({
         property: ResourceFieldNames.MetadataNamespace,
         required: true,
         label: 'Namespace',
@@ -209,7 +207,10 @@ export class ResourceFormModal {
   private shouldAddNamespaceControl() {
     return (
       this.isNamespacedResource() &&
-      !this.resourceService.getNamespace(this.context())
+      !this.resourceService.getNamespace(this.context()) &&
+      !this.fields().some(
+        (field) => field.property === ResourceFieldNames.MetadataNamespace,
+      )
     );
   }
 }

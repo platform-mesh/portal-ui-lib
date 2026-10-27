@@ -2,7 +2,10 @@ import { ApolloFactory } from './apollo-factory';
 import { ResourceService } from './resource.service';
 import { TestBed } from '@angular/core/testing';
 import { LuigiCoreService } from '@openmfp/portal-ui-lib';
-import { ALL_NAMESPACE } from '@platform-mesh/portal-ui-lib/models';
+import {
+  ALL_NAMESPACE,
+  type Resource,
+} from '@platform-mesh/portal-ui-lib/models';
 import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { MockedObject } from 'vitest';
 import { mock } from 'vitest-mock-extended';
@@ -1586,6 +1589,46 @@ describe('ResourceService', () => {
   });
 
   describe('update', () => {
+    it.each([undefined, ALL_NAMESPACE])(
+      'uses the HttpBin namespace for a table update without a concrete context namespace (%s)',
+      async (namespaceId) => {
+        const httpBinDefinition = {
+          ...resourceDefinition,
+          apiGroup: 'orchestrate_platform_mesh_io',
+          entity: 'HttpBin',
+          entityCollection: 'HttpBins',
+          version: 'v1alpha1',
+        };
+        const httpBin = {
+          metadata: { namespace: 'kube-system', name: 'asd' },
+          spec: { region: 'asd' },
+        } as unknown as Resource;
+        const context = {
+          ...namespacedNodeContext,
+          namespaceId,
+          resourceDefinition: httpBinDefinition,
+        };
+        mockLuigiCoreService.routing.mockReturnValue({
+          getSearchParams: () => ({ namespace: ALL_NAMESPACE }),
+        } as any);
+        mockApollo.mutate.mockReturnValue(of({ data: {} }));
+
+        await firstValueFrom(
+          service.update(httpBin, httpBinDefinition, context),
+        );
+
+        expect(mockApollo.mutate).toHaveBeenCalledWith({
+          mutation: expect.anything(),
+          fetchPolicy: 'no-cache',
+          variables: {
+            namespace: 'kube-system',
+            name: 'asd',
+            object: httpBin,
+          },
+        });
+      },
+    );
+
     it('should strip __typename recursively from update payload', async () => {
       const dirtyResource: any = {
         metadata: { name: 'test-name', __typename: 'Meta' },

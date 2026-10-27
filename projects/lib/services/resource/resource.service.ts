@@ -438,7 +438,7 @@ export class ResourceService {
   ) {
     const isNamespaced = isNamespacedResource(nodeContext);
     const { apiGroup, entity, version } = resourceDefinition;
-    const namespace = this.getNamespace(nodeContext);
+    const namespace = this.getNamespace(nodeContext, resource);
 
     const cleanResource = stripTypename(resource);
 

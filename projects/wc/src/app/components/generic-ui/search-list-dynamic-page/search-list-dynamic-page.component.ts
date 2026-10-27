@@ -1,13 +1,11 @@
-import { executeButtonAction } from '../../../utils/field-definition.utils';
-import {
-  resolveAllPlaceholders,
-  resolveContextPlaceholders,
-} from '../../../utils/resolve-context-placeholders';
 import {
   addSearchParams,
+  executeButtonAction,
   readUrlSearchParam,
+  resolveAllPlaceholders,
+  resolveContextPlaceholders,
   snapshotUrl,
-} from '../../../utils/url-params';
+} from '../../../utils';
 import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { InstancePermissionsStore } from '../store/instance-permissions-store.service';
