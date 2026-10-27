@@ -1,4 +1,4 @@
-import { K8S_NAME_ERROR } from '../components/generic-ui/create-resource-modal/create-resource-modal.consts';
+import { K8S_NAME_ERROR } from '../../components/generic-ui/create-resource-modal/create-resource-modal.consts';
 import { validateFormField } from './validate-form-field';
 import type { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 

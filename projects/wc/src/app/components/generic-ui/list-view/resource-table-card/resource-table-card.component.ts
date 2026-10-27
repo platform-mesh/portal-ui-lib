@@ -1,19 +1,21 @@
 import { executeButtonAction } from '../../../../utils/field-definition.utils';
-import { resolveAllPlaceholders } from '../../../../utils/resolve-context-placeholders';
 import {
   DependentFieldUpdate,
   DynamicValuesResult,
   FormDependencyController,
-} from '../../../../utils/form-dependency-controller';
-import { resolveFieldDynamicValuesResult } from '../../../../utils/resolve-dynamic-values';
-import { buildResourceFormFields } from '../../../../utils/resolve-form-field-values';
-import { withRouteNamespace } from '../../../../utils/route-namespace';
+} from '../../../../utils/forms/form-dependency-controller';
+import { FormValidationController } from '../../../../utils/forms/form-validation-controller';
+import { omitEmptyWriteOnlyFields } from '../../../../utils/forms/omit-empty-write-only-fields';
+import { resolveFieldDynamicValuesResult } from '../../../../utils/forms/resolve-dynamic-values';
+import { buildResourceFormFields } from '../../../../utils/forms/resolve-form-field-values';
 import {
   buildInitialValues,
   expandCollectionEntries,
-} from '../../../../utils/to-form-fields';
+} from '../../../../utils/forms/to-form-fields';
+import { validateFormField } from '../../../../utils/forms/validate-form-field';
+import { resolveAllPlaceholders } from '../../../../utils/resolve-context-placeholders';
+import { withRouteNamespace } from '../../../../utils/route-namespace';
 import { addSearchParams } from '../../../../utils/url-params';
-import { validateFormField } from '../../../../utils/validate-form-field';
 import { ResourceFieldNames } from '../../create-resource-modal/create-resource-modal.consts';
 import { InstancePermissionsStore } from '../../store/instance-permissions-store.service';
 import {
@@ -36,7 +38,6 @@ import {
   DeleteResourceConfirmationConfig,
   FormFieldChangeEvent,
   FormFieldDefinition,
-  FormFieldErrors,
   ResourceFieldButtonClickEvent,
   TableCardConfig,
   TableCardFormState,
@@ -130,18 +131,20 @@ export class ResourceTableCard {
   protected listError = signal<TableErrorConfig | null>(null);
   protected watchError = signal<TableErrorConfig | null>(null);
 
-  private createFieldErrors = signal<FormFieldErrors>({});
+  private readonly createValidation = this.createValidationController(false);
+  private createFieldErrors = this.createValidation.errors;
   private createPending = signal(false);
   createFormState = computed<TableCardFormState>(() => ({
     fieldErrors: this.createFieldErrors(),
-    pending: this.createPending(),
+    pending: this.createPending() || this.createValidation.hasDeferredErrors(),
   }));
 
-  private editFieldErrors = signal<FormFieldErrors>({});
+  private readonly editValidation = this.createValidationController(true);
+  private editFieldErrors = this.editValidation.errors;
   private editPending = signal(false);
   editFormState = computed<TableCardFormState>(() => ({
     fieldErrors: this.editFieldErrors(),
-    pending: this.editPending(),
+    pending: this.editPending() || this.editValidation.hasDeferredErrors(),
   }));
   private readonly createDependencies = new FormDependencyController(
     (field, values) => this.resolveDynamicValuesResult(field, values),
@@ -188,45 +191,13 @@ export class ResourceTableCard {
       ...(this.hasUiCreateViewFields() &&
         this.canDo('create') && {
           createResourceFormConfig: {
-            fields: async () => {
-              const fields = this.createFormFields();
-              const values = buildInitialValues(fields, undefined);
-              this.onCreateDialogClosed();
-              const generation = this.createDependencies.begin(fields, values);
-              const formFields = await buildResourceFormFields(
-                fields,
-                values,
-                {
-                  editMode: false,
-                  resolveResult: (field, formValues) =>
-                    this.resolveDynamicValuesResult(field, formValues),
-                },
-              );
-              if (!this.createDependencies.isCurrent(generation)) return [];
-              return formFields;
-            },
+            fields: () => this.buildFormFields(false),
           },
         }),
       ...(this.hasUiCreateViewFields() &&
         this.canDo('update') && {
           editResourceFormConfig: (resource: Resource) => ({
-            fields: async () => {
-              const fields = this.createFormFields();
-              const values = buildInitialValues(fields, resource);
-              this.onEditDialogClosed();
-              const generation = this.editDependencies.begin(fields, values);
-              const formFields = await buildResourceFormFields(
-                fields,
-                values,
-                {
-                  editMode: true,
-                  resolveResult: (field, formValues) =>
-                    this.resolveDynamicValuesResult(field, formValues),
-                },
-              );
-              if (!this.editDependencies.isCurrent(generation)) return [];
-              return formFields;
-            },
+            fields: () => this.buildFormFields(true, resource),
           }),
         }),
       deleteResourceConfirmationConfig: (r) => this.getDeleteConfig(r),
@@ -296,6 +267,49 @@ export class ResourceTableCard {
     });
   }
 
+  private createValidationController(
+    editMode: boolean,
+  ): FormValidationController {
+    return new FormValidationController((name, value) =>
+      validateFormField({
+        name,
+        value,
+        fields: this.createFormFields(),
+        editMode,
+      }),
+    );
+  }
+
+  private async buildFormFields(
+    editMode: boolean,
+    resource?: Resource,
+  ): Promise<FormFieldDefinition[]> {
+    this.resetFormState(editMode);
+    const dependencies = editMode
+      ? this.editDependencies
+      : this.createDependencies;
+    const fields = this.createFormFields();
+    const values = buildInitialValues(fields, resource);
+    let generation: number | undefined;
+    try {
+      generation = dependencies.begin(fields, values);
+      const formFields = await buildResourceFormFields(fields, values, {
+        editMode,
+        resolveResult: (field, formValues) =>
+          this.resolveDynamicValuesResult(field, formValues),
+      });
+      return dependencies.isCurrent(generation) ? formFields : [];
+    } catch (error) {
+      if (generation !== undefined && !dependencies.isCurrent(generation))
+        return [];
+      this.resetFormState(editMode);
+      if (editMode) this.tableCard().closeEditDialog();
+      else this.tableCard().closeCreateDialog();
+      this.errorHandlerService.handleError(error);
+      return [];
+    }
+  }
+
   private resolveDynamicValuesResult(
     field: PlatformMeshFieldDefinition,
     values: Record<string, unknown>,
@@ -324,7 +338,7 @@ export class ResourceTableCard {
     update: DependentFieldUpdate,
     editMode: boolean,
   ): void {
-    const errors = editMode ? this.editFieldErrors : this.createFieldErrors;
+    const validation = editMode ? this.editValidation : this.createValidation;
     const pending = editMode ? this.editPending : this.createPending;
     const patch = {
       ...(update.clear && { values: { [update.name]: '' } }),
@@ -335,29 +349,28 @@ export class ResourceTableCard {
     if (editMode) this.tableCard().applyEditFormPatch(patch);
     else this.tableCard().applyCreateFormPatch(patch);
     if (update.clear) {
-      errors.update((current) => ({
-        ...current,
-        [update.name]: validateFormField({
-          name: update.name,
-          value: '',
-          fields: this.createFormFields(),
-          editMode,
-        }),
-      }));
+      validation.resetField(update.name, '');
     }
     pending.set(update.pending);
   }
 
   onCreateDialogClosed(): void {
-    this.createDependencies.end();
-    this.createFieldErrors.set({});
-    this.createPending.set(false);
+    this.resetFormState(false);
   }
 
   onEditDialogClosed(): void {
-    this.editDependencies.end();
-    this.editFieldErrors.set({});
-    this.editPending.set(false);
+    this.resetFormState(true);
+  }
+
+  private resetFormState(editMode: boolean): void {
+    const dependencies = editMode
+      ? this.editDependencies
+      : this.createDependencies;
+    const validation = editMode ? this.editValidation : this.createValidation;
+    const pending = editMode ? this.editPending : this.createPending;
+    dependencies.end();
+    validation.reset();
+    pending.set(false);
   }
 
   onEditFieldChange({
@@ -366,14 +379,7 @@ export class ResourceTableCard {
     resource: Resource;
     formChangeEvent: FormFieldChangeEvent;
   }): void {
-    const name = formChangeEvent.fieldProperty;
-    const error = validateFormField({
-      name,
-      value: formChangeEvent.value,
-      fields: this.createFormFields(),
-      editMode: true,
-    });
-    this.editFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+    this.editValidation.handleChange(formChangeEvent);
     this.editDependencies.handleChange(formChangeEvent);
   }
 
@@ -385,14 +391,14 @@ export class ResourceTableCard {
   }): void {
     const resourceDefinition = this.getResourceDefinition();
     const expanded = expandCollectionEntries(
-      value as Record<string, unknown>,
+      omitEmptyWriteOnlyFields(value, this.createFormFields()),
       this.createFormFields(),
     ) as Resource;
     this.resourceService
       .update(expanded, resourceDefinition, this.context())
       .subscribe({
         next: (result) => {
-          this.editFieldErrors.set({});
+          this.editValidation.reset();
           this.tableCard().closeEditDialog();
           console.debug('Resource updated', result);
         },
@@ -581,14 +587,7 @@ export class ResourceTableCard {
   }
 
   onCreateFieldChange(event: FormFieldChangeEvent): void {
-    const name = event.fieldProperty;
-    const error = validateFormField({
-      name,
-      value: event.value,
-      fields: this.createFormFields(),
-      editMode: false,
-    });
-    this.createFieldErrors.update((errors) => ({ ...errors, [name]: error }));
+    this.createValidation.handleChange(event);
     this.createDependencies.handleChange(event);
   }
 
@@ -602,7 +601,7 @@ export class ResourceTableCard {
       .create(expanded, resourceDefinition, this.createContext())
       .subscribe({
         next: (result) => {
-          this.createFieldErrors.set({});
+          this.createValidation.reset();
           this.tableCard().closeCreateDialog();
           console.debug('Resource created', result);
         },

@@ -1,8 +1,4 @@
-import {
-  executeButtonAction,
-  getFieldValue,
-  isImmutableOnEdit,
-} from './field-definition.utils';
+import { executeButtonAction, getFieldValue } from './field-definition.utils';
 import {
   ModalResult,
   PlatformMeshFieldDefinition,
@@ -34,22 +30,6 @@ describe('field-definition.utils', () => {
     } as any;
 
     vi.clearAllMocks();
-  });
-
-  describe('isImmutableOnEdit', () => {
-    it('returns true for metadata.name, spec.alias, spec.type, and metadata.namespace', () => {
-      expect(isImmutableOnEdit({ property: 'metadata.name' })).toBe(true);
-      expect(isImmutableOnEdit({ property: 'spec.alias' })).toBe(true);
-      expect(isImmutableOnEdit({ property: 'spec.type' })).toBe(true);
-      expect(isImmutableOnEdit({ property: 'metadata.namespace' })).toBe(true);
-    });
-
-    it('returns false for editable fields', () => {
-      expect(isImmutableOnEdit({ property: 'spec.displayName' })).toBe(false);
-      expect(isImmutableOnEdit({ property: 'spec.oidc.clientSecret' })).toBe(
-        false,
-      );
-    });
   });
 
   describe('getFieldValue', () => {

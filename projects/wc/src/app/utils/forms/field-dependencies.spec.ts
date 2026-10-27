@@ -34,6 +34,20 @@ describe('collectFieldDependencies', () => {
     ).toEqual(['metadata.namespace']);
   });
 
+  it('recognizes properties containing hyphens and slashes', () => {
+    expect(
+      collectFieldDependencies(
+        field({
+          label: '{form.metadata.labels.app.kubernetes.io/name}',
+          annotation: '{form.metadata.annotations.example.io/my-key}',
+        }),
+      ),
+    ).toEqual([
+      'metadata.labels.app.kubernetes.io/name',
+      'metadata.annotations.example.io/my-key',
+    ]);
+  });
+
   it('collects multiple placeholders within strings and across variables once', () => {
     expect(
       collectFieldDependencies(

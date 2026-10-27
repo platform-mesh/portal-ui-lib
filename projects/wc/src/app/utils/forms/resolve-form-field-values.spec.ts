@@ -146,6 +146,25 @@ describe('createDynamicValuesResolver', () => {
 
     expect(resolveResult).toHaveBeenCalledWith(expect.anything(), {});
   });
+
+  it('lets a parent outside the form reach the context-aware resolver', async () => {
+    const child = field('child', ['metadata.namespace']);
+    const resolveResult = vi.fn().mockResolvedValue(ready(['secret']));
+    const resolver = createDynamicValuesResolver(resolveResult, [child]);
+    expect(await resolver(child, {})).toEqual(['secret']);
+    expect(resolveResult).toHaveBeenCalledWith(child, {});
+  });
+
+  it('still blocks an empty parent present in the form', async () => {
+    const child = field('child', ['metadata.namespace']);
+    const resolveResult = vi.fn();
+    const resolver = createDynamicValuesResolver(resolveResult, [
+      field('metadata.namespace'),
+      child,
+    ]);
+    expect(await resolver(child, {})).toEqual([]);
+    expect(resolveResult).not.toHaveBeenCalled();
+  });
 });
 
 describe('buildResourceFormFields', () => {

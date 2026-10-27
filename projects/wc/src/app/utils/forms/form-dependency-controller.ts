@@ -102,7 +102,9 @@ export class FormDependencyController {
       this.values[name] = '';
       const snapshot = { ...this.values };
       const missingParent = collectFieldDependencies(field).some(
-        (parent) => snapshot[parent] == null || snapshot[parent] === '',
+        (parent) =>
+          this.fields.has(parent) &&
+          (snapshot[parent] == null || snapshot[parent] === ''),
       );
 
       if (missingParent) this.pending.delete(name);

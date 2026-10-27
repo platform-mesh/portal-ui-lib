@@ -2,11 +2,13 @@ import {
   DependentFieldUpdate,
   DynamicValuesResult,
   FormDependencyController,
-} from '../../../utils/form-dependency-controller';
-import { resolveFieldDynamicValuesResult } from '../../../utils/resolve-dynamic-values';
-import { buildResourceFormFields } from '../../../utils/resolve-form-field-values';
-import { buildInitialValues } from '../../../utils/to-form-fields';
-import { validateFormField } from '../../../utils/validate-form-field';
+} from '../../../utils/forms/form-dependency-controller';
+import { FormValidationController } from '../../../utils/forms/form-validation-controller';
+import { omitEmptyWriteOnlyFields } from '../../../utils/forms/omit-empty-write-only-fields';
+import { resolveFieldDynamicValuesResult } from '../../../utils/forms/resolve-dynamic-values';
+import { buildResourceFormFields } from '../../../utils/forms/resolve-form-field-values';
+import { buildInitialValues } from '../../../utils/forms/to-form-fields';
+import { validateFormField } from '../../../utils/forms/validate-form-field';
 import { ResourceFieldNames } from '../create-resource-modal/create-resource-modal.consts';
 import {
   ChangeDetectionStrategy,
@@ -23,7 +25,6 @@ import {
 import {
   FormFieldChangeEvent,
   FormFieldDefinition,
-  FormFieldErrors,
   ResourceFormDialog,
 } from '@openmfp/ngx';
 import {
@@ -35,10 +36,7 @@ import {
   ResourceNodeContext,
   ResourceService,
 } from '@platform-mesh/portal-ui-lib/services';
-import {
-  isNamespacedResource,
-  omitEmptyWriteOnlyFields,
-} from '@platform-mesh/portal-ui-lib/utils';
+import { isNamespacedResource } from '@platform-mesh/portal-ui-lib/utils';
 
 @Component({
   selector: 'pm-resource-form-modal',
@@ -64,10 +62,21 @@ export class ResourceFormModal {
   private readonly dialog = viewChild<ResourceFormDialog>('dialog');
   private originalResource = signal<Resource | null>(null);
 
-  fieldErrors = signal<FormFieldErrors>({});
+  private readonly validation = new FormValidationController((name, value) =>
+    validateFormField({
+      name,
+      value,
+      fields: this.calculateFields(),
+      editMode: this.isEditMode(),
+    }),
+  );
+  fieldErrors = this.validation.errors;
   formFields = signal<FormFieldDefinition[]>([]);
   initialValues = signal<Record<string, unknown>>({});
   pending = signal(false);
+  formPending = computed(
+    () => this.pending() || this.validation.hasDeferredErrors(),
+  );
   private readonly dependencies = new FormDependencyController(
     (field, values) => this.resolveDynamicValuesResult(field, values),
     (update) => this.applyDependentUpdate(update),
@@ -87,28 +96,36 @@ export class ResourceFormModal {
     this.dependencies.end();
     this.dialogOpen.set(false);
     this.pending.set(false);
-    this.fieldErrors.set({});
+    this.validation.reset();
     const fields = this.calculateFields();
     this.originalResource.set(resource ?? null);
     const values = buildInitialValues(fields, resource);
-    const generation = this.dependencies.begin(fields, values);
-    const formFields = await buildResourceFormFields(fields, values, {
-      editMode: this.isEditMode(),
-      resolveResult: (field, formValues) =>
-        this.resolveDynamicValuesResult(field, formValues),
-    });
-    if (!this.dependencies.isCurrent(generation)) return;
+    let generation: number | undefined;
+    try {
+      generation = this.dependencies.begin(fields, values);
+      const formFields = await buildResourceFormFields(fields, values, {
+        editMode: this.isEditMode(),
+        resolveResult: (field, formValues) =>
+          this.resolveDynamicValuesResult(field, formValues),
+      });
+      if (!this.dependencies.isCurrent(generation)) return;
 
-    this.formFields.set(formFields);
-    this.initialValues.set(values);
-    this.dialogOpen.set(true);
+      this.formFields.set(formFields);
+      this.initialValues.set(values);
+      this.dialogOpen.set(true);
+    } catch (error) {
+      if (generation !== undefined && !this.dependencies.isCurrent(generation))
+        return;
+      this.close();
+      this.errorHandlerService.handleError(error);
+    }
   }
 
   close() {
     this.dependencies.end();
     this.dialogOpen.set(false);
     this.pending.set(false);
-    this.fieldErrors.set({});
+    this.validation.reset();
     this.originalResource.set(null);
   }
 
@@ -117,17 +134,14 @@ export class ResourceFormModal {
   }
 
   onFieldChange(event: FormFieldChangeEvent): void {
-    this.validateField(event.fieldProperty, event.value);
+    this.validation.handleChange(event);
     this.dependencies.handleChange(event);
   }
 
   private applyDependentUpdate(update: DependentFieldUpdate): void {
     if (update.clear) {
-      this.dialog()?.patchForm(
-        { [update.name]: '' },
-        { emitEvent: false, markAsDirty: true },
-      );
-      this.validateField(update.name, '');
+      this.dialog()?.patchForm({ [update.name]: '' }, { emitEvent: false });
+      this.validation.resetField(update.name, '');
     }
     this.formFields.update((fields) =>
       fields.map((field) =>
@@ -147,16 +161,6 @@ export class ResourceFormModal {
     }
 
     this.resource.emit(value as Resource);
-  }
-
-  private validateField(name: string, value: unknown): void {
-    const error = validateFormField({
-      name,
-      value,
-      fields: this.calculateFields(),
-      editMode: this.isEditMode(),
-    });
-    this.fieldErrors.update((errors) => ({ ...errors, [name]: error }));
   }
 
   private resolveDynamicValuesResult(

@@ -101,6 +101,71 @@ describe('ResourceTableCard', () => {
     expect(component).toBeTruthy();
   });
 
+  it.each([false, true])(
+    'reports invalid form configuration without an unhandled rejection (edit=%s)',
+    async (editMode) => {
+      (component.context as any).set(
+        makeContext({
+          ui: {
+            listView: { fields: [] },
+            createView: {
+              fields: [
+                { property: 'metadata.name' },
+                { property: 'metadata.name' },
+              ],
+            },
+          },
+        })(),
+      );
+      const closeCreateDialog = vi.fn();
+      const closeEditDialog = vi.fn();
+      (component as any).tableCard = () => ({
+        closeCreateDialog,
+        closeEditDialog,
+      });
+      const config = editMode
+        ? component.config().editResourceFormConfig!({
+            metadata: { name: 'resource' },
+          })
+        : component.config().createResourceFormConfig!;
+      await expect(
+        (config.fields as () => Promise<unknown[]>)(),
+      ).resolves.toEqual([]);
+      expect(mockErrorHandlerService.handleError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Duplicate form field: metadata.name',
+        }),
+      );
+      expect(
+        editMode ? closeEditDialog : closeCreateDialog,
+      ).toHaveBeenCalledOnce();
+      expect(component.createFormState().pending).toBe(false);
+      expect(component.editFormState().pending).toBe(false);
+    },
+  );
+
+  it('preserves initial validation in both forms on seed events', () => {
+    component.onCreateFieldChange({
+      fieldProperty: 'metadata.name',
+      value: '',
+      source: 'seed',
+    });
+    component.onEditFieldChange({
+      resource: { metadata: { name: 'resource' } },
+      formChangeEvent: {
+        fieldProperty: 'metadata.name',
+        value: '',
+        source: 'seed',
+      },
+    });
+    expect(component.createFormState().fieldErrors?.['metadata.name']).toBe(
+      'This field is required',
+    );
+    expect(component.editFormState().fieldErrors?.['metadata.name']).toBe(
+      'This field is required',
+    );
+  });
+
   it('should fetch resources on init', () => {
     expect(mockResourceService.list).toHaveBeenCalled();
     expect(component.resources().length).toBeGreaterThan(0);
@@ -231,7 +296,9 @@ describe('ResourceTableCard', () => {
     it('should navigate via resourceURL even when detailView is not defined', () => {
       const navSpy = vi.fn();
       component.context = makeContext({
-        ui: { listView: { resourceURL: '/workspaces/{resource.metadata.name}' } },
+        ui: {
+          listView: { resourceURL: '/workspaces/{resource.metadata.name}' },
+        },
       });
       component.LuigiClient = makeLuigiClient(navSpy);
 
@@ -892,7 +959,7 @@ describe('ResourceTableCard', () => {
         expect(depQueryCalls).toHaveLength(1);
         expect(depQueryCalls[0][3]).toEqual({
           variables: {
-            namespace: { type: 'String', value: 'injected-ns' },
+            namespace: { type: 'String!', value: 'injected-ns' },
           },
         });
       });
@@ -1003,6 +1070,52 @@ describe('ResourceTableCard', () => {
   });
 
   describe('Edit resource', () => {
+    it.each(['', null, undefined, 'replacement'])(
+      'omits empty write-only values before updating (%s)',
+      (password) => {
+        (component.context as any).set(
+          makeContext({
+            ui: {
+              listView: { fields: [] },
+              createView: {
+                fields: [
+                  {
+                    property: 'spec.password',
+                    inputType: 'Password',
+                    writeOnly: true,
+                  },
+                  { property: 'spec.description' },
+                ],
+              },
+            },
+          })(),
+        );
+        const closeEditDialog = vi.fn();
+        (component as any).tableCard = () => ({ closeEditDialog });
+        mockResourceService.update.mockReturnValue(
+          of({ metadata: { name: 'resource' } }),
+        );
+        const value = {
+          metadata: { name: 'resource' },
+          spec: { password, description: '' },
+        };
+        component.onEditSubmit({
+          resource: { metadata: { name: 'resource' } },
+          value,
+        });
+        expect(mockResourceService.update).toHaveBeenCalledWith(
+          {
+            metadata: { name: 'resource' },
+            spec: { description: '', ...(password && { password }) },
+          },
+          expect.anything(),
+          component.context(),
+        );
+        expect(value.spec.password).toBe(password);
+        expect(closeEditDialog).toHaveBeenCalledOnce();
+      },
+    );
+
     const makeEditContext = (overrides: object = {}) =>
       signal({
         resourceDefinition: {
@@ -1223,7 +1336,7 @@ describe('ResourceTableCard', () => {
       );
       expect(secretCalls.length).toBeGreaterThan(0);
       expect(secretCalls[0][3]).toEqual({
-        variables: { namespace: { type: 'String', value: 'ns-a' } },
+        variables: { namespace: { type: 'String!', value: 'ns-a' } },
       });
     });
 
@@ -1312,16 +1425,46 @@ describe('ResourceTableCard', () => {
         }),
       );
       expect(local.editFormState().pending).toBe(true);
-      expect(local.editFormState().fieldErrors?.['spec.secretRef.name']).toBe(
-        'This field is required',
-      );
+      expect(
+        local.editFormState().fieldErrors?.['spec.secretRef.name'],
+      ).toBeNull();
 
-      await vi.waitFor(() => expect(local.editFormState().pending).toBe(false));
+      await vi.waitFor(() =>
+        expect(applyPatch).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            fieldUpdates: {
+              'spec.secretRef.name': { values: ['db-password'] },
+            },
+          }),
+        ),
+      );
+      expect(local.editFormState().pending).toBe(true);
+      local.onEditFieldChange({
+        resource,
+        formChangeEvent: {
+          fieldProperty: 'spec.secretRef.name',
+          value: '',
+          source: 'seed',
+        },
+      });
+      expect(
+        local.editFormState().fieldErrors?.['spec.secretRef.name'],
+      ).toBeNull();
+      expect(local.editFormState().pending).toBe(true);
+      local.onEditFieldChange({
+        resource,
+        formChangeEvent: {
+          fieldProperty: 'spec.secretRef.name',
+          value: 'new-secret',
+          source: 'user',
+        },
+      });
+      expect(local.editFormState().pending).toBe(false);
       expect(mockResourceService.list).toHaveBeenCalledWith(
         'Secrets.items',
         query,
         expect.anything(),
-        { variables: { namespace: { type: 'String', value: 'staging' } } },
+        { variables: { namespace: { type: 'String!', value: 'staging' } } },
       );
     });
 

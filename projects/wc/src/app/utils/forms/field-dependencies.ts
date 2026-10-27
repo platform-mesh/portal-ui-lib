@@ -1,3 +1,4 @@
+import { FORM_PLACEHOLDER_PATTERN } from './resolve-form-placeholders';
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
@@ -9,7 +10,7 @@ export function collectFieldDependencies(
   for (const value of Object.values(
     field.dynamicValuesDefinition?.gqlQueryVariables ?? {},
   )) {
-    for (const match of value.matchAll(/\{form\.([\w.]+)\}/g)) {
+    for (const match of value.matchAll(FORM_PLACEHOLDER_PATTERN)) {
       dependencies.add(match[1]);
     }
   }

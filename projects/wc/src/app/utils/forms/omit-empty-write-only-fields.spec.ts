@@ -1,5 +1,5 @@
-import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 import { omitEmptyWriteOnlyFields } from './omit-empty-write-only-fields';
+import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 const defs = (items: readonly unknown[]): PlatformMeshFieldDefinition[] =>
   items as PlatformMeshFieldDefinition[];

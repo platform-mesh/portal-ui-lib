@@ -2,7 +2,7 @@ import {
   K8S_NAME_ERROR,
   K8S_NAME_RE,
   ResourceFieldNames,
-} from '../components/generic-ui/create-resource-modal/create-resource-modal.consts';
+} from '../../components/generic-ui/create-resource-modal/create-resource-modal.consts';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 /**

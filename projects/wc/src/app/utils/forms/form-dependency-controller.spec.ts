@@ -231,4 +231,27 @@ describe('FormDependencyController', () => {
     // in-form trigger wired up.
     expect(() => controller.begin([field('a', ['missing'])], {})).not.toThrow();
   });
+
+  it('resolves on an in-form change when another parent comes from context', async () => {
+    const resolve = vi
+      .fn()
+      .mockResolvedValue({ kind: 'ready', values: ['new'] });
+    const apply = vi.fn();
+    const controller = new FormDependencyController(resolve, apply);
+    controller.begin(
+      [field('region'), field('secret', ['metadata.namespace', 'region'])],
+      {},
+    );
+    controller.handleChange({ fieldProperty: 'region', value: 'eu' });
+    await vi.waitFor(() => expect(resolve).toHaveBeenCalled());
+    expect(resolve.mock.calls[0][1]).toEqual({ region: 'eu', secret: '' });
+    await vi.waitFor(() =>
+      expect(apply).toHaveBeenLastCalledWith({
+        name: 'secret',
+        values: ['new'],
+        clear: false,
+        pending: false,
+      }),
+    );
+  });
 });

@@ -1,9 +1,9 @@
-import { isImmutableOnEdit } from './field-definition.utils';
 import {
   applyDependencyTriggers,
   collectFieldDependencies,
 } from './field-dependencies';
 import type { DynamicValuesResult } from './form-dependency-controller';
+import { isImmutableOnEdit } from './is-immutable-on-edit';
 import { DynamicValuesResolver, toFormFields } from './to-form-fields';
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
@@ -15,19 +15,24 @@ type ResolveResult = (
 
 /**
  * Wraps a `DynamicValuesResult` producer as a `DynamicValuesResolver` usable
- * by `toFormFields`. Short-circuits to `[]` when any `{form.<property>}` parent
- * is empty, and translates `blocked`/`error` results into `[]` for dependent
+ * by `toFormFields`. Short-circuits to `[]` when an in-form parent is empty.
+ * Parents absent from `fields` reach the context-aware resolver instead.
+ * Translates `blocked`/`error` results into `[]` for dependent
  * fields or `undefined` for independent ones (so the latter fall back to the
  * field's static `values`).
  */
 export function createDynamicValuesResolver(
   resolveResult: ResolveResult,
+  fields?: readonly PlatformMeshFieldDefinition[],
 ): DynamicValuesResolver {
   return async (field, formValues) => {
     const dependencies = collectFieldDependencies(field);
     if (
       dependencies.some(
-        (parent) => formValues?.[parent] == null || formValues[parent] === '',
+        (parent) =>
+          (!fields ||
+            fields.some((candidate) => candidate.property === parent)) &&
+          (formValues?.[parent] == null || formValues[parent] === ''),
       )
     ) {
       return [];
@@ -60,7 +65,10 @@ export async function buildResourceFormFields(
     disabled: (field) => opts.editMode && isImmutableOnEdit(field),
     editMode: opts.editMode,
     formValues: values,
-    resolveDynamicValues: createDynamicValuesResolver(opts.resolveResult),
+    resolveDynamicValues: createDynamicValuesResolver(
+      opts.resolveResult,
+      fields,
+    ),
   });
   applyDependencyTriggers(formFields, fields);
   return formFields;

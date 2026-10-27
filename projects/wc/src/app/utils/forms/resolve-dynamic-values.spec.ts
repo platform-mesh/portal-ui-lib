@@ -86,7 +86,7 @@ describe('resolveFieldDynamicValuesResult', () => {
       'v1.Secrets.items',
       requiredNsQuery,
       baseContext,
-      { variables: { namespace: { type: 'String', value: 'injected-ns' } } },
+      { variables: { namespace: { type: 'String!', value: 'injected-ns' } } },
     );
   });
 
@@ -108,7 +108,7 @@ describe('resolveFieldDynamicValuesResult', () => {
       'v1.Secrets.items',
       requiredNsQuery,
       baseContext,
-      { variables: { namespace: { type: 'String', value: 'ctx-ns' } } },
+      { variables: { namespace: { type: 'String!', value: 'ctx-ns' } } },
     );
   });
 
@@ -188,7 +188,7 @@ describe('resolveFieldDynamicValuesResult', () => {
       {
         variables: {
           namespace: {
-            type: 'String',
+            type: 'String!',
             value: 'ctx-ns',
           },
         },
@@ -350,5 +350,108 @@ describe('resolveFieldDynamicValuesResult', () => {
     await resolveFieldDynamicValuesResult(field, baseContext, false, {}, deps);
 
     expect(deps.getNamespace).not.toHaveBeenCalled();
+  });
+
+  it('resolves a missing form namespace from context regardless of variable name', async () => {
+    const deps = makeDeps({
+      getNamespace: vi.fn().mockReturnValue('fixed-ns'),
+    });
+    const query =
+      'query ($selectedNs: String!) { items(namespace: $selectedNs) { name } }';
+    const field: PlatformMeshFieldDefinition = {
+      property: 'secret',
+      dynamicValuesDefinition: {
+        operation: 'items',
+        gqlQuery: query,
+        key: 'name',
+        value: 'metadata.name',
+        gqlQueryVariables: { selectedNs: '{form.metadata.namespace}' },
+      },
+    };
+    expect(
+      await resolveFieldDynamicValuesResult(field, baseContext, true, {}, deps),
+    ).toEqual({ kind: 'ready', values: ['a'] });
+    expect(deps.list).toHaveBeenCalledWith('items', query, baseContext, {
+      variables: { selectedNs: { type: 'String!', value: 'fixed-ns' } },
+    });
+    vi.mocked(deps.list).mockClear();
+    expect(
+      await resolveFieldDynamicValuesResult(
+        field,
+        baseContext,
+        true,
+        {
+          'metadata.namespace': '',
+        },
+        deps,
+      ),
+    ).toEqual({ kind: 'blocked' });
+    expect(deps.list).not.toHaveBeenCalled();
+  });
+
+  it('preserves GraphQL variable types and exact form values including false and zero', async () => {
+    const deps = makeDeps();
+    const query =
+      'query ($limit: Int!, $enabled: Boolean!, $tags: [String!]!, $filter: FilterInput, $label: String) { items { metadata { name } } }';
+    const field: PlatformMeshFieldDefinition = {
+      property: 'child',
+      dynamicValuesDefinition: {
+        operation: 'items',
+        gqlQuery: query,
+        key: 'name',
+        value: 'metadata.name',
+        gqlQueryVariables: {
+          limit: '{form.spec.limit}',
+          enabled: '{form.spec.enabled}',
+          tags: '{form.spec.tags}',
+          filter: '{form.spec.filter}',
+          label: 'prefix-{form.spec.limit}',
+        },
+      },
+    };
+    await resolveFieldDynamicValuesResult(
+      field,
+      baseContext,
+      false,
+      {
+        'spec.limit': 0,
+        'spec.enabled': false,
+        'spec.tags': ['a'],
+        'spec.filter': { ready: true },
+      },
+      deps,
+    );
+    expect(deps.list).toHaveBeenCalledWith('items', query, baseContext, {
+      variables: {
+        limit: { type: 'Int!', value: 0 },
+        enabled: { type: 'Boolean!', value: false },
+        tags: { type: '[String!]!', value: ['a'] },
+        filter: { type: 'FilterInput', value: { ready: true } },
+        label: { type: 'String', value: 'prefix-0' },
+      },
+    });
+  });
+
+  it('reports invalid query syntax through the error handler', async () => {
+    const deps = makeDeps();
+    const field: PlatformMeshFieldDefinition = {
+      property: 'child',
+      dynamicValuesDefinition: {
+        operation: 'items',
+        gqlQuery: 'invalid',
+        key: 'name',
+        value: 'name',
+      },
+    };
+    const result = await resolveFieldDynamicValuesResult(
+      field,
+      baseContext,
+      false,
+      {},
+      deps,
+    );
+    expect(result.kind).toBe('error');
+    expect(deps.handleError).toHaveBeenCalledWith(expect.any(Error));
+    expect(deps.list).not.toHaveBeenCalled();
   });
 });
