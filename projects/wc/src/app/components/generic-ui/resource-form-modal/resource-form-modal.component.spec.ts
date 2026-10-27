@@ -680,7 +680,6 @@ describe('ResourceFormModal', () => {
         value: 'metadata.name',
         key: 'metadata.name',
         gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
-        dependsOn: ['metadata.namespace'],
       },
     };
 
@@ -706,7 +705,6 @@ describe('ResourceFormModal', () => {
         value: 'name',
         key: 'name',
         gqlQueryVariables: { region: '{form.spec.region}' },
-        dependsOn: ['spec.region'],
       },
     };
 
@@ -860,7 +858,7 @@ describe('ResourceFormModal', () => {
       });
     });
 
-    describe('open(resource) — initial dependsOn resolve on edit-open', () => {
+    describe('open(resource) — initial dependent-field resolve on edit-open', () => {
       // Guards that opening the modal in EDIT mode (resource argument supplied)
       // resolves the dependent field's `values` against the prefilled parent
       // BEFORE the user interacts — so the user sees a populated option list
@@ -906,7 +904,7 @@ describe('ResourceFormModal', () => {
     });
 
     describe('backward compatibility', () => {
-      it('fields without dependsOn behave as before', async () => {
+      it('fields without form placeholders behave as before', async () => {
         resourceService.getNamespace.mockReturnValue('default');
         fixture.componentRef.setInput('fields', [regionField]);
         fixture.componentRef.setInput('context', namespacedContext);

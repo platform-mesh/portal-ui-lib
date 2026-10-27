@@ -206,7 +206,6 @@ Each field definition supports the following properties:
   - `"gqlQueryVariables"` (optional): map of GraphQL query variables keyed by the `$var` name declared in `"gqlQuery"`. Each value may contain `{context.<dot.path>}` placeholders resolved against the current Luigi node context at runtime (e.g. `{context.namespaceId}`), or `{form.<property>}` placeholders resolved against the current form's values (e.g. `{form.metadata.namespace}` for a field that depends on another form field). Values without a placeholder are sent verbatim. The variable's GraphQL type comes from the query string's own declaration, so it is not repeated here. Omitted entirely, no variables are sent and any `$vars` in the query stay `undefined`.
   - `"value"`: JSON path to the actual value in the response
   - `"key"`: JSON path to the display value in the response
-  - `"dependsOn"` (optional): array of other field `property` names in the same form whose values feed this field's query. When any listed parent changes, this field's options are refetched and the field's current value is cleared. The field stays empty (and submit stays blocked for required fields) until every parent has a non-empty value. Only one-level dependencies are supported: a parent listed here must not itself declare `"dependsOn"`. A parent that is not part of the form (for example `metadata.namespace` on a view where the namespace is fixed by the Luigi context) is tolerated silently — the field still resolves via the context-aware resolver, there is just no in-form change event to trigger a refetch.
 - `"propertyCollection"`: Array of `FieldDefinition` objects describing **one entry** of an array-of-objects field. Set it alongside `"property"` (which points at the array itself, e.g. `"status.conditions"`) to declare that this field represents a repeatable object entry rather than a scalar. Each sub-field is a full `FieldDefinition` (label, property, values, required, uiSettings, and even nested `propertyCollection`s if you need array-of-array-of-object).
   - **Sub-field `"property"` paths**: authored the same way as top-level properties. Two authoring styles are equivalent and produce the same on-wire payload:
     - **Absolute** — the full JSON path (`"status.conditions.type"`). The generic UI strips the parent collection's `property` prefix internally so entries land as `{"type": "...", "status": "...", ...}` on the payload, not as flat dotted keys.
@@ -297,11 +296,10 @@ Populating a select from a GraphQL query that takes variables. `userId` is resol
 
 Making one field's options depend on another field's value in the same form. The example wires a `spec.secretRef.name` select to the currently chosen `metadata.namespace`: picking a namespace loads the matching secrets, changing the namespace clears the secret and refetches, clearing the namespace leaves the secret empty.
 
-Three pieces work together:
+Two pieces work together:
 
-- `"dependsOn"` lists the parent field property name. When the parent changes, the child's current value is cleared and the dependent options are refetched.
-- `"gqlQueryVariables"` uses a `{form.<property>}` placeholder to inject the parent's current form value into the GraphQL query.
-- Both fields are top-level in the same `createView.fields` / `editView.fields` array. The dependency is one level deep: `spec.secretRef.name` depends on `metadata.namespace`, and `metadata.namespace` itself must not declare `"dependsOn"`.
+- `"gqlQueryVariables"` uses `{form.<property>}` placeholders to inject parent form values into the GraphQL query. Dependencies are inferred automatically from every placeholder in these variable values, including multiple placeholders in a single string. Repeated references to the same property count as one dependency. `{context.*}` placeholders and literal values do not create form dependencies. When a parent changes, the child's current value is cleared and its options are refetched.
+- Both fields are top-level in the same `createView.fields` / `editView.fields` array. The dependency is one level deep: `spec.secretRef.name` depends on `metadata.namespace`, and `metadata.namespace` itself must not reference other form fields in its query variables.
 
 ```json
 {
@@ -321,7 +319,6 @@ Three pieces work together:
         "gqlQueryVariables": {
           "namespace": "{form.metadata.namespace}"
         },
-        "dependsOn": ["metadata.namespace"],
         "value": "metadata.name",
         "key": "metadata.name"
       }
@@ -344,9 +341,9 @@ Behaviour at runtime:
 Notes:
 
 - Only one-level dependencies are supported. Transitive chains (A → B → C) are rejected at form-open time.
-- Multiple parents are allowed (`"dependsOn": ["a", "b"]`); the field stays empty until every parent has a non-empty value.
+- Multiple parents are allowed (for example, variable values containing `{form.a}` and `{form.b}`); the field stays empty until every parent has a non-empty value.
 - Multiple children may depend on the same parent — each is cleared and refetched independently.
-- A `"dependsOn"` entry naming a field that is not part of the current form (for example `metadata.namespace` on a view where the namespace is fixed by the Luigi context) is tolerated silently. The field still resolves its options via the context-aware resolver; it just has no in-form parent to react to.
+- A `{form.<property>}` placeholder referencing a field that is not part of the current form (for example `metadata.namespace` on a view where the namespace is fixed by the Luigi context) is tolerated silently. The field still resolves its options via the context-aware resolver; it just has no in-form parent to react to.
 
 #### Example Content Configuration for an Accounts Node
 

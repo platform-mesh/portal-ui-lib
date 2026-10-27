@@ -1,13 +1,71 @@
+import {
+  applyDependencyTriggers,
+  collectDependencyTriggers,
+  collectFieldDependencies,
+} from './field-dependencies';
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
-import { applyDependencyTriggers, collectDependencyTriggers } from './field-dependencies';
+
+describe('collectFieldDependencies', () => {
+  const field = (
+    gqlQueryVariables?: Record<string, string>,
+  ): PlatformMeshFieldDefinition => ({
+    property: 'spec.secret',
+    dynamicValuesDefinition: {
+      operation: 'items',
+      gqlQuery: 'query { items { name } }',
+      value: 'name',
+      key: 'name',
+      gqlQueryVariables,
+    },
+  });
+
+  it('returns no dependencies without dynamic values or query variables', () => {
+    expect(collectFieldDependencies({ property: 'metadata.name' })).toEqual([]);
+    expect(collectFieldDependencies(field())).toEqual([]);
+    expect(collectFieldDependencies(field({}))).toEqual([]);
+  });
+
+  it('uses placeholder properties rather than GraphQL variable names', () => {
+    expect(
+      collectFieldDependencies(
+        field({ selectedNamespace: '{form.metadata.namespace}' }),
+      ),
+    ).toEqual(['metadata.namespace']);
+  });
+
+  it('collects multiple placeholders within strings and across variables once', () => {
+    expect(
+      collectFieldDependencies(
+        field({
+          selector: '{form.spec.region}/{form.spec.zone}/{form.spec.region}',
+          namespace: '{form.metadata.namespace}',
+          repeated: '{form.spec.zone}',
+        }),
+      ),
+    ).toEqual(['spec.region', 'spec.zone', 'metadata.namespace']);
+  });
+
+  it('ignores context placeholders, literal values and incomplete placeholders', () => {
+    expect(
+      collectFieldDependencies(
+        field({
+          context: '{context.metadata.namespace}',
+          literal: 'form.spec.region',
+          empty: '',
+          incomplete: '{form.spec.zone',
+        }),
+      ),
+    ).toEqual([]);
+  });
+});
 
 describe('collectDependencyTriggers', () => {
   it('returns an empty set for an empty fields array', () => {
     expect(collectDependencyTriggers([])).toEqual(new Set());
   });
 
-  it('returns an empty set when no field has dependsOn', () => {
+  it('returns an empty set when no field references form placeholders', () => {
     const fields: PlatformMeshFieldDefinition[] = [
       { property: 'metadata.name', label: 'Name' },
       { property: 'spec.region', label: 'Region' },
@@ -15,7 +73,7 @@ describe('collectDependencyTriggers', () => {
     expect(collectDependencyTriggers(fields)).toEqual(new Set());
   });
 
-  it('returns an empty set when dynamicValuesDefinition has no dependsOn', () => {
+  it('returns an empty set when dynamicValuesDefinition has no query variables', () => {
     const fields: PlatformMeshFieldDefinition[] = [
       {
         property: 'spec.secret',
@@ -31,7 +89,7 @@ describe('collectDependencyTriggers', () => {
     expect(collectDependencyTriggers(fields)).toEqual(new Set());
   });
 
-  it('returns the single parent name when one field has dependsOn', () => {
+  it('returns the single parent name when one field references form placeholders', () => {
     const fields: PlatformMeshFieldDefinition[] = [
       { property: 'metadata.namespace', label: 'Namespace' },
       {
@@ -39,10 +97,11 @@ describe('collectDependencyTriggers', () => {
         label: 'Secret',
         dynamicValuesDefinition: {
           operation: 'v1.Secrets.items',
-          gqlQuery: 'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
+          gqlQuery:
+            'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
           value: 'metadata.name',
           key: 'metadata.name',
-          dependsOn: ['metadata.namespace'],
+          gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
         },
       },
     ];
@@ -59,10 +118,11 @@ describe('collectDependencyTriggers', () => {
         label: 'Secret A',
         dynamicValuesDefinition: {
           operation: 'v1.Secrets.items',
-          gqlQuery: 'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
+          gqlQuery:
+            'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
           value: 'metadata.name',
           key: 'metadata.name',
-          dependsOn: ['metadata.namespace'],
+          gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
         },
       },
       {
@@ -70,10 +130,11 @@ describe('collectDependencyTriggers', () => {
         label: 'Secret B',
         dynamicValuesDefinition: {
           operation: 'v1.Secrets.items',
-          gqlQuery: 'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
+          gqlQuery:
+            'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
           value: 'metadata.name',
           key: 'metadata.name',
-          dependsOn: ['metadata.namespace'],
+          gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
         },
       },
     ];
@@ -94,7 +155,7 @@ describe('collectDependencyTriggers', () => {
           gqlQuery: 'query { zones { items { name } } }',
           value: 'name',
           key: 'name',
-          dependsOn: ['spec.region'],
+          gqlQueryVariables: { region: '{form.spec.region}' },
         },
       },
       {
@@ -102,10 +163,11 @@ describe('collectDependencyTriggers', () => {
         label: 'Secret',
         dynamicValuesDefinition: {
           operation: 'v1.Secrets.items',
-          gqlQuery: 'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
+          gqlQuery:
+            'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
           value: 'metadata.name',
           key: 'metadata.name',
-          dependsOn: ['metadata.namespace'],
+          gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
         },
       },
     ];
@@ -127,7 +189,7 @@ describe('applyDependencyTriggers', () => {
           'query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }',
         value: 'metadata.name',
         key: 'metadata.name',
-        dependsOn: ['metadata.namespace'],
+        gqlQueryVariables: { namespace: '{form.metadata.namespace}' },
       },
     },
   ];

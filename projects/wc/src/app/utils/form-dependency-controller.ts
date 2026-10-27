@@ -1,3 +1,5 @@
+import { collectFieldDependencies } from './field-dependencies';
+import type { FormFieldChangeEvent } from '@openmfp/ngx';
 import type { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
 export type DynamicValuesResult =
@@ -46,7 +48,7 @@ export class FormDependencyController {
     }
 
     for (const [name, field] of this.fields) {
-      for (const parent of field.dynamicValuesDefinition?.dependsOn ?? []) {
+      for (const parent of collectFieldDependencies(field)) {
         if (parent === name) {
           throw new Error(`Invalid dependency: ${name} depends on ${parent}`);
         }
@@ -54,9 +56,7 @@ export class FormDependencyController {
         // no change event will ever fire for it, so skip the trigger wiring.
         // The field still resolves its values via the context-aware resolver.
         if (!this.fields.has(parent)) continue;
-        if (
-          this.fields.get(parent)?.dynamicValuesDefinition?.dependsOn?.length
-        ) {
+        if (collectFieldDependencies(this.fields.get(parent)!).length) {
           throw new Error(
             `Transitive dependency is not supported: ${name} depends on ${parent}`,
           );
@@ -83,12 +83,7 @@ export class FormDependencyController {
     this.values = {};
   }
 
-  handleChange(event: {
-    fieldProperty: string;
-    value: unknown;
-    source?: 'seed' | 'user';
-    formValues?: Readonly<Record<string, unknown>>;
-  }): void {
+  handleChange(event: FormFieldChangeEvent): void {
     if (event.source === 'seed') return;
     const children = this.dependents.get(event.fieldProperty);
     if (!children?.length) return;
@@ -106,7 +101,7 @@ export class FormDependencyController {
       this.versions.set(name, version);
       this.values[name] = '';
       const snapshot = { ...this.values };
-      const missingParent = field.dynamicValuesDefinition!.dependsOn!.some(
+      const missingParent = collectFieldDependencies(field).some(
         (parent) => snapshot[parent] == null || snapshot[parent] === '',
       );
 

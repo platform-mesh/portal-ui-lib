@@ -1,9 +1,24 @@
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
+/** Returns the distinct form properties referenced in query variable values. */
+export function collectFieldDependencies(
+  field: PlatformMeshFieldDefinition,
+): string[] {
+  const dependencies = new Set<string>();
+  for (const value of Object.values(
+    field.dynamicValuesDefinition?.gqlQueryVariables ?? {},
+  )) {
+    for (const match of value.matchAll(/\{form\.([\w.]+)\}/g)) {
+      dependencies.add(match[1]);
+    }
+  }
+  return [...dependencies];
+}
+
 /**
  * Returns the set of field names that are referenced by at least one other
- * field's `dynamicValuesDefinition.dependsOn`. These are the "parent" (trigger)
+ * field's `{form.<property>}` query placeholders. These are the "parent" (trigger)
  * fields — they need `validation:'onChange'` so their changes are observable.
  *
  * Only direct, one-level dependencies are handled. The returned names match
@@ -13,9 +28,9 @@ export function collectDependencyTriggers(
   fields: readonly PlatformMeshFieldDefinition[],
 ): Set<string> {
   const triggers = new Set<string>();
-  for (const f of fields)
-    for (const dep of f.dynamicValuesDefinition?.dependsOn ?? [])
-      triggers.add(dep);
+  for (const field of fields)
+    for (const dependency of collectFieldDependencies(field))
+      triggers.add(dependency);
   return triggers;
 }
 

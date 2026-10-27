@@ -25,9 +25,6 @@ export type PlatformMeshFieldDefinition = TableFieldDefinition &
       gqlQueryVariables?: Record<string, string>;
       value: string;
       key: string;
-      /** Names of other fields this field's query depends on. Reference them in
-       *  gqlQueryVariables via `{form.<name>}`. Direct (one-level) only. */
-      dependsOn?: string[];
     };
   };
 

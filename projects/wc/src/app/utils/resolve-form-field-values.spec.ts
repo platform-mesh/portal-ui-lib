@@ -7,21 +7,23 @@ import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models
 
 function field(
   property: string,
-  dependsOn?: string[],
+  dependencies?: string[],
   extra: Partial<PlatformMeshFieldDefinition> = {},
 ): PlatformMeshFieldDefinition {
   return {
     property,
     label: property,
     ...extra,
-    ...(dependsOn
+    ...(dependencies
       ? {
           dynamicValuesDefinition: {
             operation: 'op',
             gqlQuery: 'q',
             value: 'metadata.name',
             key: 'metadata.name',
-            dependsOn,
+            gqlQueryVariables: Object.fromEntries(
+              dependencies.map((parent) => [parent, `{form.${parent}}`]),
+            ),
           },
         }
       : {}),
@@ -36,7 +38,7 @@ const blocked: DynamicValuesResult = { kind: 'blocked' };
 const errored: DynamicValuesResult = { kind: 'error', error: new Error('x') };
 
 describe('createDynamicValuesResolver', () => {
-  it('short-circuits to [] when any parent in dependsOn is null', async () => {
+  it('short-circuits to [] when any parent in dependencies is null', async () => {
     const resolveResult = vi.fn();
     const resolver = createDynamicValuesResolver(resolveResult);
 
@@ -48,7 +50,7 @@ describe('createDynamicValuesResolver', () => {
     expect(resolveResult).not.toHaveBeenCalled();
   });
 
-  it('short-circuits to [] when any parent in dependsOn is undefined', async () => {
+  it('short-circuits to [] when any parent in dependencies is undefined', async () => {
     const resolveResult = vi.fn();
     const resolver = createDynamicValuesResolver(resolveResult);
 
@@ -58,7 +60,7 @@ describe('createDynamicValuesResolver', () => {
     expect(resolveResult).not.toHaveBeenCalled();
   });
 
-  it('short-circuits to [] when any parent in dependsOn is empty string', async () => {
+  it('short-circuits to [] when any parent in dependencies is empty string', async () => {
     const resolveResult = vi.fn();
     const resolver = createDynamicValuesResolver(resolveResult);
 
@@ -118,7 +120,7 @@ describe('createDynamicValuesResolver', () => {
     expect(result).toEqual([]);
   });
 
-  it('returns undefined (falls back to static values) when a field without dependsOn is blocked', async () => {
+  it('returns undefined (falls back to static values) when a field without dependencies is blocked', async () => {
     const resolveResult = vi.fn().mockResolvedValue(blocked);
     const resolver = createDynamicValuesResolver(resolveResult);
 
@@ -127,7 +129,7 @@ describe('createDynamicValuesResolver', () => {
     expect(result).toBeUndefined();
   });
 
-  it('returns undefined when a field without dependsOn errors', async () => {
+  it('returns undefined when a field without dependencies errors', async () => {
     const resolveResult = vi.fn().mockResolvedValue(errored);
     const resolver = createDynamicValuesResolver(resolveResult);
 
@@ -258,10 +260,14 @@ describe('buildResourceFormFields', () => {
   });
 
   it('returns an empty array when given no fields', async () => {
-    const formFields = await buildResourceFormFields([], {}, {
-      editMode: false,
-      resolveResult: vi.fn(),
-    });
+    const formFields = await buildResourceFormFields(
+      [],
+      {},
+      {
+        editMode: false,
+        resolveResult: vi.fn(),
+      },
+    );
 
     expect(formFields).toEqual([]);
   });

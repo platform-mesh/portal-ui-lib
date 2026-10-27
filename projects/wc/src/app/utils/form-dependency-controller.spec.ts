@@ -6,17 +6,19 @@ import type { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/m
 
 function field(
   name: string,
-  dependsOn?: string[],
+  dependencies?: string[],
 ): PlatformMeshFieldDefinition {
   return {
     property: name,
-    ...(dependsOn && {
+    ...(dependencies && {
       dynamicValuesDefinition: {
         operation: 'items',
         gqlQuery: 'query { items { name } }',
         key: 'name',
         value: 'name',
-        dependsOn,
+        gqlQueryVariables: Object.fromEntries(
+          dependencies.map((parent) => [parent, `{form.${parent}}`]),
+        ),
       },
     }),
   };
@@ -222,13 +224,11 @@ describe('FormDependencyController', () => {
     ).toThrow('Transitive dependency is not supported');
   });
 
-  it('silently ignores dependsOn parents that are not in the form', () => {
+  it('silently ignores dependencies parents that are not in the form', () => {
     const controller = new FormDependencyController(vi.fn(), vi.fn());
     // Parent 'missing' is not registered as a form field (e.g. namespace fixed
     // by context). Begin must not throw — the dependent field just has no
     // in-form trigger wired up.
-    expect(() =>
-      controller.begin([field('a', ['missing'])], {}),
-    ).not.toThrow();
+    expect(() => controller.begin([field('a', ['missing'])], {})).not.toThrow();
   });
 });

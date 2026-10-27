@@ -1,10 +1,10 @@
 import { isImmutableOnEdit } from './field-definition.utils';
-import { applyDependencyTriggers } from './field-dependencies';
-import type { DynamicValuesResult } from './form-dependency-controller';
 import {
-  DynamicValuesResolver,
-  toFormFields,
-} from './to-form-fields';
+  applyDependencyTriggers,
+  collectFieldDependencies,
+} from './field-dependencies';
+import type { DynamicValuesResult } from './form-dependency-controller';
+import { DynamicValuesResolver, toFormFields } from './to-form-fields';
 import { FormFieldDefinition } from '@openmfp/ngx';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
 
@@ -15,7 +15,7 @@ type ResolveResult = (
 
 /**
  * Wraps a `DynamicValuesResult` producer as a `DynamicValuesResolver` usable
- * by `toFormFields`. Short-circuits to `[]` when any parent in `dependsOn`
+ * by `toFormFields`. Short-circuits to `[]` when any `{form.<property>}` parent
  * is empty, and translates `blocked`/`error` results into `[]` for dependent
  * fields or `undefined` for independent ones (so the latter fall back to the
  * field's static `values`).
@@ -24,8 +24,9 @@ export function createDynamicValuesResolver(
   resolveResult: ResolveResult,
 ): DynamicValuesResolver {
   return async (field, formValues) => {
+    const dependencies = collectFieldDependencies(field);
     if (
-      field.dynamicValuesDefinition?.dependsOn?.some(
+      dependencies.some(
         (parent) => formValues?.[parent] == null || formValues[parent] === '',
       )
     ) {
@@ -34,7 +35,7 @@ export function createDynamicValuesResolver(
     const result = await resolveResult(field, formValues ?? {});
     return result.kind === 'ready'
       ? result.values
-      : field.dynamicValuesDefinition?.dependsOn?.length
+      : dependencies.length
         ? []
         : undefined;
   };

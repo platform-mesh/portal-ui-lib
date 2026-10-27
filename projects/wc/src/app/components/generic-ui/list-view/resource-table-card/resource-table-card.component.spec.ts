@@ -794,7 +794,6 @@ describe('ResourceTableCard', () => {
                       gqlQueryVariables: {
                         namespace: '{form.metadata.namespace}',
                       },
-                      dependsOn: ['metadata.namespace'],
                     },
                   },
                 ],
@@ -977,7 +976,6 @@ describe('ResourceTableCard', () => {
                       gqlQueryVariables: {
                         namespace: '{form.metadata.namespace}',
                       },
-                      dependsOn: ['metadata.namespace'],
                     },
                   },
                 ],
@@ -997,7 +995,7 @@ describe('ResourceTableCard', () => {
         const formConfig = newComponent.config().createResourceFormConfig!;
         const fields = await (formConfig.fields as () => Promise<any[]>)();
 
-        // metadata.namespace is a parent trigger (spec.secretRef dependsOn it)
+        // metadata.namespace is a parent trigger (spec.secretRef references it)
         const nsField = fields.find((f) => f.name === 'metadata.namespace');
         expect(nsField?.validation).toBe('onChange');
       });
@@ -1121,7 +1119,6 @@ describe('ResourceTableCard', () => {
                     gqlQueryVariables: {
                       namespace: '{form.metadata.namespace}',
                     },
-                    dependsOn: ['metadata.namespace'],
                   },
                 },
               ],
@@ -1143,7 +1140,7 @@ describe('ResourceTableCard', () => {
         newComponent.config().editResourceFormConfig!(resource);
       const fields = await (editConfig.fields as () => Promise<any[]>)();
 
-      // metadata.namespace is a parent trigger (spec.secretRef dependsOn it)
+      // metadata.namespace is a parent trigger (spec.secretRef references it)
       const nsField = fields.find((f: any) => f.name === 'metadata.namespace');
       expect(nsField?.validation).toBe('onChange');
     });
@@ -1189,7 +1186,6 @@ describe('ResourceTableCard', () => {
                     gqlQueryVariables: {
                       namespace: '{form.metadata.namespace}',
                     },
-                    dependsOn: ['metadata.namespace'],
                   },
                 },
               ],
@@ -1268,7 +1264,6 @@ describe('ResourceTableCard', () => {
                     gqlQueryVariables: {
                       namespace: '{form.spec.targetNamespace}',
                     },
-                    dependsOn: ['spec.targetNamespace'],
                   },
                 },
               ],
