@@ -1,7 +1,9 @@
-import { deletePropertyByPath } from './delete-property-by-path';
-import { flattenFieldTree } from './flatten-field-tree';
-import { getValueByPath } from './get-value-by-path';
 import { PlatformMeshFieldDefinition } from '@platform-mesh/portal-ui-lib/models';
+import {
+  deletePropertyByPath,
+  flattenFieldTree,
+  getValueByPath,
+} from '@platform-mesh/portal-ui-lib/utils';
 
 /** Drops write-only fields whose value is empty so updates leave them unchanged. */
 export function omitEmptyWriteOnlyFields<T extends Record<string, unknown>>(

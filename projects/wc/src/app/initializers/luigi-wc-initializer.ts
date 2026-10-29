@@ -7,7 +7,7 @@ import {
 } from '../components';
 import { ErrorView } from '../components/error/error.component';
 import { SearchListDynamicPage } from '../components/generic-ui/search-list-dynamic-page/search-list-dynamic-page.component';
-import { registerLuigiWebComponents } from '../utils/wc';
+import { registerLuigiWebComponents } from '../utils';
 import { Injector, inject, provideAppInitializer } from '@angular/core';
 
 export const provideLuigiWebComponents = () =>

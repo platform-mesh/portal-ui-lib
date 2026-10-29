@@ -1,7 +1,9 @@
-import { downloadFile } from '../../../utils/download-file';
-import { executeButtonAction } from '../../../utils/field-definition.utils';
-import { processGroupFields } from '../../../utils/proccess-fields';
-import { withRouteNamespace } from '../../../utils/route-namespace';
+import {
+  downloadFile,
+  executeButtonAction,
+  processGroupFields,
+  withRouteNamespace,
+} from '../../../utils';
 import { ResourceFormModal } from '../resource-form-modal/resource-form-modal.component';
 import { ResourceLogo } from '../resource-logo/resource-logo.component';
 import { AVAILABLE_CARDS, CARDS, SECTIONS } from './cards';

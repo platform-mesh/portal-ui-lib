@@ -138,7 +138,7 @@ In order to use the generic list view, you need to adjust the node’s `content-
 
 #### Create View Configuration
 
-- `"createView"`: Defines the form for creating/updating resources. Both the create and edit flows use the `pm-resource-form-modal` facade component, which wraps `mfp-resource-form-dialog` from `@openmfp/ngx`. The delete flow in the detail view uses `mfp-delete-confirmation-dialog` from `@openmfp/ngx` driven by signals (`deleteDialogOpen`, `deleteTarget`, `deleteConfig`).
+- `"createView"`: Defines the shared form for creating and editing resources. Edit intentionally reuses `createView.fields` in both the table and detail views; there is no separate `editView` configuration. The detail view uses the `pm-resource-form-modal` facade, and the table uses the dialogs in `mfp-declarative-table-card`; both build their fields from the same configuration and use `mfp-resource-form-dialog` from `@openmfp/ngx`. The delete flow in the detail view uses `mfp-delete-confirmation-dialog` from `@openmfp/ngx` driven by signals (`deleteDialogOpen`, `deleteTarget`, `deleteConfig`).
   - `"fields"`: Array of `FieldDefinition` objects defining form fields. Supports `"required"` flag to indicate mandatory fields. Use `"values"` to provide a static list of options, or `"dynamicValuesDefinition"` to fetch options via GraphQL query (requires `"gqlQuery"`, `"operation"`, `"key"` for display value, and `"value"` for actual value). Fields that represent **arrays of objects** (e.g. `status.conditions`) are declared with a `"property"` pointing at the array + a nested `"propertyCollection"` of sub-`FieldDefinition`s — see the [`propertyCollection` reference](#field-definition-properties).
   - for namespaced resources, the create form automatically adds a required `metadata.namespace` field with dynamic namespace options **only when no namespace is already resolved** — i.e. no namespace is selected in the navigation context (`namespaceId`) and the URL search param `namespace` is `-all-` (or missing). When a namespace is already resolved it is reused on create, so the field is omitted.
 
@@ -203,7 +203,7 @@ Each field definition supports the following properties:
 - `"dynamicValuesDefinition"`: Configuration for dynamic value loading:
   - `"operation"`: GraphQL operation name
   - `"gqlQuery"`: GraphQL query string
-  - `"gqlQueryVariables"` (optional): map of GraphQL query variables keyed by the `$var` name declared in `"gqlQuery"`. Each value may contain `{context.<dot.path>}` placeholders resolved against the current Luigi node context at runtime (e.g. `{context.namespaceId}`); values without a placeholder are sent verbatim. The variable's GraphQL type comes from the query string's own declaration, so it is not repeated here. Omitted entirely, no variables are sent and any `$vars` in the query stay `undefined`.
+  - `"gqlQueryVariables"` (optional): map of GraphQL query variables keyed by the `$var` name declared in `"gqlQuery"`. Each value may contain `{context.<dot.path>}` placeholders resolved against the current Luigi node context at runtime (e.g. `{context.namespaceId}`), or `{form.<property>}` placeholders resolved against the current form's values (e.g. `{form.metadata.namespace}` for a field that depends on another form field). Values without a placeholder are sent verbatim. An exact `{form.<property>}` placeholder preserves the form value's JSON type, including numbers, booleans, arrays and objects; a placeholder embedded in a larger string is interpolated as text. Form property names are exact flat control keys and may contain dots, hyphens and slashes. The variable's GraphQL type comes from the query string's own declaration, so it is not repeated here. Omitted entirely, no variables are sent and any `$vars` in the query stay `undefined`.
   - `"value"`: JSON path to the actual value in the response
   - `"key"`: JSON path to the display value in the response
 - `"propertyCollection"`: Array of `FieldDefinition` objects describing **one entry** of an array-of-objects field. Set it alongside `"property"` (which points at the array itself, e.g. `"status.conditions"`) to declare that this field represents a repeatable object entry rather than a scalar. Each sub-field is a full `FieldDefinition` (label, property, values, required, uiSettings, and even nested `propertyCollection`s if you need array-of-array-of-object).
@@ -291,6 +291,61 @@ Populating a select from a GraphQL query that takes variables. `userId` is resol
   }
 }
 ```
+
+##### Example — dependent form fields
+
+Making one field's options depend on another field's value in the same form. The example wires a `spec.secretRef.name` select to the currently chosen `metadata.namespace`: picking a namespace loads the matching secrets, changing the namespace clears the secret and refetches, clearing the namespace leaves the secret empty.
+
+Two pieces work together:
+
+- `"gqlQueryVariables"` uses `{form.<property>}` placeholders to inject parent form values into the GraphQL query. Dependencies are inferred automatically from every placeholder in these variable values, including multiple placeholders in a single string. Repeated references to the same property count as one dependency. `{context.*}` placeholders and literal values do not create form dependencies. When a parent changes, the child's current value is cleared and its options are refetched.
+- Both fields are top-level in the same `createView.fields` array. The dependency is one level deep: `spec.secretRef.name` depends on `metadata.namespace`, and `metadata.namespace` itself must not reference other form fields in its query variables.
+
+```json
+{
+  "fields": [
+    {
+      "label": "Namespace",
+      "property": "metadata.namespace",
+      "required": true
+    },
+    {
+      "label": "Secret",
+      "property": "spec.secretRef.name",
+      "required": true,
+      "dynamicValuesDefinition": {
+        "operation": "v1.Secrets.items",
+        "gqlQuery": "query ($namespace: String!) { v1 { Secrets(namespace: $namespace) { items { metadata { name } } } } }",
+        "gqlQueryVariables": {
+          "namespace": "{form.metadata.namespace}"
+        },
+        "value": "metadata.name",
+        "key": "metadata.name"
+      }
+    }
+  ]
+}
+```
+
+Behaviour at runtime:
+
+| Situation | Child field value | Child field options |
+|---|---|---|
+| Create-open, parent empty | empty | empty — no query is sent |
+| Parent gets a value | cleared | fetched for the current parent value |
+| Parent cleared | cleared | empty — no query is sent |
+| Edit-open with prefilled parent + child | both preserved | fetched for the loaded parent value |
+| Request still in flight | — | submit is disabled until the request resolves |
+| Stale response (parent changed again before the first response arrived) | — | discarded; only the latest response is applied |
+
+Notes:
+
+- Only one-level dependencies are supported. Duplicate field names, self-dependencies and transitive chains (A → B → C) prevent the dialog from opening and show an error alert.
+- Multiple parents are allowed (for example, variable values containing `{form.a}` and `{form.b}`); the field stays empty until every in-form parent has a non-empty value.
+- Multiple children may depend on the same parent — each is cleared and refetched independently.
+- A parent absent from the form has no change trigger, but does not prevent the context-aware resolver from running. When `metadata.namespace` has no form value, `{form.metadata.namespace}` uses the effective context namespace, regardless of the GraphQL variable name. An empty in-form parent still blocks loading.
+- The GraphQL variable named `namespace` also falls back to the effective context namespace when its configured value is empty or contains an unresolved placeholder. This convention applies only to namespaced resources. Other unresolved variables block the request; they do not receive an arbitrary context value.
+- Resetting a dependent required field keeps submit disabled but hides its error until the user interacts with that field. Initial validation is preserved, and unchanged seed events from option updates do not repeat it.
 
 #### Example Content Configuration for an Accounts Node
 

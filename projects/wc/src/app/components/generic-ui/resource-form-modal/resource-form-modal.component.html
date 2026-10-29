@@ -1,7 +1,9 @@
 <mfp-resource-form-dialog
+  #dialog
   [open]="dialogOpen()"
   [fields]="formFields()"
-  [initialValues]="formInitialValues()"
+  [initialValues]="initialValues()"
+  [pending]="formPending()"
   [fieldErrors]="fieldErrors()"
   [defaultTitle]="dialogTitle()"
   [defaultConfirmLabel]="confirmLabel()"
