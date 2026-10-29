@@ -1,4 +1,5 @@
 import {
+  ApiExportAdminView,
   DetailView,
   ListView,
   OrganizationManagementView,
@@ -14,6 +15,7 @@ export const provideLuigiWebComponents = () =>
     const injector = inject(Injector);
     registerLuigiWebComponents(
       {
+        'api-export-admin': ApiExportAdminView,
         'generic-list-view': ListView,
         'generic-detail-view': DetailView,
         'organization-management': OrganizationManagementView,

@@ -1,3 +1,4 @@
+export * from '../components/api-export-admin/api-export-admin.component';
 export * from '../components/generic-ui/detail-view/detail-view.component';
 export * from '../components/generic-ui/list-view/list-view.component';
 export * from '../components/generic-ui/search-list-dynamic-page/search-list-dynamic-page.component';
