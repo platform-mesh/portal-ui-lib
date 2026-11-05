@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  padding: 1rem;
+}
+
+.api-export-admin {
+  font-family: var(--sapFontFamily, '72', Arial, Helvetica, sans-serif);
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  &__loading,
+  &__error,
+  &__empty {
+    padding: 1rem 0;
+    color: var(--sapTextColor, #333);
+  }
+
+  &__error {
+    color: var(--sapErrorColor, #bb0000);
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 0.5rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--sapList_BorderColor, #e5e5e5);
+    }
+
+    th {
+      font-weight: 600;
+      background-color: var(--sapList_HeaderBackground, #f2f2f2);
+    }
+  }
+
+  &__status {
+    font-weight: 500;
+    color: var(--sapNeutralColor, #6a6d70);
+
+    &--enabled {
+      color: var(--sapPositiveColor, #107e3e);
+    }
+  }
+}

@@ -29,9 +29,9 @@ describe('CustomGlobalNodesServiceImpl', () => {
   });
 
   describe('getCustomGlobalNodes', () => {
-    it('should return exactly two top-level nodes', async () => {
+    it('should return exactly three top-level nodes', async () => {
       const nodes = await service.getCustomGlobalNodes();
-      expect(nodes).toHaveLength(2);
+      expect(nodes).toHaveLength(3);
     });
 
     it('should return a Promise', () => {
@@ -39,9 +39,32 @@ describe('CustomGlobalNodesServiceImpl', () => {
       expect(result).toBeInstanceOf(Promise);
     });
 
+    describe('admin node', () => {
+      it('should be configured with pathSegment "admin" and visible in nav', async () => {
+        const [adminNode] = await service.getCustomGlobalNodes();
+        expect(adminNode.pathSegment).toBe('admin');
+        expect(adminNode.hideFromNav).toBe(false);
+        expect(adminNode.label).toBe('APIExports');
+        expect(adminNode.icon).toBe('connected');
+        expect(adminNode.category).toEqual({ label: 'Admin', icon: 'user-settings' });
+      });
+
+      it('should expose a single apiexports child', async () => {
+        const [adminNode] = await service.getCustomGlobalNodes();
+        expect(adminNode.children).toHaveLength(1);
+        const child = (adminNode.children as any[])[0];
+        expect(child.pathSegment).toBe('apiexports');
+        expect(child.viewUrl).toBe(
+          '/assets/platform-mesh-portal-ui-wc.js#api-export-admin',
+        );
+        expect(child.webcomponent).toEqual({ selfRegistered: true, type: 'module' });
+        expect(child.openNodeInModal).toEqual({ size: 'l' });
+      });
+    });
+
     describe('error node', () => {
       it('should be configured with pathSegment "error" and hidden from nav', async () => {
-        const [errorNode] = await service.getCustomGlobalNodes();
+        const [, errorNode] = await service.getCustomGlobalNodes();
         expect(errorNode.pathSegment).toBe('error');
         expect(errorNode.order).toBe(1000);
         expect(errorNode.hideFromNav).toBe(true);
@@ -49,19 +72,19 @@ describe('CustomGlobalNodesServiceImpl', () => {
       });
 
       it('should have an empty context object', async () => {
-        const [errorNode] = await service.getCustomGlobalNodes();
+        const [, errorNode] = await service.getCustomGlobalNodes();
         expect(errorNode.context).toEqual({});
       });
 
       it('should expose a single :id child', async () => {
-        const [errorNode] = await service.getCustomGlobalNodes();
+        const [, errorNode] = await service.getCustomGlobalNodes();
         expect(errorNode.children).toHaveLength(1);
         const child = (errorNode.children as any[])[0];
         expect(child.pathSegment).toBe(':id');
       });
 
       it('should configure :id child as ENTITY_ERROR with the error web component view URL', async () => {
-        const [errorNode] = await service.getCustomGlobalNodes();
+        const [, errorNode] = await service.getCustomGlobalNodes();
         const child = (errorNode.children as any[])[0];
         expect(child.entityType).toBe(EntityType.ENTITY_ERROR);
         expect(child.viewUrl).toBe(
@@ -72,7 +95,7 @@ describe('CustomGlobalNodesServiceImpl', () => {
       });
 
       it('should pass id placeholder and translationTable from i18nService into the child context', async () => {
-        const [errorNode] = await service.getCustomGlobalNodes();
+        const [, errorNode] = await service.getCustomGlobalNodes();
         const child = (errorNode.children as any[])[0];
         expect(child.context).toEqual({
           id: ':id',
@@ -83,7 +106,7 @@ describe('CustomGlobalNodesServiceImpl', () => {
       });
 
       it('should mark the :id child webcomponent as self-registered', async () => {
-        const [errorNode] = await service.getCustomGlobalNodes();
+        const [, errorNode] = await service.getCustomGlobalNodes();
         const child = (errorNode.children as any[])[0];
         expect(child.webcomponent).toEqual({
           selfRegistered: true,
@@ -94,7 +117,7 @@ describe('CustomGlobalNodesServiceImpl', () => {
 
     describe('users node', () => {
       it('should be configured with pathSegment "users" and hidden from nav', async () => {
-        const [, usersNode] = await service.getCustomGlobalNodes();
+        const [, , usersNode] = await service.getCustomGlobalNodes();
         expect(usersNode.pathSegment).toBe('users');
         expect(usersNode.entityType).toBe('global');
         expect(usersNode.hideFromNav).toBe(true);
@@ -103,12 +126,12 @@ describe('CustomGlobalNodesServiceImpl', () => {
       });
 
       it('should have an empty context object', async () => {
-        const [, usersNode] = await service.getCustomGlobalNodes();
+        const [, , usersNode] = await service.getCustomGlobalNodes();
         expect(usersNode.context).toEqual({});
       });
 
       it('should expose a single :userId child that defines the user entity', async () => {
-        const [, usersNode] = await service.getCustomGlobalNodes();
+        const [, , usersNode] = await service.getCustomGlobalNodes();
         expect(usersNode.children).toHaveLength(1);
         const userNode = (usersNode.children as any[])[0];
         expect(userNode.pathSegment).toBe(':userId');
@@ -119,7 +142,7 @@ describe('CustomGlobalNodesServiceImpl', () => {
       });
 
       it('should expose an overview compound child under :userId that defines the overview entity', async () => {
-        const [, usersNode] = await service.getCustomGlobalNodes();
+        const [, , usersNode] = await service.getCustomGlobalNodes();
         const userNode = (usersNode.children as any[])[0];
         expect(userNode.children).toHaveLength(1);
         const overview = userNode.children[0];
@@ -144,7 +167,7 @@ describe('CustomGlobalNodesServiceImpl', () => {
       const updated = { 'common.error': 'Erreur' };
       (mockI18nService as any).translationTable = updated;
 
-      const [errorNode] = await service.getCustomGlobalNodes();
+      const [, errorNode] = await service.getCustomGlobalNodes();
       const child = (errorNode.children as any[])[0];
       expect(child.context.translationTable).toBe(updated);
     });

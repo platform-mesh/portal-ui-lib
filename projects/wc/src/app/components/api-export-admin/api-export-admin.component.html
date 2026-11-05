@@ -1,0 +1,10 @@
+<div class="api-export-admin" data-testid="api-export-admin">
+  <h2 class="api-export-admin__title">APIExport Enablement</h2>
+  <mfp-declarative-table
+    [columns]="tableColumns"
+    [resources]="$any(apiExports())"
+    [loading]="loading()"
+    [error]="tableError()"
+    (buttonClick)="onButtonClick($event)"
+  />
+</div>
