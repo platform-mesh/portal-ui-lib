@@ -322,6 +322,39 @@ describe('OpenSearchService', () => {
   });
 
   describe('expandDotNotation (via listResources)', () => {
+    it('preserves default-field description when filterable fields contain a nested spec', async () => {
+      const hit = {
+        ...sampleHit,
+        source: {
+          default_fields: {
+            'spec.description': 'Workspace description',
+            'spec.tags': ['team'],
+          },
+          filterable_fields: {
+            spec: { type: 'workspace' },
+            resource_counts: { components: 8 },
+          },
+          semantic_fields: {},
+        },
+      };
+      const snapshot = structuredClone(hit);
+      mockHttpClient.get.mockReturnValue(
+        of({ results: [hit], source: 'os', nextCursor: '' }) as any,
+      );
+
+      const result = await firstValueFrom(
+        service.listResources(baseContext, { q: '*' }),
+      );
+
+      expect(result.results[0].spec).toEqual({
+        description: 'Workspace description',
+        tags: ['team'],
+        type: 'workspace',
+      });
+      expect(result.results[0].resource_counts).toEqual({ components: 8 });
+      expect(hit).toEqual(snapshot);
+    });
+
     it('should expand dot-notation keys into nested objects on results', async () => {
       const nestedHit = {
         ...sampleHit,

@@ -192,7 +192,11 @@ export class OpenSearchService {
         }
         node = node[parts[i]] as Record<string, unknown>;
       }
-      node[parts[parts.length - 1]] = value;
+      const field = parts[parts.length - 1];
+      node[field] =
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+          ? { ...(node[field] as Record<string, unknown>), ...value }
+          : value;
     }
     return result;
   }
