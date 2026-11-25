@@ -1,3 +1,4 @@
+export * from './access-review.service';
 export * from './apollo-factory';
 export * from './gateway.service';
 export * from './instance-permissions.service';

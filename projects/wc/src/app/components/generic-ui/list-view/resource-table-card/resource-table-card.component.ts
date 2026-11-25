@@ -49,6 +49,7 @@ import {
   ResourceSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/models';
 import {
+  AccessReviewService,
   ErrorHandlerService,
   ResourceNodeContext,
   ResourceService,
@@ -61,8 +62,8 @@ import {
   permissionKey,
   resourceActionAllowed,
 } from '@platform-mesh/portal-ui-lib/utils';
-import { Subscription } from 'rxjs';
-import { finalize } from 'rxjs/operators';
+import { Observable, Subscription, throwError } from 'rxjs';
+import { catchError, finalize, tap } from 'rxjs/operators';
 
 export interface ResourceTableReadFailure {
   code: number;
@@ -86,6 +87,7 @@ export interface ResourceTableReadFailure {
 })
 export class ResourceTableCard {
   private resourceService = inject(ResourceService);
+  private accessReviewService = inject(AccessReviewService);
   private errorHandlerService = inject(ErrorHandlerService);
   protected instancePermissionsStore = inject(InstancePermissionsStore);
   private destroyRef = inject(DestroyRef);
@@ -227,6 +229,9 @@ export class ResourceTableCard {
   private currentContinueToken: string | undefined = undefined;
   private listSubscription?: Subscription;
   private lastListWasInitialLoad = true;
+  // The context whose list came from the access review, not from its
+  // fallback: that list is kept up to date by watching the review.
+  private accessReviewListed = signal<ResourceNodeContext | null>(null);
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -252,6 +257,21 @@ export class ResourceTableCard {
           ? { code: readError.status!, retry: () => this.retryList() }
           : null,
       );
+    });
+
+    effect((onCleanup) => {
+      const context = this.accessReviewListed();
+      if (!context) return;
+      const sub = this.accessReviewService.watchAccounts(context).subscribe({
+        next: (items) => {
+          if (context !== untracked(this.context)) return;
+          this.resources.set(items);
+        },
+        // The list stays what it was when it was read.
+        error: (error) =>
+          console.warn('The access review is no longer watched', error),
+      });
+      onCleanup(() => sub.unsubscribe());
     });
 
     effect((onCleanup) => {
@@ -470,11 +490,16 @@ export class ResourceTableCard {
   }
 
   list(isInitialLoad: boolean = false) {
-    if (!this.canDo('list')) return;
+    const fromAccessReview =
+      !!this.resourceDefinition()?.ui?.listView?.accessReview;
+    // A review only ever has what the user can access, so it needs no
+    // permission to list.
+    if (!fromAccessReview && !this.canDo('list')) return;
     if (untracked(this.loading)) return;
     this.lastListWasInitialLoad = isInitialLoad;
     this.listError.set(null);
     this.loading.set(true);
+    this.accessReviewListed.set(null);
 
     const fields = this.getListQueryFields();
     const resourceDefinition = this.getResourceDefinition();
@@ -485,13 +510,25 @@ export class ResourceTableCard {
       entity: resourceDefinition.entityCollection,
     }) as string;
 
-    this.listSubscription = this.resourceService
-      .list(queryOperation, fields, context, {
+    const listFromGateway = () =>
+      this.resourceService.list(queryOperation, fields, context, {
         pagination: {
           limit: this.paginationLimit(),
           continue: this.currentContinueToken,
         },
-      })
+      });
+    // Where the review is not served (yet) or fails, the list is what it was
+    // without it.
+    const source: Observable<ResourceListResult> = fromAccessReview
+      ? this.accessReviewService.listAccounts(context).pipe(
+          tap(() => this.accessReviewListed.set(context)),
+          catchError((error) =>
+            this.canDo('list') ? listFromGateway() : throwError(() => error),
+          ),
+        )
+      : listFromGateway();
+
+    this.listSubscription = source
       .pipe(
         finalize(() => {
           this.loading.set(false);
