@@ -41,10 +41,8 @@ export class PortalShell {
 
   breadcrumb(label: string): Locator {
     return this.page
-      .getByRole('navigation', { name: 'Breadcrumb Trail' })
-      .getByRole('link', {
-        name: new RegExp(`^${this.escapeForRegExp(label)} \\d+ of \\d+$`),
-      });
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: label, exact: true });
   }
 
   async expectSideNavigation(
@@ -74,10 +72,6 @@ export class PortalShell {
     return tagNames
       .filter((tagName) => tagName.startsWith(luigiWebComponentTagPrefix))
       .map((tagName) => this.viewNameOf(tagName));
-  }
-
-  private escapeForRegExp(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private viewNameOf(luigiWebComponentTagName: string): string {

@@ -1,80 +1,145 @@
 import { breadcrumbRenderer } from './breadcrumb-renderer';
-
-vi.mock('@ui5/webcomponents/dist/Breadcrumbs.js', () => ({}));
-vi.mock('@ui5/webcomponents/dist/BreadcrumbsItem.js', () => ({}));
-
-function getChildrenByTag(el: Element, tag: string): Element[] {
-  return Array.from(el.children).filter((c) => c.tagName.toLowerCase() === tag);
-}
-
-function dispatchItemClick(target: Element, detail: any) {
-  const ev = new CustomEvent('item-click', {
-    bubbles: true,
-    cancelable: true,
-    detail,
-  } as any);
-  target.dispatchEvent(ev);
-}
+import { Mock } from 'vitest';
 
 describe('breadcrumbRenderer', () => {
-  it('should render breadcrumbs, skip hidden items, and handle click without modifiers', () => {
-    const container = document.createElement('div');
-    const clickSpy = vi.fn();
+  let container: HTMLElement;
+  let clickSpy: Mock<(item: any) => void>;
 
-    const visibleItem = { label: 'Visible', node: {} } as any;
-    const hiddenItem = {
-      label: 'Hidden',
-      node: { hideFromBreadcrumb: true },
-    } as any;
+  const home = { label: 'Home', route: '/home', node: { icon: 'account' } };
+  const accounts = {
+    label: 'Accounts',
+    route: '/home/accounts',
+    node: { icon: 'product', pathSegment: 'accounts' },
+  };
+  const account = {
+    label: 'account-gamma',
+    route: '/home/accounts/account-gamma',
+    node: { pathSegment: ':accountId' },
+  };
+  const page = {
+    label: 'Http Bins',
+    route: '/home/accounts/account-gamma/httpbins',
+    node: { icon: 'paint-bucket', pathSegment: 'httpbins' },
+  };
 
-    const breadcrumbs = breadcrumbRenderer(
+  const links = () =>
+    Array.from(
+      container.querySelectorAll<HTMLElement>('.pm-breadcrumbs__link'),
+    );
+  const current = () =>
+    container.querySelector<HTMLElement>('.pm-breadcrumbs__current')!;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    clickSpy = vi.fn();
+  });
+
+  it('renders home as an icon, links for the parents and the current page last', () => {
+    // when
+    const nav = breadcrumbRenderer(
       container,
-      [hiddenItem, visibleItem],
+      [home, accounts, account, page],
       clickSpy,
     );
 
-    expect(breadcrumbs).toBeTruthy();
-    const bc = getChildrenByTag(container, 'ui5-breadcrumbs')[0];
-    expect(bc).toBeTruthy();
-
-    const items = getChildrenByTag(bc, 'ui5-breadcrumbs-item');
-    expect(items.length).toBe(1);
-    expect(items[0].textContent).toBe('Visible');
-
-    (items[0] as any)._item = visibleItem;
-
-    dispatchItemClick(bc, {
-      item: items[0],
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false,
-    });
-
-    expect(clickSpy).toHaveBeenCalledWith(visibleItem);
+    // then
+    expect(nav.getAttribute('aria-label')).toBe('Breadcrumb');
+    expect(links().map((link) => link.getAttribute('href'))).toEqual([
+      '/home',
+      '/home/accounts',
+      '/home/accounts/account-gamma',
+    ]);
+    expect(links()[0].getAttribute('aria-label')).toBe('Home');
+    expect(links()[0].querySelector('.sap-icon--home')).not.toBeNull();
+    expect(links()[0].textContent).toBe('');
+    expect(current().textContent).toBe('Http Bins');
+    expect(current().getAttribute('aria-current')).toBe('page');
+    expect(
+      container.querySelectorAll('.pm-breadcrumbs__separator').length,
+    ).toBe(3);
   });
 
-  it('should not handle click when modifier keys are pressed', () => {
-    const container = document.createElement('div');
-    const clickSpy = vi.fn();
+  it('shows the navigation icon of a node and an initial for an entity', () => {
+    // when
+    breadcrumbRenderer(container, [home, accounts, account, page], clickSpy);
 
-    const item = { label: 'Item', node: {} } as any;
+    // then
+    expect(links()[1].querySelector('.sap-icon--product')).not.toBeNull();
+    expect(
+      links()[2].querySelector('.pm-breadcrumbs__avatar')!.textContent,
+    ).toBe('A');
+    expect(current().querySelector('.sap-icon--paint-bucket')).not.toBeNull();
+  });
 
-    const breadcrumbs = breadcrumbRenderer(container, [item], clickSpy);
-    expect(breadcrumbs).not.toBeNull();
+  it('shows no marker for a pending entity or an icon that is not a plain name', () => {
+    // given
+    const pendingAccount = { ...account, label: '...', pending: true };
+    const imageIconPage = {
+      ...page,
+      node: { icon: 'https://example.com/icon.png' },
+    };
 
-    const bc = getChildrenByTag(container, 'ui5-breadcrumbs')[0];
-    const items = getChildrenByTag(bc, 'ui5-breadcrumbs-item');
-    (items[0] as any)._item = item;
+    // when
+    breadcrumbRenderer(
+      container,
+      [home, pendingAccount, imageIconPage],
+      clickSpy,
+    );
 
-    dispatchItemClick(bc, {
-      item: items[0],
+    // then
+    expect(container.querySelector('.pm-breadcrumbs__avatar')).toBeNull();
+    expect(current().querySelector('[class*="sap-icon--"]')).toBeNull();
+  });
+
+  it('skips items hidden from the breadcrumb', () => {
+    // given
+    const hidden = { label: 'Hidden', node: { hideFromBreadcrumb: true } };
+
+    // when
+    breadcrumbRenderer(container, [home, hidden, page], clickSpy);
+
+    // then
+    expect(container.textContent).not.toContain('Hidden');
+    expect(links().length).toBe(1);
+  });
+
+  it('keeps the full name on hover for labels cut by the ellipsis', () => {
+    // when
+    breadcrumbRenderer(container, [home, account, page], clickSpy);
+
+    // then
+    expect(
+      links()[1].querySelector('.pm-breadcrumbs__label')!.getAttribute('title'),
+    ).toBe('account-gamma');
+  });
+
+  it('navigates through the portal on a plain click', () => {
+    // given
+    breadcrumbRenderer(container, [home, accounts, page], clickSpy);
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+    // when
+    links()[1].dispatchEvent(event);
+
+    // then
+    expect(clickSpy).toHaveBeenCalledWith(accounts);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('leaves a click with a modifier key to the browser', () => {
+    // given
+    breadcrumbRenderer(container, [home, accounts, page], clickSpy);
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
       ctrlKey: true,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false,
     });
 
+    // when
+    links()[1].dispatchEvent(event);
+
+    // then
     expect(clickSpy).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
   });
 });
