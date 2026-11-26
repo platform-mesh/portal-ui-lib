@@ -1,3 +1,7 @@
+import {
+  NamespaceSelector,
+  createNamespaceSelector,
+} from './namespace-selector';
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -22,7 +26,6 @@ import {
   isNamespacedResource,
   mergeListWithSubscriptionResult,
 } from '@platform-mesh/portal-ui-lib/utils';
-import '@ui5/webcomponents/dist/ComboBox.js';
 import { Observable, Subject, defer, of } from 'rxjs';
 import {
   catchError,
@@ -61,8 +64,6 @@ export class NamespaceSelectionRendererService {
       nodeItems: any[],
       _clickHandler: any,
     ) => {
-      containerElement.style.paddingBottom = '0.5rem';
-
       const lastNode = nodeItems.at(-1)?.node as LuigiNode | undefined;
       const namespace = this.luigiCoreService
         .routing()
@@ -73,40 +74,24 @@ export class NamespaceSelectionRendererService {
         return containerElement;
       }
 
-      const ui5combobox = this.createCombobox(containerElement);
+      const selector = createNamespaceSelector((value) =>
+        this.changeNamespace(value),
+      );
+      containerElement.appendChild(selector.element);
 
-      this.addComboboxItems(portalConfig, ui5combobox, namespace, kcpPath);
+      this.getNamespaceResourcesCached(portalConfig, kcpPath).subscribe(
+        (resources) => {
+          selector.setNamespaces(
+            resources
+              .map((resource) => resource.metadata?.name)
+              .filter((name): name is string => !!name),
+          );
+          this.setSelectedValue(selector, resources, namespace);
+        },
+      );
 
-      ui5combobox.addEventListener('change', (event: any) => {
-        const value = (event?.target as any)?.value.trim() ?? '';
-        this.changeNamespace(value);
-      });
-
-      return ui5combobox as HTMLElement;
+      return selector.element;
     };
-  }
-
-  private createCombobox(containerElement: HTMLElement) {
-    const ui5combobox = document.createElement('ui5-combobox');
-    ui5combobox.setAttribute('placeholder', 'Namespaces');
-    ui5combobox.setAttribute('data-testid', 'namespace-selection-combobox');
-    containerElement.appendChild(ui5combobox);
-
-    return ui5combobox;
-  }
-
-  private addComboboxItems(
-    portalConfig: PortalConfig,
-    ui5combobox: HTMLElement,
-    namespace: string | null,
-    kcpPath?: string,
-  ) {
-    this.getNamespaceResourcesCached(portalConfig, kcpPath).subscribe(
-      (resources) => {
-        this.syncComboboxItems(ui5combobox, resources);
-        this.setSelectedValue(ui5combobox, resources, namespace);
-      },
-    );
   }
 
   private getNamespaceResourcesCached(
@@ -143,34 +128,8 @@ export class NamespaceSelectionRendererService {
     return kcpPath ?? '';
   }
 
-  private syncComboboxItems(ui5combobox: HTMLElement, resources: Resource[]) {
-    ui5combobox.replaceChildren();
-
-    resources.forEach((resource) => {
-      const name = resource.metadata?.name;
-      if (!name) {
-        return;
-      }
-      const resourceOption = document.createElement('ui5-cb-item');
-      resourceOption.setAttribute('text', name);
-      resourceOption.setAttribute(
-        'data-testid',
-        `namespace-selection-combobox-item-${name}`,
-      );
-      ui5combobox.appendChild(resourceOption);
-    });
-
-    const allOption = document.createElement('ui5-cb-item');
-    allOption.setAttribute('text', ALL_NAMESPACE);
-    allOption.setAttribute(
-      'data-testid',
-      'namespace-selection-combobox-item-all',
-    );
-    ui5combobox.appendChild(allOption);
-  }
-
   private setSelectedValue(
-    ui5combobox: HTMLElement,
+    selector: NamespaceSelector,
     resources: Resource[],
     namespace: string | null,
   ) {
@@ -179,7 +138,7 @@ export class NamespaceSelectionRendererService {
       .getSearchParams().namespace;
 
     if (currentNamespace) {
-      ui5combobox.setAttribute('value', currentNamespace);
+      selector.select(currentNamespace);
       return;
     }
 
@@ -187,9 +146,9 @@ export class NamespaceSelectionRendererService {
       namespace &&
       resources.find((resource) => resource.metadata?.name === namespace)
     ) {
-      ui5combobox.setAttribute('value', namespace);
+      selector.select(namespace);
     } else {
-      ui5combobox.setAttribute('value', ALL_NAMESPACE);
+      selector.select(ALL_NAMESPACE);
       this.changeNamespace(ALL_NAMESPACE);
     }
   }
@@ -254,10 +213,6 @@ export class NamespaceSelectionRendererService {
   }
 
   private changeNamespace(value: string): void {
-    if (!value) {
-      return;
-    }
-
     const oldValue = this.luigiCoreService
       .routing()
       .getSearchParams().namespace;
