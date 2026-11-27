@@ -151,6 +151,23 @@ describe('PersistentPanelService', () => {
     });
   });
 
+  it('keeps the latest navigation context and clears it on destroy', () => {
+    const completeFirstNavigation = service.beginTargetUpdate();
+    const completeSecondNavigation = service.beginTargetUpdate();
+
+    completeSecondNavigation({ organization: 'showroom', accountId: 'b' });
+    completeFirstNavigation({ organization: 'showroom', accountId: 'a' });
+
+    expect(service.currentNavigationContext()).toEqual({
+      organization: 'showroom',
+      accountId: 'b',
+    });
+
+    service.destroy();
+
+    expect(service.currentNavigationContext()).toEqual({});
+  });
+
   it('invalidates a pending navigation when destroyed', () => {
     const completeNavigation = service.beginTargetUpdate();
 

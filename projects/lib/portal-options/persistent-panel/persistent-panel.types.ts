@@ -1,4 +1,8 @@
 import type { NodeContext } from '@openmfp/portal-ui-lib';
+import {
+  ViewUrlPlaceholderSources,
+  resolveViewUrlPlaceholders,
+} from '@platform-mesh/portal-ui-lib/utils';
 
 export const OPEN_PERSISTENT_PANEL_MESSAGE = 'portal.open-provider-panel';
 
@@ -74,6 +78,7 @@ export function parsePersistentPanelConfig(
   message: OpenPanelMessage,
   providerNode: RegisteredProviderNode | undefined,
   portalOrigin: string,
+  placeholderSources: ViewUrlPlaceholderSources = {},
 ): PersistentPanelConfig {
   if (message.id !== OPEN_PERSISTENT_PANEL_MESSAGE) {
     throw new Error('Persistent panel request is invalid');
@@ -94,8 +99,20 @@ export function parsePersistentPanelConfig(
     throw new Error('Registered provider UI URL is missing');
   }
 
+  const resolvedViewUrl = resolveViewUrlPlaceholders(
+    registeredViewUrl,
+    placeholderSources,
+  );
+  if (resolvedViewUrl === undefined) {
+    throw new Error('Registered provider UI URL has unresolved placeholders');
+  }
+  const viewUrl = boundedString(resolvedViewUrl, 2048);
+  if (!viewUrl) {
+    throw new Error('Registered provider UI URL is invalid');
+  }
+
   const portalURL = new URL(portalOrigin);
-  const url = new URL(registeredViewUrl, portalURL);
+  const url = new URL(viewUrl, portalURL);
   if (
     url.origin === portalURL.origin ||
     !allowedPanelURL(url, portalURL) ||

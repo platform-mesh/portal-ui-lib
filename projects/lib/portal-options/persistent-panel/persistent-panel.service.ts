@@ -20,6 +20,7 @@ export class PersistentPanelService implements OnDestroy {
   private readonly environmentInjector = inject(EnvironmentInjector);
   private panelRef: ComponentRef<PersistentPanelComponent> | null = null;
   private target: PersistentPanelTarget = {};
+  private navigationContext: Record<string, unknown> = {};
   private targetUpdateSequence = 0;
 
   open(config: PersistentPanelConfig, target: PersistentPanelTarget): void {
@@ -53,11 +54,16 @@ export class PersistentPanelService implements OnDestroy {
   private updateTarget(context: Record<string, unknown>): void {
     const target = persistentPanelTarget({}, context);
     this.target = target;
+    this.navigationContext = { ...context };
     this.panelRef?.instance.updateTarget(target);
   }
 
   currentTarget(): PersistentPanelTarget {
     return structuredClone(this.target);
+  }
+
+  currentNavigationContext(): Record<string, unknown> {
+    return { ...this.navigationContext };
   }
 
   destroy(): void {
@@ -70,6 +76,7 @@ export class PersistentPanelService implements OnDestroy {
       this.panelRef = null;
     }
     this.target = {};
+    this.navigationContext = {};
   }
 
   ngOnDestroy(): void {

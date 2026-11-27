@@ -122,6 +122,66 @@ describe('persistent provider panel contract', () => {
     ).toThrow(/registered provider UI URL is invalid/i);
   });
 
+  it('replaces context and node param placeholders in the registered provider UI URL', () => {
+    expect(
+      parsePersistentPanelConfig(
+        { id: OPEN_PERSISTENT_PANEL_MESSAGE },
+        trustedNode(
+          'https://provider.example.test/panel?organization={context.organization}&account={context.accountId}&tab={nodeParams.tab}',
+        ),
+        'https://portal.example.test',
+        {
+          context: { organization: 'showroom', accountId: 'ig-1' },
+          nodeParams: { tab: 'logs' },
+        },
+      ),
+    ).toEqual({
+      id: 'provider.tools',
+      title: 'Provider tools',
+      url: 'https://provider.example.test/panel?organization=showroom&account=ig-1&tab=logs',
+      origin: 'https://provider.example.test',
+    });
+  });
+
+  it('rejects a registered provider UI URL with unresolved placeholders', () => {
+    expect(() =>
+      parsePersistentPanelConfig(
+        { id: OPEN_PERSISTENT_PANEL_MESSAGE },
+        trustedNode(
+          'https://provider.example.test/panel?organization={context.organization}',
+        ),
+        'https://portal.example.test',
+      ),
+    ).toThrow(/registered provider UI URL has unresolved placeholders/i);
+    expect(() =>
+      parsePersistentPanelConfig(
+        { id: OPEN_PERSISTENT_PANEL_MESSAGE },
+        trustedNode('https://provider.example.test/panel?tab={nodeParams.tab}'),
+        'https://portal.example.test',
+        { context: { organization: 'showroom' }, nodeParams: {} },
+      ),
+    ).toThrow(/registered provider UI URL has unresolved placeholders/i);
+  });
+
+  it('validates the provider UI URL after placeholders are replaced', () => {
+    expect(() =>
+      parsePersistentPanelConfig(
+        { id: OPEN_PERSISTENT_PANEL_MESSAGE },
+        trustedNode('https://{context.host}/panel'),
+        'https://portal.example.test',
+        { context: { host: 'portal.example.test' } },
+      ),
+    ).toThrow(/registered provider UI URL is invalid/i);
+    expect(() =>
+      parsePersistentPanelConfig(
+        { id: OPEN_PERSISTENT_PANEL_MESSAGE },
+        trustedNode('https://provider.example.test/panel?q={context.query}'),
+        'https://portal.example.test',
+        { context: { query: 'x'.repeat(2048) } },
+      ),
+    ).toThrow(/registered provider UI URL is invalid/i);
+  });
+
   it('derives identity only from trusted node metadata', () => {
     expect(
       parsePersistentPanelConfig(
